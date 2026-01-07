@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['_7egamescene_0',['~GameScene',['../classGameScene.html#add5bc48c372aaa7f526c02558a8adf00',1,'GameScene']]],
-  ['_7eplayer_1',['~Player',['../classPlayer.html#a749d2c00e1fe0f5c2746f7505a58c062',1,'Player']]]
+  ['readme_2emd_0',['README.md',['../README_8md.html',1,'']]],
+  ['render_1',['render',['../classGameScene.html#a7c2937bcfa033b6ac3231634210c4630',1,'GameScene::Render()'],['../classPlayer.html#ad141ea844ac82f2447d986d964d1e8a7',1,'Player::Render()']]]
 ];

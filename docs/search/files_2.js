@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['main_2ecpp_0',['Main.cpp',['../Main_8cpp.html',1,'']]],
-  ['meshgenerator_2ecpp_1',['MeshGenerator.cpp',['../MeshGenerator_8cpp.html',1,'']]],
-  ['meshgenerator_2eh_2',['MeshGenerator.h',['../MeshGenerator_8h.html',1,'']]]
+  ['player_2ecpp_0',['Player.cpp',['../Player_8cpp.html',1,'']]],
+  ['player_2eh_1',['Player.h',['../Player_8h.html',1,'']]],
+  ['playerstats_2ecpp_2',['PlayerStats.cpp',['../PlayerStats_8cpp.html',1,'']]],
+  ['playerstats_2eh_3',['PlayerStats.h',['../PlayerStats_8h.html',1,'']]]
 ];
