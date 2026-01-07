@@ -1,6 +1,6 @@
 #include "MeshGenerator.h"
 
-AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, u32 color)
+AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, float uvWidth, float uvHeight, u32 color)
 {
 	AEGfxMeshStart();
 
@@ -9,23 +9,28 @@ AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, u32 color
 	float hh = height * 0.5f;
 
 	AEGfxTriAdd(
-		-hw, -hh, color, 0.0f, 1.0f, // Bottom left
-		hw, -hh, color, 1.0f, 1.0f, // Bottom right
+		-hw, -hh, color, 0.0f, uvHeight, // Bottom left
+		hw, -hh, color, uvWidth, uvHeight, // Bottom right
 		-hw, hh, color, 0.0f, 0.0f  // Top left
 	);
 
 	AEGfxTriAdd(
-		hw, -hh, color, 1.0f, 1.0f, // Bottom right
-		hw, hh, color, 1.0f, 0.0f, // Top right
+		hw, -hh, color, uvWidth, uvHeight, // Bottom right
+		hw, hh, color, uvWidth, 0.f, // Top right
 		-hw, hh, color, 0.0f, 0.0f  // Top left
 	);
 
 	return AEGfxMeshEnd();
 }
 
+AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, u32 color)
+{
+	return GetRectMesh(width, height, 1.0f, 1.0f, color);
+}
+
 AEGfxVertexList* MeshGenerator::GetSquareMesh(float width, u32 color)
 {
-	return GetRectMesh(width, width, color);
+	return GetRectMesh(width, width, 1.0f, 1.0f, color);
 }
 
 AEGfxVertexList* MeshGenerator::GetCircleMesh(float radius, u32 color, int vertexCount)

@@ -8,47 +8,47 @@
 class PlayerStats
 {
 public:
-    //// === Horizontal Movement ===
-    //float maxSpeed;
-    //float airStrafeMaxSpeed;
+    // === Horizontal Movement ===
+    float maxSpeed;
+    float airStrafeMaxSpeed;
 
-    //float maxSpeedTime;
-    //float stopTime;
-    //float turnTime;
-    //float inAirTurnTime;
-    //float moveAcceleration;
-    //float stopAcceleration;
-    //float turnAcceleration;
-    //float inAirTurnAcceleration;
+    float maxSpeedTime;
+    float stopTime;
+    float turnTime;
+    float inAirTurnTime;
+    float moveAcceleration;
+    float stopAcceleration;
+    float turnAcceleration;
+    float inAirTurnAcceleration;
 
-    //float dashCooldown;
-    //float dashTime;
+    float dashCooldown;
+    float dashTime;
 
-    //// ===== Gravity =====
-    //float maxFallVelocity;
-    //float gravity;
-    //float fallingGravity;
-    //float wallSlideMaxSpeedTime;
+    // ===== Gravity =====
+    float maxFallVelocity;
+    float gravity;
+    float fallingGravity;
+    float wallSlideMaxSpeedTime;
 
-    //float wallSlideMaxSpeed;
-    //float wallSlideAcceleration;
+    float wallSlideMaxSpeed;
+    float wallSlideAcceleration;
 
-    //// ===== Jumping =====
-    //float maxJumpHeight;
-    //float minJumpHeight;
-    //float minJumpTime;
-    //float timeToMaxHeight;
-    //float timeToGround;
-    //float jumpVelocity;
-    //float gravityMultiplierWhenRelease;
-    //float coyoteTime;
-    //float jumpBuffer;
-    //float wallJumpHorizontalVelocity;
-    //float wallJumpHorizontalVelocityTowardsWall;
+    // ===== Jumping =====
+    float maxJumpHeight;
+    float minJumpHeight;
+    float minJumpTime;
+    float timeToMaxHeight;
+    float timeToGround;
+    float jumpVelocity;
+    float gravityMultiplierWhenRelease;
+    float coyoteTime;
+    float jumpBuffer;
+    float wallJumpHorizontalVelocity;
+    float wallJumpHorizontalVelocityTowardsWall;
 
-    //// ===== Others =====
+    // ===== Others =====
 
-    //float invincibilityDuration;
+    float invincibilityDuration;
 
     /**
      * @brief       Loads the player stats from a file

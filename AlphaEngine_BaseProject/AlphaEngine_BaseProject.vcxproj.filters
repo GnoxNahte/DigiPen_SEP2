@@ -25,13 +25,16 @@
     <Filter Include="Source Files\Game\Player">
       <UniqueIdentifier>{b1f47717-0e52-4a8d-8547-174186e5bd7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{bb76c1d1-580d-48ef-a714-5ef542b820a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\MeshGenerator.cpp">
-      <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp">
       <Filter>Source Files\Game\Player</Filter>
@@ -42,11 +45,14 @@
     <ClCompile Include="Source\Game\GameScene.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Utils\SpriteSheet.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\MeshGenerator.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Game\MeshGenerator.h">
-      <Filter>Header Files\Game</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
       <Filter>Header Files\Game\Player</Filter>
     </ClInclude>
@@ -55,6 +61,12 @@
     </ClInclude>
     <ClInclude Include="Source\Game\GameScene.h">
       <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\SpriteSheet.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\MeshGenerator.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
