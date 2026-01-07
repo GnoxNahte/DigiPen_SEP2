@@ -1,5 +1,0 @@
-<map id="Player" name="Player">
-<area shape="rect" id="Node000001" title="Controllable player class." alt="" coords="22,93,85,119"/>
-<area shape="rect" id="Node000002" href="$classPlayerStats.html" title="Contains the Player stats." alt="" coords="5,5,101,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="56,45,56,93,51,93,51,45"/>
-</map>
