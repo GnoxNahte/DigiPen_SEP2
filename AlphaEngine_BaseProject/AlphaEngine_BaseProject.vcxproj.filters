@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Game">
       <UniqueIdentifier>{b08b91ac-41b8-434a-a9ad-44d4ef5d7c6b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game\Player">
+      <UniqueIdentifier>{aea4e789-2606-4a31-be62-d8c9437c7a23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Player">
+      <UniqueIdentifier>{b1f47717-0e52-4a8d-8547-174186e5bd7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -27,7 +33,13 @@
     <ClCompile Include="Source\Game\MeshGenerator.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\Player.cpp">
+    <ClCompile Include="Source\Game\Player\PlayerStats.cpp">
+      <Filter>Source Files\Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\GameScene.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,7 +47,13 @@
     <ClInclude Include="Source\Game\MeshGenerator.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\Player.h">
+    <ClInclude Include="Source\Game\Player\PlayerStats.h">
+      <Filter>Header Files\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Player\Player.h">
+      <Filter>Header Files\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\GameScene.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,7 +4,7 @@
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 
-
+#include "Game/GameScene.h"
 
 // ---------------------------------------------------------------------------
 // main
@@ -19,21 +19,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-
+	// ===== Setup window and AlphaEngine =====
 	int gGameRunning = 1;
-
-	// Initialization of your own variables go here
 
 	// Using custom window procedure
 	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 60, false, NULL);
 
 	// Changing the window title
-	AESysSetWindowTitle("My New Demo!");
+	AESysSetWindowTitle("GAM 150"); // @todo: change name
 
 	// reset the system modules
 	AESysReset();
 
-	printf("Hello World\n");
+	GameScene scene;
 
 	// Game Loop
 	while (gGameRunning)
@@ -47,10 +45,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			gGameRunning = 0;
 
 		// Your own update logic goes here
-
+		scene.Update();
 
 		// Your own rendering logic goes here
-
+		scene.Render();
 
 		// Informing the system about the loop's end
 		AESysFrameEnd();

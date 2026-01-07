@@ -1,12 +1,12 @@
 #include "MeshGenerator.h"
 
-AEGfxVertexList* GetRectMesh(f32 width, f32 height, u32 color)
+AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, u32 color)
 {
 	AEGfxMeshStart();
 
 	// Half width
-	f32 hw = width * 0.5f;
-	f32 hh = height * 0.5f;
+	float hw = width * 0.5f;
+	float hh = height * 0.5f;
 
 	AEGfxTriAdd(
 		-hw, -hh, color, 0.0f, 1.0f, // Bottom left
@@ -23,7 +23,12 @@ AEGfxVertexList* GetRectMesh(f32 width, f32 height, u32 color)
 	return AEGfxMeshEnd();
 }
 
-AEGfxVertexList* GetCircleMesh(f32 radius, u32 color, int vertexCount)
+AEGfxVertexList* MeshGenerator::GetSquareMesh(float width, u32 color)
+{
+	return GetRectMesh(width, width, color);
+}
+
+AEGfxVertexList* MeshGenerator::GetCircleMesh(float radius, u32 color, int vertexCount)
 {
 	if (vertexCount < 3)
 	{
@@ -33,7 +38,6 @@ AEGfxVertexList* GetCircleMesh(f32 radius, u32 color, int vertexCount)
 
 	AEGfxMeshStart();
 
-	//float prevX = 0.f, prevY = 1.f;
 	float angleDiff = 2 * PI / vertexCount;
 	float currAngle = 0;
 
