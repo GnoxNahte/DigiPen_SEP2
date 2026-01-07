@@ -1,0 +1,11 @@
+<map id="AlphaEngine_BaseProject/Source/Game/Player/Player.h" name="AlphaEngine_BaseProject/Source/Game/Player/Player.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,220,45"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="33,167,91,192"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,47,65,68,48,94,45,109,45,124,53,154,48,155,40,125,40,108,44,92,61,65,84,44"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="136,167,231,192"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="141,43,164,65,182,92,189,123,189,153,184,153,184,124,177,94,160,68,137,47"/>
+<area shape="rect" id="Node000004" href="$PlayerStats_8h.html" title=" " alt="" coords="59,93,167,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="115,46,115,79,110,79,110,46"/>
+<area shape="poly" id="edge4_Node000004_Node000002" title=" " alt="" coords="106,121,80,157,76,154,102,117"/>
+<area shape="poly" id="edge5_Node000004_Node000003" title=" " alt="" coords="126,117,164,155,160,159,122,121"/>
+</map>
