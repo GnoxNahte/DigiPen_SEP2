@@ -1,7 +1,7 @@
 #include "Player.h"
 #include "../../Utils/MeshGenerator.h"
 
-Player::Player() : stats("player-stats.json"), spriteSheet("Assets/Craftpix/Char_Robot.png", 6, 8, 12)
+Player::Player() : stats("player-stats.json"), spriteSheet("Assets/Craftpix/Char_Robot.png")
 {
 }
 

@@ -16,7 +16,7 @@ PlayerStats::PlayerStats(std::string file)
 	std::ifstream ifs("config/player-stats.json");
 	if (!ifs.is_open())
 	{
-		std::cout << "Failed to open file";
+		std::cout << "Failed to open file: " << file << std::endl;
 		return;
 	}
 

@@ -2,11 +2,12 @@
 
 #include "AEEngine.h"
 #include <string>
+#include "SpriteMetadata.h"
 
-class SpriteSheet
+class Sprite
 {
 public:
-	SpriteSheet(std::string file, int rows, int cols, float framesPerSecond);
+	Sprite(std::string file);
 
 	/**
 	 * @brief Update sprite animation
@@ -20,15 +21,19 @@ public:
 	 */
 	void Render();
 private:
+	SpriteMetadata metadata;
+
+	// === Data derived from metadata ===
 	float timePerFrame;
-	int rows, cols;
 	float uvWidth, uvHeight;
 
+	// === Runtime data that will change ===
 	float animTimer;
 	int spriteIndex;
 
 	AEVec2 uvOffset; // Current uv offset
 
+	// === Mesh data ===
 	AEGfxVertexList* mesh;
 	AEGfxTexture* texture;
 };

@@ -1,17 +1,20 @@
 #include <iostream>
+#include <fstream>
 
-#include "SpriteSheet.h"
+
+#include "Sprite.h"
 #include "MeshGenerator.h"
 
-SpriteSheet::SpriteSheet(std::string file, int rows, int cols, float framesPerSecond) : uvOffset(0.f, 0.f), rows(rows), cols(cols)
+Sprite::Sprite(std::string file) 
+	: uvOffset(0.f, 0.f), metadata(file)
 {
-	timePerFrame = 1.f / framesPerSecond;
+	timePerFrame = 1.f / metadata.framesPerSecond;
 
 	if (timePerFrame <= 0.f)
 		std::cout << "[WARNING] timePerFrame <= 0.f" << std::endl;
 
-	uvWidth = 1.f / cols;
-	uvHeight = 1.f / rows;
+	uvWidth = 1.f / metadata.cols;
+	uvHeight = 1.f / metadata.rows;
 
 	animTimer = 0.f;
 	spriteIndex = 0;
@@ -20,21 +23,20 @@ SpriteSheet::SpriteSheet(std::string file, int rows, int cols, float framesPerSe
 	texture = AEGfxTextureLoad(file.c_str());
 }
 
-void SpriteSheet::Update()
+void Sprite::Update()
 {
 	if (animTimer >= timePerFrame)
 	{
 		animTimer -= timePerFrame;
 
-		spriteIndex = (spriteIndex + 1) % cols;
+		spriteIndex = (spriteIndex + 1) % metadata.cols;
 		uvOffset.x = spriteIndex * uvWidth;
-		std::cout << "i:" << uvOffset.x << std::endl;
 	}
 
 	animTimer += (float)AEFrameRateControllerGetFrameTime();
 }
 
-void SpriteSheet::Render()
+void Sprite::Render()
 {
 	AEGfxTextureSet(texture, uvOffset.x, uvOffset.y);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
