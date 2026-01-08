@@ -11,6 +11,8 @@
 class Player
 {
 public:
+    AEVec2 position;
+
     Player();
     ~Player();
     void Update();
@@ -18,5 +20,7 @@ public:
 private:
     PlayerStats stats;
     Sprite spriteSheet;
+
+    AEMtx33 transform;
 };
 

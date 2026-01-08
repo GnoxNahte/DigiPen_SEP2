@@ -1,5 +1,6 @@
 #pragma once
 #include "Player/Player.h"
+#include "Camera.h"
 
 class GameScene
 {
@@ -10,5 +11,6 @@ public:
 	void Render();
 private:
 	Player player;
+	Camera camera;
 };
 

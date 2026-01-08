@@ -103,6 +103,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Game\Camera.cpp" />
     <ClCompile Include="Source\Game\GameScene.cpp" />
     <ClCompile Include="Source\Game\Player\Player.cpp" />
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp" />
@@ -113,9 +114,11 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Game\GameScene.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
+    <ClInclude Include="Source\Utils\Easing.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
