@@ -1,0 +1,23 @@
+{
+  "maxSpeed": 6.0,
+  "airStrafeMaxSpeed": 4.0,
+  "maxSpeedTime": 0.1,
+  "stopTime": 0.15,
+  "turnTime": 0.05,
+  "inAirTurnTime": 0.1,
+  "dashCooldown": 0.5,
+  "dashTime": 0.2,
+  "maxFallVelocity": -10.0,
+  "wallSlideMaxSpeedTime": 0.5,
+  "wallSlideMaxSpeed": -2,
+  "maxJumpHeight": 1,
+  "minJumpTime": 0.01,
+  "timeToMaxHeight": 0.3,
+  "timeToGround": 0.25,
+  "gravityMultiplierWhenRelease": 4,
+  "coyoteTime": 0.175,
+  "jumpBuffer": 0.15,
+  "wallJumpHorizontalVelocity": 5.0,
+  "wallJumpHorizontalVelocityTowardsWall": 5.0,
+  "invincibilityDuration": 0.1
+}

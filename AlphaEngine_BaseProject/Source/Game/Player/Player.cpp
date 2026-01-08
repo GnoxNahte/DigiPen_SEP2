@@ -1,7 +1,7 @@
 #include "Player.h"
 #include "../Camera.h"
 
-Player::Player() : stats("player-stats.json"), spriteSheet("Assets/Craftpix/Char_Robot.png")
+Player::Player() : stats("config/player-stats.json"), spriteSheet("Assets/Craftpix/Char_Robot.png")
 {
 }
 
@@ -11,15 +11,15 @@ Player::~Player()
 
 void Player::Update()
 {
+    HorizontalMovement();
+    VerticalMovement();
+
+    // @todo: Ethan - Handle collision
+
+
+    AEVec2Add(&position, &position, &velocity);
+
 	spriteSheet.Update();
-
-    // @todo: replace with stats
-    float tmpSpeed = 1;
-
-    if (AEInputCheckCurr(AEVK_LEFT))
-        position.x -= tmpSpeed;
-    if (AEInputCheckCurr(AEVK_RIGHT))
-        position.x += tmpSpeed;
 }
 
 void Player::Render()
@@ -29,4 +29,19 @@ void Player::Render()
 
     AEGfxSetTransform(transform.m);
 	spriteSheet.Render();
+}
+
+void Player::HorizontalMovement()
+{
+    // @todo: replace with stats
+    float tmpSpeed = 1;
+
+    if (AEInputCheckCurr(AEVK_LEFT))
+        position.x -= tmpSpeed;
+    if (AEInputCheckCurr(AEVK_RIGHT))
+        position.x += tmpSpeed;
+}
+
+void Player::VerticalMovement()
+{
 }

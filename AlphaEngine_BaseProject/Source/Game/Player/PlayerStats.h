@@ -8,6 +8,7 @@
 class PlayerStats
 {
 public:
+    // ===== Stats from JSON =====
     // === Horizontal Movement ===
     float maxSpeed;
     float airStrafeMaxSpeed;
@@ -16,39 +17,42 @@ public:
     float stopTime;
     float turnTime;
     float inAirTurnTime;
-    float moveAcceleration;
-    float stopAcceleration;
-    float turnAcceleration;
-    float inAirTurnAcceleration;
 
     float dashCooldown;
     float dashTime;
 
-    // ===== Gravity =====
+    // ===== Vertical movement =====
     float maxFallVelocity;
-    float gravity;
-    float fallingGravity;
     float wallSlideMaxSpeedTime;
 
     float wallSlideMaxSpeed;
-    float wallSlideAcceleration;
 
     // ===== Jumping =====
     float maxJumpHeight;
     float minJumpHeight;
-    float minJumpTime;
     float timeToMaxHeight;
     float timeToGround;
-    float jumpVelocity;
     float gravityMultiplierWhenRelease;
     float coyoteTime;
     float jumpBuffer;
     float wallJumpHorizontalVelocity;
     float wallJumpHorizontalVelocityTowardsWall;
 
-    // ===== Others =====
+    // ===== Stats derived from JSON data =====
+    // === Horizontal movement ===
+    float moveAcceleration;
+    float stopAcceleration;
+    float turnAcceleration;
+    float inAirTurnAcceleration;
 
-    float invincibilityDuration;
+    // === Vertical movement ===
+    float gravity;
+    float fallingGravity;
+
+    float wallSlideAcceleration;
+
+    float jumpVelocity;
+    float minJumpTime;
 
     /**
      * @brief       Loads the player stats from a file

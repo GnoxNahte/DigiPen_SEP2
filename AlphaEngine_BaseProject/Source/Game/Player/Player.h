@@ -11,7 +11,9 @@
 class Player
 {
 public:
+    // === Movement ===
     AEVec2 position;
+    AEVec2 velocity;
 
     Player();
     ~Player();
@@ -21,6 +23,10 @@ private:
     PlayerStats stats;
     Sprite spriteSheet;
 
+
     AEMtx33 transform;
+
+    void HorizontalMovement();
+    void VerticalMovement();
 };
 

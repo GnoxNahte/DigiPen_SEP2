@@ -1,41 +1,62 @@
 #include <fstream>
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
-#include <rapidjson/stringbuffer.h>
-#include "rapidjson/writer.h"
 #include <iostream>
 #include <string>
+#include <rapidjson/document.h>
 
 #include "PlayerStats.h"
+#include "../../Utils/FileHelper.h"
 
 PlayerStats::PlayerStats(std::string file)
 {
-	std::cout << "loading file: " << file << std::endl;
+	rapidjson::Document doc;
+	bool success = FileHelper::TryReadJsonFile(file, doc);
 
-	// rapidjson docs: https://rapidjson.org/md_doc_stream.html#iostreamWrapper
-	std::ifstream ifs("config/player-stats.json");
-	if (!ifs.is_open())
+	if (!success)
 	{
-		std::cout << "Failed to open file: " << file << std::endl;
+		// @todo - Ethan: Handle error?
 		return;
 	}
 
-	/*std::string str;
-	while (ifs >> str)
-	{
-		std::cout << str << ' ';
-	}*/
+	// ===== Convert JSON to class initialisation =====
+	maxSpeed = doc["maxSpeed"].GetFloat();
+	airStrafeMaxSpeed = doc["airStrafeMaxSpeed"].GetFloat();
 
-	rapidjson::IStreamWrapper isw(ifs);
+	maxSpeedTime = doc["maxSpeedTime"].GetFloat();
+	stopTime = doc["stopTime"].GetFloat();
+	turnTime = doc["turnTime"].GetFloat();
+	inAirTurnTime = doc["inAirTurnTime"].GetFloat();
 
-	rapidjson::Document d;
-	d.ParseStream(isw);
+	dashCooldown = doc["dashCooldown"].GetFloat();
+	dashTime = doc["dashTime"].GetFloat();
 
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	d.Accept(writer);
+	maxFallVelocity = doc["maxFallVelocity"].GetFloat();
+	wallSlideMaxSpeedTime = doc["wallSlideMaxSpeedTime"].GetFloat();
 
-	std::cout << buffer.GetString() << std::endl;
+	wallSlideMaxSpeed = doc["wallSlideMaxSpeed"].GetFloat();
+
+	maxJumpHeight = doc["maxJumpHeight"].GetFloat();
+	minJumpHeight = doc["minJumpHeight"].GetFloat();
+	timeToMaxHeight = doc["timeToMaxHeight"].GetFloat();
+	timeToGround = doc["timeToGround"].GetFloat();
+	gravityMultiplierWhenRelease = doc["gravityMultiplierWhenRelease"].GetFloat();
+	coyoteTime = doc["coyoteTime"].GetFloat();
+	jumpBuffer = doc["jumpBuffer"].GetFloat();
+	wallJumpHorizontalVelocity = doc["wallJumpHorizontalVelocity"].GetFloat();
+	wallJumpHorizontalVelocityTowardsWall = doc["wallJumpHorizontalVelocityTowardsWall"].GetFloat();
+
+	// ===== Pre-calculate other variables =====
+	moveAcceleration = maxSpeed / maxSpeedTime;
+	stopAcceleration = -maxSpeed / stopTime;
+	turnAcceleration = 2.f * -maxSpeed / turnTime;
+	inAirTurnAcceleration = 2.f * -airStrafeMaxSpeed / inAirTurnTime;
+
+	gravity = (-2 * maxJumpHeight) / (timeToMaxHeight * timeToMaxHeight);
+	fallingGravity = (-2 * maxJumpHeight) / (timeToGround * timeToGround);
+
+	wallSlideAcceleration = wallSlideMaxSpeed / wallSlideMaxSpeedTime;
+
+	jumpVelocity = 2.f * maxJumpHeight / timeToMaxHeight;
+	minJumpTime = 2.f * minJumpHeight / jumpVelocity;
 }
 
 void PlayerStats::WatchFile(std::string file)
