@@ -1,4 +1,8 @@
 {
   "framesPerRow": [8,8,8,6,6,6],
-  "framesPerSecond": 12
+  "framesPerSecond": 12,
+  "pivot": {
+    "x": 0.5,
+    "y": 0.35
+  }
 }

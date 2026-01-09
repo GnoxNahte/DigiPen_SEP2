@@ -6,7 +6,19 @@
 #include "PlayerStats.h"
 #include "../../Utils/FileHelper.h"
 
-PlayerStats::PlayerStats(std::string file)
+PlayerStats::PlayerStats(std::string file) : file(file)
+{
+	LoadFileData();
+}
+
+void PlayerStats::WatchFile()
+{
+#if _DEBUG
+	std::cout << "watching file: " << file << std::endl;
+#endif
+}
+
+void PlayerStats::LoadFileData()
 {
 	rapidjson::Document doc;
 	bool success = FileHelper::TryReadJsonFile(file, doc);
@@ -55,11 +67,6 @@ PlayerStats::PlayerStats(std::string file)
 
 	wallSlideAcceleration = wallSlideMaxSpeed / wallSlideMaxSpeedTime;
 
-	jumpVelocity = 2.f * maxJumpHeight / timeToMaxHeight;
+	jumpVelocity = (2.f * maxJumpHeight) / timeToMaxHeight;
 	minJumpTime = 2.f * minJumpHeight / jumpVelocity;
-}
-
-void PlayerStats::WatchFile(std::string file)
-{
-	std::cout << "watching file: " << file << std::endl;
 }

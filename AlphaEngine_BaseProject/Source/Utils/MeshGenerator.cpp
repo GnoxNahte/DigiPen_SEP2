@@ -10,14 +10,14 @@ AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, float uvW
 
 	AEGfxTriAdd(
 		-hw, -hh, color, 0.0f, uvHeight, // Bottom left
-		hw, -hh, color, uvWidth, uvHeight, // Bottom right
-		-hw, hh, color, 0.0f, 0.0f  // Top left
+		 hw, -hh, color, uvWidth, uvHeight, // Bottom right
+		-hw,  hh, color, 0.0f, 0.0f  // Top left
 	);
 
 	AEGfxTriAdd(
-		hw, -hh, color, uvWidth, uvHeight, // Bottom right
-		hw, hh, color, uvWidth, 0.f, // Top right
-		-hw, hh, color, 0.0f, 0.0f  // Top left
+		 hw, -hh, color, uvWidth, uvHeight, // Bottom right
+		 hw,  hh, color, uvWidth, 0.f, // Top right
+		-hw,  hh, color, 0.0f, 0.0f  // Top left
 	);
 
 	return AEGfxMeshEnd();

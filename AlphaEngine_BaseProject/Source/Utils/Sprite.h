@@ -20,8 +20,8 @@ public:
 	 *			Set the transform before calling this
 	 */
 	void Render();
+	const SpriteMetadata metadata;
 private:
-	SpriteMetadata metadata;
 
 	// === Data derived from metadata ===
 	float timePerFrame;

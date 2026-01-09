@@ -8,9 +8,10 @@
 SpriteMetadata::SpriteMetadata(std::string originalFile)
 {
 	originalFile += ".meta";
+
 	rapidjson::Document document;
-	bool readSuccess = FileHelper::TryReadJsonFile(originalFile, document);
-	if (!readSuccess)
+	bool success = FileHelper::TryReadJsonFile(originalFile, document);
+	if (!success)
 	{
 		// todo? - handle error
 		return;
@@ -18,15 +19,16 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 
 	// JSON member names
 	static const char *mframesPerRow = "framesPerRow",
-					  *mframesPerSecond = "framesPerSecond";
+					  *mframesPerSecond = "framesPerSecond",
+					  *mPivot = "pivot";
 
-	if (!document.HasMember(mframesPerRow) || !document.HasMember(mframesPerSecond))
+	if (!document.HasMember(mframesPerRow) || !document.HasMember(mframesPerSecond)|| !document.HasMember(mPivot))
 	{
 		std::cout << "File (" << originalFile << ") missing metadata members." << std::endl;
 		return;
 	}
 
-	rapidjson::GenericArray framesPerRowArr = document[mframesPerRow].GetArray();
+	auto framesPerRowArr = document[mframesPerRow].GetArray();
 
 	this->rows = framesPerRowArr.Size();
 	this->cols = 0; // Will set later in for loop
@@ -44,5 +46,9 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 	}
 	
 	this->framesPerSecond = document[mframesPerSecond].GetFloat();
+
+	auto pivotObject = document[mPivot].GetObject();
+	pivot.x = pivotObject["x"].GetFloat();
+	pivot.y = pivotObject["y"].GetFloat();
 }
 

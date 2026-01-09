@@ -1,6 +1,4 @@
 #include <iostream>
-#include <fstream>
-
 
 #include "Sprite.h"
 #include "MeshGenerator.h"
@@ -19,7 +17,7 @@ Sprite::Sprite(std::string file)
 	animTimer = 0.f;
 	spriteIndex = 0;
 
-	mesh = MeshGenerator::GetRectMesh(50.f, 50.f, uvWidth, uvHeight);
+	mesh = MeshGenerator::GetRectMesh(1.f, 1.f, uvWidth, uvHeight);
 	texture = AEGfxTextureLoad(file.c_str());
 }
 
@@ -40,4 +38,6 @@ void Sprite::Render()
 {
 	AEGfxTextureSet(texture, uvOffset.x, uvOffset.y);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
+	AEGfxMeshDraw(mesh, AE_GFX_MDM_LINES_STRIP);
+	AEGfxTextureSet(nullptr, 0, 0); // Reset
 }

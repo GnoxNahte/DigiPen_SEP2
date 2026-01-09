@@ -54,14 +54,17 @@ public:
     float jumpVelocity;
     float minJumpTime;
 
+    const std::string file;
+
     /**
      * @brief       Loads the player stats from a file
      * @param file  File to load the stats from
      */
     PlayerStats(std::string file);
 
+    void LoadFileData();
 private:
     // @todo: Ethan - File watcher
-    void WatchFile(std::string file);
+    void WatchFile();
 };
 

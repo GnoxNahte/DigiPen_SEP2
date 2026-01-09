@@ -5,6 +5,7 @@
 #include "AEEngine.h"
 
 #include "Game/GameScene.h"
+#include "Utils/QuickGraphics.h"
 
 // ---------------------------------------------------------------------------
 // main
@@ -37,6 +38,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(1.0f);
 
+	// === Init systems ===
+	QuickGraphics::Init();
+
+	// === Game loop ===
 	GameScene scene;
 	
 	// Game Loop
@@ -46,12 +51,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		AESysFrameStart();
 
 		AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
+		//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
 
 		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-		AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
-		AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
-		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-		AEGfxSetTransparency(1.0f);
+
 		// Basic way to trigger exiting the application
 		// when ESCAPE is hit or when the window is closed
 		if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())

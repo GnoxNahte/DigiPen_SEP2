@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <AEVec2.h>
 
 /**
  * @brief	Stores metadata for each sprite. 
@@ -20,6 +21,7 @@ struct SpriteMetadata
 	 * @brief Frames per second or sample rate
 	 */
 	float framesPerSecond;
+	AEVec2 pivot;
 
 	// === Derived from JSON data. NOT in JSON ===
 	int rows, cols;

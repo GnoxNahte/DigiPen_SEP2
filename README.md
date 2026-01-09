@@ -5,7 +5,9 @@ Game: @todo Add game name
 Course: csd1451f25-b
 Year: 1
 
-Git URL: https://github.com/GnoxNahte/DigiPen_SEP2
+Links:
+- Git URL: https://github.com/GnoxNahte/DigiPen_SEP2
+- Documentation: https://gnoxnahte.github.io/DigiPen_SEP2/
 
 ### Controls
 @todo Add controls
@@ -15,5 +17,6 @@ Git URL: https://github.com/GnoxNahte/DigiPen_SEP2
 #### People
 @todo Add email and names
 
-#### Projects
+#### Third-party Libraries
+- Alpha Engine
 - RapidJSON: [Website](https://rapidjson.org/), [GitHub](https://github.com/Tencent/rapidjson/)

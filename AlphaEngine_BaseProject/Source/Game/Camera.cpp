@@ -8,16 +8,19 @@ Camera::Camera(float xPos, float yPos, float _scale) :
 	position(xPos, yPos), 
 	offset(0, 0), 
 	follow(nullptr),
-	smoothTime(0.75f)
+	smoothTime(0.2f)
 {
 	Camera::scale = _scale;
 }
 
-void Camera::SetFollow(AEVec2* f, float xOffset, float yOffset)
+void Camera::SetFollow(AEVec2* f, float xOffset, float yOffset, bool setPosToFollow)
 {
 	this->follow = f;
 	this->offset.x = xOffset;
 	this->offset.y = yOffset;
+
+	if (setPosToFollow)
+		position = *f;
 }
 
 void Camera::Update()

@@ -60,6 +60,9 @@
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Utils\QuickGraphics.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Easing.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\QuickGraphics.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>

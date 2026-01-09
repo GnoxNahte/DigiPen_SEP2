@@ -18,7 +18,7 @@ public:
 
 	Camera(float xPos, float yPos, float _scale);
 
-	void SetFollow(AEVec2* follow, float xOffset, float yOffset);
+	void SetFollow(AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 
 	void Update();
 	// No Render() as nothing to render
