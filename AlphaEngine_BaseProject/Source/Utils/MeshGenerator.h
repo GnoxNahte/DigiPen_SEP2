@@ -5,14 +5,14 @@ class MeshGenerator
 {
 public:
 	/**
-	 * @brief		  Generate a rectangle mesh. Pivot is in the center. Bottom-left UV = (0, 0), Top-right UV = (uvWidth, uvHeight)
-	 *				  For spritesheet
-	 * @param width   Width of rectangle
-	 * @param height  Rectangle height
-	 * @param uvWidth Top UV
-	 * @param uvWidth Right UV
-	 * @param color	  Vertex color
-	 * @return		  Mesh pointer
+	 * @brief		   Generate a rectangle mesh. Pivot is in the center. Bottom-left UV = (0, 0), Top-right UV = (uvWidth, uvHeight)
+	 *				   For spritesheet
+	 * @param width    Width of rectangle
+	 * @param height   Rectangle height
+	 * @param uvWidth  Right UV. Left UV = 0
+	 * @param uvHeight Bottom UV. Top UV = 0
+	 * @param color	   Vertex color
+	 * @return		   Mesh pointer
 	 */
 	static AEGfxVertexList* GetRectMesh(float width, float height, float uvWidth, float uvHeight, u32 color = 0xFFFFFFFF);
 	
@@ -32,6 +32,16 @@ public:
 	 * @return		Mesh pointer
 	 */
 	static AEGfxVertexList* GetSquareMesh(float width, u32 color = 0xFFFFFFFF);
+	
+	/**
+	 * @brief		Generate a square mesh. Pivot is in the center
+	 * @param width Width and height of rectangle
+	 * @param uvWidth  Right UV. Left UV = 0
+	 * @param uvHeight Bottom UV. Top UV = 0
+	 * @param color	Vertex color
+	 * @return		Mesh pointer
+	 */
+	static AEGfxVertexList* GetSquareMesh(float width, float uvWidth, float uvHeight, u32 color = 0xFFFFFFFF);
 
 	/**
 	 * @brief		Generate a square mesh. Pivot is in the center

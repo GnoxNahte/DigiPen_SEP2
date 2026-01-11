@@ -38,6 +38,6 @@ void Sprite::Render()
 {
 	AEGfxTextureSet(texture, uvOffset.x, uvOffset.y);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
-	AEGfxMeshDraw(mesh, AE_GFX_MDM_LINES_STRIP);
-	AEGfxTextureSet(nullptr, 0, 0); // Reset
+	//AEGfxMeshDraw(mesh, AE_GFX_MDM_LINES_STRIP);
+	//AEGfxTextureSet(nullptr, 0, 0); // Reset
 }

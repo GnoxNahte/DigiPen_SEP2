@@ -104,6 +104,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Game\Camera.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
     <ClCompile Include="Source\Game\GameScene.cpp" />
     <ClCompile Include="Source\Game\Player\Player.cpp" />
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp" />
@@ -113,9 +115,12 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
+    <ClCompile Include="Source\Utils\Vec2Int.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Camera.h" />
+    <ClInclude Include="Source\Game\Environment\MapGrid.h" />
+    <ClInclude Include="Source\Game\Environment\MapTile.h" />
     <ClInclude Include="Source\Game\GameScene.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
@@ -125,6 +130,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Utils\QuickGraphics.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
     <ClInclude Include="Source\Utils\SpriteMetadata.h" />
+    <ClInclude Include="Source\Utils\Vec2Int.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

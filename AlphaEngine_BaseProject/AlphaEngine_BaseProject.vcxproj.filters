@@ -31,6 +31,12 @@
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Game\Environment">
+      <UniqueIdentifier>{bbed2e90-df0a-4c6c-ac9a-0d571b4cf90f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Environment">
+      <UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -63,6 +69,15 @@
     <ClCompile Include="Source\Utils\QuickGraphics.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Vec2Int.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -94,6 +109,15 @@
     </ClInclude>
     <ClInclude Include="Source\Utils\QuickGraphics.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapGrid.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapTile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Vec2Int.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
