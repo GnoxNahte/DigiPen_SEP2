@@ -1,5 +1,6 @@
 #pragma once
 #include "Player/Player.h"
+#include "enemy/Enemy1.h"
 #include "Camera.h"
 
 // Temp - stores in game data
@@ -13,6 +14,7 @@ public:
 	void Render();
 private:
 	Player player;
+	std::array<Enemy1, 5> enemies;
 	Camera camera;
 };
 
