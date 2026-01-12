@@ -2,8 +2,9 @@
 #include "../Camera.h"
 #include <iostream>
 #include <limits>
+#include "../../Utils/QuickGraphics.h"
 
-Player::Player(MapGrid* map, float initialPosX, float initialPosY) : 
+Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
     stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png"),
     facingDirection()
 {
@@ -37,9 +38,7 @@ void Player::Update()
     AEVec2Add(&nextPosition, &position, &displacement);
     map->HandleCollision(position, nextPosition, stats.playerSize);
 
-    std::cout << position.x << std::endl;
-
-	sprite.Update();
+    sprite.Update();
 
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))
@@ -50,7 +49,12 @@ void Player::Render()
 {
     // Local scale. For flipping sprite's facing direction
     AEMtx33Scale(&transform, facingDirection.x > 0 ? 2.f : -2.f, 2.f);
-    AEMtx33TransApply(&transform, &transform, position.x, position.y - (0.5f - sprite.metadata.pivot.y));
+    AEMtx33TransApply(
+        &transform,
+        &transform,
+        position.x - (0.5f - sprite.metadata.pivot.x),
+        position.y - (0.5f - sprite.metadata.pivot.y)
+    );
     // Camera scale. Scales translation too.
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
     AEGfxSetTransform(transform.m);
@@ -59,7 +63,11 @@ void Player::Render()
     if (map->CheckCollision(position))
         AEGfxSetColorToMultiply(1, 0, 0, 1);
 
-	sprite.Render();
+    sprite.Render();
+
+    //AEVec2 
+    QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+
     // todo - delete, test only
     AEGfxSetColorToMultiply(1, 1, 1, 1);
 }
@@ -71,7 +79,7 @@ void Player::UpdateInput()
         - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
     inputDirection.y = (f32)((AEInputCheckCurr(AEVK_UP) || AEInputCheckCurr(AEVK_W))
         - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
-    
+
     isJumpHeld = AEInputCheckCurr(AEVK_SPACE);
     if (AEInputCheckTriggered(AEVK_SPACE))
         AEGetTime(&lastJumpPressed);
@@ -83,13 +91,13 @@ void Player::UpdateInput()
 void Player::HorizontalMovement()
 {
     float dt = (float)AEFrameRateControllerGetFrameTime();
-    
+
     /*if (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A))
         --xInput;
     if (AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
         ++xInput;*/
 
-    // Slow player down when not pressing any buttons
+        // Slow player down when not pressing any buttons
     if (inputDirection.x == 0)
     {
         float velocityChange = stats.stopAcceleration * dt;
@@ -141,9 +149,9 @@ void Player::HandleLanding()
     else
     {
         // @todo: (Ethan) - Play sound
-        if (!isGrounded) 
+        if (!isGrounded)
 
-        lastJumpTime = std::numeric_limits<f64>::lowest();;
+            lastJumpTime = std::numeric_limits<f64>::lowest();;
         AEGetTime(&lastGroundedTime);
     }
 }
@@ -157,7 +165,7 @@ void Player::HandleGravity()
     if (velocity.y > 0.f)
     {
         // @todo: (Ethan) - Hit handle ceiling
-        
+
         float velocityChange = stats.gravity * dt;
         f64 currTime = AEGetTime(nullptr);
         if (!isJumpHeld && (currTime - lastJumpTime) > stats.minJumpTime)

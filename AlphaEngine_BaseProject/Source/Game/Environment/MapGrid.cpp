@@ -4,13 +4,13 @@
 #include "../../Utils/MeshGenerator.h"
 #include "../Camera.h"
 
-MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows * cols)
+MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 {
 	mesh = MeshGenerator::GetSquareMesh(1.f, 1.f / MapTile::typeCount, 1.f);
 	tilemapTexture = AEGfxTextureLoad("Assets/Tmp/tmp-tilemap.png");
 
 	tileCount = size.x * size.y;
-	
+
 	// for (int i = 0; i < uvCoordsSize; ++i)
 	// {
 	// 	uvCoords[i].x = 1.f / uvCoordsSize;
@@ -18,17 +18,17 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows * cols)
 	// }
 
 	// Just for testing
-	for (int y = 0; y < size.y; y+=4)
+	for (int y = 0; y < size.y; y += 4)
 	{
 		for (int x = 0; x < size.y; x++)
 		{
-			tiles[y * size.x + x].type = x % 2 ? MapTile::Type::GROUND : MapTile::Type::NONE;
+			tiles[y * size.x + x].type = x % 3 ? MapTile::Type::NONE : MapTile::Type::GROUND;
 		}
 	}
 }
 
 /* Calling it's own construct is tmp only. todo proper file read */
-MapGrid::MapGrid(const char* ) : MapGrid(10, 10) 
+MapGrid::MapGrid(const char*) : MapGrid(10, 10)
 {
 }
 
@@ -36,14 +36,14 @@ void MapGrid::Render()
 {
 	AEMtx33 transform;
 
-	for (int y = 0; y  < size.y; y ++)
+	for (int y = 0; y < size.y; y++)
 	{
 		for (int x = 0; x < size.y; x++)
 		{
 			// @todo - optimise this. init transform in the start and offset by a fixed amt (grid size * camera scale)? Then reset after for loop for x coords is done?
 			// 
 			// Local scale. For flipping sprite's facing direction
-			AEMtx33Trans(&transform, (float)x, (float)y);
+			AEMtx33Trans(&transform, (float)(x + 0.5f), (float)(y + 0.5f));
 			// Camera scale. Scales translation too.
 			AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 			AEGfxSetTransform(transform.m);
@@ -84,6 +84,7 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, const AEVec2& nextPositio
 	// This also assumes currentPosition is empty
 	// todo? proper line drawing? https://www.redblobgames.com/grids/line-drawing/
 
+	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
 
 	if (currentPosition.x < 0 || currentPosition.x > size.x ||
 		currentPosition.y < 0 || currentPosition.x > size.y ||
@@ -94,55 +95,43 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, const AEVec2& nextPositio
 		currentPosition = nextPosition;
 		return;
 	}
+
 	// abit messy
-	int currX, currY, nextX, nextY;
+	AEVec2 topLeft, bottomRight;
+	topLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x,
+	topLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y,
+	bottomRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x,
+	bottomRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
 
-	WorldToGridCoords(currentPosition, currX, currY);
-	WorldToGridCoords(nextPosition, nextX, nextY);
-
-	/*float left, right, top, bottom;
-
-	if (nextPosition.x > currentPosition.x)
-	{
-		left = currX - colliderSize.x;
-		right = nextX + colliderSize.x;
-	}
-	else
-	{
-		right = currX + colliderSize.x;
-		left = nextX - colliderSize.x;
-	}
-
-	if (nextPosition.y > currentPosition.y)
-	{
-		top = currY - colliderSize.y;
-		bottom = nextY + colliderSize.y;
-	}
-	else
-	{
-		bottom = currY + colliderSize.y;
-		top = nextY - colliderSize.y;
-	}*/
+	AEVec2	topRight(bottomRight.x, topLeft.y),
+		bottomLeft(topLeft.x, bottomRight.y);
 
 	// If collide
-	if (CheckCollision(nextPosition) /*|| 
-		CheckCollision(left, top) ||
-		CheckCollision(right, top) ||
-		CheckCollision(left, bottom) ||
-		CheckCollision(right, bottom)*/)
+	if (CheckCollision(topLeft) ||
+		CheckCollision(topRight) ||
+		CheckCollision(bottomLeft) ||
+		CheckCollision(bottomRight))
 	{
-		std::cout << "HIT: ";
+		int nextX, nextY;
+
+		WorldToGridCoords(nextPosition, nextX, nextY);
+		std::cout << "Collide: ";
+		std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
 		if (nextPosition.x > currentPosition.x)
-			currentPosition.x = nextX - colliderSize.x;
+			currentPosition.x = nextX + 1.01f - halfColliderSize.x;
 		else
-			currentPosition.x = nextX + colliderSize.x;
+			currentPosition.x = nextX + halfColliderSize.x;
+		std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
 		/*if (nextPosition.x > currentPosition.x)
 			currentPosition.x = nextX - colliderSize.x;*/
 	}
 	// If doens't collide
 	else
 	{
+		std::cout << "No collide: ";
+		std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
 		currentPosition = nextPosition;
+		std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
 	}
 }
 
@@ -159,6 +148,6 @@ int MapGrid::WorldToIndex(const AEVec2& worldPosition)
 
 inline void MapGrid::WorldToGridCoords(const AEVec2& worldPosition, int& outX, int& outY)
 {
-	outX = (int)floorf(worldPosition.x + 0.5f);
-	outY = (int)floorf(worldPosition.y + 0.5f);
+	outX = (int)floorf(worldPosition.x);
+	outY = (int)floorf(worldPosition.y);
 }
