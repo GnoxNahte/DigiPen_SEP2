@@ -19,5 +19,9 @@
   "jumpBuffer": 0.175,
   "wallJumpHorizontalVelocity": 5.0,
   "wallJumpHorizontalVelocityTowardsWall": 5.0,
-  "invincibilityDuration": 0.1
+  "invincibilityDuration": 0.1,
+  "playerSize": {
+    "x": 0.8,
+    "y": 0.9
+  }
 }

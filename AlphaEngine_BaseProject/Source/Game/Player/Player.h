@@ -4,6 +4,7 @@
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
+#include "../Environment/MapGrid.h"
 
 /**
  * @brief Controllable player class
@@ -15,7 +16,7 @@ public:
     AEVec2 position;
     AEVec2 velocity;
 
-    Player(float initialPosX, float initialPosY);
+    Player(MapGrid* map, float initialPosX, float initialPosY);
     ~Player();
     void Update();
     void Render();
@@ -23,7 +24,6 @@ private:
     PlayerStats stats;
     Sprite sprite;
 
-    float playerHeight;
     AEMtx33 transform;
 
     // === Player Input ===
@@ -36,6 +36,9 @@ private:
     bool isGrounded;
     f64 lastJumpTime;
     f64 lastGroundedTime;
+
+    // === References to other systems ===
+    MapGrid* map;
 
     void UpdateInput();
 

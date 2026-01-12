@@ -1,7 +1,7 @@
 #include "GameScene.h"
 #include "../Utils/QuickGraphics.h"
 
-GameScene::GameScene() : camera(0, 0, 64), player(0, 1), map(10, 10)
+GameScene::GameScene() : camera(0, 0, 64), player(&map, 2, 2), map(10, 10)
 {
 	camera.SetFollow(&player.position, 0, 50, true);
 }

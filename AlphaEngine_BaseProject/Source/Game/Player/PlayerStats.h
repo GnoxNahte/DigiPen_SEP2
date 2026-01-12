@@ -38,6 +38,9 @@ public:
     float wallJumpHorizontalVelocity;
     float wallJumpHorizontalVelocityTowardsWall;
 
+    // === Others ===
+    AEVec2 playerSize;
+
     // ===== Stats derived from JSON data =====
     // === Horizontal movement ===
     float moveAcceleration;

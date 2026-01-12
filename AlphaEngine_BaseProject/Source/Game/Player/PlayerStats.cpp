@@ -56,6 +56,10 @@ void PlayerStats::LoadFileData()
 	wallJumpHorizontalVelocity = doc["wallJumpHorizontalVelocity"].GetFloat();
 	wallJumpHorizontalVelocityTowardsWall = doc["wallJumpHorizontalVelocityTowardsWall"].GetFloat();
 
+	auto playerHeightArr = doc["playerSize"].GetObj();;
+	playerSize.x = playerHeightArr["x"].GetFloat();
+	playerSize.y = playerHeightArr["y"].GetFloat();
+
 	// ===== Pre-calculate other variables =====
 	moveAcceleration = maxSpeed / maxSpeedTime;
 	stopAcceleration = -maxSpeed / stopTime;

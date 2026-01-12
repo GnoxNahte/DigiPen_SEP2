@@ -3,12 +3,14 @@
 #include <iostream>
 #include <limits>
 
-Player::Player(float initialPosX, float initialPosY) : stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png")
+Player::Player(MapGrid* map, float initialPosX, float initialPosY) : 
+    stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png"),
+    facingDirection()
 {
+    this->map = map;
+
     position.x = initialPosX;
     position.y = initialPosY;
-
-    playerHeight = 70.f;
 
     isGrounded = true;
 }
@@ -28,11 +30,14 @@ void Player::Update()
     // @todo: Ethan - Handle collision
 
     // Update position based on velocity
-    AEVec2 displacement;
+    AEVec2 displacement, nextPosition;
+    // displacement = velcoity * dt
     AEVec2Scale(&displacement, &velocity, (f32)AEFrameRateControllerGetFrameTime());
-    AEVec2Add(&position, &position, &displacement);
+    // nextPosition = position + displacement
+    AEVec2Add(&nextPosition, &position, &displacement);
+    map->HandleCollision(position, nextPosition, stats.playerSize);
 
-    //std::cout << position.y << std::endl;
+    std::cout << position.x << std::endl;
 
 	sprite.Update();
 
@@ -50,7 +55,13 @@ void Player::Render()
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
     AEGfxSetTransform(transform.m);
 
+    // todo - delete, test only
+    if (map->CheckCollision(position))
+        AEGfxSetColorToMultiply(1, 0, 0, 1);
+
 	sprite.Render();
+    // todo - delete, test only
+    AEGfxSetColorToMultiply(1, 1, 1, 1);
 }
 
 void Player::UpdateInput()
