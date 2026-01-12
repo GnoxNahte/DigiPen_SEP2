@@ -69,7 +69,7 @@
     <ClCompile Include="Source\Utils\QuickGraphics.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="enemy1.cpp">
+    <ClCompile Include="Enemy1.cpp">
       <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
   </ItemGroup>
