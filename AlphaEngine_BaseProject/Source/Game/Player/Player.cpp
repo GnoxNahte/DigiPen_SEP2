@@ -24,11 +24,24 @@ void Player::Update()
 {
     UpdateInput();
 
+    // === Handle collision ===
+    AEVec2 tmpPosition;
+    
+    AEVec2Add(&tmpPosition, &position, &stats.groundChecker.position);
+    isGroundCollided = map->CheckBoxCollision(tmpPosition, stats.groundChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.ceilingChecker.position);
+    isCeilingCollided = map->CheckBoxCollision(tmpPosition, stats.ceilingChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.leftWallChecker.position);
+    isLeftWallCollided = map->CheckBoxCollision(tmpPosition, stats.leftWallChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.rightWallChecker.position);
+    isRightWallCollided = map->CheckBoxCollision(tmpPosition, stats.rightWallChecker.size);
+
     // Update velocity
     HorizontalMovement();
     VerticalMovement();
-
-    // @todo: Ethan - Handle collision
 
     // Update position based on velocity
     AEVec2 displacement, nextPosition;
@@ -36,11 +49,9 @@ void Player::Update()
     AEVec2Scale(&displacement, &velocity, (f32)AEFrameRateControllerGetFrameTime());
     // nextPosition = position + displacement
     AEVec2Add(&nextPosition, &position, &displacement);
-    std::cout << position.y << std::endl;
-    map->HandleCollision(position, velocity, nextPosition, stats.playerSize);
+    map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
 
     sprite.Update();
-
 
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))
@@ -61,17 +72,17 @@ void Player::Render()
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
     AEGfxSetTransform(transform.m);
 
-    // todo - delete, test only
-    if (map->CheckCollision(position))
-        AEGfxSetColorToMultiply(1, 0, 0, 1);
-
     sprite.Render();
 
-    //AEVec2 
-    QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
-
-    // todo - delete, test only
-    AEGfxSetColorToMultiply(1, 1, 1, 1);
+    if (AEInputCheckCurr(AEVK_LCTRL))
+    {
+        RenderDebugCollider(stats.groundChecker);
+        RenderDebugCollider(stats.ceilingChecker);
+        RenderDebugCollider(stats.leftWallChecker);
+        RenderDebugCollider(stats.rightWallChecker);
+        QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+    }
+    
 }
 
 void Player::UpdateInput()
@@ -94,12 +105,7 @@ void Player::HorizontalMovement()
 {
     float dt = (float)AEFrameRateControllerGetFrameTime();
 
-    /*if (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A))
-        --xInput;
-    if (AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
-        ++xInput;*/
-
-        // Slow player down when not pressing any buttons
+    // Slow player down when not pressing any buttons
     if (inputDirection.x == 0)
     {
         float velocityChange = stats.stopAcceleration * dt;
@@ -139,7 +145,7 @@ void Player::VerticalMovement()
 
 void Player::HandleLanding()
 {
-    if (!isGrounded || velocity.y > 0.f)
+    if (!isGroundCollided || velocity.y > 0.f)
         return;
 
     // @todo: (Ethan) - One way platform?
@@ -152,8 +158,8 @@ void Player::HandleLanding()
     {
         // @todo: (Ethan) - Play sound
         if (!isGrounded)
-
-            lastJumpTime = std::numeric_limits<f64>::lowest();;
+            lastJumpTime = std::numeric_limits<f64>::lowest();
+        
         AEGetTime(&lastGroundedTime);
     }
 }
@@ -166,23 +172,28 @@ void Player::HandleGravity()
     // If moving up
     if (velocity.y > 0.f)
     {
-        // @todo: (Ethan) - Hit handle ceiling
+        if (isCeilingCollided)
+            velocity.y = 0;
+        else
+        {
+            float velocityChange = stats.gravity * dt;
+            f64 currTime = AEGetTime(nullptr);
+            if (!isJumpHeld && (currTime - lastJumpTime) > stats.minJumpTime)
+                velocityChange *= stats.gravityMultiplierWhenRelease;
 
-        float velocityChange = stats.gravity * dt;
-        f64 currTime = AEGetTime(nullptr);
-        if (!isJumpHeld && (currTime - lastJumpTime) > stats.minJumpTime)
-            velocityChange *= stats.gravityMultiplierWhenRelease;
-
-        velocity.y += velocityChange;
+            velocity.y += velocityChange;
+        }
     }
     // If on ground
-    // @todo: (Ethan) - Collision ground check
-    else if (position.y <= 0.f)
+    else if (isGroundCollided)
     {
         isGrounded = true;
         velocity.y = 0.f;
-
-        position.y = 0.f; // TODO - remove this
+    }
+    // todo - wall sliding
+    else if (isLeftWallCollided || isRightWallCollided)
+    {
+        velocity.y = max(velocity.y + stats.wallSlideAcceleration * dt, stats.wallSlideMaxSpeed);
     }
     // Else playing falling
     else
@@ -197,15 +208,40 @@ void Player::HandleJump()
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
     bool isCoyoteTimeActive = (currTime - lastGroundedTime) < stats.coyoteTime;
-    bool ifJump = isJumpBufferActive && isCoyoteTimeActive;
+    //bool ifJump = isJumpBufferActive && isCoyoteTimeActive;
 
-    if (ifJump)
+    if (!isJumpBufferActive)
+        return;
+
+    if (isLeftWallCollided || isRightWallCollided)
     {
-        constexpr f64 lowestFloat = std::numeric_limits<f64>::lowest();
-        velocity.y = stats.jumpVelocity;
-        lastJumpPressed = lowestFloat; // Prevent jump buffer from triggering again
-        lastGroundedTime = lowestFloat;
-        lastJumpTime = currTime;
-        ifReleaseJumpAfterJumping = false;
+        PerformJump();
+
+        bool isInputTowardsWall = (inputDirection.x < 0 && isLeftWallCollided) ||
+                                  (inputDirection.x > 0 && isRightWallCollided);
+
+        velocity.x = (isLeftWallCollided ? 1.f : -1.f) * (isInputTowardsWall ? stats.wallJumpHorizontalVelocityTowardsWall : stats.wallJumpHorizontalVelocity);
     }
+    else if (isCoyoteTimeActive)
+    {
+        PerformJump();
+    }
+
+}
+
+void Player::PerformJump()
+{
+    constexpr f64 lowestFloat = std::numeric_limits<f64>::lowest();
+    velocity.y = stats.jumpVelocity;
+    lastJumpPressed = lowestFloat; // Prevent jump buffer from triggering again
+    lastGroundedTime = lowestFloat;
+    AEGetTime(&lastJumpTime);
+    ifReleaseJumpAfterJumping = false;
+}
+
+void Player::RenderDebugCollider(Box& box)
+{
+    AEVec2 boxPos = position;
+    AEVec2Add(&boxPos, &boxPos, &box.position);
+    QuickGraphics::DrawRect(boxPos, box.size);
 }

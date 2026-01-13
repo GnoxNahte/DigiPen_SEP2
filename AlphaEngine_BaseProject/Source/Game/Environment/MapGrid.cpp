@@ -17,13 +17,39 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 	// 	uvCoords[i].y = 1.f;
 	// }
 
-	// Just for testing
+	// === Just for testing ===
+	for (int y = 0; y < size.y; y += 3)
+	{
+		for (int x = 0; x < size.x / 2; x++)
+		{
+			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
+		}
+	}
+
 	for (int y = 0; y < size.y; y += 4)
 	{
-		for (int x = 0; x < size.y; x++)
+		for (int x = size.x / 2; x < size.x; x++)
 		{
-			tiles[y * size.x + x].type = x % 4 ? MapTile::Type::GROUND : MapTile::Type::NONE;
+			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
 		}
+	}
+
+	// Set horizontal borders 
+	for (int x = 0; x < size.x; ++x)
+	{
+		tiles[0				* size.x + x].type = MapTile::Type::GROUND;
+		tiles[1				* size.x + x].type = MapTile::Type::GROUND;
+		tiles[(size.y - 1)  * size.x + x].type = MapTile::Type::GROUND;
+		tiles[(size.y - 2)  * size.x + x].type = MapTile::Type::GROUND;
+	}
+
+	// Set vertical borders 
+	for (int y = 0; y < size.y; ++y)
+	{
+		tiles[y * size.x + 0].type = MapTile::Type::GROUND;
+		tiles[y * size.x + 1].type = MapTile::Type::GROUND;
+		tiles[y * size.x + size.x - 1].type = MapTile::Type::GROUND;
+		tiles[y * size.x + size.x - 2].type = MapTile::Type::GROUND;
 	}
 }
 
@@ -40,7 +66,11 @@ void MapGrid::Render()
 	{
 		for (int x = 0; x < size.y; x++)
 		{
-			// @todo - optimise this. init transform in the start and offset by a fixed amt (grid size * camera scale)? Then reset after for loop for x coords is done?
+			const MapTile* tile = GetTile(x, y);
+			if (tile == nullptr)
+				continue;
+
+			// @todo - optimise this?. init transform in the start and offset by a fixed amt (grid size * camera scale)? Then reset after for loop for x coords is done?
 			// 
 			// Local scale. For flipping sprite's facing direction
 			AEMtx33Trans(&transform, (float)(x + 0.5f), (float)(y + 0.5f));
@@ -48,8 +78,7 @@ void MapGrid::Render()
 			AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 			AEGfxSetTransform(transform.m);
 
-			const MapTile& tile = *GetTile(x, y);
-			AEGfxTextureSet(tilemapTexture, (int)tile.type * (1.f / MapTile::typeCount), 1.f);
+			AEGfxTextureSet(tilemapTexture, (int)tile->type * (1.f / MapTile::typeCount), 1.f);
 			AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
 		}
 	}
@@ -64,7 +93,7 @@ inline const MapTile* MapGrid::GetTile(int x, int y)
 	return &(tiles[y * size.x + x]);
 }
 
-bool MapGrid::CheckCollision(float x, float y)
+bool MapGrid::CheckPointCollision(float x, float y)
 {
 	int index = WorldToIndex(x, y);
 	if (index < 0)
@@ -73,12 +102,28 @@ bool MapGrid::CheckCollision(float x, float y)
 	return tiles[index].type != MapTile::Type::NONE;
 }
 
-bool MapGrid::CheckCollision(const AEVec2& worldPosition)
+bool MapGrid::CheckPointCollision(const AEVec2& worldPosition)
 {
-	return CheckCollision(worldPosition.x, worldPosition.y);
+	return CheckPointCollision(worldPosition.x, worldPosition.y);
 }
 
-void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
+bool MapGrid::CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize)
+{
+	AEVec2 halfBoxSize(boxSize.x * 0.5f, boxSize.y * 0.5f);
+
+	// Check with 
+	return	CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+			CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y + halfBoxSize.y) ||
+			CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+			CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y + halfBoxSize.y);
+}
+
+bool MapGrid::CheckBoxCollision(const Box& box)
+{
+	return CheckBoxCollision(box.position, box.size);
+}
+
+void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
 	// This is a simple and quick collision handler. Should not use when (currentPosition - nextPosition).length > 1 tiles OR colliderSize > 1 tile
 	// This also assumes currentPosition is empty
@@ -114,21 +159,15 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const A
 	bool isMovingRight = nextPosition.x > currentPosition.x;
 	bool isMovingUp = nextPosition.y > currentPosition.y;
 
-	if (AEInputCheckCurr(AEVK_V) && velocity.x > 0.f)
-	{
-		std::cout << "AAAAAAAAAAAAAAAAAAAAAA";
-	}
-
 	float clearance = 0.2f;
 
 	// Moving right
 	if (isMovingRight)
 	{
 		float colliderPos = nextPosition.x + halfColliderSize.x;
-		if (CheckCollision(colliderPos, topRight.y - clearance) || CheckCollision(colliderPos, bottomLeft.y + clearance))
+		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
 		{
 			currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
-			velocity.x = 0;
 		}
 		else
 			currentPosition.x = nextPosition.x;
@@ -137,10 +176,9 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const A
 	else
 	{
 		float colliderPos = nextPosition.x - halfColliderSize.x;
-		if (CheckCollision(colliderPos, topRight.y - clearance) || CheckCollision(colliderPos, bottomLeft.y + clearance))
+		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
 		{
 			currentPosition.x = nextGridX + halfColliderSize.x;
-			velocity.x = 0;
 		}
 		else
 			currentPosition.x = nextPosition.x;
@@ -150,10 +188,9 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const A
 	if (isMovingUp)
 	{
 		float colliderPos = nextPosition.y + halfColliderSize.y;
-		if (CheckCollision(topRight.x - clearance, colliderPos) || CheckCollision(bottomLeft.x + clearance, colliderPos))
+		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
 		{
 			currentPosition.y = nextGridY + 1.01f - halfColliderSize.y;
-			velocity.y = 0;
 		}
 		else
 			currentPosition.y = nextPosition.y;
@@ -162,10 +199,9 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const A
 	else
 	{
 		float colliderPos = nextPosition.y - halfColliderSize.y;
-		if (CheckCollision(topRight.x - clearance, colliderPos) || CheckCollision(bottomLeft.x + clearance, colliderPos))
+		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
 		{
 			currentPosition.y = nextGridY + halfColliderSize.y;
-			velocity.y = 0;
 		}
 		else
 			currentPosition.y = nextPosition.y;
@@ -173,10 +209,10 @@ void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const A
 
 
 	// // If collide
-	// if (CheckCollision(bottomLeft) ||
-	// 	CheckCollision(topRight) ||
-	// 	CheckCollision(bottomLeft) ||
-	// 	CheckCollision(topRight))
+	// if (CheckPointCollision(bottomLeft) ||
+	// 	CheckPointCollision(topRight) ||
+	// 	CheckPointCollision(bottomLeft) ||
+	// 	CheckPointCollision(topRight))
 	// {
 	// 	std::cout << "Collide: ";
 	// 	std::cout << currentPosition.x << ", " << currentPosition.y << " > ";

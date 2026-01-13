@@ -1,8 +1,11 @@
 #include "GameScene.h"
 #include "../Utils/QuickGraphics.h"
 #include "../Utils/AEExtras.h"
+#include <iostream>
+#include <limits>
+#include <iomanip>
 
-GameScene::GameScene() : camera(0, 0, 64), player(&map, 1, 2), map(10, 10)
+GameScene::GameScene() : camera(0, 0, 64), player(&map, 2, 4), map(30, 30)
 {
 	camera.SetFollow(&player.position, 0, 50, true);
 }
@@ -15,6 +18,7 @@ void GameScene::Update()
 {
 	camera.Update();
 	player.Update();
+	std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 }
 
 void GameScene::Render()
@@ -31,4 +35,6 @@ void GameScene::Render()
 	AEExtras::GetCursorWorldPosition(worldMousePos, camera.position);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 1, 1, 1, 1);
+	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
+	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 1, 1, 1, 1);
 }

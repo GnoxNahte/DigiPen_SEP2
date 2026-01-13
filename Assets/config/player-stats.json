@@ -7,9 +7,9 @@
   "inAirTurnTime": 0.1,
   "dashCooldown": 0.5,
   "dashTime": 0.2,
-  "maxFallVelocity": -15.0,
+  "maxFallVelocity": -20.0,
   "wallSlideMaxSpeedTime": 0.5,
-  "wallSlideMaxSpeed": -2,
+  "wallSlideMaxSpeed": -10.0,
   "maxJumpHeight": 2.75,
   "minJumpHeight": 0.25,
   "timeToMaxHeight": 0.35,
@@ -17,11 +17,27 @@
   "gravityMultiplierWhenRelease": 2.5,
   "coyoteTime": 0.175,
   "jumpBuffer": 0.175,
-  "wallJumpHorizontalVelocity": 5.0,
-  "wallJumpHorizontalVelocityTowardsWall": 5.0,
+  "wallJumpHorizontalVelocity": 15.0,
+  "wallJumpHorizontalVelocityTowardsWall": 8.0,
   "invincibilityDuration": 0.1,
+  "groundChecker": {
+    "position": { "x": 0.0, "y": -0.4 },
+    "size": { "x": 0.4, "y": 0.3 }
+  },
+  "ceilingChecker": {
+    "position": { "x": 0.0, "y": 0.5 },
+    "size": { "x": 0.3, "y": 0.3 }
+  },
+  "leftWallChecker": {
+    "position": { "x": -0.4, "y": 0.0 },
+    "size": { "x": 0.3, "y": 0.8 }
+  },
+  "rightWallChecker": {
+    "position": { "x": 0.4, "y": 0.0 },
+    "size": { "x": 0.3, "y": 0.8 }
+  },
   "playerSize": {
-    "x": 0.8,
+    "x": 0.5,
     "y": 0.9
   }
 }

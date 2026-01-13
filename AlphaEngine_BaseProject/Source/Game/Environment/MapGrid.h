@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
-#include <array>
 #include "AEEngine.h"
 
 #include "MapTile.h"
 #include "../../Utils/Vec2Int.h"
+#include "../../Utils/Box.h"
 
 class MapGrid
 {
@@ -22,21 +22,24 @@ public:
 	 * @param y World y position
 	 * @return	Returns there's a tile in that position
 	 */
-	bool CheckCollision(float x, float y);
+	bool CheckPointCollision(float x, float y);
 
 	/**
 	 * @brief				Check if that world position is occupied by a tile
 	 * @param worldPosition World position to check
 	 * @return				Returns there's a tile in that position
 	 */
-	bool CheckCollision(const AEVec2& worldPosition);
+	bool CheckPointCollision(const AEVec2& worldPosition);
+
+	bool CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize);
+	bool CheckBoxCollision(const Box& box);
 
 	/**
 	 * @brief					Handles collision. Tries to move to nextPosition. If cannot, will try to move to the space closest to it
 	 * @param currentPosition	Reference to current position. Changes this
 	 * @param nextPosition		Next desired position
 	 */
-	void HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size);
+	void HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size);
 private:
 	std::vector<MapTile> tiles;
 	Vec2Int size;

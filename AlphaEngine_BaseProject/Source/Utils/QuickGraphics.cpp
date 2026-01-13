@@ -26,7 +26,6 @@ void QuickGraphics::DrawRect(float posX, float posY, float scaleX, float scaleY,
     // Reset
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
-    
 }
 
 void QuickGraphics::PrintText(const char* str, f32 x, f32 y, f32 scale, f32 red, f32 green, f32 blue, f32 alpha)
