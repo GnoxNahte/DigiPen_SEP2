@@ -36,9 +36,11 @@ void Player::Update()
     AEVec2Scale(&displacement, &velocity, (f32)AEFrameRateControllerGetFrameTime());
     // nextPosition = position + displacement
     AEVec2Add(&nextPosition, &position, &displacement);
-    map->HandleCollision(position, nextPosition, stats.playerSize);
+    std::cout << position.y << std::endl;
+    map->HandleCollision(position, velocity, nextPosition, stats.playerSize);
 
     sprite.Update();
+
 
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))

@@ -22,7 +22,7 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 	{
 		for (int x = 0; x < size.y; x++)
 		{
-			tiles[y * size.x + x].type = x % 3 ? MapTile::Type::NONE : MapTile::Type::GROUND;
+			tiles[y * size.x + x].type = x % 4 ? MapTile::Type::GROUND : MapTile::Type::NONE;
 		}
 	}
 }
@@ -64,75 +64,149 @@ inline const MapTile* MapGrid::GetTile(int x, int y)
 	return &(tiles[y * size.x + x]);
 }
 
-bool MapGrid::CheckCollision(int x, int y)
+bool MapGrid::CheckCollision(float x, float y)
 {
-	return (*GetTile(x, y)).type != MapTile::Type::NONE;
-}
-
-bool MapGrid::CheckCollision(const AEVec2& worldPosition)
-{
-	int index = WorldToIndex(worldPosition);
+	int index = WorldToIndex(x, y);
 	if (index < 0)
 		return false;
 
 	return tiles[index].type != MapTile::Type::NONE;
 }
 
-void MapGrid::HandleCollision(AEVec2& currentPosition, const AEVec2& nextPosition, const AEVec2& colliderSize)
+bool MapGrid::CheckCollision(const AEVec2& worldPosition)
+{
+	return CheckCollision(worldPosition.x, worldPosition.y);
+}
+
+void MapGrid::HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
 	// This is a simple and quick collision handler. Should not use when (currentPosition - nextPosition).length > 1 tiles OR colliderSize > 1 tile
 	// This also assumes currentPosition is empty
 	// todo? proper line drawing? https://www.redblobgames.com/grids/line-drawing/
+	// tood? do proper collision? https://www.youtube.com/watch?v=8JJ-4JgR7Dg
 
 	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
 
-	if (currentPosition.x < 0 || currentPosition.x > size.x ||
-		currentPosition.y < 0 || currentPosition.x > size.y ||
-		nextPosition.x < 0 || nextPosition.x > size.x ||
-		nextPosition.y < 0 || nextPosition.x > size.y)
+	// ===== Check if in map =====
+	/*if (currentPosition.x < 0)
+		currentPosition.x = halfColliderSize.x;
+	else if (currentPosition.x > size.x - halfColliderSize.x)
+		currentPosition.x = size.x - halfColliderSize.x;
+
+	if (currentPosition.y < 0)
+		currentPosition.y = halfColliderSize.y;
+	else if (currentPosition.y > size.y - halfColliderSize.y)
+		currentPosition.y = size.y - halfColliderSize.y;*/
+
+	// ===== Get top left & bottom right (from current and next position) =====
+	AEVec2 bottomLeft, topRight;
+	bottomLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x,
+	bottomLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y,
+	topRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x,
+	topRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
+
+	//AEVec2	topRight(topRight.x, bottomLeft.y),
+	//	bottomLeft(bottomLeft.x, topRight.y);
+
+	int nextGridX, nextGridY;
+	WorldToGridCoords(nextPosition, nextGridX, nextGridY);
+
+	bool isMovingRight = nextPosition.x > currentPosition.x;
+	bool isMovingUp = nextPosition.y > currentPosition.y;
+
+	if (AEInputCheckCurr(AEVK_V) && velocity.x > 0.f)
 	{
-		// todo handle properly
-		currentPosition = nextPosition;
-		return;
+		std::cout << "AAAAAAAAAAAAAAAAAAAAAA";
 	}
 
-	// abit messy
-	AEVec2 topLeft, bottomRight;
-	topLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x,
-	topLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y,
-	bottomRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x,
-	bottomRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
+	float clearance = 0.2f;
 
-	AEVec2	topRight(bottomRight.x, topLeft.y),
-		bottomLeft(topLeft.x, bottomRight.y);
-
-	// If collide
-	if (CheckCollision(topLeft) ||
-		CheckCollision(topRight) ||
-		CheckCollision(bottomLeft) ||
-		CheckCollision(bottomRight))
+	// Moving right
+	if (isMovingRight)
 	{
-		int nextX, nextY;
-
-		WorldToGridCoords(nextPosition, nextX, nextY);
-		std::cout << "Collide: ";
-		std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
-		if (nextPosition.x > currentPosition.x)
-			currentPosition.x = nextX + 1.01f - halfColliderSize.x;
+		float colliderPos = nextPosition.x + halfColliderSize.x;
+		if (CheckCollision(colliderPos, topRight.y - clearance) || CheckCollision(colliderPos, bottomLeft.y + clearance))
+		{
+			currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
+			velocity.x = 0;
+		}
 		else
-			currentPosition.x = nextX + halfColliderSize.x;
-		std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
-		/*if (nextPosition.x > currentPosition.x)
-			currentPosition.x = nextX - colliderSize.x;*/
+			currentPosition.x = nextPosition.x;
 	}
-	// If doens't collide
+	// Moving left
 	else
 	{
-		std::cout << "No collide: ";
-		std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
-		currentPosition = nextPosition;
-		std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
+		float colliderPos = nextPosition.x - halfColliderSize.x;
+		if (CheckCollision(colliderPos, topRight.y - clearance) || CheckCollision(colliderPos, bottomLeft.y + clearance))
+		{
+			currentPosition.x = nextGridX + halfColliderSize.x;
+			velocity.x = 0;
+		}
+		else
+			currentPosition.x = nextPosition.x;
 	}
+
+	// Moving up
+	if (isMovingUp)
+	{
+		float colliderPos = nextPosition.y + halfColliderSize.y;
+		if (CheckCollision(topRight.x - clearance, colliderPos) || CheckCollision(bottomLeft.x + clearance, colliderPos))
+		{
+			currentPosition.y = nextGridY + 1.01f - halfColliderSize.y;
+			velocity.y = 0;
+		}
+		else
+			currentPosition.y = nextPosition.y;
+	}
+	// Moving down
+	else
+	{
+		float colliderPos = nextPosition.y - halfColliderSize.y;
+		if (CheckCollision(topRight.x - clearance, colliderPos) || CheckCollision(bottomLeft.x + clearance, colliderPos))
+		{
+			currentPosition.y = nextGridY + halfColliderSize.y;
+			velocity.y = 0;
+		}
+		else
+			currentPosition.y = nextPosition.y;
+	}
+
+
+	// // If collide
+	// if (CheckCollision(bottomLeft) ||
+	// 	CheckCollision(topRight) ||
+	// 	CheckCollision(bottomLeft) ||
+	// 	CheckCollision(topRight))
+	// {
+	// 	std::cout << "Collide: ";
+	// 	std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
+	// 	if (nextPosition.x > currentPosition.x)
+	// 		currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
+	// 	else
+	// 		currentPosition.x = nextGridX + halfColliderSize.x;
+	// 	std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
+	// 	/*if (nextPosition.x > currentPosition.x)
+	// 		currentPosition.x = nextX - colliderSize.x;*/
+	// }
+	// // If doens't collide
+	// else
+	// {
+	// 	std::cout << "No collide: ";
+	// 	std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
+	// 	currentPosition = nextPosition;
+	// 	std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
+	// }
+}
+
+int MapGrid::WorldToIndex(float x, float y)
+{
+	int gridX, gridY;
+	WorldToGridCoords(x, y, gridX, gridY);
+
+	if (gridX < 0 || gridX >= size.x || gridY < 0 || gridY >= size.y)
+		return -1;
+
+	return gridY * size.x + gridX;
 }
 
 int MapGrid::WorldToIndex(const AEVec2& worldPosition)
@@ -150,4 +224,10 @@ inline void MapGrid::WorldToGridCoords(const AEVec2& worldPosition, int& outX, i
 {
 	outX = (int)floorf(worldPosition.x);
 	outY = (int)floorf(worldPosition.y);
+}
+
+inline void MapGrid::WorldToGridCoords(float worldX, float worldY, int& outX, int& outY)
+{
+	outX = (int)floorf(worldX);
+	outY = (int)floorf(worldY);
 }

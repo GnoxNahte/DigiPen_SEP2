@@ -79,7 +79,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utils\AEExtras.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -123,7 +123,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\AEExtras.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

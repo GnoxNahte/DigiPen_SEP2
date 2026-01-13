@@ -17,12 +17,12 @@ public:
 	inline const MapTile* GetTile(int x, int y);
 
 	/**
-	 * @brief	Check if the tile is occupied by a tile
-	 * @param x Grid x coordinate
-	 * @param y Grid y coordinate
-	 * @return	Returns if it's occupied by a tile
+	 * @brief	Check if that world position is occupied by a tile
+	 * @param x World x position
+	 * @param y World y position
+	 * @return	Returns there's a tile in that position
 	 */
-	bool CheckCollision(int x, int y);
+	bool CheckCollision(float x, float y);
 
 	/**
 	 * @brief				Check if that world position is occupied by a tile
@@ -36,7 +36,7 @@ public:
 	 * @param currentPosition	Reference to current position. Changes this
 	 * @param nextPosition		Next desired position
 	 */
-	void HandleCollision(AEVec2& currentPosition, const AEVec2& nextPosition, const AEVec2& size);
+	void HandleCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size);
 private:
 	std::vector<MapTile> tiles;
 	Vec2Int size;
@@ -53,6 +53,8 @@ private:
 	 */
 	int WorldToIndex(const AEVec2& worldPosition);
 
+	int WorldToIndex(float x, float y);
+
 	/**
 	 * @brief				Converts from world position to index for tiles array 
 	 * @param worldPosition World position
@@ -60,5 +62,6 @@ private:
 	 * @param outY			Outputs grid y coordinates
 	 */
 	inline void WorldToGridCoords(const AEVec2& worldPosition, int& outX, int& outY);
+	inline void WorldToGridCoords(float worldX, float worldY, int& outX, int& outY);
 };
 
