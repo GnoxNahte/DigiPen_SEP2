@@ -1,11 +1,17 @@
 // ---------------------------------------------------------------------------
 // includes
-
+#pragma once
+#pragma message("Including SaveSystem.h from: " __FILE__)
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 
 #include "Game/GameScene.h"
 #include "Utils/QuickGraphics.h"
+#include "../Saves/SaveSystem.h"
+#include "../Saves/SaveData.h"
+
+
+
 
 // ---------------------------------------------------------------------------
 // main
@@ -40,6 +46,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// === Init systems ===
 	QuickGraphics::Init();
+	SaveSystem::Init();
+
+	// Test save
+	SaveData d;
+	d.levelId = 2;
+	d.hp = 88;
+	d.totalSeconds = 12.34f;
+	SaveSystem::Save(0, d);
+
 
 	// === Game loop ===
 	GameScene scene;
