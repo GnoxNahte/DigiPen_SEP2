@@ -34,13 +34,13 @@ public:
 	void RemoveTimer(const std::string& name);
 
 	// Returns a const reference to the list of timers.
-	inline const std::vector<Timer>& GetTimers() const { return timers; }
+	const std::vector<Timer>& GetTimers() const { return timers; }
 
 	// Checks for completed timers and handles them.
 	void CheckTimerCompletion();
 
 	// Returns the count of active timers.
-	inline int GetActiveTimerCount() const { return activeTimerCount; }
+	int GetActiveTimerCount() const { return activeTimerCount; }
 
 	// Resets the active timer count to zero.
 	void ResetActiveTimerCount() { activeTimerCount = 0; }
