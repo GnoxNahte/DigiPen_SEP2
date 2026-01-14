@@ -48,12 +48,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	QuickGraphics::Init();
 	SaveSystem::Init();
 
-	// Test save
-	SaveData d;
-	d.levelId = 2;
-	d.hp = 88;
-	d.totalSeconds = 12.34f;
-	SaveSystem::Save(0, d);
+	//// Test save
+	//SaveData d;
+	//d.levelId = 2;
+	//d.hp = 88;
+	//d.totalSeconds = 12.34f;
+	//SaveSystem::Save(0, d);
 
 
 	// === Game loop ===
