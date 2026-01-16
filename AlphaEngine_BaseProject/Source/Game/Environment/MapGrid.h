@@ -5,6 +5,7 @@
 #include "MapTile.h"
 #include "../../Utils/Vec2Int.h"
 #include "../../Utils/Box.h"
+#include "../Camera.h"
 
 class MapGrid
 {
@@ -12,7 +13,7 @@ public:
 	MapGrid(int rows, int cols);
 	MapGrid(const char* file);
 
-	void Render();
+	void Render(const Camera& camera);
 
 	inline const MapTile* GetTile(int x, int y);
 
@@ -59,12 +60,19 @@ private:
 	int WorldToIndex(float x, float y);
 
 	/**
-	 * @brief				Converts from world position to index for tiles array 
+	 * @brief				Converts from world position to index for tiles array. Unclamped out grid
 	 * @param worldPosition World position
 	 * @param outX			Outputs grid x coordinates
 	 * @param outY			Outputs grid y coordinates
 	 */
 	inline void WorldToGridCoords(const AEVec2& worldPosition, int& outX, int& outY);
-	inline void WorldToGridCoords(float worldX, float worldY, int& outX, int& outY);
+
+	/**
+	 * @brief				Converts from world position to index for tiles array, clamped grid to [0, size]
+	 * @param worldPosition World position
+	 * @param outX			Outputs grid x coordinates
+	 * @param outY			Outputs grid y coordinates
+	 */
+	inline void WorldToGridCoordsClamped(const AEVec2& worldPosition, int& outX, int& outY);
 };
 

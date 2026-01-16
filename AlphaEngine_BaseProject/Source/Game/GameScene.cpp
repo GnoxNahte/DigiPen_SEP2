@@ -28,7 +28,7 @@ void GameScene::Render()
 	//QuickGraphics::DrawRect(0.f, -1.5f, 10.f, 0.5f, 0x11FFFFFF);
 	//QuickGraphics::DrawRect(0.f, 0.f, 1.f, 1.f, 0xFFFF0000);
 
-	map.Render();
+	map.Render(camera);
 	player.Render();
 
 	AEVec2 worldMousePos;

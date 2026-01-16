@@ -3,6 +3,7 @@
 #include "MapGrid.h"
 #include "../../Utils/MeshGenerator.h"
 #include "../Camera.h"
+#include "../../Utils/AEExtras.h"
 
 MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 {
@@ -58,23 +59,39 @@ MapGrid::MapGrid(const char*) : MapGrid(10, 10)
 {
 }
 
-void MapGrid::Render()
+void MapGrid::Render(const Camera& camera)
 {
 	AEMtx33 transform;
 
-	for (int y = 0; y < size.y; y++)
+	// Get corners of screen in world space
+	AEVec2 topLeft, botRight;
+	AEExtras::ScreenToWorldPosition(AEVec2(0, 0), camera.position, topLeft);
+	AEExtras::ScreenToWorldPosition(AEVec2((f32)AEGfxGetWindowWidth(), (f32)AEGfxGetWindowHeight()), camera.position, botRight);
+
+	// Offset 
+	botRight.x += 1.f;
+	botRight.y += 1.f;
+
+	// Get grid coordinates for tiles that only the camera can see
+	int minX, minY, maxX, maxY;
+	WorldToGridCoordsClamped(topLeft, minX, minY);
+	WorldToGridCoordsClamped(botRight, maxX, maxY);
+
+	//std::cout << std::setw(3) << minX << std::setw(3) << minY << std::setw(3) << maxX << std::setw(3) << maxY << "   ";
+
+	// Loop through each row, only showing tiles that the camera can see
+	for (int y = minY; y < maxY; y++)
 	{
-		for (int x = 0; x < size.y; x++)
+		// Loop through each column only showing tiles that the camera can see
+		for (int x = minX; x < maxX; x++)
 		{
 			const MapTile* tile = GetTile(x, y);
 			if (tile == nullptr)
 				continue;
 
-			// @todo - optimise this?. init transform in the start and offset by a fixed amt (grid size * camera scale)? Then reset after for loop for x coords is done?
-			// 
 			// Local scale. For flipping sprite's facing direction
 			AEMtx33Trans(&transform, (float)(x + 0.5f), (float)(y + 0.5f));
-			// Camera scale. Scales translation too.
+			// Camera scale. Scales previous translation too.
 			AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 			AEGfxSetTransform(transform.m);
 
@@ -237,7 +254,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 int MapGrid::WorldToIndex(float x, float y)
 {
 	int gridX, gridY;
-	WorldToGridCoords(x, y, gridX, gridY);
+	WorldToGridCoords(AEVec2(x, y), gridX, gridY);
 
 	if (gridX < 0 || gridX >= size.x || gridY < 0 || gridY >= size.y)
 		return -1;
@@ -262,8 +279,8 @@ inline void MapGrid::WorldToGridCoords(const AEVec2& worldPosition, int& outX, i
 	outY = (int)floorf(worldPosition.y);
 }
 
-inline void MapGrid::WorldToGridCoords(float worldX, float worldY, int& outX, int& outY)
+inline void MapGrid::WorldToGridCoordsClamped(const AEVec2& worldPosition, int& outX, int& outY)
 {
-	outX = (int)floorf(worldX);
-	outY = (int)floorf(worldY);
+	outX = (int)AEClamp(floorf(worldPosition.x), 1, (float)size.x - 1);
+	outY = (int)AEClamp(floorf(worldPosition.y), 1, (float)size.y - 1);
 }
