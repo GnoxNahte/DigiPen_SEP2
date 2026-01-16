@@ -16,8 +16,5 @@ private:
 	Player player;
 	Camera camera;
 	MapGrid map;
-
-	// Todo - delete. tmp text rendering
-	s8 font;
 };
 

@@ -1,6 +1,5 @@
 #pragma once
 #include "AEEngine.h"
-#include "Player/Player.h"
 
 class Camera
 {
@@ -21,5 +20,4 @@ public:
 	void SetFollow(AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 
 	void Update();
-	// No Render() as nothing to render
 };

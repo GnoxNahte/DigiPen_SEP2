@@ -11,7 +11,7 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 	tilemapTexture = AEGfxTextureLoad("Assets/Tmp/tmp-tilemap.png");
 
 	tileCount = size.x * size.y;
-
+	 
 	// for (int i = 0; i < uvCoordsSize; ++i)
 	// {
 	// 	uvCoords[i].x = 1.f / uvCoordsSize;
@@ -143,8 +143,7 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
 	// This is a simple and quick collision handler. Should not use when (currentPosition - nextPosition).length > 1 tiles OR colliderSize > 1 tile
-	// This also assumes currentPosition is empty
-	// todo? proper line drawing? https://www.redblobgames.com/grids/line-drawing/
+	// todo? proper line drawing (continuous collision)? https://www.redblobgames.com/grids/line-drawing/
 	// tood? do proper collision? https://www.youtube.com/watch?v=8JJ-4JgR7Dg
 
 	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
@@ -223,32 +222,6 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 		else
 			currentPosition.y = nextPosition.y;
 	}
-
-
-	// // If collide
-	// if (CheckPointCollision(bottomLeft) ||
-	// 	CheckPointCollision(topRight) ||
-	// 	CheckPointCollision(bottomLeft) ||
-	// 	CheckPointCollision(topRight))
-	// {
-	// 	std::cout << "Collide: ";
-	// 	std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
-	// 	if (nextPosition.x > currentPosition.x)
-	// 		currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
-	// 	else
-	// 		currentPosition.x = nextGridX + halfColliderSize.x;
-	// 	std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
-	// 	/*if (nextPosition.x > currentPosition.x)
-	// 		currentPosition.x = nextX - colliderSize.x;*/
-	// }
-	// // If doens't collide
-	// else
-	// {
-	// 	std::cout << "No collide: ";
-	// 	std::cout << currentPosition.x << ", " << currentPosition.y << " > ";
-	// 	currentPosition = nextPosition;
-	// 	std::cout << currentPosition.x << ", " << currentPosition.y << "\n";
-	// }
 }
 
 int MapGrid::WorldToIndex(float x, float y)

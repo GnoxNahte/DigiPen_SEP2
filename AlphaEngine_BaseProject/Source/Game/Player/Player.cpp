@@ -6,14 +6,15 @@
 
 Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
     stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png"),
-    facingDirection()
+    facingDirection{},
+    inputDirection{},
+    transform{},
+    velocity{}
 {
     this->map = map;
 
     position.x = initialPosX;
     position.y = initialPosY;
-
-    isGrounded = true;
 }
 
 Player::~Player()
@@ -45,9 +46,7 @@ void Player::Update()
 
     // Update position based on velocity
     AEVec2 displacement, nextPosition;
-    // displacement = velcoity * dt
     AEVec2Scale(&displacement, &velocity, (f32)AEFrameRateControllerGetFrameTime());
-    // nextPosition = position + displacement
     AEVec2Add(&nextPosition, &position, &displacement);
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
 
@@ -82,16 +81,15 @@ void Player::Render()
         RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
-    
 }
 
 void Player::UpdateInput()
 {
     // Consider shift all keybinds to another file. Then maybe can allow custom keybinding 
     inputDirection.x = (f32)((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
-        - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
+                     - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
     inputDirection.y = (f32)((AEInputCheckCurr(AEVK_UP) || AEInputCheckCurr(AEVK_W))
-        - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
+                     - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
 
     isJumpHeld = AEInputCheckCurr(AEVK_SPACE);
     if (AEInputCheckTriggered(AEVK_SPACE))
@@ -123,18 +121,17 @@ void Player::HorizontalMovement()
         {
             velocity.x += stats.moveAcceleration * inputDirection.x * dt;
 
-            float maxSpeed = isGrounded ? stats.maxSpeed : stats.airStrafeMaxSpeed;
+            float maxSpeed = isGroundCollided ? stats.maxSpeed : stats.airStrafeMaxSpeed;
             velocity.x = AEClamp(velocity.x, -maxSpeed, maxSpeed);
         }
         // Moving in opposite direction
         else
         {
-            float acceleration = isGrounded ? stats.turnAcceleration : stats.inAirTurnAcceleration;
+            float acceleration = isGroundCollided ? stats.turnAcceleration : stats.inAirTurnAcceleration;
             velocity.x -= acceleration * inputDirection.x * dt;
         }
     }
 }
-
 
 void Player::VerticalMovement()
 {
@@ -157,7 +154,7 @@ void Player::HandleLanding()
     else
     {
         // @todo: (Ethan) - Play sound
-        if (!isGrounded)
+        if (!isGroundCollided)
             lastJumpTime = std::numeric_limits<f64>::lowest();
         
         AEGetTime(&lastGroundedTime);
@@ -167,7 +164,6 @@ void Player::HandleLanding()
 void Player::HandleGravity()
 {
     float dt = (float)AEFrameRateControllerGetFrameTime();
-    isGrounded = false;
 
     // If moving up
     if (velocity.y > 0.f)
@@ -177,8 +173,7 @@ void Player::HandleGravity()
         else
         {
             float velocityChange = stats.gravity * dt;
-            f64 currTime = AEGetTime(nullptr);
-            if (!isJumpHeld && (currTime - lastJumpTime) > stats.minJumpTime)
+            if (!isJumpHeld && (AEGetTime(nullptr) - lastJumpTime) > stats.minJumpTime)
                 velocityChange *= stats.gravityMultiplierWhenRelease;
 
             velocity.y += velocityChange;
@@ -187,10 +182,9 @@ void Player::HandleGravity()
     // If on ground
     else if (isGroundCollided)
     {
-        isGrounded = true;
         velocity.y = 0.f;
     }
-    // todo - wall sliding
+    // If wall sliding
     else if (isLeftWallCollided || isRightWallCollided)
     {
         velocity.y = max(velocity.y + stats.wallSlideAcceleration * dt, stats.wallSlideMaxSpeed);
@@ -226,7 +220,6 @@ void Player::HandleJump()
     {
         PerformJump();
     }
-
 }
 
 void Player::PerformJump()

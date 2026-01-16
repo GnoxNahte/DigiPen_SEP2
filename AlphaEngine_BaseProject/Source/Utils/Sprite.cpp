@@ -29,6 +29,7 @@ void Sprite::Update()
 
 		spriteIndex = (spriteIndex + 1) % metadata.cols;
 		uvOffset.x = spriteIndex * uvWidth;
+		uvOffset.y = 1 * uvHeight;
 	}
 
 	animTimer += (float)AEFrameRateControllerGetFrameTime();

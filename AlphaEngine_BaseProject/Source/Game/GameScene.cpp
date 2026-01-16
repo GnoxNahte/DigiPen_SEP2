@@ -18,7 +18,7 @@ void GameScene::Update()
 {
 	camera.Update();
 	player.Update();
-	std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
+	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 }
 
 void GameScene::Render()

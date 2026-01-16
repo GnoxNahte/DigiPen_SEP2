@@ -17,10 +17,15 @@ struct SpriteMetadata
 	 *		  In JSON, it should be a int[]
 	 */
 	std::vector<int> framesPerRow;
+
 	/**
 	 * @brief Frames per second or sample rate
 	 */
 	float framesPerSecond;
+
+	/**
+	 * @brief Pivot position for all frames. Range: 0..1
+	 */
 	AEVec2 pivot;
 
 	// === Derived from JSON data. NOT in JSON ===

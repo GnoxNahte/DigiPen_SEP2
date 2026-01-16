@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
@@ -30,21 +29,20 @@ private:
 
     // === Player Input ===
     AEVec2 inputDirection;
-    bool isJumpHeld;
-    f64 lastJumpPressed;
-    bool ifReleaseJumpAfterJumping;
+    bool isJumpHeld = false;
+    f64 lastJumpPressed = -1.f;
+    bool ifReleaseJumpAfterJumping = true;
 
     // === Movement data ===
     AEVec2 facingDirection;
-    bool isGrounded;
-    f64 lastJumpTime;
-    f64 lastGroundedTime;
+    f64 lastJumpTime = -1.f;
+    f64 lastGroundedTime = -1.f;
     
     // === Collision ===
-    bool isGroundCollided;
-    bool isCeilingCollided;
-    bool isLeftWallCollided;
-    bool isRightWallCollided;
+    bool isGroundCollided = false;
+    bool isCeilingCollided = false;
+    bool isLeftWallCollided = false;
+    bool isRightWallCollided = false;
 
     // === References to other systems ===
     MapGrid* map;
