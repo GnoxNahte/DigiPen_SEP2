@@ -10,12 +10,15 @@ public:
 
 	AEVec2 offset;
 	AEVec2* follow;
+
+	AEVec2 minBounds;
+	AEVec2 maxBounds;
 	AEVec2 deadzoneRange; // @todo
 
-	AEVec2 speed;
+	AEVec2 velocity;
 	float smoothTime;
 
-	Camera(float xPos, float yPos, float _scale);
+	Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale);
 
 	void SetFollow(AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 

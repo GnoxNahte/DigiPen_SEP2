@@ -1,11 +1,11 @@
 #include "GameScene.h"
 #include "../Utils/QuickGraphics.h"
 #include "../Utils/AEExtras.h"
-#include <iostream>
-#include <limits>
-#include <iomanip>
 
-GameScene::GameScene() : camera(0, 0, 64), player(&map, 2, 4), map(30, 30)
+GameScene::GameScene() : 
+	player(&map, 2, 4), 
+	map(50, 50),
+	camera({ 1,1 }, { 49, 49 }, 64)
 {
 	camera.SetFollow(&player.position, 0, 50, true);
 }

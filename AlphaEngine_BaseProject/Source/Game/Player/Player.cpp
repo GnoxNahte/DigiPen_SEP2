@@ -60,7 +60,9 @@ void Player::Update()
 void Player::Render()
 {
     // Local scale. For flipping sprite's facing direction
-    AEMtx33Scale(&transform, facingDirection.x > 0 ? 2.f : -2.f, 2.f);
+    bool ifFaceRight = (velocity.x != 0.f) ? (velocity.x > 0) : (facingDirection.x > 0);
+    AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f);
+    //AEMtx33Scale(&transform, facingDirection.x > 0 ? 2.f : -2.f, 2.f);
     AEMtx33TransApply(
         &transform,
         &transform,
@@ -184,15 +186,27 @@ void Player::HandleGravity()
     {
         velocity.y = 0.f;
     }
-    // If wall sliding
-    else if (isLeftWallCollided || isRightWallCollided)
-    {
-        velocity.y = max(velocity.y + stats.wallSlideAcceleration * dt, stats.wallSlideMaxSpeed);
-    }
-    // Else playing falling
+    // Else, falling
     else
     {
-        velocity.y = max(velocity.y + stats.fallingGravity * dt, stats.maxFallVelocity);
+        float acceleration, maxFallSpeed;
+        // Wall slide
+        if (isLeftWallCollided || isRightWallCollided)
+        {
+            acceleration = stats.wallSlideAcceleration;
+            maxFallSpeed = stats.wallSlideMaxSpeed;
+        }
+        // Free fall
+        else
+        {
+            acceleration = stats.fallingGravity;
+            maxFallSpeed = stats.maxFallVelocity;
+        }
+
+        if (!isJumpHeld)
+            acceleration *= stats.gravityMultiplierWhenRelease;
+        
+        velocity.y = max(velocity.y + acceleration * dt, maxFallSpeed);
     }
 }
 
