@@ -33,6 +33,11 @@ AEGfxVertexList* MeshGenerator::GetSquareMesh(float width, u32 color)
 	return GetRectMesh(width, width, 1.0f, 1.0f, color);
 }
 
+AEGfxVertexList* MeshGenerator::GetSquareMesh(float width, float uvWidth, float uvHeight, u32 color)
+{
+	return GetRectMesh(width, width, uvWidth, uvHeight, color);
+}
+
 AEGfxVertexList* MeshGenerator::GetCircleMesh(float radius, u32 color, int vertexCount)
 {
 	if (vertexCount < 3)

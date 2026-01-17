@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "AEEngine.h"
+#include "../../Utils/Box.h"
 
 /**
  * @brief   Contains the Player stats
@@ -37,6 +38,15 @@ public:
     float jumpBuffer;
     float wallJumpHorizontalVelocity;
     float wallJumpHorizontalVelocityTowardsWall;
+
+    // === Colliders ===
+    Box groundChecker;
+    Box ceilingChecker;
+    Box leftWallChecker;
+    Box rightWallChecker;
+
+    // === Others ===
+    AEVec2 playerSize;
 
     // ===== Stats derived from JSON data =====
     // === Horizontal movement ===

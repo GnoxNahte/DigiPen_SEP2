@@ -20,16 +20,34 @@ public:
 	 *			Set the transform before calling this
 	 */
 	void Render();
+
+	void SetState(int nextState, bool ifLock = false);
 	const SpriteMetadata metadata;
 private:
 
 	// === Data derived from metadata ===
-	float timePerFrame;
 	float uvWidth, uvHeight;
 
 	// === Runtime data that will change ===
 	float animTimer;
-	int spriteIndex;
+	/**
+	 * @brief Current state the animation is in. Row index in spritesheet
+	 */
+	int currStateIndex;
+	/**
+	 * @brief Current state the animation is in. Row index in spritesheet
+	 */
+	int nextStateIndex;
+
+	/**
+	 * @brief Current frame the animation is in. Column index in spritesheet
+	 */
+	int frameIndex;
+
+	/**
+	 * @brief Lock current frame until it finishes
+	 */
+	bool ifLockCurrent;
 
 	AEVec2 uvOffset; // Current uv offset
 
