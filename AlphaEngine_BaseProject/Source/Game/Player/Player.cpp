@@ -50,7 +50,7 @@ void Player::Update()
     AEVec2Add(&nextPosition, &position, &displacement);
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
 
-    sprite.Update();
+    UpdateAnimation();
 
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))
@@ -230,6 +230,20 @@ void Player::PerformJump()
     lastGroundedTime = lowestFloat;
     AEGetTime(&lastJumpTime);
     ifReleaseJumpAfterJumping = false;
+
+    //sprite.SetState(JUMP_START, true);
+}
+
+void Player::UpdateAnimation()
+{
+    if (!isGroundCollided)
+        sprite.SetState(JUMP_FALL);
+    else if (fabsf(velocity.x) > 0.f)
+        sprite.SetState(RUN);
+    else
+        sprite.SetState(IDLE);
+
+    sprite.Update();
 }
 
 void Player::RenderDebugCollider(Box& box)

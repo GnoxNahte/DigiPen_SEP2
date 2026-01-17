@@ -12,6 +12,19 @@
 class Player
 {
 public:
+    enum AnimState
+    {
+        RUN_ATTACK,
+        RUN,
+        IDLE,
+        JUMP_START,
+        JUMP_FALL,
+        JUMP_LAND,
+        ATTACK,
+        DEATH,
+        AIMING,
+        HURT
+    };
 
     // === Movement ===
     AEVec2 position;
@@ -55,6 +68,8 @@ private:
     void HandleGravity();
     void HandleJump();
     void PerformJump();
+
+    void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
 };

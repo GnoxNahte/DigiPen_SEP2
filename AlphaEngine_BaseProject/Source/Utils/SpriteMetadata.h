@@ -10,26 +10,41 @@
  */
 struct SpriteMetadata
 {
+	struct StateInfo
+	{
+		// Not using for anything, just for organising
+		std::string name;
+
+		/**
+		 * @brief Number of frames each frame has
+		 */
+		int frameCount;
+
+		/**
+		 * @brief Frame per second / How fast to play the animation
+		 */
+		int sampleRate;
+
+		// Derived from sample rate
+		float timePerFrame;
+
+		StateInfo(std::string name, int frameCount, int sampleRate);
+	};
+
 	// === In JSON ===
 	
 	/**
-	 * @brief State the numbers in frames each row has. 
-	 *		  In JSON, it should be a int[]
+	 * @brief Contains all the info needed, seperated into each state
 	 */
-	std::vector<int> framesPerRow;
-
-	/**
-	 * @brief Frames per second or sample rate
-	 */
-	float framesPerSecond;
+	std::vector<StateInfo> stateInfoRows;
 
 	/**
 	 * @brief Pivot position for all frames. Range: 0..1
 	 */
-	AEVec2 pivot;
+	AEVec2 pivot{ 0.5f, 0.5f };
 
 	// === Derived from JSON data. NOT in JSON ===
-	int rows, cols;
+	int rows = -1, cols = -1;
 
 	SpriteMetadata(std::string file);
 };
