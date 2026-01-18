@@ -53,25 +53,25 @@ void EnemyA::Update(const AEVec2& playerPos)
     AEVec2Scale(&displacement, &velocity, dt);
     AEVec2Add(&position, &position, &displacement);
 
-    // Ground clamp (same convention you used earlier)
+
     if (position.y < 0.f)
         position.y = 0.f;
 
 
-    UpdateAnimation();   // you add this
+    UpdateAnimation();   
     sprite.Update();
 }
 
 void EnemyA::UpdateAnimation()
 {
-    // Death should override everything and usually lock
+    // Death should override 
     if (isDead)
     {
         sprite.SetState(DEATH, true);
         return;
     }
 
-    // Jump (if your enemy can leave ground)
+    // Jump 
     if (!isGrounded)
     {
         sprite.SetState(JUMP);
@@ -94,8 +94,7 @@ void EnemyA::UpdateAnimation()
     }
     else
     {
-        // If you don't have a RUN state, you can just play IDLE1 while moving,
-        // or re-use IDLE2, or add a RUN row to the sheet/meta later.
+
         sprite.SetState(RUN);
         idleSwapTimer = 0.f;
     }
