@@ -1,9 +1,10 @@
 #pragma once
 
-#include <string>
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
+#include "../Environment/MapGrid.h"
+#include "../../Utils/Box.h"
 
 /**
  * @brief Controllable player class
@@ -11,11 +12,25 @@
 class Player
 {
 public:
+    enum AnimState
+    {
+        RUN_ATTACK,
+        RUN,
+        IDLE,
+        JUMP_START,
+        JUMP_FALL,
+        JUMP_LAND,
+        ATTACK,
+        DEATH,
+        AIMING,
+        HURT
+    };
+
     // === Movement ===
     AEVec2 position;
     AEVec2 velocity;
 
-    Player(float initialPosX, float initialPosY);
+    Player(MapGrid* map, float initialPosX, float initialPosY);
     ~Player();
     void Update();
     void Render();
@@ -23,19 +38,27 @@ private:
     PlayerStats stats;
     Sprite sprite;
 
-    float playerHeight;
     AEMtx33 transform;
 
     // === Player Input ===
     AEVec2 inputDirection;
-    bool isJumpHeld;
-    f64 lastJumpPressed;
-    bool ifReleaseJumpAfterJumping;
+    bool isJumpHeld = false;
+    f64 lastJumpPressed = -1.f;
+    bool ifReleaseJumpAfterJumping = true;
 
+    // === Movement data ===
     AEVec2 facingDirection;
-    bool isGrounded;
-    f64 lastJumpTime;
-    f64 lastGroundedTime;
+    f64 lastJumpTime = -1.f;
+    f64 lastGroundedTime = -1.f;
+    
+    // === Collision ===
+    bool isGroundCollided = false;
+    bool isCeilingCollided = false;
+    bool isLeftWallCollided = false;
+    bool isRightWallCollided = false;
+
+    // === References to other systems ===
+    MapGrid* map;
 
     void UpdateInput();
 
@@ -44,5 +67,10 @@ private:
     void HandleLanding();
     void HandleGravity();
     void HandleJump();
+    void PerformJump();
+
+    void UpdateAnimation();
+
+    void RenderDebugCollider(Box& box);
 };
 

@@ -18,37 +18,46 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 	}
 
 	// JSON member names
-	static const char *mframesPerRow = "framesPerRow",
-					  *mframesPerSecond = "framesPerSecond",
+	static const char *mStateInfo = "stateInfo",
 					  *mPivot = "pivot";
 
-	if (!document.HasMember(mframesPerRow) || !document.HasMember(mframesPerSecond)|| !document.HasMember(mPivot))
+	if (!document.HasMember(mStateInfo) || !document.HasMember(mPivot))
 	{
 		std::cout << "File (" << originalFile << ") missing metadata members." << std::endl;
 		return;
 	}
 
-	auto framesPerRowArr = document[mframesPerRow].GetArray();
+	auto stateInfoArr = document[mStateInfo].GetArray();
 
-	this->rows = framesPerRowArr.Size();
-	this->cols = 0; // Will set later in for loop
+	this->rows = stateInfoArr.Size();
 
 	// Copy the rapidjson array result into framesPerRow vector
-	this->framesPerRow.reserve(framesPerRowArr.Size());
-	for (auto& i : framesPerRowArr)
+	this->stateInfoRows.reserve(rows);
+	for (auto& stateInfoObj : stateInfoArr)
 	{
-		int colCount = i.GetInt();
-		this->framesPerRow.emplace_back(colCount);
-
-		// Get max column count
-		if (colCount > this->cols)
-			this->cols = colCount;
+		this->stateInfoRows.emplace_back(
+			stateInfoObj["name"].GetString(),
+			stateInfoObj["frameCount"].GetInt(),
+			stateInfoObj["sampleRate"].GetInt()
+		);
 	}
-	
-	this->framesPerSecond = document[mframesPerSecond].GetFloat();
+
+	// Find the max frame count and assign it to cols
+	for (auto& stateInfo : stateInfoRows)
+	{
+		if (stateInfo.frameCount > cols)
+			cols = stateInfo.frameCount;
+	}
 
 	auto pivotObject = document[mPivot].GetObject();
 	pivot.x = pivotObject["x"].GetFloat();
 	pivot.y = pivotObject["y"].GetFloat();
 }
 
+SpriteMetadata::StateInfo::StateInfo(std::string name, int frameCount, int sampleRate) :
+	name(name),
+	frameCount(frameCount),
+	sampleRate(sampleRate),
+	timePerFrame(1.f / sampleRate)
+{
+}

@@ -18,6 +18,18 @@ void PlayerStats::WatchFile()
 #endif
 }
 
+static void LoadBox(const rapidjson::Document& doc, Box& box, const char* boxName)
+{
+	auto boxObj = doc[boxName].GetObj();
+	auto positionObj = boxObj["position"].GetObj();
+	box.position.x = positionObj["x"].GetFloat();
+	box.position.y = positionObj["y"].GetFloat();
+
+	auto sizeObj = boxObj["size"].GetObj();
+	box.size.x = sizeObj["x"].GetFloat();
+	box.size.y = sizeObj["y"].GetFloat();
+}
+
 void PlayerStats::LoadFileData()
 {
 	rapidjson::Document doc;
@@ -55,6 +67,15 @@ void PlayerStats::LoadFileData()
 	jumpBuffer = doc["jumpBuffer"].GetFloat();
 	wallJumpHorizontalVelocity = doc["wallJumpHorizontalVelocity"].GetFloat();
 	wallJumpHorizontalVelocityTowardsWall = doc["wallJumpHorizontalVelocityTowardsWall"].GetFloat();
+
+	LoadBox(doc, groundChecker, "groundChecker");
+	LoadBox(doc, ceilingChecker, "ceilingChecker");
+	LoadBox(doc, leftWallChecker, "leftWallChecker");
+	LoadBox(doc, rightWallChecker, "rightWallChecker");
+
+	auto playerHeightObj = doc["playerSize"].GetObj();
+	playerSize.x = playerHeightObj["x"].GetFloat();
+	playerSize.y = playerHeightObj["y"].GetFloat();
 
 	// ===== Pre-calculate other variables =====
 	moveAcceleration = maxSpeed / maxSpeedTime;

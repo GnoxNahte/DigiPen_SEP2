@@ -1,11 +1,17 @@
 // ---------------------------------------------------------------------------
 // includes
-
+#pragma once
+#pragma message("Including SaveSystem.h from: " __FILE__)
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 
 #include "Game/GameScene.h"
 #include "Utils/QuickGraphics.h"
+#include "../Saves/SaveSystem.h"
+#include "../Saves/SaveData.h"
+
+
+
 
 // ---------------------------------------------------------------------------
 // main
@@ -24,7 +30,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	int gGameRunning = 1;
 
 	// Using custom window procedure
-	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 60, false, NULL);
+	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, NULL);
 	
 	// Changing the window title
 	AESysSetWindowTitle("GAM 150"); // @todo: change name
@@ -40,6 +46,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// === Init systems ===
 	QuickGraphics::Init();
+	SaveSystem::Init();
+
+	//// Test save
+	//SaveData d;
+	//d.levelId = 2;
+	//d.hp = 88;
+	//d.totalSeconds = 12.34f;
+	//SaveSystem::Save(0, d);
+
 
 	// === Game loop ===
 	GameScene scene;

@@ -28,7 +28,7 @@ namespace Easing
         AEVec2 change;
         AEVec2Sub(&change, &current, &target);
         
-        // Clamp maximum speed
+        // Clamp maximum velocity
         float maxChange = maxSpeed * smoothTime;
         float maxChangeSq = maxChange * maxChange;
         float sqDist = AEVec2SquareLength(&change);

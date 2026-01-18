@@ -96,37 +96,50 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmodL.dll" "$(OutDir)" /s /r /y /q
       <AdditionalDependencies>Alpha_Engine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(SolutionDir)Assets\" "$(OutDir)Assets\" /s /r /y /q"
+      <Command>xcopy "$(SolutionDir)Assets\" "$(OutDir)Assets\" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\freetype.dll" "$(OutDir)" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\Alpha_Engine.dll" "$(OutDir)" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Saves\SaveData.cpp" />
+    <ClCompile Include="Saves\SaveSystem.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
-    <ClCompile Include="Source\Game\enemy\EnemyA.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
     <ClCompile Include="Source\Game\GameScene.cpp" />
     <ClCompile Include="Source\Game\Player\Player.cpp" />
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp" />
+    <ClCompile Include="Source\Game\Timer.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Utils\AEExtras.cpp" />
     <ClCompile Include="Source\Utils\FileHelper.cpp" />
     <ClCompile Include="Source\Utils\MeshGenerator.cpp" />
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
+    <ClCompile Include="Source\Utils\Vec2Int.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Saves\SaveData.h" />
+    <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\Game\Camera.h" />
-    <ClInclude Include="Source\Game\enemy\EnemyA.h" />
+    <ClInclude Include="Source\Game\Environment\MapGrid.h" />
+    <ClInclude Include="Source\Game\Environment\MapTile.h" />
     <ClInclude Include="Source\Game\GameScene.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
+    <ClInclude Include="Source\Game\Timer.h" />
+    <ClInclude Include="Source\Utils\AEExtras.h" />
+    <ClInclude Include="Source\Utils\Box.h" />
     <ClInclude Include="Source\Utils\Easing.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
     <ClInclude Include="Source\Utils\QuickGraphics.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
     <ClInclude Include="Source\Utils\SpriteMetadata.h" />
+    <ClInclude Include="Source\Utils\Vec2Int.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

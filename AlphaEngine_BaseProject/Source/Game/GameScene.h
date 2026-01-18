@@ -2,6 +2,7 @@
 #include "Player/Player.h"
 #include "enemy/EnemyA.h"
 #include "Camera.h"
+#include "Environment/MapGrid.h"
 
 // Temp - stores in game data
 // Change to a proper game state manager
@@ -16,5 +17,6 @@ private:
 	Player player;
 	EnemyA enemy;
 	Camera camera;
+	MapGrid map;
 };
 
