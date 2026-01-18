@@ -8,7 +8,7 @@
 GameScene::GameScene()
     : map(50, 50)
     , player(&map, 2, 4)
-    , enemy(-3.f, 0.f)
+    , enemy(30,3)
     , camera({ 1, 1 }, { 49, 49 }, 64)
 {
     camera.SetFollow(&player.position, 0, 50, true);

@@ -1,166 +1,162 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<ItemGroup>
-		<Filter Include="Source Files">
-			<UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-			<Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-		</Filter>
-		<Filter Include="Header Files">
-			<UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-			<Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-		</Filter>
-		<Filter Include="Resource Files">
-			<UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-			<Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-		</Filter>
-
-		<Filter Include="Header Files\Game">
-			<UniqueIdentifier>{0af4b7ad-c017-4191-9f7c-fea5d2f4df37}</UniqueIdentifier>
-		</Filter>
-		<Filter Include="Source Files\Game">
-			<UniqueIdentifier>{b08b91ac-41b8-434a-a9ad-44d4ef5d7c6b}</UniqueIdentifier>
-		</Filter>
-
-		<Filter Include="Header Files\Game\Player">
-			<UniqueIdentifier>{aea4e789-2606-4a31-be62-d8c9437c7a23}</UniqueIdentifier>
-		</Filter>
-		<Filter Include="Source Files\Game\Player">
-			<UniqueIdentifier>{b1f47717-0e52-4a8d-8547-174186e5bd7f}</UniqueIdentifier>
-		</Filter>
-
-		<Filter Include="Header Files\Utils">
-			<UniqueIdentifier>{bb76c1d1-580d-48ef-a714-5ef542b820a1}</UniqueIdentifier>
-		</Filter>
-		<Filter Include="Source Files\Utils">
-			<UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
-		</Filter>
-
-		<Filter Include="Source Files\Game\enemy">
-			<UniqueIdentifier>{107cfdb3-3e3f-47e1-848a-17c0648fb62a}</UniqueIdentifier>
-		</Filter>
-		<Filter Include="Header Files\Game\enemy">
-			<UniqueIdentifier>{210a0723-dd8e-4512-a5d6-2a70791fed7e}</UniqueIdentifier>
-		</Filter>
-
-		<Filter Include="Source Files\Game\Environment">
-			<UniqueIdentifier>{bbed2e90-df0a-4c6c-ac9a-0d571b4cf90f}</UniqueIdentifier>
-		</Filter>
-		<Filter Include="Header Files\Game\Environment">
-			<UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
-		</Filter>
-	</ItemGroup>
-
-	<ItemGroup>
-		<ClCompile Include="Source\Main.cpp">
-			<Filter>Source Files</Filter>
-		</ClCompile>
-
-		<ClCompile Include="Source\Game\Player\PlayerStats.cpp">
-			<Filter>Source Files\Game\Player</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Game\Player\Player.cpp">
-			<Filter>Source Files\Game\Player</Filter>
-		</ClCompile>
-
-		<ClCompile Include="Source\Game\GameScene.cpp">
-			<Filter>Source Files\Game</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Game\Camera.cpp">
-			<Filter>Source Files\Game</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Game\Timer.cpp">
-			<Filter>Source Files\Game</Filter>
-		</ClCompile>
-
-		<ClCompile Include="Source\Game\Environment\MapGrid.cpp">
-			<Filter>Source Files\Game\Environment</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Game\Environment\MapTile.cpp">
-			<Filter>Source Files\Game\Environment</Filter>
-		</ClCompile>
-
-		<ClCompile Include="Source\Game\enemy\EnemyA.cpp">
-			<Filter>Source Files\Game\enemy</Filter>
-		</ClCompile>
-
-		<ClCompile Include="Source\Utils\Sprite.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\MeshGenerator.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\SpriteMetadata.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\FileHelper.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\QuickGraphics.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\Vec2Int.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-		<ClCompile Include="Source\Utils\AEExtras.cpp">
-			<Filter>Source Files\Utils</Filter>
-		</ClCompile>
-	</ItemGroup>
-
-	<ItemGroup>
-		<ClInclude Include="Source\Game\Player\PlayerStats.h">
-			<Filter>Header Files\Game\Player</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Game\Player\Player.h">
-			<Filter>Header Files\Game\Player</Filter>
-		</ClInclude>
-
-		<ClInclude Include="Source\Game\GameScene.h">
-			<Filter>Header Files\Game</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Game\Camera.h">
-			<Filter>Header Files\Game</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Game\Timer.h">
-			<Filter>Header Files\Game</Filter>
-		</ClInclude>
-
-		<ClInclude Include="Source\Game\Environment\MapGrid.h">
-			<Filter>Header Files\Game\Environment</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Game\Environment\MapTile.h">
-			<Filter>Header Files\Game\Environment</Filter>
-		</ClInclude>
-
-		<ClInclude Include="Source\Game\enemy\EnemyA.h">
-			<Filter>Header Files\Game\enemy</Filter>
-		</ClInclude>
-
-		<ClInclude Include="Source\Utils\Sprite.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\MeshGenerator.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\SpriteMetadata.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\FileHelper.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\Easing.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\QuickGraphics.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\AEExtras.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\Vec2Int.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-		<ClInclude Include="Source\Utils\Box.h">
-			<Filter>Header Files\Utils</Filter>
-		</ClInclude>
-	</ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Game">
+      <UniqueIdentifier>{0af4b7ad-c017-4191-9f7c-fea5d2f4df37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game">
+      <UniqueIdentifier>{b08b91ac-41b8-434a-a9ad-44d4ef5d7c6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Player">
+      <UniqueIdentifier>{aea4e789-2606-4a31-be62-d8c9437c7a23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Player">
+      <UniqueIdentifier>{b1f47717-0e52-4a8d-8547-174186e5bd7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{bb76c1d1-580d-48ef-a714-5ef542b820a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\enemy">
+      <UniqueIdentifier>{107cfdb3-3e3f-47e1-848a-17c0648fb62a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\enemy">
+      <UniqueIdentifier>{210a0723-dd8e-4512-a5d6-2a70791fed7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Environment">
+      <UniqueIdentifier>{bbed2e90-df0a-4c6c-ac9a-0d571b4cf90f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Environment">
+      <UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\PlayerStats.cpp">
+      <Filter>Source Files\Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\GameScene.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Camera.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Timer.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Sprite.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\MeshGenerator.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\SpriteMetadata.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\FileHelper.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\QuickGraphics.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Vec2Int.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\AEExtras.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Saves\SaveData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Saves\SaveSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Game\Player\PlayerStats.h">
+      <Filter>Header Files\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Player\Player.h">
+      <Filter>Header Files\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\GameScene.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Camera.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Timer.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapGrid.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapTile.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Sprite.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\MeshGenerator.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\SpriteMetadata.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\FileHelper.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Easing.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\QuickGraphics.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\AEExtras.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Vec2Int.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Box.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Saves\SaveData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Saves\SaveSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyA.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
