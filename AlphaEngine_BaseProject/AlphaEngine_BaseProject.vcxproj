@@ -116,6 +116,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\AEExtras.cpp" />
     <ClCompile Include="Source\Utils\FileHelper.cpp" />
     <ClCompile Include="Source\Utils\MeshGenerator.cpp" />
+    <ClCompile Include="Source\Utils\ObjectPool.cpp" />
+    <ClCompile Include="Source\Utils\ParticleSystem.cpp" />
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
@@ -136,6 +138,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Utils\Easing.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
+    <ClInclude Include="Source\Utils\ObjectPool.h" />
+    <ClInclude Include="Source\Utils\ParticleSystem.h" />
     <ClInclude Include="Source\Utils\QuickGraphics.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
     <ClInclude Include="Source\Utils\SpriteMetadata.h" />

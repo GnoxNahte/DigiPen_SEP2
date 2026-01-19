@@ -5,7 +5,8 @@
 GameScene::GameScene() : 
 	player(&map, 2, 4), 
 	map(50, 50),
-	camera({ 1,1 }, { 49, 49 }, 64)
+	camera({ 1,1 }, { 49, 49 }, 64),
+	testParticleSystem(20)
 {
 	camera.SetFollow(&player.position, 0, 50, true);
 }
@@ -19,6 +20,8 @@ void GameScene::Update()
 	camera.Update();
 	player.Update();
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
+
+	testParticleSystem.Update();
 }
 
 void GameScene::Render()
@@ -30,6 +33,8 @@ void GameScene::Render()
 
 	map.Render(camera);
 	player.Render();
+
+	testParticleSystem.Render();
 
 	AEVec2 worldMousePos;
 	AEExtras::GetCursorWorldPosition(worldMousePos, camera.position);
