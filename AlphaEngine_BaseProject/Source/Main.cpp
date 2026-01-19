@@ -9,6 +9,7 @@
 #include "Utils/QuickGraphics.h"
 #include "../Saves/SaveSystem.h"
 #include "../Saves/SaveData.h"
+#include "Game/Timer.h"
 
 
 
@@ -47,6 +48,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// === Init systems ===
 	QuickGraphics::Init();
 	SaveSystem::Init();
+	TimerSystem timerSystem;
+
+	// Timer Testing
+	timerSystem.AddTimer("Test Timer 1", 3.0f);
 
 	//// Test save
 	//SaveData d;
@@ -78,11 +83,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		scene.Update();
 		scene.Render();
 
+		timerSystem.Update();
+
 		// Informing the system about the loop's end
 		AESysFrameEnd();
 
 	}
-
+	timerSystem.Clear();
 	// free the system
 	AESysExit();
 }
