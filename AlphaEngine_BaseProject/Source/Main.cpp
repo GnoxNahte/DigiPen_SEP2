@@ -10,6 +10,7 @@
 #include "../Saves/SaveSystem.h"
 #include "../Saves/SaveData.h"
 #include "Game/Timer.h"
+#include "Game/UI.h"
 
 
 
@@ -49,6 +50,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	QuickGraphics::Init();
 	SaveSystem::Init();
 	TimerSystem timerSystem;
+	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
+
+	int damageType = 0; // testing enum types
+	f32 alpha = 1.f;
+	f32 scale = 1.f;
 
 	// Timer Testing
 	timerSystem.AddTimer("Test Timer 1", 3.0f);
@@ -84,6 +90,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		scene.Render();
 
 		timerSystem.Update();
+		if (AEInputCheckTriggered(AEVK_K)) {
+			timerSystem.AddTimer("Damage Scale Timer", 0.28f);
+			timerSystem.AddTimer("Damage Fade Timer", 1.5f);
+			damageType = (damageType + 1) % 3; // enum testing
+			alpha = 1.0f;
+			
+		}
+		if (timerSystem.GetTimerByName("Damage Scale Timer") != nullptr && timerSystem.GetTimerByName("Damage Scale Timer")->percentage < 1.f)
+		{
+			scale = static_cast<f32>(1 - timerSystem.GetTimerByName("Damage Scale Timer")->percentage + 0.95f);
+		}
+		if (timerSystem.GetTimerByName("Damage Fade Timer") != nullptr) {
+			alpha = static_cast<f32>(1 - 1.0f * timerSystem.GetTimerByName("Damage Fade Timer")->percentage);
+			if (timerSystem.GetTimerByName("Damage Fade Timer")->percentage < 1.0f) {
+				UI::PrintDamageText(178, { -0.5f, 0.5f }, scale, alpha, damageType);
+			}
+			else {
+				alpha = 1.f;
+			}
+		}
+
+
 
 		// Informing the system about the loop's end
 		AESysFrameEnd();

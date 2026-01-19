@@ -1,5 +1,4 @@
 #include "Timer.h"
-#include <AEEngine.h>
 #include <iostream>
 
 f64 TimerSystem::GetElapsedTime() const {
@@ -13,6 +12,10 @@ void TimerSystem::Update() {
 
 void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemove) {
 	Timer timer;
+	if ((TimerSystem::GetTimerByName(name)) != nullptr) {
+		std::cout << "Timer \"" << name << "\" already exists. Skipping addition." << std::endl;
+		return;
+	}
 	timer.name = name;
 	timer.startTime = elapsedTime;
 	timer.endTime = timer.startTime + duration;
