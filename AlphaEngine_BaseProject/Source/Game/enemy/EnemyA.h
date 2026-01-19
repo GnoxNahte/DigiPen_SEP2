@@ -2,6 +2,7 @@
 #include "AEEngine.h"
 #include "../../Utils/Sprite.h" 
 #include "../../Utils/QuickGraphics.h"
+#include "EnemyAttack.h"
 
 
 
@@ -16,12 +17,21 @@ public:
 
     AEVec2 position{ 0.f, 0.f }; 
 
-    int idleVariant = IDLE1;
-    float idleSwapTimer = 0.f;
+
     bool isDead = false;
     bool isAttacking = false;
     bool isGrounded = true; 
-    bool chasing{ false };
+    bool chasing = false;
+
+    //raise to start chasing player
+    float aggroRange = 5.0f;
+
+
+    //for gamescene to use to apply damage later
+    bool PollAttackHit() { return attack.PollHit(); }
+
+
+
 
 
 private:
@@ -45,6 +55,9 @@ private:
 
     float moveSpeed{ 2.2f };
     float stopDistance{ 0.2f };
+
+
+    EnemyAttack attack;
 
    
 

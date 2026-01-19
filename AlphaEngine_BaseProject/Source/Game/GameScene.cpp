@@ -3,6 +3,7 @@
 #include "../Utils/AEExtras.h"
 #include "../Game/enemy/EnemyA.h"
 #include "Environment/MapGrid.h"
+#include <iostream>
 
 
 GameScene::GameScene()
@@ -23,6 +24,12 @@ void GameScene::Update()
     camera.Update();
     player.Update();
     enemy.Update(player.position);
+    if (enemy.PollAttackHit())
+    {
+        // later: apply player damage
+        // for now: print / debug
+        std::cout << "Enemy HIT!\n";
+    }
 }
 
 void GameScene::Render()

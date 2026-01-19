@@ -15,90 +15,102 @@ EnemyA::EnemyA(float initialPosX, float initialPosY)
     size = AEVec2{ 0.8f, 0.8f };
     facingDirection = AEVec2{ 1.f, 0.f };
     chasing = false;
+
+    //------may remove later, testing this attack system-----
+    attack.startRange = 1.2f;
+    attack.hitRange = 1.0f;
+    attack.cooldown = 0.8f;
+    attack.hitTimeNormalized = 0.5f;
 }
 
 EnemyA::~EnemyA()
 {
 }
 
+static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
+{
+    if (stateIndex < 0 || stateIndex >= sprite.metadata.rows)
+        return 0.f;
+
+    const auto& s = sprite.metadata.stateInfoRows[stateIndex];
+    return (float)s.frameCount * (float)s.timePerFrame;
+}
+
+
 void EnemyA::Update(const AEVec2& playerPos)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
-    // Chase in X only, stay grounded
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
 
-    chasing = (absDx > stopDistance);
 
-    if (chasing)
+    //chase detection
+    const bool inAggroRange = (absDx <= aggroRange);
+
+
+    // Update attack component
+    const float attackDur = GetAnimDurationSec(sprite, ATTACK);
+    attack.Update(dt, absDx, attackDur);
+
+    // If attacking, stop movement. Else, do your existing chase logic.
+    if (attack.IsAttacking())
     {
-        const float dirX = (dx > 0.f) ? 1.f : -1.f;
-        velocity.x = dirX * moveSpeed;
-
-        // Keep facing direction consistent with movement, like Player does
-        facingDirection.x = dirX;
-        facingDirection.y = 0.f;
+        velocity.x = 0.f;
+        velocity.y = 0.f;
+        chasing = false;
     }
     else
     {
-        velocity.x = 0.f;
+        if (inAggroRange)
+        {
+            // Only chase if player is within aggro range
+            chasing = (absDx > stopDistance);
+
+            if (chasing)
+            {
+                const float dirX = (dx > 0.f) ? 1.f : -1.f;
+                velocity.x = dirX * moveSpeed;
+                facingDirection = AEVec2{ dirX, 0.f };
+            }
+            else
+            {
+                velocity.x = 0.f;
+            }
+
+            velocity.y = 0.f;
+
+            AEVec2 displacement;
+            AEVec2Scale(&displacement, &velocity, dt);
+            AEVec2Add(&position, &position, &displacement);
+
+            if (position.y < 0.f)
+                position.y = 0.f;
+        }
     }
 
-    // No vertical motion for now
-    velocity.y = 0.f;
+    // Animation selection (attack overrides idle)
+    UpdateAnimation();
 
-    // Integrate position
-    AEVec2 displacement;
-    AEVec2Scale(&displacement, &velocity, dt);
-    AEVec2Add(&position, &position, &displacement);
-
-
-    if (position.y < 0.f)
-        position.y = 0.f;
-
-
-    UpdateAnimation();   
+    // Advance sprite frames
     sprite.Update();
 }
 
+
 void EnemyA::UpdateAnimation()
 {
-    // Death should override 
-    if (isDead)
+    if (attack.IsAttacking())
     {
-        sprite.SetState(DEATH, true);
+        sprite.SetState(ATTACK); 
         return;
     }
 
-    // Jump 
-    if (!isGrounded)
-    {
-        sprite.SetState(JUMP);
-        return;
-    }
-
-    // Attack usually should lock until it finishes
-    if (isAttacking)
-    {
-        sprite.SetState(ATTACK, true);
-        return;
-    }
-
-    // Idle variants (swap if not moving)
-    if (std::fabs(velocity.x) < 0.01f)
-    {
-       
-
-        sprite.SetState(IDLE1);
-    }
-    else
-    {
-
+    if (std::fabs(velocity.x) > 8.0f)
         sprite.SetState(RUN);
-        idleSwapTimer = 0.f;
-    }
+    else
+        sprite.SetState(IDLE1);
 }
+
 
 
 
