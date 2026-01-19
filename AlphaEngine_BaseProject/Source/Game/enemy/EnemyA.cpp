@@ -4,6 +4,73 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
 
+#include <vector>
+#include <algorithm>
+
+static inline u32 ScaleAlpha(u32 argb, float alphaMul)
+{
+    // argb = 0xAARRGGBB
+    unsigned a = (argb >> 24) & 0xFF;
+    unsigned rgb = argb & 0x00FFFFFF;
+
+    float af = (a / 255.0f) * alphaMul;
+
+    af = max(0.0f, min(1.0f, af));
+
+    unsigned anew = (unsigned)(af * 255.0f + 0.5f);
+    return (anew << 24) | rgb;
+}
+
+static void DrawGlowBall_Local(float x, float y, float radius, u32 baseColorARGB)
+{
+    // If AE_GFX_BM_ADD doesn't exist in your AlphaEngine build, comment out the next line.
+    AEGfxSetBlendMode(AE_GFX_BM_ADD);
+
+    // Core
+    QuickGraphics::DrawRect(x, y, radius * 2.0f, radius * 2.0f,
+        ScaleAlpha(baseColorARGB, 1.0f), AE_GFX_MDM_TRIANGLES);
+
+    // Glow layers
+    QuickGraphics::DrawRect(x, y, radius * 3.0f, radius * 3.0f,
+        ScaleAlpha(baseColorARGB, 0.22f), AE_GFX_MDM_TRIANGLES);
+
+    QuickGraphics::DrawRect(x, y, radius * 4.5f, radius * 4.5f,
+        ScaleAlpha(baseColorARGB, 0.12f), AE_GFX_MDM_TRIANGLES);
+
+    QuickGraphics::DrawRect(x, y, radius * 6.5f, radius * 6.5f,
+        ScaleAlpha(baseColorARGB, 0.06f), AE_GFX_MDM_TRIANGLES);
+
+    // Restore normal blending
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+}
+
+struct GlowOrb
+{
+    AEVec2 pos{ 0.f, 0.f };
+    AEVec2 vel{ 0.f, 0.f };
+    float  radius{ 0.16f };
+    float  life{ 1.5f };
+    u32    color{ 0xFF66CCFF }; // cyan
+
+    bool alive() const { return life > 0.f; }
+
+    void Update(float dt)
+    {
+        AEVec2 disp;
+        AEVec2Scale(&disp, &vel, dt);
+        AEVec2Add(&pos, &pos, &disp);
+        life -= dt;
+    }
+
+    void Render() const
+    {
+        DrawGlowBall_Local(pos.x, pos.y, radius, color);
+    }
+};
+
+// Global list for testing (fine while you only have 1 EnemyA / no boss yet)
+static std::vector<GlowOrb> g_orbs;
+
 
 EnemyA::EnemyA(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Alien6.png")  
@@ -53,6 +120,22 @@ void EnemyA::Update(const AEVec2& playerPos)
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     attack.Update(dt, absDx, attackDur);
 
+    // Spawn one orb when attack starts (testing)!!!!!!!!!
+    if (attack.JustStarted())
+    {
+        const float dir = (facingDirection.x >= 0.f) ? 1.f : -1.f;
+
+        GlowOrb o;
+        o.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
+        o.vel = AEVec2{ dir * 7.0f, 0.f };      // speed in tiles/sec
+        o.radius = 0.14f;
+        o.life = 1.6f;
+        o.color = 0xFFAA66FF;                   // purple glow (ARGB)
+
+        g_orbs.push_back(o);
+    }
+
+
     // If attacking, stop movement. Else, do your existing chase logic.
     if (attack.IsAttacking())
     {
@@ -87,6 +170,9 @@ void EnemyA::Update(const AEVec2& playerPos)
             if (position.y < 0.f)
                 position.y = 0.f;
         }
+
+   
+
     }
 
     // Animation selection (attack overrides idle)
@@ -94,6 +180,11 @@ void EnemyA::Update(const AEVec2& playerPos)
 
     // Advance sprite frames
     sprite.Update();
+
+    // Update + cleanup orbs(TESTING)!!!!!!
+    for (auto& o : g_orbs) o.Update(dt);
+    g_orbs.erase(std::remove_if(g_orbs.begin(), g_orbs.end(),
+        [](const GlowOrb& o) { return !o.alive(); }), g_orbs.end());
 }
 
 
@@ -138,6 +229,10 @@ void EnemyA::Render()
 
     // Draw the sprite
     sprite.Render();
+
+	//ORB (TESTING)!!!!!!
+    for (const auto& o : g_orbs)
+        o.Render();
 
     // === Debug draw rect (same approach as Player debug) ===
     if (debugDraw)

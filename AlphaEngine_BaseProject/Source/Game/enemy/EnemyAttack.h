@@ -10,8 +10,7 @@ public:
     float cooldown = 0.8f;  // seconds between attack starts
     float hitTimeNormalized = 0.5f;  // 0..1 (hit time within animation)
 
-    // Call every frame:
-    //  - dt: delta time seconds
+
     //  - distanceToTarget: abs(x distance) or full distance, your choice (be consistent)
     //  - attackAnimDurationSec: duration of ATTACK animation in seconds (frameCount * timePerFrame)
 
