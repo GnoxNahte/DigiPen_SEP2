@@ -1,9 +1,16 @@
 #include "ParticleSystem.h"
 #include "MeshGenerator.h"
 #include "../Game/Camera.h"
+#include "../Utils/AEExtras.h"
 #include <iostream>
 
-ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize)
+ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize),
+	// Test only
+	emitter{
+		{0.35f, 0.7f}, // angle range (20 deg - 40 deg)
+		{15.f, 30.f}, // speed range
+		{ 1.5f, 3.f } // lifetime range
+	}
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
 	spawnRate = 10000.f;
@@ -21,7 +28,10 @@ void ParticleSystem::Init()
 
 void ParticleSystem::Update()
 {
-	spawnRate = AEInputCheckCurr(AEVK_F) ? 10000.f : 100.f;
+	spawnRate = AEInputCheckCurr(AEVK_F) ? 10000.f : 1.f;
+
+	if (AEInputCheckTriggered(AEVK_G))
+		SpawnParticleBurst({ 2,2 }, 300);
 
 	float currTime = (float)AEGetTime(nullptr);
 	while (currTime > lastSpawnTime)
@@ -84,6 +94,21 @@ Particle& ParticleSystem::SpawnParticle(const AEVec2& position)
 	p.velocity.x *= speed;
 	p.velocity.y *= speed;
 	return p;
+}
+
+void ParticleSystem::SpawnParticleBurst(const AEVec2& position, size_t spawnCount)
+{
+	float currTime = (float)AEGetTime(nullptr);
+
+	for (size_t i = 0; i < spawnCount; i++)
+	{
+		Particle& p = pool.Get();
+		p.position = position;
+		p.lifetime = currTime + AEExtras::RandomRange(emitter.lifetimeRange);
+		//p.velocity
+		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
+		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
+	}
 }
 
 void Particle::Update(float dt)

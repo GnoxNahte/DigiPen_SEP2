@@ -14,3 +14,8 @@ void AEExtras::ScreenToWorldPosition(const AEVec2& screenPosition, const AEVec2&
 	outWorldPosition.x = (float)(screenPosition.x - AEGfxGetWindowWidth() * 0.5f) / Camera::scale + cameraPosition.x;
 	outWorldPosition.y = (float)(screenPosition.y - AEGfxGetWindowHeight() * 0.5f) / Camera::scale + cameraPosition.y;
 }
+
+float AEExtras::RandomRange(const AEVec2& range)
+{
+	return AERandFloat() * (range.y - range.x) + range.x;
+}

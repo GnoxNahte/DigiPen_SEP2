@@ -18,5 +18,11 @@ public:
 	 * @param outWorldPosition	Output world coordinates
 	 */
 	static void ScreenToWorldPosition(const AEVec2& screenPosition, const AEVec2& cameraPosition, AEVec2& outWorldPosition);
+
+	/**
+	 * @brief		Returns a float between the range
+	 */
+	static float RandomRange(const AEVec2& range);
+	//static float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
 };
 
