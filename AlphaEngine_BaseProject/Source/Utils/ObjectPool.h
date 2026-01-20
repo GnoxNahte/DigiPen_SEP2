@@ -9,8 +9,8 @@
 class ObjectPoolItem
 {
 public:
-	size_t poolIndex;
-	bool isActive;
+	size_t poolIndex = 0;
+	bool isActive = false;
 
 	ObjectPoolItem() = default;
 	ObjectPoolItem(ObjectPoolItem&&) = default;
@@ -32,8 +32,10 @@ public:
  *			- Get:		O(1) (Assuming no need to expand vector)
  *			- Release:	O(1)
  * 
+ *			Need the object that is being pooled to inherit ObjectPoolItem
  * 
- * @warning	This will swap memory around when removing so shouldn't store pointers to the items and it's not ordered
+ * @warning	This will swap memory around when removing so shouldn't store pointers to the items. 
+			This also means it's not ordered
  */
 template<typename T>
 requires std::derived_from<T, ObjectPoolItem>
@@ -44,6 +46,11 @@ public:
 	~ObjectPool();
 
 	T& Get();
+
+	/**
+	 * @brief		Swap the 
+	 * @param item	Item to remove
+	 */
 	void Release(T& item);
 
 	size_t GetSize();
@@ -64,7 +71,7 @@ inline ObjectPool<T>::ObjectPool(int startSize) : pool(startSize)
 	{
 		ObjectPoolItem& item = pool[i];
 		item.Init();
-		item.poolIndex = static_cast<int>(i);
+		item.poolIndex = i;
 		item.isActive = false;
 	}
 
@@ -75,6 +82,8 @@ template<typename T>
 requires std::derived_from<T, ObjectPoolItem>
 inline ObjectPool<T>::~ObjectPool()
 {
+	for (auto& item : pool)
+		item.Exit();
 }
 
 template<typename T>
@@ -100,15 +109,17 @@ template<typename T>
 requires std::derived_from<T, ObjectPoolItem>
 inline void ObjectPool<T>::Release(T& item)
 {
+	// Now size points to the last item
 	--size;
+
+	// Release item
 	item.isActive = false;
 	item.OnRelease();
 
-	// If it's the last item, just return as don't need to swap
-	/*if (item.poolIndex == size - 1)
-		return;
-	*/
-
+	// Swap the current item (inactive) with the last item (active)
+	// Then swap the poolIndex as the memory has been swapped
+	// NOTE: If itemIndex == size, it'll swap with itself. 
+	//		 Not handling it since need additional if statement and the pool is very big
 	size_t itemIndex = item.poolIndex;
 	std::swap(pool[itemIndex], pool[size]);
 	std::swap(pool[itemIndex].poolIndex, pool[size].poolIndex);

@@ -3,31 +3,32 @@
 #include "../Game/Camera.h"
 #include <iostream>
 
-static float testNextSpawnTime = -1.f;
-
-ParticleSystem::ParticleSystem(int initialSize) 
-	:	pool(initialSize), 
-		particleMesh(nullptr)
+ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize)
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
+	spawnRate = 10000.f;
+}
+
+ParticleSystem::~ParticleSystem()
+{
+	AEGfxMeshFree(particleMesh);
 }
 
 void ParticleSystem::Init()
 {
-	testNextSpawnTime = 3.f;
+	lastSpawnTime = (float)AEGetTime(nullptr);
 }
 
 void ParticleSystem::Update()
 {
+	spawnRate = AEInputCheckCurr(AEVK_F) ? 10000.f : 100.f;
+
 	float currTime = (float)AEGetTime(nullptr);
-	if (currTime > testNextSpawnTime)
+	while (currTime > lastSpawnTime)
 	{
-		SpawnParticle({ AERandFloat() * 2.f + 4.f, AERandFloat() * 2.f + 4.f });
-		SpawnParticle({ AERandFloat() * 2.f + 4.f, AERandFloat() * 2.f + 4.f });
-		SpawnParticle({ AERandFloat() * 2.f + 4.f, AERandFloat() * 2.f + 4.f });
-		SpawnParticle({ AERandFloat() * 2.f + 4.f, AERandFloat() * 2.f + 4.f });
-		SpawnParticle({ AERandFloat() * 2.f + 4.f, AERandFloat() * 2.f + 4.f });
-		testNextSpawnTime = currTime + 0.001f;
+		double diff = 1.f / spawnRate;
+		lastSpawnTime = lastSpawnTime + diff;
+		SpawnParticle({ AERandFloat() * 1.f + 4.f, AERandFloat() * 1.f + 4.f });
 	}
 	
 	if (pool.GetSize() == 0)
@@ -36,12 +37,13 @@ void ParticleSystem::Update()
 		return;
 	}
 
-	//pool.DebugPrint();
+	std::cout << pool.GetSize() << "\n";
 
+	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?
 	for (int i = static_cast<int>(pool.GetSize()) - 1; i >= 0; --i)
 	{
-		pool.pool[i].Update(1.f);
+		pool.pool[i].Update(dt);
 		//std::cout << i <<  " | lifetime: " << (pool.pool[i].lifetime - currTime) << "\n";
 		if (currTime > pool.pool[i].lifetime)
 			pool.Release(pool.pool[i]);
@@ -53,12 +55,14 @@ void ParticleSystem::Update()
 
 void ParticleSystem::Render()
 {
+	//return;
 	AEGfxTextureSet(nullptr, 0, 0);
+	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 	// todo - make custom iterator inside object pool instead?
 	for (size_t i = 0; i < pool.GetSize(); i++)
-	{
 		pool.pool[i].Render(particleMesh);
-	}
+
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
 
 void ParticleSystem::Free()
@@ -69,11 +73,16 @@ Particle& ParticleSystem::SpawnParticle(const AEVec2& position)
 {
 	Particle& p = pool.Get();
 	p.position = position;
-	p.lifetime = (float)AEGetTime(nullptr) + 5.f;
+	p.lifetime = (float)AEGetTime(nullptr) + 2.f;
 
-	float speed = 0.05f;
-	p.velocity.x = (AERandFloat() - 0.5f) * 2.f * speed;
-	p.velocity.y = (AERandFloat() - 0.5f) * 2.f * speed;
+
+	// TMP - Shoots out to the top right
+	p.velocity.x = (AERandFloat()) * 2.f;
+	p.velocity.y = (AERandFloat()) * 2.f;
+	AEVec2Normalize(&p.velocity, &p.velocity);
+	constexpr float speed = 10.f;
+	p.velocity.x *= speed;
+	p.velocity.y *= speed;
 	return p;
 }
 
@@ -87,8 +96,6 @@ void Particle::Render(AEGfxVertexList* mesh)
 {
 	AEMtx33 transform;
 
-	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-
 	AEMtx33Scale(&transform, 0.1f, 0.1f);
 	AEMtx33TransApply(
 		&transform,
@@ -100,8 +107,6 @@ void Particle::Render(AEGfxVertexList* mesh)
 	AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
-	
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
 
 void Particle::Init()

@@ -21,6 +21,7 @@ class ParticleSystem
 {
 public:
 	ParticleSystem(int initialSize);
+	~ParticleSystem();
 
 	void Init();
 	void Update();
@@ -30,5 +31,7 @@ public:
 	Particle& SpawnParticle(const AEVec2& position);
 private:
 	ObjectPool<Particle> pool;
-	AEGfxVertexList* particleMesh;
+	AEGfxVertexList* particleMesh = nullptr;
+	float spawnRate = 0.f;
+	double lastSpawnTime = 0.f;
 };
