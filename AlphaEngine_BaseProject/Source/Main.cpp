@@ -96,7 +96,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		//if (AEInputCheckTriggered(AEVK_K)) {
 		//	timerSystem.AddTimer("Damage Scale Timer", 0.28f);
 		//	timerSystem.AddTimer("Damage Fade Timer", 1.5f);
-		//	damageType = (damageType + 1) % 4; // enum testing
+		//	damageType = (damageType + 1) % 5; // enum testing
 		//	alpha = 1.0f;
 		//	
 		//}

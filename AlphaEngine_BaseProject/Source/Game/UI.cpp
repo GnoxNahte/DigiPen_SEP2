@@ -35,5 +35,10 @@ void UI::PrintDamageText(int damage, AEVec2 position, f32 scale, f32 alpha, int 
 			damageNumber = std::to_string(damage);
 			AEGfxPrint(damageNumberFont, damageNumber.c_str(), position.x + 0.04f, position.y - 0.1f, scale * 1.35f, r, g, b, alpha);
 			break;
+		case DAMAGE_TYPE_MISS:
+			r = 0.35f, g = 0.35f, b = 0.35f;
+			damageType = "MISS!";
+			AEGfxPrint(damageTypeFont, damageType.c_str(), position.x, position.y, scale * 1.25f * 0.75f, r, g, b, alpha + 0.5f);
+			break;
 	}
 }
