@@ -5,7 +5,9 @@
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 
-MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
+MapGrid::MapGrid(int rows, int cols)
+	:	size(rows, cols), 
+		tiles(rows* cols)
 {
 	mesh = MeshGenerator::GetSquareMesh(1.f, 1.f / MapTile::typeCount, 1.f);
 	tilemapTexture = AEGfxTextureLoad("Assets/Tmp/tmp-tilemap.png");
@@ -57,6 +59,12 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 /* Calling it's own construct is tmp only. todo proper file read */
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
 {
+}
+
+MapGrid::~MapGrid()
+{
+	AEGfxMeshFree(mesh);
+	AEGfxTextureUnload(tilemapTexture);
 }
 
 void MapGrid::Render(const Camera& camera)

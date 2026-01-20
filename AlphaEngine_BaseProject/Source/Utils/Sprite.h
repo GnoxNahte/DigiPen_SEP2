@@ -8,6 +8,7 @@ class Sprite
 {
 public:
 	Sprite(std::string file);
+	~Sprite();
 
 	/**
 	 * @brief Update sprite animation

@@ -13,6 +13,8 @@ public:
 	MapGrid(int rows, int cols);
 	MapGrid(const char* file);
 
+	~MapGrid();
+
 	void Render(const Camera& camera);
 
 	inline const MapTile* GetTile(int x, int y);
