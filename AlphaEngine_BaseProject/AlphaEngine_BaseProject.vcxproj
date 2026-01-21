@@ -121,6 +121,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
     <ClCompile Include="Source\Utils\Vec2Int.cpp" />
+    <ClCompile Include="traps.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Saves\SaveData.h" />

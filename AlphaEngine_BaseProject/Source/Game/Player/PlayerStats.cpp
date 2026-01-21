@@ -90,4 +90,13 @@ void PlayerStats::LoadFileData()
 
 	jumpVelocity = (2.f * maxJumpHeight) / timeToMaxHeight;
 	minJumpTime = 2.f * minJumpHeight / jumpVelocity;
+
+	// ===== Player's HP and attacks =====
+	auto hp = doc["playerHPanddamage"].GetObj();
+	playerMaxHP = hp["playerMaxHP"].GetInt();
+	playerStartingHP = hp["playerStartingHP"].GetInt();
+	playerAttackDamage = hp["playerAttackDamage"].GetInt();
+	playerAttackRange = hp["playerAttackRange"].GetFloat();
+	playerAttackCooldown = hp["playerAttackCooldown"].GetFloat();
+	playerAttackKnockbackForce = hp["playerAttackKnockbackForce"].GetFloat();
 }

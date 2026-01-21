@@ -66,6 +66,15 @@ public:
 
     const std::string file;
 
+	// === Player's HP and attacks ===
+	int playerMaxHP;
+	int playerStartingHP;
+	int playerAttackDamage;
+	float playerAttackRange;
+	float playerAttackCooldown;
+	float playerAttackKnockbackForce;
+    
+
     /**
      * @brief       Loads the player stats from a file
      * @param file  File to load the stats from
