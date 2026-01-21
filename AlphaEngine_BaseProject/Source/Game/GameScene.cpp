@@ -23,6 +23,7 @@ void GameScene::Update()
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 
 	testParticleSystem.Update();
+	testParticleSystem.SetSpawnRate(0.f);
 }
 
 void GameScene::Render()

@@ -3,17 +3,20 @@
 #include "../Game/Camera.h"
 #include "../Utils/AEExtras.h"
 #include <iostream>
+#include <limits>
 
 ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize),
 	// Test only
 	emitter{
-		{0.35f, 0.7f}, // angle range (20 deg - 40 deg)
+		{0, 0}, // spawn pos min
+		{0, 0}, // spawn pos max
+		{AEDegToRad(20.f), AEDegToRad(40.f)}, // angle range (20 deg - 40 deg)
 		{15.f, 30.f}, // speed range
 		{ 1.5f, 3.f } // lifetime range
 	}
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
-	spawnRate = 10000.f;
+	SetSpawnRate(10000.f);
 }
 
 ParticleSystem::~ParticleSystem()
@@ -28,7 +31,7 @@ void ParticleSystem::Init()
 
 void ParticleSystem::Update()
 {
-	spawnRate = AEInputCheckCurr(AEVK_F) ? 10000.f : 1.f;
+	SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 10000.f : 0.f);
 
 	if (AEInputCheckTriggered(AEVK_G))
 		SpawnParticleBurst({ 2,2 }, 300);
@@ -36,27 +39,28 @@ void ParticleSystem::Update()
 	float currTime = (float)AEGetTime(nullptr);
 	while (currTime > lastSpawnTime)
 	{
-		double diff = 1.f / spawnRate;
-		lastSpawnTime = lastSpawnTime + diff;
-		SpawnParticle({ AERandFloat() * 1.f + 4.f, AERandFloat() * 1.f + 4.f });
+		lastSpawnTime += timeBetweenSpawn;
+		SpawnParticle();
+		// todo? - prebake
 	}
 	
 	if (pool.GetSize() == 0)
 	{
-		std::cout << "=== Empty pool ===\n";
+		//std::cout << "=== Empty pool ===\n";
 		return;
 	}
 
-	std::cout << pool.GetSize() << "\n";
+	std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?
 	for (int i = static_cast<int>(pool.GetSize()) - 1; i >= 0; --i)
 	{
-		pool.pool[i].Update(dt);
+		Particle& p = pool.pool[i];
+		p.Update(dt);
 		//std::cout << i <<  " | lifetime: " << (pool.pool[i].lifetime - currTime) << "\n";
-		if (currTime > pool.pool[i].lifetime)
-			pool.Release(pool.pool[i]);
+		if (currTime > p.spawnTime + p.lifetime)
+			pool.Release(p);
 	}
 
 	//pool.DebugPrint();
@@ -79,20 +83,24 @@ void ParticleSystem::Free()
 {
 }
 
-Particle& ParticleSystem::SpawnParticle(const AEVec2& position)
+Particle& ParticleSystem::SpawnParticle()
 {
 	Particle& p = pool.Get();
-	p.position = position;
-	p.lifetime = (float)AEGetTime(nullptr) + 2.f;
+	p.spawnTime = (float)AEGetTime(nullptr);
+	p.position.x = AEExtras::RandomRange(emitter.spawnPosRangeX);
+	p.position.y = AEExtras::RandomRange(emitter.spawnPosRangeY);
+	p.lifetime =  AEExtras::RandomRange(emitter.lifetimeRange);
 
+	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
+	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
 
-	// TMP - Shoots out to the top right
-	p.velocity.x = (AERandFloat()) * 2.f;
-	p.velocity.y = (AERandFloat()) * 2.f;
-	AEVec2Normalize(&p.velocity, &p.velocity);
-	constexpr float speed = 10.f;
-	p.velocity.x *= speed;
-	p.velocity.y *= speed;
+	//// TMP - Shoots out to the top right
+	//p.velocity.x = (AERandFloat()) * 2.f;
+	//p.velocity.y = (AERandFloat()) * 2.f;
+	//AEVec2Normalize(&p.velocity, &p.velocity);
+	//constexpr float speed = 10.f;
+	//p.velocity.x *= speed;
+	//p.velocity.y *= speed;
 	return p;
 }
 
@@ -103,12 +111,27 @@ void ParticleSystem::SpawnParticleBurst(const AEVec2& position, size_t spawnCoun
 	for (size_t i = 0; i < spawnCount; i++)
 	{
 		Particle& p = pool.Get();
+		p.spawnTime = currTime;
 		p.position = position;
-		p.lifetime = currTime + AEExtras::RandomRange(emitter.lifetimeRange);
-		//p.velocity
+		p.lifetime = AEExtras::RandomRange(emitter.lifetimeRange);
+
 		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
 		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
 	}
+}
+
+void ParticleSystem::SetSpawnRate(float spawnRate)
+{
+	if (spawnRate <= 0.f)
+	{
+		timeBetweenSpawn = (std::numeric_limits<float>::max)();
+		return;
+	}
+
+	timeBetweenSpawn = 1.f / spawnRate;
+	float currTime = (float)AEGetTime(nullptr);
+	if (lastSpawnTime - currTime > timeBetweenSpawn)
+		lastSpawnTime = currTime + timeBetweenSpawn;
 }
 
 void Particle::Update(float dt)
@@ -131,6 +154,7 @@ void Particle::Render(AEGfxVertexList* mesh)
 	// Camera scale. Scales translation too.
 	AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 	AEGfxSetTransform(transform.m);
+	AEGfxSetTransparency(1.f - ((float)AEGetTime(nullptr) - spawnTime) / lifetime);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
 }
 

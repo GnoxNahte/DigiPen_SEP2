@@ -23,6 +23,9 @@ public:
 	 * @brief		Returns a float between the range
 	 */
 	static float RandomRange(const AEVec2& range);
-	//static float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
+
+
+	static float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
+	static float RemapClamp(float value, const AEVec2& inRange, const AEVec2& outRange);
 };
 
