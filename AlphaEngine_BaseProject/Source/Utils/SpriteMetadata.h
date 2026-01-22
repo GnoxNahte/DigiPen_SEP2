@@ -12,7 +12,7 @@ struct SpriteMetadata
 {
 	struct StateInfo
 	{
-		// Not using for anything, just for organising
+		// Not using for anything, just for organising. Exclude in release?
 		std::string name;
 
 		/**
@@ -22,6 +22,7 @@ struct SpriteMetadata
 
 		/**
 		 * @brief Frame per second / How fast to play the animation
+		 * @note This is optional. Will use defaultSampleRate instead
 		 */
 		int sampleRate;
 
@@ -34,7 +35,7 @@ struct SpriteMetadata
 	// === In JSON ===
 	
 	/**
-	 * @brief Contains all the info needed, seperated into each state
+	 * @brief Contains all the info per state.
 	 */
 	std::vector<StateInfo> stateInfoRows;
 
@@ -42,6 +43,13 @@ struct SpriteMetadata
 	 * @brief Pivot position for all frames. Range: 0..1
 	 */
 	AEVec2 pivot{ 0.5f, 0.5f };
+
+	/**
+	 * @brief Default frame per second / How fast to play the animation
+	 *		  Will be used when the state doesn't specify it
+	 * @todo  Make a default state info instead? Maybe for pivot
+	 */
+	int defaultSampleRate;
 
 	// === Derived from JSON data. NOT in JSON ===
 	int rows = -1, cols = -1;

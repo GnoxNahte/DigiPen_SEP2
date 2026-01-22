@@ -5,7 +5,8 @@
 #include "../../Utils/QuickGraphics.h"
 
 Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
-    stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png"),
+    stats("Assets/config/player-stats.json"), 
+    sprite("Assets/Art/rvros/Adventurer.png"),
     facingDirection{},
     inputDirection{},
     transform{},
@@ -67,7 +68,7 @@ void Player::Render()
         &transform,
         &transform,
         position.x - (0.5f - sprite.metadata.pivot.x),
-        position.y - (0.5f - sprite.metadata.pivot.y)
+        position.y + (0.5f - sprite.metadata.pivot.y)
     );
     // Camera scale. Scales translation too.
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
@@ -251,11 +252,11 @@ void Player::PerformJump()
 void Player::UpdateAnimation()
 {
     if (!isGroundCollided)
-        sprite.SetState(JUMP_FALL);
+        sprite.SetState(AnimState::FALLING);
     else if (fabsf(velocity.x) > 0.f)
-        sprite.SetState(RUN);
+        sprite.SetState(AnimState::RUN_W_SWORD);
     else
-        sprite.SetState(IDLE);
+        sprite.SetState(AnimState::IDLE_W_SWORD);
 
     sprite.Update();
 }
