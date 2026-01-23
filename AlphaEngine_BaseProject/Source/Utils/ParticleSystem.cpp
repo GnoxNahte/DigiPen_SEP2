@@ -31,11 +31,6 @@ void ParticleSystem::Init()
 
 void ParticleSystem::Update()
 {
-	SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 10000.f : 0.f);
-
-	if (AEInputCheckTriggered(AEVK_G))
-		SpawnParticleBurst({ 2,2 }, 300);
-
 	float currTime = (float)AEGetTime(nullptr);
 	while (currTime > lastSpawnTime)
 	{
@@ -50,7 +45,7 @@ void ParticleSystem::Update()
 		return;
 	}
 
-	std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?
@@ -94,13 +89,6 @@ Particle& ParticleSystem::SpawnParticle()
 	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
 	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
 
-	//// TMP - Shoots out to the top right
-	//p.velocity.x = (AERandFloat()) * 2.f;
-	//p.velocity.y = (AERandFloat()) * 2.f;
-	//AEVec2Normalize(&p.velocity, &p.velocity);
-	//constexpr float speed = 10.f;
-	//p.velocity.x *= speed;
-	//p.velocity.y *= speed;
 	return p;
 }
 
@@ -124,7 +112,9 @@ void ParticleSystem::SetSpawnRate(float spawnRate)
 {
 	if (spawnRate <= 0.f)
 	{
+		// Prevent spawning anything
 		timeBetweenSpawn = (std::numeric_limits<float>::max)();
+		lastSpawnTime = (std::numeric_limits<double>::max)();
 		return;
 	}
 

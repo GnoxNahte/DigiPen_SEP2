@@ -10,6 +10,7 @@ GameScene::GameScene() :
 {
 	camera.SetFollow(&player.position, 0, 50, true);
 	testParticleSystem.Init();
+	testParticleSystem.SetSpawnRate(0.f);
 }
 
 GameScene::~GameScene()
@@ -22,8 +23,11 @@ void GameScene::Update()
 	player.Update();
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 
+	// === Particle system test ===
+	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 10000.f : 0.f);
+	if (AEInputCheckTriggered(AEVK_G))
+		testParticleSystem.SpawnParticleBurst({ 2,2 }, 300);
 	testParticleSystem.Update();
-	testParticleSystem.SetSpawnRate(0.f);
 }
 
 void GameScene::Render()

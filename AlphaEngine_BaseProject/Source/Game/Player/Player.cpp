@@ -76,7 +76,6 @@ void Player::Update()
     particleSystem.emitter.speedRange.x = speed * 0.3f * 0.75f;
     particleSystem.emitter.speedRange.y = speed * 0.3f * 1.5f;
     //std::cout << "Angle: " << AERadToDeg(currVelocityAngle - angleRange) << "\n";
-    std::cout << "Speed: " << speed << "\n";
     particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
     
     AEVec2Set(&particleSystem.emitter.spawnPosRangeX, position.x + 0.6f, position.x );
