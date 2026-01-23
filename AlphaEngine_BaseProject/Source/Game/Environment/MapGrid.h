@@ -37,8 +37,10 @@ public:
 
 	/**
 	 * @brief					Handles collision. Tries to move to nextPosition. If cannot, will try to move to the space closest to it
-	 * @param currentPosition	Reference to current position. Changes this
+	 * @param velocity			Reference to velocity of current object
+	 * @param currentPosition	Reference to current position
 	 * @param nextPosition		Next desired position
+	 * @param size				Collider/Box size
 	 */
 	void HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size);
 private:
