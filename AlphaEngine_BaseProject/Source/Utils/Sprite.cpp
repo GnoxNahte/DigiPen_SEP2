@@ -17,6 +17,12 @@ Sprite::Sprite(std::string file)
 	texture = AEGfxTextureLoad(file.c_str());
 }
 
+Sprite::~Sprite()
+{
+	AEGfxMeshFree(mesh);
+	AEGfxTextureUnload(texture);
+}
+
 void Sprite::Update()
 {
 	const auto& currState = metadata.stateInfoRows[currStateIndex];

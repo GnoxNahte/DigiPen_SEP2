@@ -10,6 +10,12 @@ void QuickGraphics::Init()
     font = AEGfxCreateFont("Assets/liberation-mono.ttf", 72);
 }
 
+void QuickGraphics::Free()
+{
+    AEGfxMeshFree(rect);
+    AEGfxDestroyFont(font);
+}
+
 void QuickGraphics::DrawRect(float posX, float posY, float scaleX, float scaleY, u32 color, AEGfxMeshDrawMode drawMode)
 {
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);

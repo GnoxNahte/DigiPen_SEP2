@@ -6,6 +6,7 @@ struct Particle : public ObjectPoolItem
 {
 	AEVec2 position;
 	AEVec2 velocity;
+	float spawnTime;
 	float lifetime;
 
 	virtual void Update(float dt);
@@ -20,15 +21,41 @@ struct Particle : public ObjectPoolItem
 class ParticleSystem
 {
 public:
+	struct EmitterSettings
+	{
+		AEVec2 spawnPosRangeX;
+		AEVec2 spawnPosRangeY;
+
+		AEVec2 angleRange;
+		AEVec2 speedRange;
+		AEVec2 lifetimeRange;
+	};
+
 	ParticleSystem(int initialSize);
+	~ParticleSystem();
 
 	void Init();
 	void Update();
 	void Render();
 	void Free();
 
-	Particle& SpawnParticle(const AEVec2& position);
+	Particle& SpawnParticle();
+
+	/**
+	 * @brief				Spawn a burst of particles
+	 * @param position		Center position of burst
+	 * @param angleRange	Range of angle for the initial velocity. Range: [0, 360] (inclusive)
+	 * @param speedRange	Range of speed for the initial velocity. Range: Anything AEVec2 supports
+	 * @param spawnCount	Number of particles to spawn
+	 */
+	void SpawnParticleBurst(const AEVec2& position, size_t spawnCount);
+
+	void SetSpawnRate(float spawnRate);
+
+	EmitterSettings emitter;
 private:
+	float timeBetweenSpawn = 0.f;
 	ObjectPool<Particle> pool;
-	AEGfxVertexList* particleMesh;
+	AEGfxVertexList* particleMesh = nullptr;
+	double lastSpawnTime = 0.f;
 };

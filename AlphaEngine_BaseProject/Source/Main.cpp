@@ -83,6 +83,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	}
 
+	QuickGraphics::Free();
+
 	// free the system
 	AESysExit();
 }

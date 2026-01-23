@@ -3,8 +3,9 @@
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
-#include "../Environment/MapGrid.h"
 #include "../../Utils/Box.h"
+#include "../../Utils/ParticleSystem.h"
+#include "../Environment/MapGrid.h"
 
 /**
  * @brief Controllable player class
@@ -51,6 +52,7 @@ private:
     Sprite sprite;
 
     AEMtx33 transform;
+    ParticleSystem particleSystem;
 
     // === Player Input ===
     AEVec2 inputDirection;
