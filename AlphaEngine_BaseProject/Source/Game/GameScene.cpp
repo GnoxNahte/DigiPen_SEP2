@@ -5,9 +5,11 @@
 GameScene::GameScene() : 
 	player(&map, 2, 4), 
 	map(50, 50),
-	camera({ 1,1 }, { 49, 49 }, 64)
+	camera({ 1,1 }, { 49, 49 }, 64),
+	testParticleSystem(20)
 {
 	camera.SetFollow(&player.position, 0, 50, true);
+	testParticleSystem.Init();
 }
 
 GameScene::~GameScene()
@@ -19,6 +21,9 @@ void GameScene::Update()
 	camera.Update();
 	player.Update();
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
+
+	testParticleSystem.Update();
+	testParticleSystem.SetSpawnRate(0.f);
 }
 
 void GameScene::Render()
@@ -31,10 +36,12 @@ void GameScene::Render()
 	map.Render(camera);
 	player.Render();
 
+	testParticleSystem.Render();
+
 	AEVec2 worldMousePos;
 	AEExtras::GetCursorWorldPosition(worldMousePos, camera.position);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
-	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 1, 1, 1, 1);
+	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
-	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 1, 1, 1, 1);
+	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 }

@@ -3,18 +3,25 @@
 #include <iostream>
 #include <limits>
 #include "../../Utils/QuickGraphics.h"
+#include "../../Utils/AEExtras.h"
 
 Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
-    stats("Assets/config/player-stats.json"), sprite("Assets/Craftpix/Char_Robot.png"),
+    stats("Assets/config/player-stats.json"), 
+    sprite("Assets/Art/rvros/Adventurer.png"),
     facingDirection{},
     inputDirection{},
     transform{},
-    velocity{}
+    velocity{},
+    particleSystem{50}
 {
     this->map = map;
 
     position.x = initialPosX;
     position.y = initialPosY;
+
+    particleSystem.Init();
+    particleSystem.emitter.lifetimeRange.x = 0.1f;
+    particleSystem.emitter.lifetimeRange.y = 0.3f;
 }
 
 Player::~Player()
@@ -52,6 +59,30 @@ void Player::Update()
 
     UpdateAnimation();
 
+    // Update particle system
+    float currVelocityAngle;
+    if (velocity.y == 0.f)
+        currVelocityAngle = (velocity.x > 0) ? AEDegToRad(180.f) : 0.f;
+    else if (velocity.x == 0.f)
+        currVelocityAngle = (velocity.y > 0) ? AEDegToRad(-90.f) : -90.f;
+    else
+        currVelocityAngle = atan2f(velocity.x, velocity.y) + AEDegToRad(180.f);
+
+    float angleRange = AEDegToRad(50.f) * 0.5f;
+    particleSystem.emitter.angleRange.x = currVelocityAngle - angleRange;
+    particleSystem.emitter.angleRange.y = currVelocityAngle + angleRange;
+
+    float speed = AEVec2Length(&velocity);
+    particleSystem.emitter.speedRange.x = speed * 0.3f * 0.75f;
+    particleSystem.emitter.speedRange.y = speed * 0.3f * 1.5f;
+    //std::cout << "Angle: " << AERadToDeg(currVelocityAngle - angleRange) << "\n";
+    std::cout << "Speed: " << speed << "\n";
+    particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
+    
+    AEVec2Set(&particleSystem.emitter.spawnPosRangeX, position.x + 0.6f, position.x );
+    AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y - 0.0f, position.y + 1.f);
+    particleSystem.Update();
+
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))
         stats.LoadFileData();
@@ -59,6 +90,8 @@ void Player::Update()
 
 void Player::Render()
 {
+    particleSystem.Render();
+
     // Local scale. For flipping sprite's facing direction
     bool ifFaceRight = (velocity.x != 0.f) ? (velocity.x > 0) : (facingDirection.x > 0);
     AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f);
@@ -67,7 +100,7 @@ void Player::Render()
         &transform,
         &transform,
         position.x - (0.5f - sprite.metadata.pivot.x),
-        position.y - (0.5f - sprite.metadata.pivot.y)
+        position.y + (0.5f - sprite.metadata.pivot.y)
     );
     // Camera scale. Scales translation too.
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
@@ -251,11 +284,11 @@ void Player::PerformJump()
 void Player::UpdateAnimation()
 {
     if (!isGroundCollided)
-        sprite.SetState(JUMP_FALL);
+        sprite.SetState(AnimState::FALLING);
     else if (fabsf(velocity.x) > 0.f)
-        sprite.SetState(RUN);
+        sprite.SetState(AnimState::RUN_W_SWORD);
     else
-        sprite.SetState(IDLE);
+        sprite.SetState(AnimState::IDLE_W_SWORD);
 
     sprite.Update();
 }

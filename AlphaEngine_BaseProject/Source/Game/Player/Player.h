@@ -3,8 +3,9 @@
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
-#include "../Environment/MapGrid.h"
 #include "../../Utils/Box.h"
+#include "../../Utils/ParticleSystem.h"
+#include "../Environment/MapGrid.h"
 
 /**
  * @brief Controllable player class
@@ -14,16 +15,28 @@ class Player
 public:
     enum AnimState
     {
-        RUN_ATTACK,
-        RUN,
-        IDLE,
-        JUMP_START,
-        JUMP_FALL,
-        JUMP_LAND,
-        ATTACK,
-        DEATH,
-        AIMING,
-        HURT
+        IDLE_NO_SWORD,
+        CROUCH,      
+        RUN_NO_SWORD,
+        SOMERSAULT,  
+        FALLING,     
+        SLIDING,     
+        IDLE_W_SWORD,
+        ATTACK_1,    
+        ATTACK_2,    
+        ATTACK_3,    
+        HURT,        
+        DEATH,       
+        SWORD_DRAW,  
+        SWORD_SHEATH,
+        WALL_SLIDE,  
+        WALL_CLIMB,  
+        AIR_ATTACK_1,
+        AIR_ATTACK_2,
+        AIR_ATTACK_3,
+        RUN_W_SWORD, 
+
+        ANIM_COUNT
     };
 
     // === Movement ===
@@ -39,6 +52,7 @@ private:
     Sprite sprite;
 
     AEMtx33 transform;
+    ParticleSystem particleSystem;
 
     // === Player Input ===
     AEVec2 inputDirection;

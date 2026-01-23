@@ -12,6 +12,7 @@ public:
 	 *			Might be because AlphaEngine hasn't been initialised
 	 */
 	static void Init();
+	static void Free();
 	static void DrawRect(const AEVec2& position, const AEVec2& scale, u32 color = 0xFFFFFFFF, AEGfxMeshDrawMode drawMode = AE_GFX_MDM_TRIANGLES);
 	static void DrawRect(float posX, float posY, float scaleX, float scaleY, u32 color = 0xFFFFFFFF, AEGfxMeshDrawMode drawMode = AE_GFX_MDM_TRIANGLES);
 

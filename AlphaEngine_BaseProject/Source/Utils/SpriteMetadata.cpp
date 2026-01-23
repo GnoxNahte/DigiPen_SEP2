@@ -19,16 +19,18 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 
 	// JSON member names
 	static const char *mStateInfo = "stateInfo",
-					  *mPivot = "pivot";
+					  *mPivot = "pivot",
+					  *mDefaultSampleRate = "defaultSampleRate";
 
-	if (!document.HasMember(mStateInfo) || !document.HasMember(mPivot))
+	if (!document.HasMember(mStateInfo) || !document.HasMember(mPivot) || !document.HasMember(mDefaultSampleRate))
 	{
 		std::cout << "File (" << originalFile << ") missing metadata members." << std::endl;
 		return;
 	}
 
-	auto stateInfoArr = document[mStateInfo].GetArray();
+	this->defaultSampleRate = document[mDefaultSampleRate].GetInt();
 
+	auto stateInfoArr = document[mStateInfo].GetArray();
 	this->rows = stateInfoArr.Size();
 
 	// Copy the rapidjson array result into framesPerRow vector
@@ -38,7 +40,7 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 		this->stateInfoRows.emplace_back(
 			stateInfoObj["name"].GetString(),
 			stateInfoObj["frameCount"].GetInt(),
-			stateInfoObj["sampleRate"].GetInt()
+			stateInfoObj.HasMember("sampleRate") ? stateInfoObj["sampleRate"].GetInt() : defaultSampleRate
 		);
 	}
 
@@ -48,7 +50,7 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 		if (stateInfo.frameCount > cols)
 			cols = stateInfo.frameCount;
 	}
-
+	
 	auto pivotObject = document[mPivot].GetObject();
 	pivot.x = pivotObject["x"].GetFloat();
 	pivot.y = pivotObject["y"].GetFloat();

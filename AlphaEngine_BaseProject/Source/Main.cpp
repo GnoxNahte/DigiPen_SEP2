@@ -119,6 +119,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	}
 	timerSystem.Clear();
+
+	QuickGraphics::Free();
+
 	// free the system
 	AESysExit();
 }
