@@ -3,6 +3,7 @@
 #include "enemy/EnemyA.h"
 #include "Camera.h"
 #include "Environment/MapGrid.h"
+#include "../Game/enemy/EnemyBoss.h"
 
 // Temp - stores in game data
 // Change to a proper game state manager
@@ -18,5 +19,6 @@ private:
 	EnemyA enemy;
 	Camera camera;
 	MapGrid map;
+	EnemyBoss enemyBoss;
 };
 

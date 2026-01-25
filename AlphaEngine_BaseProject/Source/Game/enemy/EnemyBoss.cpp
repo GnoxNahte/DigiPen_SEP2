@@ -1,4 +1,4 @@
-#include "EnemyA.h"
+#include "EnemyBoss.h"
 #include <cmath>
 #include "AEEngine.h"
 #include "../../Utils/QuickGraphics.h"
@@ -72,8 +72,8 @@ struct GlowOrb
 static std::vector<GlowOrb> g_orbs;
 
 
-EnemyA::EnemyA(float initialPosX, float initialPosY)
-    : sprite("Assets/Craftpix/Alien6.png")  
+EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
+    : sprite("Assets/Craftpix/Bringer_of_Death.png")
 {
     position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
@@ -90,7 +90,7 @@ EnemyA::EnemyA(float initialPosX, float initialPosY)
     attack.hitTimeNormalized = 0.5f;
 }
 
-EnemyA::~EnemyA()
+EnemyBoss::~EnemyBoss()
 {
 }
 
@@ -104,7 +104,7 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 }
 
 
-void EnemyA::Update(const AEVec2& playerPos)
+void EnemyBoss::Update(const AEVec2& playerPos)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
@@ -120,10 +120,23 @@ void EnemyA::Update(const AEVec2& playerPos)
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     attack.Update(dt, absDx, attackDur);
 
+    // Spawn one orb when attack starts (testing)!!!!!!!!!
+    if (attack.JustStarted())
+    {
+        const float dir = (facingDirection.x >= 0.f) ? 1.f : -1.f;
+
+        GlowOrb o;
+        o.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
+        o.vel = AEVec2{ dir * 7.0f, 0.f };      // speed in tiles/sec
+        o.radius = 0.14f;
+        o.life = 1.6f;
+        o.color = 0xFFAA66FF;                   // purple glow (ARGB)
+
+        g_orbs.push_back(o);
+    }
 
 
-
-    // If attacking, stop movement. Else, do existing chase logic.
+    // If attacking, stop movement. Else, do your existing chase logic.
     if (attack.IsAttacking())
     {
         velocity.x = 0.f;
@@ -158,7 +171,7 @@ void EnemyA::Update(const AEVec2& playerPos)
                 position.y = 0.f;
         }
 
-   
+
 
     }
 
@@ -167,57 +180,72 @@ void EnemyA::Update(const AEVec2& playerPos)
 
     // Advance sprite frames
     sprite.Update();
+
+    // Update + cleanup orbs(TESTING)!!!!!!
+    for (auto& o : g_orbs) o.Update(dt);
+    g_orbs.erase(std::remove_if(g_orbs.begin(), g_orbs.end(),
+        [](const GlowOrb& o) { return !o.alive(); }), g_orbs.end());
 }
 
 
-void EnemyA::UpdateAnimation()
+void EnemyBoss::UpdateAnimation()
 {
     if (attack.IsAttacking())
     {
-        sprite.SetState(ATTACK); 
+        sprite.SetState(ATTACK);
         return;
     }
 
     if (std::fabs(velocity.x) > 8.0f)
         sprite.SetState(RUN);
     else
-        sprite.SetState(IDLE1);
+        sprite.SetState(IDLE);
 }
 
 
 
 
-void EnemyA::Render() 
+void EnemyBoss::Render()
 {
-    AEMtx33 transform;
-    // === Draw sprite using the same transform pipeline as Player ===
+    AEMtx33 m;
+
     const bool faceRight =
         (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
 
-    // Local scale (flip X if facing left). Match Player's 2.0f scaling.
-    AEMtx33Scale(&transform, faceRight ? 2.f : -2.f, 2.f);
+    const float bossScale = 3.5f;
 
-    // Pivot correction, same formula as Player
+    AEMtx33Scale(&m, faceRight ? bossScale : -bossScale, bossScale);
+
+    float px = sprite.metadata.pivot.x;
+    float py = sprite.metadata.pivot.y;
+
+    if (!faceRight)
+        px = 1.0f - px;
+
     AEMtx33TransApply(
-        &transform,
-        &transform,
-        position.x - (0.5f - sprite.metadata.pivot.x),
-        position.y - (0.5f - sprite.metadata.pivot.y)
+        &m, &m,
+        position.x - (0.5f - px),
+        position.y - (0.5f - py)
     );
 
-    // Camera scale (scales translation too), same as Player
-    AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
-    AEGfxSetTransform(transform.m);
 
-    // Draw the sprite
+    AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+    AEGfxSetTransform(m.m);
+
     sprite.Render();
 
+    // ---- RESET TRANSFORM FOR WORLD-SPACE PRIMITIVES ----
+    AEMtx33 world;
+    AEMtx33Scale(&world, Camera::scale, Camera::scale);
+    AEGfxSetTransform(world.m);
 
+    for (const auto& o : g_orbs)
+        o.Render();
 
-    // === Debug draw rect (same approach as Player debug) ===
     if (debugDraw)
     {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
     }
 }
+

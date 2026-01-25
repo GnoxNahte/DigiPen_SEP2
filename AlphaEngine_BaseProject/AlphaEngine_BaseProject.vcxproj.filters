@@ -99,6 +99,9 @@
     <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
       <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -159,6 +162,9 @@
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
