@@ -12,6 +12,7 @@ struct SpriteMetadata
 {
 	struct StateInfo
 	{
+		// === In JSON ===
 		// Not using for anything, just for organising. Exclude in release?
 		std::string name;
 
@@ -26,6 +27,7 @@ struct SpriteMetadata
 		 */
 		int sampleRate;
 
+		// === NOT in JSON ===
 		// Derived from sample rate
 		float timePerFrame;
 
@@ -41,13 +43,13 @@ struct SpriteMetadata
 
 	/**
 	 * @brief Pivot position for all frames. Range: 0..1
+	 * @todo Shift to stateInfo or make it default like defaultSampleRate?
 	 */
 	AEVec2 pivot{ 0.5f, 0.5f };
 
 	/**
 	 * @brief Default frame per second / How fast to play the animation
 	 *		  Will be used when the state doesn't specify it
-	 * @todo  Make a default state info instead? Maybe for pivot
 	 */
 	int defaultSampleRate;
 
