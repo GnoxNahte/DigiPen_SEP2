@@ -26,7 +26,7 @@ void GameScene::Update()
     camera.Update();
     player.Update();
     enemyBoss.Update(player.position);
-    enemy.Update(player.position);
+    //enemy.Update(player.position);
     if (enemy.PollAttackHit())
     {
         // later: apply player damage

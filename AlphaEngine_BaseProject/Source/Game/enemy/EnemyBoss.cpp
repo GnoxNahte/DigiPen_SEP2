@@ -73,7 +73,7 @@ static std::vector<GlowOrb> g_orbs;
 
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
-    : sprite("Assets/Craftpix/Bringer_of_Death.png")
+    : sprite("Assets/Craftpix/Bringer_of_Death3.png")
 {
     position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
@@ -170,6 +170,7 @@ void EnemyBoss::Update(const AEVec2& playerPos)
             if (position.y < 0.f)
                 position.y = 0.f;
         }
+		else (chasing = false);
 
 
 
@@ -196,7 +197,7 @@ void EnemyBoss::UpdateAnimation()
         return;
     }
 
-    if (std::fabs(velocity.x) > 8.0f)
+    if (chasing)
         sprite.SetState(RUN);
     else
         sprite.SetState(IDLE);
@@ -219,8 +220,7 @@ void EnemyBoss::Render()
     float px = sprite.metadata.pivot.x;
     float py = sprite.metadata.pivot.y;
 
-    if (!faceRight)
-        px = 1.0f - px;
+   
 
     AEMtx33TransApply(
         &m, &m,
