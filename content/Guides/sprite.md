@@ -10,8 +10,8 @@ A class to help with rendering animations with basic animation state
 2. Create a text file with the same name as the sprite asset (including the extension) but add `.meta` to the end of the file. <br>For example, if file name is `player.png`, add a `player.png.meta` text file.
 
 Reference: 
-- `Assets/Art/rvos/Adventurer.png`
-- `Assets/Art/rvos/Adventurer.png.meta`
+- [Assets/Art/rvos/Adventurer.png](https://github.com/GnoxNahte/DigiPen_SEP2/blob/main/Assets/Art/rvros/Adventurer.png)
+- [Assets/Art/rvos/Adventurer.png.meta](https://github.com/GnoxNahte/DigiPen_SEP2/blob/main/Assets/Art/rvros/Adventurer.png.meta)
 
 ### Setup - .meta file {#meta-file-setup}
 See SpriteMetadata for what data to put inside. 
@@ -46,11 +46,11 @@ Sprite calculates the row and column and uses that to divide the sprite into ind
 - `row` count = length of `stateInfo` 
 - `col` count = loop through `stateInfo` and find the max `frameCount`
 
-See `Assets/Art/rvos/Adventurer.png.meta` for another reference
+See [Assets/Art/rvos/Adventurer.png.meta](https://github.com/GnoxNahte/DigiPen_SEP2/blob/main/Assets/Art/rvros/Adventurer.png.meta) for another reference
 ### Setup - Using in code
 1. In `.h`, include the Sprite file (location at `Utils/Sprite.h`)
 2. In the class, 
-	1. In header file, add a Sprite member 
+	1. In header file, add a Sprite variable 
 	2. In the constructor, pass in the path to the sprite file (including extension). <br> For example, "Assets/Art/player.png"
 
 Example:

@@ -29,7 +29,7 @@ public:
 
 /**
  * @brief	Object Pool with time complexity of:
- *			- Get:		O(1) (Assuming no need to expand vector)
+ *			- Get:		O(1)
  *			- Release:	O(1)
  * 
  *			Need the object that is being pooled to inherit ObjectPoolItem

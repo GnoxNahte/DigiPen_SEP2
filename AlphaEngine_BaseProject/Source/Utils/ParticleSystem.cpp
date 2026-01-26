@@ -53,7 +53,6 @@ void ParticleSystem::Update()
 	{
 		Particle& p = pool.pool[i];
 		p.Update(dt);
-		//std::cout << i <<  " | lifetime: " << (pool.pool[i].lifetime - currTime) << "\n";
 		if (currTime > p.spawnTime + p.lifetime)
 			pool.Release(p);
 	}
