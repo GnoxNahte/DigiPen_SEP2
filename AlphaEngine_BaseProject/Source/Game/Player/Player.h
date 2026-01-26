@@ -47,6 +47,14 @@ public:
     ~Player();
     void Update();
     void Render();
+	// get player position
+    AEVec2 GetPosition() const { return position; }
+	// hit box size
+    AEVec2 GetSize() const { return stats.playerSize; }
+	// apply damage to player
+    void ApplyDamage(int dmg);
+	// test get current HP
+    int GetHP() const { return currentHP; }
 private:
     PlayerStats stats;
     Sprite sprite;
@@ -86,5 +94,8 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
+
+	// === Player HP ===
+    int currentHP = 0;
 };
 

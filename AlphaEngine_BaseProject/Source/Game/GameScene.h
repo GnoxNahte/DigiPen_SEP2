@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Environment/MapGrid.h"
 #include "../Utils/ParticleSystem.h"
+#include "Environment/traps.h"
 
 // Temp - stores in game data
 // Change to a proper game state manager
@@ -18,5 +19,6 @@ private:
 	Camera camera;
 	MapGrid map;
 	ParticleSystem testParticleSystem;
+	TrapManager trapMgr;
 };
 

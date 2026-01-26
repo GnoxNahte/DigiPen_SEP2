@@ -1,8 +1,6 @@
 ﻿#include "traps.h"
 
 #include <algorithm>
-#include <iostream>
-
 
 #include "Source/Game/Player/Player.h"
 #include "Source/Utils/QuickGraphics.h"
@@ -57,8 +55,7 @@ void Trap::Render() const
     case Type::SpikePlate:    color = 0xFFAAAAAA; break;
     }
 
-    QuickGraphics::DrawRect(m_box.position, m_box.size, color, AE_GFX_MDM_TRIANGLES);
-
+    QuickGraphics::DrawRect(m_box.position, m_box.size, color, AE_GFX_MDM_LINES_STRIP);
 }
 
 // ---------------- LavaPool ----------------
@@ -89,11 +86,7 @@ void PressurePlate::AddLinkedTrap(Trap* t)
 
 void PressurePlate::OnPlayerEnter(Player&)
 {
-    if (IsTriggered()) 
-    { 
-        return;
-    }
-    std::cout << "[Plate] Triggered!\n";
+    if (IsTriggered()) return;
     MarkTriggered();
     for (Trap* t : m_linked) if (t) t->SetEnabled(true);
 }
@@ -131,7 +124,7 @@ void SpikePlate::OnPlayerStay(float, Player& player)
 {
     if (!m_spikesUp) return;
     if (m_hitTimer > 0.f) return;
-    std::cout << "[Spike] Hit!\n";
+
     player.ApplyDamage(m_damageOnHit);
     m_hitTimer = m_hitCooldown;
 }
