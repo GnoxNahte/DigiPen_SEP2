@@ -5,7 +5,7 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 
-Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
+Player::Player(MapGrid* map) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
     facingDirection{},
@@ -14,10 +14,9 @@ Player::Player(MapGrid* map, float initialPosX, float initialPosY) :
     velocity{},
     particleSystem{50}
 {
-    this->map = map;
+    Reset(AEVec2{ 2, 4 });
 
-    position.x = initialPosX;
-    position.y = initialPosY;
+    this->map = map;
 
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
@@ -115,6 +114,27 @@ void Player::Render()
         RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
+}
+
+void Player::Reset(const AEVec2& initialPos)
+{
+    position = initialPos;
+    AEVec2Zero(&velocity);
+    AEMtx33Identity(&transform);
+    
+    AEVec2Set(&inputDirection, 1.f, 0.f);
+    isJumpHeld = false;
+    lastJumpPressed = -1.f;
+    ifReleaseJumpAfterJumping = true;
+
+    facingDirection = inputDirection;
+    lastJumpTime = -1.f;
+    lastGroundedTime = -1.f;
+
+    isGroundCollided = false;
+    isCeilingCollided = false;
+    isLeftWallCollided = false;
+    isRightWallCollided = false;
 }
 
 void Player::UpdateInput()

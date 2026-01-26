@@ -1,9 +1,9 @@
 #include "GameScene.h"
-#include "../Utils/QuickGraphics.h"
-#include "../Utils/AEExtras.h"
+#include "../../Utils/QuickGraphics.h"
+#include "../../Utils/AEExtras.h"
 
 GameScene::GameScene() : 
-	player(&map, 2, 4), 
+	player(&map), 
 	map(50, 50),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20)
@@ -15,6 +15,11 @@ GameScene::GameScene() :
 
 GameScene::~GameScene()
 {
+}
+
+void GameScene::Init()
+{
+	player.Reset(AEVec2{ 2, 4 });
 }
 
 void GameScene::Update()
@@ -32,14 +37,10 @@ void GameScene::Update()
 
 void GameScene::Render()
 {
-	
-	//QuickGraphics::DrawRect(0.f, -1.f, 10.f, 1.f, 0x11FFFFFF);
-	//QuickGraphics::DrawRect(0.f, -1.5f, 10.f, 0.5f, 0x11FFFFFF);
-	//QuickGraphics::DrawRect(0.f, 0.f, 1.f, 1.f, 0xFFFF0000);
-
 	map.Render(camera);
 	player.Render();
 
+	// === Code below is for DEBUG ONLY ===
 	testParticleSystem.Render();
 
 	AEVec2 worldMousePos;
@@ -48,4 +49,13 @@ void GameScene::Render()
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+
+	if (AEInputCheckTriggered(AEVK_R))
+		GSM::ChangeScene(SceneState::GS_GAME);
+	else if (AEInputCheckTriggered(AEVK_T))
+		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
+}
+
+void GameScene::Exit()
+{
 }

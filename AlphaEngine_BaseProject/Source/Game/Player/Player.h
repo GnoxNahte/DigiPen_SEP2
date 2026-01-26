@@ -43,10 +43,11 @@ public:
     AEVec2 position;
     AEVec2 velocity;
 
-    Player(MapGrid* map, float initialPosX, float initialPosY);
+    Player(MapGrid* map);
     ~Player();
     void Update();
     void Render();
+    void Reset(const AEVec2& initialPos);
 private:
     PlayerStats stats;
     Sprite sprite;

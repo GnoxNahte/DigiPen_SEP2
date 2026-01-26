@@ -37,6 +37,12 @@
     <Filter Include="Header Files\Game\Environment">
       <UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game\Scene">
+      <UniqueIdentifier>{00cba9ab-1afb-42d9-b9d5-44068fc085ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Scene">
+      <UniqueIdentifier>{832b943c-8d30-4fe9-9f40-b0fe7827392c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -47,9 +53,6 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Player\Player.cpp">
       <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\GameScene.cpp">
-      <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utils\Sprite.cpp">
       <Filter>Source Files\Utils</Filter>
@@ -102,6 +105,15 @@
     <ClCompile Include="Source\Game\Environment\MapTile.cpp">
       <Filter>Source Files\Game\Environment</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GSM.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GameScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -109,9 +121,6 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Player\Player.h">
       <Filter>Header Files\Game\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\GameScene.h">
-      <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Sprite.h">
       <Filter>Header Files\Utils</Filter>
@@ -166,6 +175,15 @@
     </ClInclude>
     <ClInclude Include="Source\Utils\Vec2Int.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GSM.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GameScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\MainMenuScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
