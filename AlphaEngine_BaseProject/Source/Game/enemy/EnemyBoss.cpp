@@ -21,7 +21,7 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
     return (anew << 24) | rgb;
 }
 
-static void DrawGlowBall_Local(float x, float y, float radius, u32 baseColorARGB)
+/*static void DrawGlowBall_Local(float x, float y, float radius, u32 baseColorARGB)
 {
     // If AE_GFX_BM_ADD doesn't exist in your AlphaEngine build, comment out the next line.
     AEGfxSetBlendMode(AE_GFX_BM_ADD);
@@ -43,6 +43,7 @@ static void DrawGlowBall_Local(float x, float y, float radius, u32 baseColorARGB
     // Restore normal blending
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 }
+*/
 
 struct GlowOrb
 {
@@ -51,6 +52,9 @@ struct GlowOrb
     float  radius{ 0.16f };
     float  life{ 1.5f };
     u32    color{ 0xFF66CCFF }; // cyan
+
+    float debugW{ 0.5f };   // width of hitbox
+    float debugH{ 1.20f };   // height of hitbox (vertical lightning)
 
     bool alive() const { return life > 0.f; }
 
@@ -62,10 +66,35 @@ struct GlowOrb
         life -= dt;
     }
 
-    void Render() const
+    void Render(Sprite& vfx, float sx, float sy) const
     {
-        DrawGlowBall_Local(pos.x, pos.y, radius, color);
+        AEMtx33 m;
+        const bool faceRight = (vel.x >= 0.0f);   // orb direction
+        // scale to make it a vertical lightning
+        AEMtx33Scale(&m, sx, sy);
+
+        // pivot-correct translate (same formula pattern as your boss)
+        float px = vfx.metadata.pivot.x;
+        float py = vfx.metadata.pivot.y;
+
+        if (!faceRight)
+            px = 1.0f - px;
+
+        AEMtx33TransApply(
+            &m, &m,
+            pos.x - (0.5f - px),
+            pos.y - (0.5f - py)
+        );
+
+        // apply camera scale (same pipeline as your other sprites)
+        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+        AEGfxSetTransform(m.m);
+
+        AEGfxSetBlendMode(AE_GFX_BM_ADD);
+        vfx.Render();
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     }
+
 };
 
 // Global list for testing (fine while you only have 1 EnemyA / no boss yet)
@@ -74,9 +103,11 @@ static std::vector<GlowOrb> g_orbs;
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
+    , spell1Vfx("Assets/Craftpix/Bringer_of_Death3.png")
 {
     position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
+    spell1Vfx.SetState(SPELL1); // enum 6
 
     // Make sure the enemy is visible by default
     size = AEVec2{ 0.8f, 0.8f };
@@ -181,6 +212,7 @@ void EnemyBoss::Update(const AEVec2& playerPos)
 
     // Advance sprite frames
     sprite.Update();
+    spell1Vfx.Update();
 
     // Update + cleanup orbs(TESTING)!!!!!!
     for (auto& o : g_orbs) o.Update(dt);
@@ -240,8 +272,32 @@ void EnemyBoss::Render()
     AEGfxSetTransform(world.m);
 
     for (const auto& o : g_orbs)
-        o.Render();
+    {
+        // render the lightning sprite (this sets its own transform)
+        o.Render(spell1Vfx, 10.0f, 3.0f);
 
+        // reset back to world transform for world-space debug drawing
+        AEGfxSetTransform(world.m);
+
+        // debug rect for the lightning hitbox
+        if (debugDraw)
+        {
+            QuickGraphics::DrawRect(
+                o.pos.x, o.pos.y,
+                o.debugW, o.debugH,
+                0xFF00FF00,                 // green
+                AE_GFX_MDM_LINES_STRIP
+            );
+
+            QuickGraphics::DrawRect(o.pos.x, o.pos.y, 0.05f, 0.05f, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+        }
+    }
+
+
+    // IMPORTANT: reset back to world before debug draw
+    AEGfxSetTransform(world.m);
+
+	//enemy boss debug box
     if (debugDraw)
     {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;

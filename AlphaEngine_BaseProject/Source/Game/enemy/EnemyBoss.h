@@ -50,6 +50,8 @@ private:
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };
     Sprite sprite;
+    Sprite spell1Vfx;   // extra sprite used only for orb VFX
+
     AEVec2 facingDirection{ 1.f, 0.f };
 
 
