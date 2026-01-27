@@ -19,6 +19,7 @@ struct PlayerStats
     // === Horizontal Movement ===
     float maxSpeed;
     float airStrafeMaxSpeed;
+    float attackMaxSpeedMultiplier;
 
     float maxSpeedTime;
     float stopTime;
@@ -74,6 +75,8 @@ struct PlayerStats
 
 	// === Combat stats ===
 	int maxHealth;
+    float attackBuffer;
+
     AttackStats attack1;
     AttackStats attack2;
     AttackStats attack3;

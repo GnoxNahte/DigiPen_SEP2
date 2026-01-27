@@ -56,6 +56,7 @@ void PlayerStats::LoadFileData()
 	// ===== Convert JSON to class initialisation =====
 	maxSpeed = doc["maxSpeed"].GetFloat();
 	airStrafeMaxSpeed = doc["airStrafeMaxSpeed"].GetFloat();
+	attackMaxSpeedMultiplier = doc["attackMaxSpeedMultiplier"].GetFloat();
 
 	maxSpeedTime = doc["maxSpeedTime"].GetFloat();
 	stopTime = doc["stopTime"].GetFloat();
@@ -89,6 +90,18 @@ void PlayerStats::LoadFileData()
 	playerSize.x = playerHeightObj["x"].GetFloat();
 	playerSize.y = playerHeightObj["y"].GetFloat();
 
+	// === Combat stats ===
+	maxHealth = doc["maxHealth"].GetInt();
+	attackBuffer = doc["attackBuffer"].GetFloat();
+
+	LoadAttack(doc["attack1"].GetObj(), attack1);
+	LoadAttack(doc["attack2"].GetObj(), attack2);
+	LoadAttack(doc["attack3"].GetObj(), attack3);
+
+	LoadAttack(doc["airAttack1"].GetObj(), airAttack1);
+	LoadAttack(doc["airAttack2"].GetObj(), airAttack2);
+	LoadAttack(doc["airAttack3"].GetObj(), airAttack3);
+
 	// ===== Pre-calculate other variables =====
 	moveAcceleration = maxSpeed / maxSpeedTime;
 	stopAcceleration = -maxSpeed / stopTime;
@@ -102,14 +115,4 @@ void PlayerStats::LoadFileData()
 
 	jumpVelocity = (2.f * maxJumpHeight) / timeToMaxHeight;
 	minJumpTime = 2.f * minJumpHeight / jumpVelocity;
-
-	// ===== Player's combat stats =====
-	LoadAttack(doc["attack1"].GetObj(), attack1);
-	LoadAttack(doc["attack2"].GetObj(), attack2);
-	LoadAttack(doc["attack3"].GetObj(), attack3);
-
-	LoadAttack(doc["airAttack1"].GetObj(), airAttack1);
-	LoadAttack(doc["airAttack2"].GetObj(), airAttack2);
-	LoadAttack(doc["airAttack3"].GetObj(), airAttack3);
-
 }

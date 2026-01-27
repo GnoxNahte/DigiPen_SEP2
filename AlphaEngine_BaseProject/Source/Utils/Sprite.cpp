@@ -30,21 +30,28 @@ void Sprite::Update()
 	{
 		animTimer -= currState.timePerFrame;
 
+		bool onLastFrame = frameIndex == (currState.frameCount - 1);
+
 		// If should change state
 		if (currStateIndex != nextStateIndex && 
-			(!ifLockCurrent || frameIndex == currState.frameCount - 1))
+			(!ifLockCurrent || onLastFrame))
 		{
 			animTimer = 0;
 			frameIndex = 0;
 			currStateIndex = nextStateIndex;
 			ifLockCurrent = false;
 		}
+		// Else, play and repeat current animation
 		else 
 			frameIndex = (frameIndex + 1) % currState.frameCount;
-
+		
 		uvOffset.x = frameIndex * uvWidth;
 		uvOffset.y = currStateIndex * uvHeight;
-		//std::cout << frameIndex << std::endl;
+
+		if (onLastFrame && onAnimEnd)
+		{
+			onAnimEnd(currStateIndex);
+		}
 	}
 
 	animTimer += (float)AEFrameRateControllerGetFrameTime();
@@ -58,8 +65,13 @@ void Sprite::Render()
 	//AEGfxTextureSet(nullptr, 0, 0); // Reset
 }
 
+int Sprite::GetState() const
+{
+	return currStateIndex;
+}
+
 // todo - Currently it changes immediately. Add condition to only transition when current anim is done?
-void Sprite::SetState(int nextState, bool ifLock)
+void Sprite::SetState(int nextState, bool ifLock, std::function<void(int)> _onAnimEnd)
 {
 	if (nextState == currStateIndex)
 		return;
@@ -74,8 +86,12 @@ void Sprite::SetState(int nextState, bool ifLock)
 	
 	if (ifLockCurrent)
 		return;
+
+	//std::cout << "Set state: " << nextState << "\n";
 	
 	this->ifLockCurrent = ifLock;
+
+	this->onAnimEnd = _onAnimEnd;
 
 	animTimer = 0;
 	currStateIndex = nextState;

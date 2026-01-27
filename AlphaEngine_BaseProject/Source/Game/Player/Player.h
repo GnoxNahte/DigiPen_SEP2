@@ -25,15 +25,18 @@ public:
         ATTACK_1,    
         ATTACK_2,    
         ATTACK_3,    
+        ATTACK_END = ATTACK_3,
         HURT,        
         DEATH,       
         SWORD_DRAW,  
         SWORD_SHEATH,
         WALL_SLIDE,  
         WALL_CLIMB,  
+        // @todo - Split into air attack and attack down (smash)?
         AIR_ATTACK_1,
         AIR_ATTACK_2,
         AIR_ATTACK_3,
+        AIR_ATTACK_END = AIR_ATTACK_3,
         RUN_W_SWORD, 
 
         ANIM_COUNT
@@ -63,7 +66,7 @@ private:
     bool isJumpHeld = false;
     f64 lastJumpPressed = -1.f;
     bool ifReleaseJumpAfterJumping = true;
-    f64 lastAttackPressed = -1.f;
+    f64 lastAttackHeld = -1.f;
 
     // === Movement data ===
     AEVec2 position;
@@ -84,8 +87,11 @@ private:
     // === References to other systems ===
     MapGrid* map;
 
+    // ===== Helper Functions =====
     void UpdateInput();
+    void UpdateTriggerColliders();
 
+    // === Movement update ===
     void HorizontalMovement();
     void VerticalMovement();
     void HandleLanding();
@@ -93,6 +99,13 @@ private:
     void HandleJump();
     void PerformJump();
 
+    bool IsAnimGroundAttack(AnimState state);
+    bool IsAnimAirAttack(AnimState state);
+    bool IsAttacking();
+    void UpdateAttacks();
+    void OnAttackAnimEnd(int spriteStateIndex);
+
+    void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);

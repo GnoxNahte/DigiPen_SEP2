@@ -32,25 +32,13 @@ Player::~Player()
 void Player::Update()
 {
     UpdateInput();
-
-    // === Handle collision ===
-    AEVec2 tmpPosition;
-    
-    AEVec2Add(&tmpPosition, &position, &stats.groundChecker.position);
-    isGroundCollided = map->CheckBoxCollision(tmpPosition, stats.groundChecker.size);
-
-    AEVec2Add(&tmpPosition, &position, &stats.ceilingChecker.position);
-    isCeilingCollided = map->CheckBoxCollision(tmpPosition, stats.ceilingChecker.size);
-
-    AEVec2Add(&tmpPosition, &position, &stats.leftWallChecker.position);
-    isLeftWallCollided = map->CheckBoxCollision(tmpPosition, stats.leftWallChecker.size);
-
-    AEVec2Add(&tmpPosition, &position, &stats.rightWallChecker.position);
-    isRightWallCollided = map->CheckBoxCollision(tmpPosition, stats.rightWallChecker.size);
+    UpdateTriggerColliders();
 
     // Update velocity
     HorizontalMovement();
     VerticalMovement();
+
+    UpdateAttacks();
 
     // Update position based on velocity
     AEVec2 displacement, nextPosition;
@@ -59,29 +47,7 @@ void Player::Update()
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
 
     UpdateAnimation();
-
-    // Update particle system
-    float currVelocityAngle;
-    if (velocity.y == 0.f)
-        currVelocityAngle = (velocity.x > 0) ? AEDegToRad(180.f) : 0.f;
-    else if (velocity.x == 0.f)
-        currVelocityAngle = (velocity.y > 0) ? AEDegToRad(-90.f) : -90.f;
-    else
-        currVelocityAngle = atan2f(velocity.x, velocity.y) + AEDegToRad(180.f);
-
-    float angleRange = AEDegToRad(50.f) * 0.5f;
-    particleSystem.emitter.angleRange.x = currVelocityAngle - angleRange;
-    particleSystem.emitter.angleRange.y = currVelocityAngle + angleRange;
-
-    float speed = AEVec2Length(&velocity);
-    particleSystem.emitter.speedRange.x = speed * 0.3f * 0.75f;
-    particleSystem.emitter.speedRange.y = speed * 0.3f * 1.5f;
-    //std::cout << "Angle: " << AERadToDeg(currVelocityAngle - angleRange) << "\n";
-    particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
-    
-    AEVec2Set(&particleSystem.emitter.spawnPosRangeX, position.x + 0.6f, position.x );
-    AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y - 0.0f, position.y + 1.f);
-    particleSystem.Update();
+    UpdateTrails();
 
     // @todo - Delete, for debug only
     if (AEInputCheckCurr(AEVK_R))
@@ -184,6 +150,26 @@ void Player::UpdateInput()
 
     if (inputDirection.x != 0 || inputDirection.y != 0)
         facingDirection = inputDirection;
+
+    if (AEInputCheckCurr(AEVK_X))
+        AEGetTime(&lastAttackHeld);
+}
+
+void Player::UpdateTriggerColliders()
+{
+    AEVec2 tmpPosition;
+
+    AEVec2Add(&tmpPosition, &position, &stats.groundChecker.position);
+    isGroundCollided = map->CheckBoxCollision(tmpPosition, stats.groundChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.ceilingChecker.position);
+    isCeilingCollided = map->CheckBoxCollision(tmpPosition, stats.ceilingChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.leftWallChecker.position);
+    isLeftWallCollided = map->CheckBoxCollision(tmpPosition, stats.leftWallChecker.size);
+
+    AEVec2Add(&tmpPosition, &position, &stats.rightWallChecker.position);
+    isRightWallCollided = map->CheckBoxCollision(tmpPosition, stats.rightWallChecker.size);
 }
 
 void Player::HorizontalMovement()
@@ -209,6 +195,8 @@ void Player::HorizontalMovement()
             velocity.x += stats.moveAcceleration * inputDirection.x * dt;
 
             float maxSpeed = isGroundCollided ? stats.maxSpeed : stats.airStrafeMaxSpeed;
+            if (IsAttacking())
+                maxSpeed *= stats.attackMaxSpeedMultiplier;
             velocity.x = AEClamp(velocity.x, -maxSpeed, maxSpeed);
         }
         // Moving in opposite direction
@@ -333,14 +321,116 @@ void Player::PerformJump()
     //sprite.SetState(JUMP_START, true);
 }
 
+bool Player::IsAnimGroundAttack(AnimState state)
+{
+    return  state >= ATTACK_1 && state <= ATTACK_END;
+}
+
+bool Player::IsAnimAirAttack(AnimState state)
+{
+    return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_3;
+}
+
+bool Player::IsAttacking()
+{
+    AnimState spriteState = static_cast<AnimState>(sprite.GetState());
+    return IsAnimAirAttack(spriteState) || IsAnimGroundAttack(spriteState);
+}
+
+void Player::UpdateAttacks()
+{
+    // @todo - attack collision detection
+    //if (IsAnimGroundAttack())
+    {
+
+    }
+    // Add air attack
+}
+
+void Player::OnAttackAnimEnd(int spriteStateIndex)
+{
+    AnimState spriteState = static_cast<AnimState>(spriteStateIndex);
+
+    bool inAttackInputBuffer = AEGetTime(nullptr) - lastAttackHeld < stats.attackBuffer;
+    bool isLastAttack = spriteState == AnimState::ATTACK_END || spriteState == AnimState::AIR_ATTACK_END;
+    
+    // If not in attack input buffer OR is last attack in combo, 
+    // Reset - Set to idle
+    if (!inAttackInputBuffer || isLastAttack)
+    {
+        sprite.SetState(AnimState::IDLE_W_SWORD);
+    }
+    else
+    {
+        sprite.SetState(spriteStateIndex + 1, false, 
+            [this](int index) { OnAttackAnimEnd(index); }
+        );
+    }
+}
+
+void Player::UpdateTrails()
+{
+    // Update particle system
+    float currVelocityAngle;
+    if (velocity.y == 0.f)
+        currVelocityAngle = (velocity.x > 0) ? AEDegToRad(180.f) : 0.f;
+    else if (velocity.x == 0.f)
+        currVelocityAngle = (velocity.y > 0) ? AEDegToRad(-90.f) : -90.f;
+    else
+        currVelocityAngle = atan2f(velocity.x, velocity.y) + AEDegToRad(180.f);
+
+    float angleRange = AEDegToRad(50.f) * 0.5f;
+    particleSystem.emitter.angleRange.x = currVelocityAngle - angleRange;
+    particleSystem.emitter.angleRange.y = currVelocityAngle + angleRange;
+
+    float speed = AEVec2Length(&velocity);
+    particleSystem.emitter.speedRange.x = speed * 0.3f * 0.75f;
+    particleSystem.emitter.speedRange.y = speed * 0.3f * 1.5f;
+    //std::cout << "Angle: " << AERadToDeg(currVelocityAngle - angleRange) << "\n";
+    particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
+
+    AEVec2Set(&particleSystem.emitter.spawnPosRangeX, position.x + 0.6f, position.x);
+    AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y - 0.0f, position.y + 1.f);
+    particleSystem.Update();
+}
+
 void Player::UpdateAnimation()
 {
-    if (!isGroundCollided)
-        sprite.SetState(AnimState::FALLING);
-    else if (fabsf(velocity.x) > 0.f)
-        sprite.SetState(AnimState::RUN_W_SWORD);
+    AnimState spriteState = static_cast<AnimState>(sprite.GetState());
+
+    bool inAttackInputBuffer = AEGetTime(nullptr) - lastAttackHeld < stats.attackBuffer;
+    bool isAnimAttack = IsAnimGroundAttack(spriteState) || IsAnimAirAttack(spriteState);
+
+    // If player is trying to attack (including input buffer)
+    if (inAttackInputBuffer || isAnimAttack)
+    {
+        if (!isAnimAttack)
+        {
+            sprite.SetState(AnimState::ATTACK_1, false,
+                [this](int index) { OnAttackAnimEnd(index); }
+            );
+        }
+    }
     else
-        sprite.SetState(AnimState::IDLE_W_SWORD);
+    {
+        if ((isLeftWallCollided || isRightWallCollided) && velocity.y != 0.f)
+        {
+            sprite.SetState(AnimState::WALL_SLIDE);
+            
+            // If player isn't surrounded by walls
+            // Depending on the wall, they are near, make the player face the correct wall
+            if (!(isLeftWallCollided && isRightWallCollided))
+                facingDirection.x = fabsf(facingDirection.x) * (isLeftWallCollided ? 1.f : -1.f);
+        }
+        else if (!isGroundCollided)
+            sprite.SetState(AnimState::FALLING);
+        else if (fabsf(velocity.x) > 0.f)
+            sprite.SetState(AnimState::RUN_W_SWORD);
+        else
+            sprite.SetState(AnimState::IDLE_W_SWORD);
+
+        //std::cout << "vel: " << velocity.y << "\n";
+    }
 
     sprite.Update();
 }

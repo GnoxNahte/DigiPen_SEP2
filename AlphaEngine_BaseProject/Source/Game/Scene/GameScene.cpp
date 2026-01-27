@@ -36,7 +36,7 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
-	player.Reset(AEVec2{ 2, 4 });
+	player.Reset(AEVec2{ 2, 2 });
 }
 
 void GameScene::Update()
