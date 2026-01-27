@@ -5,15 +5,9 @@
 #include <iostream>
 #include <limits>
 
-ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize),
-	// Test only
-	emitter{
-		{0, 0}, // spawn pos min
-		{0, 0}, // spawn pos max
-		{AEDegToRad(20.f), AEDegToRad(40.f)}, // angle range (20 deg - 40 deg)
-		{15.f, 30.f}, // speed range
-		{ 1.5f, 3.f } // lifetime range
-	}
+ParticleSystem::ParticleSystem(int initialSize, const EmitterSettings& emitter) : 
+	pool(initialSize),
+	emitter(emitter)
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
 	//SetSpawnRate(10000.f);
@@ -42,7 +36,7 @@ void ParticleSystem::Update()
 	if (pool.GetSize() == 0)
 		return;
 
-	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+	std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?
@@ -85,7 +79,7 @@ Particle& ParticleSystem::SpawnParticle()
 	return p;
 }
 
-void ParticleSystem::SpawnParticleBurst(const AEVec2& position, size_t spawnCount)
+void ParticleSystem::SpawnParticleBurst(const EmitterSettings& _emitter, size_t spawnCount)
 {
 	float currTime = (float)AEGetTime(nullptr);
 
@@ -93,11 +87,12 @@ void ParticleSystem::SpawnParticleBurst(const AEVec2& position, size_t spawnCoun
 	{
 		Particle& p = pool.Get();
 		p.spawnTime = currTime;
-		p.position = position;
-		p.lifetime = AEExtras::RandomRange(emitter.lifetimeRange);
+		p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
+		p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
+		p.lifetime = AEExtras::RandomRange(_emitter.lifetimeRange);
 
-		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
-		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
+		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
+		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
 	}
 }
 

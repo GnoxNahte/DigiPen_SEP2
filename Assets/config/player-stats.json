@@ -40,52 +40,56 @@
   "playerSize": { "x": 0.5, "y": 0.9 },
   "maxHealth": 100,
   "attackBuffer": 0.1,
-  "attack1": { 
-    "damage": 10,
-    "knockbackForce": 5,
-    "collider": { 
+  "groundAttacks": [
+    { 
+      "damage": 10,
+      "knockbackForce": 5,
+      "collider": { 
+        "position": { "x": 0.5, "y": 0.2 },
+        "size":     { "x": 1.4, "y": 1.6 }
+      }
+    },
+    { 
+      "damage": 20,
+      "knockbackForce": 7,
+      "collider": { 
+        "position": { "x": 0.3, "y": 0.0 },
+        "size":     { "x": 1.9, "y": 1.4 }
+      }
+    },
+    { 
+      "damage": 30,
+      "knockbackForce": 8,
+      "collider": { 
+        "position": { "x": 0.1, "y": 0.1 },
+        "size":     { "x": 3.0, "y": 1.3 }
+      }
+    }
+  ],
+  "airAttacks": [
+    { 
+      "damage": 15,
+      "knockbackForce": 6,
+      "collider": { 
         "position": { "x": 0.4, "y": 0.0 },
         "size":     { "x": 0.3, "y": 0.8 }
-    }
-  },
-  "attack2": { 
-    "damage": 20,
-    "knockbackForce": 7,
-    "collider": { 
+      }
+    },
+    { 
+      "damage": 25,
+      "knockbackForce": 8,
+      "collider": { 
         "position": { "x": 0.4, "y": 0.0 },
         "size":     { "x": 0.3, "y": 0.8 }
-    }
-  },
-  "attack3": { 
-    "damage": 30,
-    "knockbackForce": 8,
-    "collider": { 
+      }
+    },
+    { 
+      "damage": 50,
+      "knockbackForce": 10,
+      "collider": { 
         "position": { "x": 0.4, "y": 0.0 },
         "size":     { "x": 0.3, "y": 0.8 }
+      }
     }
-  },
-  "airAttack1": { 
-    "damage": 15,
-    "knockbackForce": 6,
-    "collider": { 
-        "position": { "x": 0.4, "y": 0.0 },
-        "size":     { "x": 0.3, "y": 0.8 }
-    }
-  },
-  "airAttack2": { 
-    "damage": 25,
-    "knockbackForce": 8,
-    "collider": { 
-        "position": { "x": 0.4, "y": 0.0 },
-        "size":     { "x": 0.3, "y": 0.8 }
-    }
-  },
-  "airAttack3": { 
-    "damage": 40,
-    "knockbackForce": 9,
-    "collider": { 
-        "position": { "x": 0.4, "y": 0.0 },
-        "size":     { "x": 0.3, "y": 0.8 }
-    }
-  }
+  ]
 }

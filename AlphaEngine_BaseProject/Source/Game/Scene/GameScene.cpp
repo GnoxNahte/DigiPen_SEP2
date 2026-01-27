@@ -7,7 +7,7 @@ GameScene::GameScene() :
 	player(&map), 
 	map(50, 50),
 	camera({ 1,1 }, { 49, 49 }, 64),
-	testParticleSystem(20)
+	testParticleSystem(20, {})
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
 	// =============================== Traps Setup (debug) ===========================

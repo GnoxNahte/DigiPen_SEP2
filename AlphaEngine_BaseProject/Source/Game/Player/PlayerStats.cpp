@@ -94,13 +94,13 @@ void PlayerStats::LoadFileData()
 	maxHealth = doc["maxHealth"].GetInt();
 	attackBuffer = doc["attackBuffer"].GetFloat();
 
-	LoadAttack(doc["attack1"].GetObj(), attack1);
-	LoadAttack(doc["attack2"].GetObj(), attack2);
-	LoadAttack(doc["attack3"].GetObj(), attack3);
-
-	LoadAttack(doc["airAttack1"].GetObj(), airAttack1);
-	LoadAttack(doc["airAttack2"].GetObj(), airAttack2);
-	LoadAttack(doc["airAttack3"].GetObj(), airAttack3);
+	auto groundAttackArr = doc["groundAttacks"].GetArray();
+	for (int i = 0; i < groundAttacks.size(); i++)
+		LoadAttack(groundAttackArr[i].GetObj(), groundAttacks[i]);
+	
+	auto airAttacksArr = doc["airAttacks"].GetArray();
+	for (int i = 0; i < airAttacks.size(); i++)
+		LoadAttack(airAttacksArr[i].GetObj(), airAttacks[i]);
 
 	// ===== Pre-calculate other variables =====
 	moveAcceleration = maxSpeed / maxSpeedTime;

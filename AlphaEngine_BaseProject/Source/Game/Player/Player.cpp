@@ -12,7 +12,7 @@ Player::Player(MapGrid* map) :
     inputDirection{},
     transform{},
     velocity{},
-    particleSystem{50}
+    particleSystem{ 50, {} }
 {
     Reset(AEVec2{ 2, 4 });
 
@@ -321,30 +321,40 @@ void Player::PerformJump()
     //sprite.SetState(JUMP_START, true);
 }
 
-bool Player::IsAnimGroundAttack(AnimState state)
+bool Player::IsAnimGroundAttack()
 {
+    AnimState state = static_cast<AnimState>(sprite.GetState());
     return  state >= ATTACK_1 && state <= ATTACK_END;
 }
 
-bool Player::IsAnimAirAttack(AnimState state)
+bool Player::IsAnimAirAttack()
 {
+    AnimState state = static_cast<AnimState>(sprite.GetState());
     return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_3;
 }
 
 bool Player::IsAttacking()
 {
-    AnimState spriteState = static_cast<AnimState>(sprite.GetState());
-    return IsAnimAirAttack(spriteState) || IsAnimGroundAttack(spriteState);
+    return IsAnimAirAttack() || IsAnimGroundAttack();
 }
 
 void Player::UpdateAttacks()
 {
-    // @todo - attack collision detection
-    //if (IsAnimGroundAttack())
-    {
+    AttackStats* attack = nullptr;
+    AnimState animState = static_cast<AnimState>(sprite.GetState());
 
-    }
-    // Add air attack
+    if (IsAnimGroundAttack())
+        attack = &stats.groundAttacks[animState - AnimState::ATTACK_1];
+    else if (IsAnimAirAttack())
+        attack = &stats.groundAttacks[animState - AnimState::AIR_ATTACK_1];
+    // Else, not attacking
+    else
+        return;
+
+    AEVec2 colliderPos;
+    AEVec2Add(&colliderPos, &position, &attack->collider.position);
+    if (AEInputCheckCurr(AEVK_LCTRL))
+        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFFFF0000);
 }
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)
@@ -365,6 +375,19 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
         sprite.SetState(spriteStateIndex + 1, false, 
             [this](int index) { OnAttackAnimEnd(index); }
         );
+    }
+
+    // If transitioning to last attack
+    if (spriteState == AnimState::ATTACK_END - 1)
+    {
+        auto emitter = ParticleSystem::EmitterSettings{
+            { position.x + 1.5f, position.x + 1.5f },
+            { position.y + 0.5f, position.y + 0.5f },
+            { AEDegToRad(-15.f), AEDegToRad(15.f) },
+            { 15.f, 20.f },
+            { 0.3f, 0.4f }
+        };
+        particleSystem.SpawnParticleBurst(emitter, 10);
     }
 }
 
@@ -396,10 +419,8 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    AnimState spriteState = static_cast<AnimState>(sprite.GetState());
-
     bool inAttackInputBuffer = AEGetTime(nullptr) - lastAttackHeld < stats.attackBuffer;
-    bool isAnimAttack = IsAnimGroundAttack(spriteState) || IsAnimAirAttack(spriteState);
+    bool isAnimAttack = IsAnimGroundAttack() || IsAnimAirAttack();
 
     // If player is trying to attack (including input buffer)
     if (inAttackInputBuffer || isAnimAttack)

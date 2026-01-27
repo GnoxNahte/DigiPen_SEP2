@@ -36,7 +36,7 @@ public:
 		AEVec2 lifetimeRange;
 	};
 
-	ParticleSystem(int initialSize);
+	ParticleSystem(int initialSize, const EmitterSettings& emitter);
 	~ParticleSystem();
 
 	void Init();
@@ -51,7 +51,7 @@ public:
 	 * @param position		Center position of burst
 	 * @param spawnCount	Number of particles to spawn
 	 */
-	void SpawnParticleBurst(const AEVec2& position, size_t spawnCount);
+	void SpawnParticleBurst(const EmitterSettings& emitter, size_t spawnCount);
 
 	void SetSpawnRate(float spawnRate);
 

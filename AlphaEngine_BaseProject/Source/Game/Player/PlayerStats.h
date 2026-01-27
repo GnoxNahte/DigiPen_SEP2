@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <array>
 #include "AEEngine.h"
 #include "../../Utils/Box.h"
 
@@ -77,13 +78,8 @@ struct PlayerStats
 	int maxHealth;
     float attackBuffer;
 
-    AttackStats attack1;
-    AttackStats attack2;
-    AttackStats attack3;
-
-    AttackStats airAttack1;
-    AttackStats airAttack2;
-    AttackStats airAttack3;
+    std::array<AttackStats, 3> groundAttacks;
+    std::array<AttackStats, 3> airAttacks;
 
     /**
      * @brief       Loads the player stats from a file

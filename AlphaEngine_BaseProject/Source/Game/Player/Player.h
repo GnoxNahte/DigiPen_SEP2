@@ -99,8 +99,8 @@ private:
     void HandleJump();
     void PerformJump();
 
-    bool IsAnimGroundAttack(AnimState state);
-    bool IsAnimAirAttack(AnimState state);
+    bool IsAnimGroundAttack();
+    bool IsAnimAirAttack();
     bool IsAttacking();
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
