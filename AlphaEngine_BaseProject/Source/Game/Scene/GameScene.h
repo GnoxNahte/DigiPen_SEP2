@@ -3,6 +3,7 @@
 #include "../Camera.h"
 #include "../Environment/MapGrid.h"
 #include "../../Utils/ParticleSystem.h"
+#include "../Environment/traps.h"
 #include "GSM.h"
 
 class GameScene : public BaseScene
@@ -19,5 +20,6 @@ private:
 	Camera camera;
 	MapGrid map;
 	ParticleSystem testParticleSystem;
+	TrapManager trapMgr;
 };
 

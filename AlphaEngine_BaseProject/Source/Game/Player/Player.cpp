@@ -18,6 +18,8 @@ Player::Player(MapGrid* map) :
 
     this->map = map;
 
+    currentHP = stats.playerStartingHP;
+
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
@@ -317,4 +319,20 @@ void Player::RenderDebugCollider(Box& box)
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
     QuickGraphics::DrawRect(boxPos, box.size);
+}
+
+void Player::ApplyDamage(int dmg)
+{
+    if (dmg <= 0) return;
+
+    currentHP -= dmg;
+    if (currentHP < 0) currentHP = 0;
+
+#if _DEBUG
+    std::cout << "[Player] Damage: " << dmg
+        << " HP=" << currentHP << "/" << stats.playerMaxHP << "\n";
+#endif
+
+    // if animiation and sound is needed for getting hurt
+    // sprite.SetState(AnimState::HURT);
 }

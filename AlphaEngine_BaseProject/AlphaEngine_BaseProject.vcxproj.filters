@@ -185,5 +185,8 @@
     <ClInclude Include="Source\Game\Scene\MainMenuScene.h">
       <Filter>Header Files\Game\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="traps.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
