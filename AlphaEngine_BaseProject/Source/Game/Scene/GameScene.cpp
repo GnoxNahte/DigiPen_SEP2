@@ -9,7 +9,7 @@ GameScene::GameScene() :
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20)
 {
-	camera.SetFollow(&player.position, 0, 50, true);
+	camera.SetFollow(&player.GetPosition(), 0, 50, true);
 	// =============================== Traps Setup (debug) ===========================
 	//auto& plate = trapMgr.Spawn<PressurePlate>(
 	//	Box{ {2.f, 4.f}, {4.f, 1.f} }   
@@ -65,10 +65,10 @@ void GameScene::Render()
 	testParticleSystem.Render();
 
 	// === Debug Info ===
-	std::string hp = "HP: " + std::to_string(player.GetHP());
+	std::string hp = "HP: " + std::to_string(player.GetHealth());
 	QuickGraphics::PrintText(hp.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	std::string ppos = "Player Pos: " + std::to_string(player.position.x) + ", " + std::to_string(player.position.y);
+	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
 	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	//Box playerBox{ player.GetPosition(), player.GetSize() };

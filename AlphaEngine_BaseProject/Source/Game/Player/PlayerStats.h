@@ -3,12 +3,18 @@
 #include "AEEngine.h"
 #include "../../Utils/Box.h"
 
+struct AttackStats
+{
+    int damage;
+    float knockbackForce;
+    Box collider;
+};
+
 /**
  * @brief   Contains the Player stats
  */
-class PlayerStats
+struct PlayerStats
 {
-public:
     // ===== Stats from JSON =====
     // === Horizontal Movement ===
     float maxSpeed;
@@ -66,14 +72,15 @@ public:
 
     const std::string file;
 
-	// === Player's HP and attacks ===
-	int playerMaxHP;
-	int playerStartingHP;
-	int playerAttackDamage;
-	float playerAttackRange;
-	float playerAttackCooldown;
-	float playerAttackKnockbackForce;
-    
+	// === Combat stats ===
+	int maxHealth;
+    AttackStats attack1;
+    AttackStats attack2;
+    AttackStats attack3;
+
+    AttackStats airAttack1;
+    AttackStats airAttack2;
+    AttackStats airAttack3;
 
     /**
      * @brief       Loads the player stats from a file

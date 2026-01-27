@@ -6,6 +6,29 @@
 #include "PlayerStats.h"
 #include "../../Utils/FileHelper.h"
 
+namespace
+{
+	// doc - can be rapidjson::Document or rapidjson::GenericObject
+	void LoadBox(const rapidjson::GenericObject<false, rapidjson::Value>& obj, Box& box)
+	{
+		auto positionObj = obj["position"].GetObj();
+		box.position.x = positionObj["x"].GetFloat();
+		box.position.y = positionObj["y"].GetFloat();
+
+		auto sizeObj = obj["size"].GetObj();
+		box.size.x = sizeObj["x"].GetFloat();
+		box.size.y = sizeObj["y"].GetFloat();
+	}
+
+	void LoadAttack(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AttackStats& attack)
+	{
+		attack.damage = obj["damage"].GetInt();
+		attack.knockbackForce = obj["knockbackForce"].GetFloat();
+		
+		LoadBox(obj["collider"].GetObj(), attack.collider);
+	}
+}
+
 PlayerStats::PlayerStats(std::string file) : file(file)
 {
 	LoadFileData();
@@ -18,17 +41,6 @@ void PlayerStats::WatchFile()
 #endif
 }
 
-static void LoadBox(const rapidjson::Document& doc, Box& box, const char* boxName)
-{
-	auto boxObj = doc[boxName].GetObj();
-	auto positionObj = boxObj["position"].GetObj();
-	box.position.x = positionObj["x"].GetFloat();
-	box.position.y = positionObj["y"].GetFloat();
-
-	auto sizeObj = boxObj["size"].GetObj();
-	box.size.x = sizeObj["x"].GetFloat();
-	box.size.y = sizeObj["y"].GetFloat();
-}
 
 void PlayerStats::LoadFileData()
 {
@@ -68,10 +80,10 @@ void PlayerStats::LoadFileData()
 	wallJumpHorizontalVelocity = doc["wallJumpHorizontalVelocity"].GetFloat();
 	wallJumpHorizontalVelocityTowardsWall = doc["wallJumpHorizontalVelocityTowardsWall"].GetFloat();
 
-	LoadBox(doc, groundChecker, "groundChecker");
-	LoadBox(doc, ceilingChecker, "ceilingChecker");
-	LoadBox(doc, leftWallChecker, "leftWallChecker");
-	LoadBox(doc, rightWallChecker, "rightWallChecker");
+	LoadBox(doc["groundChecker"].GetObj(), groundChecker);
+	LoadBox(doc["ceilingChecker"].GetObj(), ceilingChecker);
+	LoadBox(doc["leftWallChecker"].GetObj(), leftWallChecker);
+	LoadBox(doc["rightWallChecker"].GetObj(), rightWallChecker);
 
 	auto playerHeightObj = doc["playerSize"].GetObj();
 	playerSize.x = playerHeightObj["x"].GetFloat();
@@ -91,12 +103,13 @@ void PlayerStats::LoadFileData()
 	jumpVelocity = (2.f * maxJumpHeight) / timeToMaxHeight;
 	minJumpTime = 2.f * minJumpHeight / jumpVelocity;
 
-	// ===== Player's HP and attacks =====
-	auto hp = doc["playerHPanddamage"].GetObj();
-	playerMaxHP = hp["playerMaxHP"].GetInt();
-	playerStartingHP = hp["playerStartingHP"].GetInt();
-	playerAttackDamage = hp["playerAttackDamage"].GetInt();
-	playerAttackRange = hp["playerAttackRange"].GetFloat();
-	playerAttackCooldown = hp["playerAttackCooldown"].GetFloat();
-	playerAttackKnockbackForce = hp["playerAttackKnockbackForce"].GetFloat();
+	// ===== Player's combat stats =====
+	LoadAttack(doc["attack1"].GetObj(), attack1);
+	LoadAttack(doc["attack2"].GetObj(), attack2);
+	LoadAttack(doc["attack3"].GetObj(), attack3);
+
+	LoadAttack(doc["airAttack1"].GetObj(), airAttack1);
+	LoadAttack(doc["airAttack2"].GetObj(), airAttack2);
+	LoadAttack(doc["airAttack3"].GetObj(), airAttack3);
+
 }

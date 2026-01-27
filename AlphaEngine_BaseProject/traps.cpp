@@ -24,9 +24,9 @@ bool IntersectsBox(const Box& a, const Box& b)
 
 Box MakePlayerBox(const Player& p)
 {
-    Box b{};
+    Box b{ };
     b.position = p.GetPosition();
-    b.size = p.GetSize();
+    b.size = p.GetStats().playerSize;
     return b;
 }
 
@@ -75,7 +75,7 @@ void LavaPool::OnPlayerStay(float dt, Player& player)
     if (m_tickTimer >= m_tickInterval)
     {
         m_tickTimer -= m_tickInterval;
-        player.ApplyDamage(m_damagePerTick);
+        player.TakeDamage(m_damagePerTick);
     }
 }
 
@@ -132,7 +132,7 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     if (!m_spikesUp) return;
     if (m_hitTimer > 0.f) return;
     std::cout << "[Spike] Hit!\n";
-    player.ApplyDamage(m_damageOnHit);
+    player.TakeDamage(m_damageOnHit);
     m_hitTimer = m_hitCooldown;
 }
 

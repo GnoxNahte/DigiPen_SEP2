@@ -18,7 +18,7 @@ Player::Player(MapGrid* map) :
 
     this->map = map;
 
-    currentHP = stats.playerStartingHP;
+    health = stats.maxHealth;
 
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
@@ -137,6 +137,37 @@ void Player::Reset(const AEVec2& initialPos)
     isCeilingCollided = false;
     isLeftWallCollided = false;
     isRightWallCollided = false;
+}
+
+void Player::TakeDamage(int dmg)
+{
+    if (dmg <= 0) 
+        return;
+
+    health = max(health - dmg, 0);
+
+#if _DEBUG
+    std::cout << "[Player] Damage: " << dmg
+        << " HP=" << health << "/" << stats.maxHealth << "\n";
+#endif
+
+    // if animiation and sound is needed for getting hurt
+    // sprite.SetState(AnimState::HURT);
+}
+
+const AEVec2& Player::GetPosition() const
+{
+    return position;
+}
+
+int Player::GetHealth() const
+{
+    return health;
+}
+
+const PlayerStats& Player::GetStats() const
+{
+    return stats;
 }
 
 void Player::UpdateInput()
@@ -319,20 +350,4 @@ void Player::RenderDebugCollider(Box& box)
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
     QuickGraphics::DrawRect(boxPos, box.size);
-}
-
-void Player::ApplyDamage(int dmg)
-{
-    if (dmg <= 0) return;
-
-    currentHP -= dmg;
-    if (currentHP < 0) currentHP = 0;
-
-#if _DEBUG
-    std::cout << "[Player] Damage: " << dmg
-        << " HP=" << currentHP << "/" << stats.playerMaxHP << "\n";
-#endif
-
-    // if animiation and sound is needed for getting hurt
-    // sprite.SetState(AnimState::HURT);
 }

@@ -39,23 +39,18 @@ public:
         ANIM_COUNT
     };
 
-    // === Movement ===
-    AEVec2 position;
-    AEVec2 velocity;
-
     Player(MapGrid* map);
     ~Player();
     void Update();
     void Render();
     void Reset(const AEVec2& initialPos);
-	// get player position
-    AEVec2 GetPosition() const { return position; }
-	// hit box size
-    AEVec2 GetSize() const { return stats.playerSize; }
-	// apply damage to player
-    void ApplyDamage(int dmg);
-	// test get current HP
-    int GetHP() const { return currentHP; }
+
+    void TakeDamage(int dmg);
+    
+    // === Getters ===
+    const AEVec2& GetPosition() const;
+    int GetHealth() const;
+    const PlayerStats& GetStats() const;
 private:
     PlayerStats stats;
     Sprite sprite;
@@ -68,8 +63,11 @@ private:
     bool isJumpHeld = false;
     f64 lastJumpPressed = -1.f;
     bool ifReleaseJumpAfterJumping = true;
+    f64 lastAttackPressed = -1.f;
 
     // === Movement data ===
+    AEVec2 position;
+    AEVec2 velocity;
     AEVec2 facingDirection;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
@@ -79,6 +77,9 @@ private:
     bool isCeilingCollided = false;
     bool isLeftWallCollided = false;
     bool isRightWallCollided = false;
+
+    // === Combat ===
+    int health;
 
     // === References to other systems ===
     MapGrid* map;
@@ -95,8 +96,5 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
-
-	// === Player HP ===
-    int currentHP = 0;
 };
 

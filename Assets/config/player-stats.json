@@ -20,56 +20,70 @@
   "wallJumpHorizontalVelocity": 15.0,
   "wallJumpHorizontalVelocityTowardsWall": 8.0,
   "invincibilityDuration": 0.1,
-  "playerHPanddamage": {
-    "playerMaxHP": 100,
-    "playerStartingHP": 100,
-    "playerAttackDamage": 10,
-    "playerAttackRange": 1.0,
-    "playerAttackCooldown": 0.5,
-    "playerAttackKnockbackForce": 0.5
-  },
   "groundChecker": {
-    "position": {
-      "x": 0.0,
-      "y": -0.4
-    },
-    "size": {
-      "x": 0.4,
-      "y": 0.3
-    }
+    "position": { "x": 0.0, "y": -0.4 },
+    "size":     { "x": 0.4, "y": 0.3 }
   },
   "ceilingChecker": {
-    "position": {
-      "x": 0.0,
-      "y": 0.5
-    },
-    "size": {
-      "x": 0.2,
-      "y": 0.3
-    }
+    "position": { "x": 0.0, "y": 0.5 },
+    "size":     { "x": 0.2, "y": 0.3 }
   },
   "leftWallChecker": {
-    "position": {
-      "x": -0.4,
-      "y": 0.0
-    },
-    "size": {
-      "x": 0.3,
-      "y": 0.8
-    }
+    "position": { "x": -0.4, "y": 0.0 },
+    "size":     { "x": 0.3, "y": 0.8 }
   },
   "rightWallChecker": {
-    "position": {
-      "x": 0.4,
-      "y": 0.0
-    },
-    "size": {
-      "x": 0.3,
-      "y": 0.8
+    "position": { "x": 0.4, "y": 0.0 },
+    "size":     { "x": 0.3, "y": 0.8 }
+  },
+  "playerSize": { "x": 0.5, "y": 0.9 },
+  "maxHealth": 100,
+  "attack1": { 
+    "damage": 10,
+    "knockbackForce": 5,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
     }
   },
-  "playerSize": {
-    "x": 0.5,
-    "y": 0.9
+  "attack2": { 
+    "damage": 20,
+    "knockbackForce": 7,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
+    }
+  },
+  "attack3": { 
+    "damage": 30,
+    "knockbackForce": 8,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
+    }
+  },
+  "airAttack1": { 
+    "damage": 15,
+    "knockbackForce": 6,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
+    }
+  },
+  "airAttack2": { 
+    "damage": 25,
+    "knockbackForce": 8,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
+    }
+  },
+  "airAttack3": { 
+    "damage": 40,
+    "knockbackForce": 9,
+    "collider": { 
+        "position": { "x": 0.4, "y": 0.0 },
+        "size":     { "x": 0.3, "y": 0.8 }
+    }
   }
 }

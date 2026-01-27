@@ -63,6 +63,7 @@ void ParticleSystem::Render()
 	for (size_t i = 0; i < pool.GetSize(); i++)
 		pool.pool[i].Render(particleMesh);
 
+	AEGfxSetTransparency(1.f);
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
 

@@ -4,10 +4,10 @@
 
 struct Particle : public ObjectPoolItem
 {
-	AEVec2 position;
-	AEVec2 velocity;
-	float spawnTime;
-	float lifetime;
+	AEVec2 position = { 0.f, 0.f };
+	AEVec2 velocity = { 0.f, 0.f };
+	float spawnTime = -1.f;
+	float lifetime = -1.f;
 
 	virtual void Update(float dt);
 	virtual void Render(AEGfxVertexList* mesh);
