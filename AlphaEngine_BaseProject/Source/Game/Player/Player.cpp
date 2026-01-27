@@ -92,8 +92,8 @@ void Player::Render()
 
     // Local scale. For flipping sprite's facing direction
     bool ifFaceRight = (velocity.x != 0.f) ? (velocity.x > 0) : (facingDirection.x > 0);
-    AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f);
-    //AEMtx33Scale(&transform, facingDirection.x > 0 ? 2.f : -2.f, 2.f);
+    // Multiply height by 0.74f because sprite aspect ratio isn't a square
+    AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f * 0.74f);
     AEMtx33TransApply(
         &transform,
         &transform,

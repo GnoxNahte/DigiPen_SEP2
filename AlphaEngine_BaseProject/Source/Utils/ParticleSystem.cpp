@@ -16,7 +16,7 @@ ParticleSystem::ParticleSystem(int initialSize) : pool(initialSize),
 	}
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
-	SetSpawnRate(10000.f);
+	//SetSpawnRate(10000.f);
 }
 
 ParticleSystem::~ParticleSystem()
@@ -35,15 +35,12 @@ void ParticleSystem::Update()
 	while (currTime > lastSpawnTime)
 	{
 		lastSpawnTime += timeBetweenSpawn;
-		SpawnParticle();
-		// todo? - prebake
+		Particle& p = SpawnParticle();
+		p.Update(static_cast<float>(lastSpawnTime - currTime)); // Prebake
 	}
 	
 	if (pool.GetSize() == 0)
-	{
-		//std::cout << "=== Empty pool ===\n";
 		return;
-	}
 
 	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
@@ -56,14 +53,10 @@ void ParticleSystem::Update()
 		if (currTime > p.spawnTime + p.lifetime)
 			pool.Release(p);
 	}
-
-	//pool.DebugPrint();
-	//std::cout << "===============================" << "\n";
 }
 
 void ParticleSystem::Render()
 {
-	//return;
 	AEGfxTextureSet(nullptr, 0, 0);
 	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 	// todo - make custom iterator inside object pool instead?

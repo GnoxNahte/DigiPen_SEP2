@@ -29,7 +29,7 @@ void GameScene::Update()
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 
 	// === Particle system test ===
-	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 10000.f : 0.f);
+	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 50000.f : 0.f);
 	if (AEInputCheckTriggered(AEVK_G))
 		testParticleSystem.SpawnParticleBurst({ 2,2 }, 300);
 	testParticleSystem.Update();

@@ -13,7 +13,7 @@ Sprite::Sprite(std::string file)
 	currStateIndex = nextStateIndex = 0;
 	frameIndex = 0;
 
-	mesh = MeshGenerator::GetRectMesh(1.f, 0.74f, uvWidth, uvHeight);
+	mesh = MeshGenerator::GetRectMesh(1.f, 1.f, uvWidth, uvHeight);
 	texture = AEGfxTextureLoad(file.c_str());
 }
 
