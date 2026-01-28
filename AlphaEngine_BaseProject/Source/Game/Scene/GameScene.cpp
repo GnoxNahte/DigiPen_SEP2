@@ -1,13 +1,17 @@
 #include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
+#include "../EnemyA.h"
+#include "../Game/enemy/EnemyBoss.h"
 
 
 GameScene::GameScene() : 
 	player(&map), 
 	map(50, 50),
+	enemy(30, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
-	testParticleSystem(20, {})
+	testParticleSystem(20, {}),
+	enemyBoss(35, 3)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
 	// =============================== Traps Setup (debug) ===========================

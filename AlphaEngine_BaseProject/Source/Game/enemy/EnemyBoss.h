@@ -1,8 +1,7 @@
 #pragma once
-#include "AEEngine.h"
 #include "../../Utils/Sprite.h" 
-#include "../../Utils/QuickGraphics.h"
 #include "EnemyAttack.h"
+#include <AEVec2.h>
 
 
 

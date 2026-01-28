@@ -1,9 +1,10 @@
 #include "EnemyBoss.h"
 #include <cmath>
-#include "AEEngine.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
 
+#include <AEVec2.h>
+#include <Windows.h>
 #include <vector>
 #include <algorithm>
 

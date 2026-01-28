@@ -1,5 +1,5 @@
 #pragma once
-#include <algorithm> // std::max
+#include <Windows.h>
 
 class EnemyAttack
 {
