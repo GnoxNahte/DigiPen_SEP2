@@ -4,11 +4,7 @@
 #pragma message("Including SaveSystem.h from: " __FILE__)
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
-
-#include "Game/GameScene.h"
-#include "Utils/QuickGraphics.h"
-#include "../Saves/SaveSystem.h"
-#include "../Saves/SaveData.h"
+#include "Game/Scene/GSM.h"
 
 
 
@@ -27,11 +23,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// ===== Setup window and AlphaEngine =====
-	int gGameRunning = 1;
 
 	// Using custom window procedure
-	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, NULL);
-	
+	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 240, false, NULL);
+
 	// Changing the window title
 	AESysSetWindowTitle("GAM 150"); // @todo: change name
 
@@ -44,44 +39,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(1.0f);
 
-	// === Init systems ===
-	QuickGraphics::Init();
-	SaveSystem::Init();
-
-	//// Test save
-	//SaveData d;
-	//d.levelId = 2;
-	//d.hp = 88;
-	//d.totalSeconds = 12.34f;
-	//SaveSystem::Save(0, d);
-
-
-	// === Game loop ===
-	GameScene scene;
-	
-	// Game Loop
-	while (gGameRunning)
-	{
-		// Informing the system about the loop's start
-		AESysFrameStart();
-
-		AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
-		//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
-
-		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-
-		// Basic way to trigger exiting the application
-		// when ESCAPE is hit or when the window is closed
-		if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
-			gGameRunning = 0;
-
-		scene.Update();
-		scene.Render();
-
-		// Informing the system about the loop's end
-		AESysFrameEnd();
-
-	}
+	//GSM::Init(SceneState::GS_SPLASH_SCREEN);
+	GSM::Init(SceneState::GS_GAME);
+	GSM::Update();
+	GSM::Exit();
 
 	// free the system
 	AESysExit();

@@ -35,7 +35,7 @@ Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
 	this->maxBounds.y = maxBounds.y - distAmt.y;
 }
 
-void Camera::SetFollow(AEVec2* f, float xOffset, float yOffset, bool setPosToFollow)
+void Camera::SetFollow(const AEVec2* f, float xOffset, float yOffset, bool setPosToFollow)
 {
 	this->follow = f;
 	this->offset.x = xOffset;

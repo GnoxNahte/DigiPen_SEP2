@@ -1,0 +1,29 @@
+{
+  "stateInfo": [
+    { "name": "IDLE_NO_SWORD",  "frameCount": 4 },
+    { "name": "CROUCH",         "frameCount": 4 },
+    { "name": "RUN_NO_SWORD",   "frameCount": 6 },
+    { "name": "SOMERSAULT",     "frameCount": 6 },
+    { "name": "FALLING",        "frameCount": 2 },
+    { "name": "SLIDING",        "frameCount": 5 },
+    { "name": "IDLE_W_SWORD",   "frameCount": 4 },
+    { "name": "ATTACK_1",       "frameCount": 7 },
+    { "name": "ATTACK_2",       "frameCount": 3, "sampleRate": 8 },
+    { "name": "ATTACK_3",       "frameCount": 6, "sampleRate": 8 },
+    { "name": "HURT",           "frameCount": 6 },
+    { "name": "DEATH",          "frameCount": 8 },
+    { "name": "SWORD_DRAW",     "frameCount": 4 },
+    { "name": "SWORD_SHEATH",   "frameCount": 4 },
+    { "name": "WALL_SLIDE",     "frameCount": 2 },
+    { "name": "WALL_CLIMB",     "frameCount": 4 },
+    { "name": "AIR_ATTACK_1",   "frameCount": 4 },
+    { "name": "AIR_ATTACK_2",   "frameCount": 3 },
+    { "name": "AIR_ATTACK_3",   "frameCount": 6 },
+    { "name": "RUN_W_SWORD",    "frameCount": 6 }
+  ],
+  "defaultSampleRate": 12,
+  "pivot": {
+    "x": 0.5,
+    "y": 0.4
+  }
+}

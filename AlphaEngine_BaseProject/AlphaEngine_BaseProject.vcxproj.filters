@@ -31,17 +31,17 @@
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Game\enemy">
-      <UniqueIdentifier>{107cfdb3-3e3f-47e1-848a-17c0648fb62a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Game\enemy">
-      <UniqueIdentifier>{210a0723-dd8e-4512-a5d6-2a70791fed7e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Game\Environment">
       <UniqueIdentifier>{bbed2e90-df0a-4c6c-ac9a-0d571b4cf90f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Game\Environment">
       <UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Scene">
+      <UniqueIdentifier>{00cba9ab-1afb-42d9-b9d5-44068fc085ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Scene">
+      <UniqueIdentifier>{832b943c-8d30-4fe9-9f40-b0fe7827392c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -53,21 +53,6 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Player\Player.cpp">
       <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\GameScene.cpp">
-      <Filter>Source Files\Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Camera.cpp">
-      <Filter>Source Files\Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Timer.cpp">
-      <Filter>Source Files\Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Environment\MapGrid.cpp">
-      <Filter>Source Files\Game\Environment</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Environment\MapTile.cpp">
-      <Filter>Source Files\Game\Environment</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utils\Sprite.cpp">
       <Filter>Source Files\Utils</Filter>
@@ -81,11 +66,17 @@
     <ClCompile Include="Source\Utils\FileHelper.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Camera.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Utils\QuickGraphics.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Utils\Vec2Int.cpp">
-      <Filter>Source Files\Utils</Filter>
+    <ClCompile Include="Source\Game\Timer.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utils\AEExtras.cpp">
       <Filter>Source Files\Utils</Filter>
@@ -96,11 +87,32 @@
     <ClCompile Include="Saves\SaveSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
-      <Filter>Source Files\Game\enemy</Filter>
+    <ClCompile Include="Source\Game\UI.cpp">
+      <Filter>Source Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
-      <Filter>Source Files\Game\enemy</Filter>
+    <ClCompile Include="traps.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\ObjectPool.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\ParticleSystem.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Vec2Int.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GSM.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GameScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -109,21 +121,6 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Player\Player.h">
       <Filter>Header Files\Game\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\GameScene.h">
-      <Filter>Header Files\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\Camera.h">
-      <Filter>Header Files\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\Timer.h">
-      <Filter>Header Files\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\Environment\MapGrid.h">
-      <Filter>Header Files\Game\Environment</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\Environment\MapTile.h">
-      <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Sprite.h">
       <Filter>Header Files\Utils</Filter>
@@ -137,16 +134,22 @@
     <ClInclude Include="Source\Utils\FileHelper.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Game\Camera.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Utils\Easing.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\QuickGraphics.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Utils\AEExtras.h">
-      <Filter>Header Files\Utils</Filter>
+    <ClInclude Include="Source\Game\Timer.h">
+      <Filter>Header Files\Game</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Utils\Vec2Int.h">
+    <ClInclude Include="Source\Game\Environment\MapGrid.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\AEExtras.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Box.h">
@@ -158,14 +161,32 @@
     <ClInclude Include="Saves\SaveSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyA.h">
-      <Filter>Header Files\Game\enemy</Filter>
+    <ClInclude Include="Source\Game\UI.h">
+      <Filter>Header Files\Game</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
-      <Filter>Header Files\Game\enemy</Filter>
+    <ClInclude Include="Source\Utils\ObjectPool.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
-      <Filter>Header Files\Game\enemy</Filter>
+    <ClInclude Include="Source\Utils\ParticleSystem.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapTile.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Vec2Int.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GSM.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GameScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\MainMenuScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="traps.h">
+      <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

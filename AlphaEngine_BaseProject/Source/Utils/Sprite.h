@@ -2,12 +2,14 @@
 
 #include "AEEngine.h"
 #include <string>
+#include <functional>
 #include "SpriteMetadata.h"
 
 class Sprite
 {
 public:
 	Sprite(std::string file);
+	~Sprite();
 
 	/**
 	 * @brief Update sprite animation
@@ -21,7 +23,8 @@ public:
 	 */
 	void Render();
 
-	void SetState(int nextState, bool ifLock = false);
+	int GetState() const;
+	void SetState(int nextState, bool ifLock = false, std::function<void(int)> _onAnimEnd = {});
 	const SpriteMetadata metadata;
 private:
 
@@ -35,7 +38,7 @@ private:
 	 */
 	int currStateIndex;
 	/**
-	 * @brief Current state the animation is in. Row index in spritesheet
+	 * @brief Next state the animation is in. Row index in spritesheet
 	 */
 	int nextStateIndex;
 
@@ -48,8 +51,10 @@ private:
 	 * @brief Lock current frame until it finishes
 	 */
 	bool ifLockCurrent;
-
+	
 	AEVec2 uvOffset; // Current uv offset
+
+	std::function<void(int)> onAnimEnd;
 
 	// === Mesh data ===
 	AEGfxVertexList* mesh;

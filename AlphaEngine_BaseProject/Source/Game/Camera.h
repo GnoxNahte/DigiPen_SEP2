@@ -9,7 +9,7 @@ public:
 	AEVec2 position;
 
 	AEVec2 offset;
-	AEVec2* follow;
+	const AEVec2* follow;
 
 	AEVec2 minBounds;
 	AEVec2 maxBounds;
@@ -20,7 +20,7 @@ public:
 
 	Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale);
 
-	void SetFollow(AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
+	void SetFollow(const AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 
 	void Update();
 };

@@ -6,8 +6,8 @@ Course: csd1451f25-b
 Year: 1
 
 Links:
-- Git URL: https://github.com/GnoxNahte/DigiPen_SEP2
-- Documentation: https://gnoxnahte.github.io/DigiPen_SEP2/
+- [GitHub URL](https://github.com/GnoxNahte/DigiPen_SEP2)
+- [Documentation](https://gnoxnahte.github.io/DigiPen_SEP2/)
 
 ### Controls
 @todo Add controls

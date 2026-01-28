@@ -3,8 +3,9 @@
 #include "AEEngine.h"
 #include "PlayerStats.h"
 #include "../../Utils/Sprite.h"
-#include "../Environment/MapGrid.h"
 #include "../../Utils/Box.h"
+#include "../../Utils/ParticleSystem.h"
+#include "../Environment/MapGrid.h"
 
 /**
  * @brief Controllable player class
@@ -14,39 +15,62 @@ class Player
 public:
     enum AnimState
     {
-        RUN_ATTACK,
-        RUN,
-        IDLE,
-        JUMP_START,
-        JUMP_FALL,
-        JUMP_LAND,
-        ATTACK,
-        DEATH,
-        AIMING,
-        HURT
+        IDLE_NO_SWORD,
+        CROUCH,      
+        RUN_NO_SWORD,
+        SOMERSAULT,  
+        FALLING,     
+        SLIDING,     
+        IDLE_W_SWORD,
+        ATTACK_1,    
+        ATTACK_2,    
+        ATTACK_3,    
+        ATTACK_END = ATTACK_3,
+        HURT,        
+        DEATH,       
+        SWORD_DRAW,  
+        SWORD_SHEATH,
+        WALL_SLIDE,  
+        WALL_CLIMB,  
+        // @todo - Split into air attack and attack down (smash)?
+        AIR_ATTACK_1,
+        AIR_ATTACK_2,
+        AIR_ATTACK_3,
+        AIR_ATTACK_END = AIR_ATTACK_3,
+        RUN_W_SWORD, 
+
+        ANIM_COUNT
     };
 
-    // === Movement ===
-    AEVec2 position;
-    AEVec2 velocity;
-
-    Player(MapGrid* map, float initialPosX, float initialPosY);
+    Player(MapGrid* map);
     ~Player();
     void Update();
     void Render();
+    void Reset(const AEVec2& initialPos);
+
+    void TakeDamage(int dmg);
+    
+    // === Getters ===
+    const AEVec2& GetPosition() const;
+    int GetHealth() const;
+    const PlayerStats& GetStats() const;
 private:
     PlayerStats stats;
     Sprite sprite;
 
     AEMtx33 transform;
+    ParticleSystem particleSystem;
 
     // === Player Input ===
     AEVec2 inputDirection;
     bool isJumpHeld = false;
     f64 lastJumpPressed = -1.f;
     bool ifReleaseJumpAfterJumping = true;
+    f64 lastAttackHeld = -1.f;
 
     // === Movement data ===
+    AEVec2 position;
+    AEVec2 velocity;
     AEVec2 facingDirection;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
@@ -57,11 +81,17 @@ private:
     bool isLeftWallCollided = false;
     bool isRightWallCollided = false;
 
+    // === Combat ===
+    int health;
+
     // === References to other systems ===
     MapGrid* map;
 
+    // ===== Helper Functions =====
     void UpdateInput();
+    void UpdateTriggerColliders();
 
+    // === Movement update ===
     void HorizontalMovement();
     void VerticalMovement();
     void HandleLanding();
@@ -69,6 +99,13 @@ private:
     void HandleJump();
     void PerformJump();
 
+    bool IsAnimGroundAttack();
+    bool IsAnimAirAttack();
+    bool IsAttacking();
+    void UpdateAttacks();
+    void OnAttackAnimEnd(int spriteStateIndex);
+
+    void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);

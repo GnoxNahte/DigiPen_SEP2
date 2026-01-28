@@ -1,18 +1,26 @@
 #pragma once
 #include <string>
+#include <array>
 #include "AEEngine.h"
 #include "../../Utils/Box.h"
+
+struct AttackStats
+{
+    int damage;
+    float knockbackForce;
+    Box collider;
+};
 
 /**
  * @brief   Contains the Player stats
  */
-class PlayerStats
+struct PlayerStats
 {
-public:
     // ===== Stats from JSON =====
     // === Horizontal Movement ===
     float maxSpeed;
     float airStrafeMaxSpeed;
+    float attackMaxSpeedMultiplier;
 
     float maxSpeedTime;
     float stopTime;
@@ -65,6 +73,13 @@ public:
     float minJumpTime;
 
     const std::string file;
+
+	// === Combat stats ===
+	int maxHealth;
+    float attackBuffer;
+
+    std::array<AttackStats, 3> groundAttacks;
+    std::array<AttackStats, 3> airAttacks;
 
     /**
      * @brief       Loads the player stats from a file

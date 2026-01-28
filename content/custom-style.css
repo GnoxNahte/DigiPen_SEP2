@@ -1,0 +1,9 @@
+/* Blue link against blue background is abit hard to see.
+    This makes it abit easier? But not sure if will confuse with code block. 
+    Also doesn't look like a link
+*/
+.dark-mode dl.section.note a {  
+    background-color: #0a1b25;
+    border-radius: 0.2em;
+    padding: 0 0.2rem;
+}

@@ -16,3 +16,8 @@
 bin
 Debug
 Release
+/docs
+
+# === Others ===
+# Obsidian (markdown editor)
+.obsidian 

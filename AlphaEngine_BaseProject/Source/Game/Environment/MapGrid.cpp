@@ -5,7 +5,9 @@
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 
-MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
+MapGrid::MapGrid(int rows, int cols)
+	:	size(rows, cols), 
+		tiles(rows* cols)
 {
 	mesh = MeshGenerator::GetSquareMesh(1.f, 1.f / MapTile::typeCount, 1.f);
 	tilemapTexture = AEGfxTextureLoad("Assets/Tmp/tmp-tilemap.png");
@@ -21,7 +23,7 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 	// === Just for testing ===
 	for (int y = 0; y < size.y; y += 3)
 	{
-		for (int x = 0; x < size.x / 2; x++)
+		for (int x = 5; x < size.x / 2; x++)
 		{
 			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
 		}
@@ -29,7 +31,7 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 
 	for (int y = 0; y < size.y; y += 4)
 	{
-		for (int x = size.x / 2; x < size.x; x++)
+		for (int x = size.x / 2; x < size.x - 5; x++)
 		{
 			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
 		}
@@ -49,6 +51,7 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 	{
 		tiles[y * size.x + 0].type = MapTile::Type::GROUND;
 		tiles[y * size.x + 1].type = MapTile::Type::GROUND;
+		//tiles[y * size.x + 5].type = MapTile::Type::GROUND;
 		tiles[y * size.x + size.x - 1].type = MapTile::Type::GROUND;
 		tiles[y * size.x + size.x - 2].type = MapTile::Type::GROUND;
 	}
@@ -57,6 +60,12 @@ MapGrid::MapGrid(int rows, int cols) : size(rows, cols), tiles(rows* cols)
 /* Calling it's own construct is tmp only. todo proper file read */
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
 {
+}
+
+MapGrid::~MapGrid()
+{
+	AEGfxMeshFree(mesh);
+	AEGfxTextureUnload(tilemapTexture);
 }
 
 void MapGrid::Render(const Camera& camera)
@@ -140,7 +149,7 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 	return CheckBoxCollision(box.position, box.size);
 }
 
-void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
+void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
 	// This is a simple and quick collision handler. Should not use when (currentPosition - nextPosition).length > 1 tiles OR colliderSize > 1 tile
 	// todo? proper line drawing (continuous collision)? https://www.redblobgames.com/grids/line-drawing/
@@ -184,6 +193,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
 		{
 			currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
+			velocity.x = 0.f;
 		}
 		else
 			currentPosition.x = nextPosition.x;
@@ -195,6 +205,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
 		{
 			currentPosition.x = nextGridX + halfColliderSize.x;
+			velocity.x = 0.f;
 		}
 		else
 			currentPosition.x = nextPosition.x;
@@ -207,6 +218,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
 		{
 			currentPosition.y = nextGridY + 1.01f - halfColliderSize.y;
+			velocity.y = 0.f;
 		}
 		else
 			currentPosition.y = nextPosition.y;
@@ -218,6 +230,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& , const AEVec2
 		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
 		{
 			currentPosition.y = nextGridY + halfColliderSize.y;
+			velocity.y = 0.f;
 		}
 		else
 			currentPosition.y = nextPosition.y;
