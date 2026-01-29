@@ -43,10 +43,10 @@
     <Filter Include="Source Files\Game\Scene">
       <UniqueIdentifier>{832b943c-8d30-4fe9-9f40-b0fe7827392c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Game\Enemy">
+    <Filter Include="Source Files\Game\enemy">
       <UniqueIdentifier>{f26eff54-ceb2-4675-b745-db5d564a6e8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Game\Enemy">
+    <Filter Include="Header Files\Game\enemy">
       <UniqueIdentifier>{d0aa3d34-5fc9-4bb9-96f6-adb14b2d37e8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -121,10 +121,10 @@
       <Filter>Source Files\Game\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
-      <Filter>Source Files\Game\Enemy</Filter>
+      <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
-      <Filter>Source Files\Game\Enemy</Filter>
+      <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -201,13 +201,13 @@
       <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyA.h">
-      <Filter>Header Files\Game\Enemy</Filter>
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
-      <Filter>Header Files\Game\Enemy</Filter>
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
-      <Filter>Header Files\Game\Enemy</Filter>
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

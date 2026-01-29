@@ -1,14 +1,14 @@
 #include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
-#include "../EnemyA.h"
-#include "../Game/enemy/EnemyBoss.h"
+
+
 
 
 GameScene::GameScene() : 
-	player(&map), 
 	map(50, 50),
-	enemy(30, 3),
+	player(&map), 
+	enemyA(30, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20, {}),
 	enemyBoss(35, 3)
@@ -47,6 +47,17 @@ void GameScene::Update()
 {
 	camera.Update();
 	player.Update();
+
+	// Keep enemies in the scene by updating them every frame.
+	enemyA.Update(player.GetPosition());
+	enemyBoss.Update(player.GetPosition());
+
+	if (enemyA.PollAttackHit())
+	{
+		// later: apply player damage
+		// for now: print / debug
+		std::cout << "Enemy HIT!\n";
+	}
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	trapMgr.Update(dt, player);
 
@@ -64,6 +75,8 @@ void GameScene::Render()
 	map.Render(camera);
 	//trapMgr.Render();   // for debug
 	player.Render();
+	enemyA.Render();
+	enemyBoss.Render();
 
 	// === Code below is for DEBUG ONLY ===
 	testParticleSystem.Render();

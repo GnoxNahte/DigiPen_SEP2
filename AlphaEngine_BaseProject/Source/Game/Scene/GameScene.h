@@ -5,6 +5,9 @@
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/traps.h"
 #include "GSM.h"
+#include "../enemy/EnemyA.h"
+#include "../enemy/EnemyBoss.h"
+
 
 class GameScene : public BaseScene
 {
@@ -18,6 +21,8 @@ public:
 private:
 	Player player;
 	Camera camera;
+	EnemyA enemyA;
+	EnemyBoss enemyBoss;
 	MapGrid map;
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
