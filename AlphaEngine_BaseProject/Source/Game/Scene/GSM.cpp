@@ -22,6 +22,7 @@ void GSM::Init(SceneState type)
 	// === Init systems ===
 	QuickGraphics::Init();
 	SaveSystem::Init();
+	TimerSystem::GetInstance();
 	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
 
 	LoadState(type);
@@ -81,25 +82,10 @@ void GSM::Update()
 
 			// === For Damage Text Testing ===
 			//if (AEInputCheckTriggered(AEVK_K)) {
-			//	timerSystem.AddTimer("Damage Scale Timer", 0.28f);
-			//	timerSystem.AddTimer("Damage Fade Timer", 1.5f);
-			//	damageType = (damageType + 1) % 6; // enum testing
-			//	alpha = 1.0f;
-			//	
+			//	TimerSystem::GetInstance()->AddAnonymousTimer(2.0f);
+			//	TimerSystem::GetInstance()->AddTimer("Test timer..", 5.0f);
 			//}
-			//if (timerSystem.GetTimerByName("Damage Scale Timer") != nullptr && timerSystem.GetTimerByName("Damage Scale Timer")->percentage < 1.f)
-			//{
-			//	scale = static_cast<f32>(1 - timerSystem.GetTimerByName("Damage Scale Timer")->percentage + 0.95f);
-			//}
-			//if (timerSystem.GetTimerByName("Damage Fade Timer") != nullptr) {
-			//	alpha = static_cast<f32>(1 - 1.0f * timerSystem.GetTimerByName("Damage Fade Timer")->percentage);
-			//	if (timerSystem.GetTimerByName("Damage Fade Timer")->percentage < 1.0f) {
-			//		UI::PrintDamageText(178, { -0.5f, 0.5f }, scale, alpha, damageType);
-			//	}
-			//	else {
-			//		alpha = 1.f;
-			//	}
-			//}
+			TimerSystem::GetInstance()->Update();
 
 			// Informing the system about the loop's end
 			AESysFrameEnd();
@@ -119,7 +105,7 @@ void GSM::Update()
 void GSM::Exit()
 {
 	//timerSystem.Clear();
-
+	TimerSystem::GetInstance()->DestroyInstance();
 	QuickGraphics::Free();
 }
 
