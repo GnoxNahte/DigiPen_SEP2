@@ -43,6 +43,66 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	GSM::Init(SceneState::GS_GAME);
 	GSM::Update();
 	GSM::Exit();
+	// === Init systems ===
+	QuickGraphics::Init();
+	SaveSystem::Init();
+	TimerSystem::GetInstance();
+	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
+
+	// === Damage text testing variables ===
+	//f32 alpha = 1.f;
+	//f32 scale = 1.f;
+	//int damageType = 0; // Testing of cycling through enum types.
+
+	// === Timer Testing ===
+	//timerSystem.AddTimer("Test Timer 1", 3.0f);
+
+	//// Test save
+	//SaveData d;
+	//d.levelId = 2;
+	//d.hp = 88;
+	//d.totalSeconds = 12.34f;
+	//SaveSystem::Save(0, d);
+
+
+	// === Game loop ===
+	GameScene scene;
+	
+	// Game Loop
+	while (gGameRunning)
+	{
+		// Informing the system about the loop's start
+		AESysFrameStart();
+
+		AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
+		//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
+
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+
+		// Basic way to trigger exiting the application
+		// when ESCAPE is hit or when the window is closed
+		if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
+			gGameRunning = 0;
+
+		scene.Update();
+		scene.Render();
+
+		TimerSystem::GetInstance()->Update();
+
+		// === For Damage Text Testing ===
+		//if (AEInputCheckTriggered(AEVK_K)) {
+		//	TimerSystem::GetInstance()->AddAnonymousTimer(2.0f);
+		//	TimerSystem::GetInstance()->AddTimer("Test timer..", 5.0f);
+		//}
+
+
+		// Informing the system about the loop's end
+		AESysFrameEnd();
+
+	}
+	TimerSystem::GetInstance()->DestroyInstance();
+
+	QuickGraphics::Free();
 
 	// free the system
 	AESysExit();

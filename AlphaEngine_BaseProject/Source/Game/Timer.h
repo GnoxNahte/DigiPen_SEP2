@@ -12,10 +12,18 @@ struct Timer {
 	f64 percentage = 0.0f; // Percentage of timer completed (0.0 to 1.0).
 	bool completed = false; // Whether the timer has completed.
 	bool autoRemove = true; // Whether to automatically remove the timer on completion. True by default.
-	int completedCount = 0; // Number of times this timer has completed (for recurring timers).
+	u32 completedCount = 0; // Number of times this timer has completed (for recurring timers).
+	u32 id = 0; // Unique identifier for the timer.
+	bool isAnonymous = false; // Whether the timer is anonymous (no name).
 };
 class TimerSystem {
 public:
+	// Get singleton instance
+	static TimerSystem* GetInstance();
+
+	// Destroy singleton (On shutdown)
+	static void DestroyInstance();
+
 	// Returns total elapsed time in seconds.
 	f64 GetElapsedTime() const;
 
@@ -45,10 +53,37 @@ public:
 
 	// Returns a pointer to a timer by name, or nullptr if not found.
 	const Timer* GetTimerByName(const std::string& name) const;
+
+
+
+	// Add anonymous timer - returns handle/ID
+	u32 AddAnonymousTimer(f64 duration, bool autoRemove = true);
+
+	// Remove anonymous timer by ID
+	void RemoveAnonymousTimer(u32 timerId);
+
+	// Get anonymous timer by ID
+	const Timer* GetTimerById(u32 timerId) const;
+
+	// Check if anonymous timer is complete
+	bool IsTimerComplete(u32 timerId) const;
+
+	// Get percentage of anonymous timer
+	f32 GetTimerPercentage(u32 timerId) const;
 /*_______________________________________________________________________________________*/
 private:
+	static TimerSystem* instance;
+	// Private constructor to prevent direct instantiation
+	TimerSystem() : elapsedTime(0.0), activeTimerCount(0), nextTimerId(1) {}
+	// Delete copy constructor and assignment operator
+	TimerSystem(const TimerSystem&) = delete;
+	TimerSystem& operator=(const TimerSystem&) = delete;
+
+	// Member variables
 	std::vector <Timer> timers; // Vector to store a list of timers.
 	std::unordered_map<std::string, size_t> timerMap;  // Name -> index mapping to vector.
+	std::unordered_map<u32, size_t> anonymousTimerMap; // For anonymous timers
 	f64 elapsedTime = 0.0f; // Total elapsed time in seconds.
 	int activeTimerCount = 0; // Count of active timers.
+	u32 nextTimerId = 1; // Auto-incrementing ID for anonymous timers
 };
