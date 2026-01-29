@@ -6,6 +6,7 @@
 #include "../../../Saves/SaveSystem.h"
 #include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
+#include "../../Game/Time.h"
 #include "../../Game/UI.h"
 
 BaseScene* GSM::currentScene = nullptr;
@@ -22,6 +23,7 @@ void GSM::Init(SceneState type)
 	// === Init systems ===
 	QuickGraphics::Init();
 	SaveSystem::Init();
+	Time::GetInstance();
 	TimerSystem::GetInstance();
 	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
 
@@ -79,13 +81,27 @@ void GSM::Update()
 			currentScene->Render();
 
 			//timerSystem.Update();
+			Time::GetInstance()->Update();
+			TimerSystem::GetInstance()->Update();
 
 			// === For Damage Text Testing ===
-			//if (AEInputCheckTriggered(AEVK_K)) {
-			//	TimerSystem::GetInstance()->AddAnonymousTimer(2.0f);
-			//	TimerSystem::GetInstance()->AddTimer("Test timer..", 5.0f);
-			//}
-			TimerSystem::GetInstance()->Update();
+			// Can use this as a sample test case if you want to use timers.
+			if (AEInputCheckTriggered(AEVK_K)) {
+				TimerSystem::GetInstance()->AddAnonymousTimer(2.0f);
+				TimerSystem::GetInstance()->AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
+				Time::GetInstance()->TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
+				TimerSystem::GetInstance()->AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
+			}
+
+			Timer const* timer = TimerSystem::GetInstance()->GetTimerByName("Test timer");
+			if (timer) {
+				// After it loops loopCount times it will not reset its completion, unpausing the state and allowing other timers to countdown.
+				if (timer->completed) {
+					Time::GetInstance()->TogglePause(); // Unpause
+					TimerSystem::GetInstance()->RemoveTimer("Test timer"); // Delete the timer after use
+					std::cout << "Unpaused!" << '\n';
+				}
+			}
 
 			// Informing the system about the loop's end
 			AESysFrameEnd();
@@ -105,6 +121,7 @@ void GSM::Update()
 void GSM::Exit()
 {
 	//timerSystem.Clear();
+	Time::GetInstance()->DestroyInstance();
 	TimerSystem::GetInstance()->DestroyInstance();
 	QuickGraphics::Free();
 }
