@@ -19,55 +19,6 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
     return (anew << 24) | rgb;
 }
 
-static void DrawGlowBall_Local(float x, float y, float radius, u32 baseColorARGB)
-{
-    // If AE_GFX_BM_ADD doesn't exist in your AlphaEngine build, comment out the next line.
-    AEGfxSetBlendMode(AE_GFX_BM_ADD);
-
-    // Core
-    QuickGraphics::DrawRect(x, y, radius * 2.0f, radius * 2.0f,
-        ScaleAlpha(baseColorARGB, 1.0f), AE_GFX_MDM_TRIANGLES);
-
-    // Glow layers
-    QuickGraphics::DrawRect(x, y, radius * 3.0f, radius * 3.0f,
-        ScaleAlpha(baseColorARGB, 0.22f), AE_GFX_MDM_TRIANGLES);
-
-    QuickGraphics::DrawRect(x, y, radius * 4.5f, radius * 4.5f,
-        ScaleAlpha(baseColorARGB, 0.12f), AE_GFX_MDM_TRIANGLES);
-
-    QuickGraphics::DrawRect(x, y, radius * 6.5f, radius * 6.5f,
-        ScaleAlpha(baseColorARGB, 0.06f), AE_GFX_MDM_TRIANGLES);
-
-    // Restore normal blending
-    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-}
-
-struct GlowOrb
-{
-    AEVec2 pos{ 0.f, 0.f };
-    AEVec2 vel{ 0.f, 0.f };
-    float  radius{ 0.16f };
-    float  life{ 1.5f };
-    u32    color{ 0xFF66CCFF }; // cyan
-
-    bool alive() const { return life > 0.f; }
-
-    void Update(float dt)
-    {
-        AEVec2 disp;
-        AEVec2Scale(&disp, &vel, dt);
-        AEVec2Add(&pos, &pos, &disp);
-        life -= dt;
-    }
-
-    void Render() const
-    {
-        DrawGlowBall_Local(pos.x, pos.y, radius, color);
-    }
-};
-
-// Global list for testing (fine while you only have 1 EnemyA / no boss yet)
-static std::vector<GlowOrb> g_orbs;
 
 
 EnemyA::EnemyA(float initialPosX, float initialPosY)
@@ -281,7 +232,7 @@ void EnemyA::Render()
         &transform,
         &transform,
         position.x - (0.5f - sprite.metadata.pivot.x),
-        position.y - (0.5f - sprite.metadata.pivot.y)
+        position.y - (0.75f - sprite.metadata.pivot.y)
     );
 
     // Camera scale (scales translation too), same as Player

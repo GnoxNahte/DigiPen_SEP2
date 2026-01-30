@@ -11,7 +11,7 @@ GameScene::GameScene() :
 	enemyA(30, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20, {}),
-	enemyBoss(35, 3)
+	enemyBoss(35, 2.90f)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
 	// =============================== Traps Setup (debug) ===========================

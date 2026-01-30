@@ -323,7 +323,7 @@ void EnemyBoss::Render()
     AEMtx33TransApply(
         &m, &m,
         position.x - (0.5f - px),
-        position.y - (0.5f - py)
+        position.y - (0.75f - py)
     );
 
     AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
