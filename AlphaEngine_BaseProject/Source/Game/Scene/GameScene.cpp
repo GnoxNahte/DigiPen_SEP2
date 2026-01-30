@@ -50,8 +50,10 @@ void GameScene::Update()
 
 
 	AEVec2 p = player.GetPosition();
-	enemyA.Update(p);
-	enemyBoss.Update(p);
+
+	//ENEMY AI
+	//enemyA.Update(p);
+	//enemyBoss.Update(p);
 
 	if (enemyA.PollAttackHit())
 	{
