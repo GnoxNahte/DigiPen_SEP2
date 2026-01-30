@@ -6,6 +6,7 @@
 #include "../../../Saves/SaveSystem.h"
 #include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
+#include "../../Game/Time.h"
 #include "../../Game/UI.h"
 
 BaseScene* GSM::currentScene = nullptr;
@@ -22,6 +23,8 @@ void GSM::Init(SceneState type)
 	// === Init systems ===
 	QuickGraphics::Init();
 	SaveSystem::Init();
+	Time::GetInstance();
+	TimerSystem::GetInstance();
 	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
 
 	LoadState(type);
@@ -78,28 +81,27 @@ void GSM::Update()
 			currentScene->Render();
 
 			//timerSystem.Update();
+			Time::GetInstance().Update();
+			TimerSystem::GetInstance().Update();
 
 			// === For Damage Text Testing ===
-			//if (AEInputCheckTriggered(AEVK_K)) {
-			//	timerSystem.AddTimer("Damage Scale Timer", 0.28f);
-			//	timerSystem.AddTimer("Damage Fade Timer", 1.5f);
-			//	damageType = (damageType + 1) % 6; // enum testing
-			//	alpha = 1.0f;
-			//	
-			//}
-			//if (timerSystem.GetTimerByName("Damage Scale Timer") != nullptr && timerSystem.GetTimerByName("Damage Scale Timer")->percentage < 1.f)
-			//{
-			//	scale = static_cast<f32>(1 - timerSystem.GetTimerByName("Damage Scale Timer")->percentage + 0.95f);
-			//}
-			//if (timerSystem.GetTimerByName("Damage Fade Timer") != nullptr) {
-			//	alpha = static_cast<f32>(1 - 1.0f * timerSystem.GetTimerByName("Damage Fade Timer")->percentage);
-			//	if (timerSystem.GetTimerByName("Damage Fade Timer")->percentage < 1.0f) {
-			//		UI::PrintDamageText(178, { -0.5f, 0.5f }, scale, alpha, damageType);
-			//	}
-			//	else {
-			//		alpha = 1.f;
-			//	}
-			//}
+			// Can use this as a sample test case if you want to use timers.
+			if (AEInputCheckTriggered(AEVK_K)) {
+				TimerSystem::GetInstance().AddAnonymousTimer(2.0f);
+				TimerSystem::GetInstance().AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
+				Time::GetInstance().TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
+				TimerSystem::GetInstance().AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
+			}
+
+			Timer const* timer = TimerSystem::GetInstance().GetTimerByName("Test timer");
+			if (timer) {
+				// After it loops loopCount times it will not reset its completion, unpausing the state and allowing other timers to countdown.
+				if (timer->completed) {
+					Time::GetInstance().TogglePause(); // Unpause
+					TimerSystem::GetInstance().RemoveTimer("Test timer"); // Delete the timer after use
+					std::cout << "Unpaused!" << '\n';
+				}
+			}
 
 			// Informing the system about the loop's end
 			AESysFrameEnd();
@@ -118,8 +120,6 @@ void GSM::Update()
 
 void GSM::Exit()
 {
-	//timerSystem.Clear();
-
 	QuickGraphics::Free();
 }
 
