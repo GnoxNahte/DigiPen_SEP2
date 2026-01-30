@@ -48,9 +48,10 @@ void GameScene::Update()
 	camera.Update();
 	player.Update();
 
-	// Keep enemies in the scene by updating them every frame.
-	enemyA.Update(player.GetPosition());
-	enemyBoss.Update(player.GetPosition());
+
+	AEVec2 p = player.GetPosition();
+	enemyA.Update(p);
+	enemyBoss.Update(p);
 
 	if (enemyA.PollAttackHit())
 	{
