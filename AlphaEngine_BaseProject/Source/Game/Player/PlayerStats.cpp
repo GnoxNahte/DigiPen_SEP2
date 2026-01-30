@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <rapidjson/document.h>
+#include <imgui.h>
 
 #include "PlayerStats.h"
 #include "../../Utils/FileHelper.h"
@@ -33,14 +34,6 @@ PlayerStats::PlayerStats(std::string file) : file(file)
 {
 	LoadFileData();
 }
-
-void PlayerStats::WatchFile()
-{
-#if _DEBUG
-	std::cout << "watching file: " << file << std::endl;
-#endif
-}
-
 
 void PlayerStats::LoadFileData()
 {
@@ -102,7 +95,140 @@ void PlayerStats::LoadFileData()
 	for (int i = 0; i < airAttacks.size(); i++)
 		LoadAttack(airAttacksArr[i].GetObj(), airAttacks[i]);
 
-	// ===== Pre-calculate other variables =====
+	CalculateDerivedVariables();
+}
+
+void PlayerStats::OnDataChanged()
+{
+	CalculateDerivedVariables();
+
+	// @todo save to file
+}
+
+void PlayerStats::DrawInspector()
+{
+    bool ifChanged = false;
+
+    ImGui::PushItemWidth(150);
+    // ===== Horizontal Movement =====
+    if (ImGui::TreeNode("Horizontal Movement"))
+    {
+        ifChanged = ImGui::DragFloat("Max Speed", &maxSpeed, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Air Strafe Max Speed", &airStrafeMaxSpeed, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Attack Max Speed Multiplier", &attackMaxSpeedMultiplier, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Max Speed Time", &maxSpeedTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Stop Time", &stopTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Turn Time", &turnTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("In Air Turn Time", &inAirTurnTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Dash Cooldown", &dashCooldown, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Dash Time", &dashTime, 0.01f) || ifChanged;
+
+        ImGui::SeparatorText("Derived Stats");
+        ImGui::BeginDisabled();
+        ifChanged = ImGui::DragFloat("Move Acceleration", &moveAcceleration, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Stop Acceleration", &stopAcceleration, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Turn Acceleration", &turnAcceleration, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("In Air Turn Acceleration", &inAirTurnAcceleration, 0.1f) || ifChanged;
+        ImGui::EndDisabled();
+
+        ImGui::TreePop();
+    }
+
+    // ===== Vertical Movement =====
+    if (ImGui::TreeNode("Vertical Movement"))
+    {
+        ifChanged = ImGui::DragFloat("Max Fall Velocity", &maxFallVelocity, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Wall Slide Max Speed Time", &wallSlideMaxSpeedTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Wall Slide Max Speed", &wallSlideMaxSpeed, 0.1f) || ifChanged;
+
+        ImGui::SeparatorText("Derived Stats");
+        ImGui::BeginDisabled();
+        ifChanged = ImGui::DragFloat("Gravity", &gravity, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Falling Gravity", &fallingGravity, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Wall Slide Acceleration", &wallSlideAcceleration, 0.1f) || ifChanged;
+        ImGui::EndDisabled();
+
+        ImGui::TreePop();
+    }
+
+    // ===== Jumping =====
+    if (ImGui::TreeNode("Jumping"))
+    {
+        ifChanged = ImGui::DragFloat("Max Jump Height", &maxJumpHeight, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Min Jump Height", &minJumpHeight, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Time To Max Height", &timeToMaxHeight, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Time To Ground", &timeToGround, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Gravity Multiplier When Release", &gravityMultiplierWhenRelease, 0.01f) || ifChanged;
+        ImGui::SetItemTooltip("When player releases 'Jump', gravity will be multiplied");
+
+        ifChanged = ImGui::DragFloat("Coyote Time", &coyoteTime, 0.01f) || ifChanged;
+        ImGui::SetItemTooltip("Allows player to jump for some time after leaving the platform");
+
+        ifChanged = ImGui::DragFloat("Jump Buffer", &jumpBuffer, 0.01f) || ifChanged;
+        ImGui::SetItemTooltip("Allows the player to jump if they press and release 'Jump' before reaching the ground");
+
+        ifChanged = ImGui::DragFloat("Wall Jump Horizontal Velocity", &wallJumpHorizontalVelocity, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Wall Jump Horizontal Velocity Towards Wall", &wallJumpHorizontalVelocityTowardsWall, 0.1f) || ifChanged;
+
+        ImGui::SeparatorText("Derived Stats");
+        ImGui::BeginDisabled();
+        ifChanged = ImGui::DragFloat("Jump Velocity", &jumpVelocity, 0.1f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Min Jump Time", &minJumpTime, 0.01f) || ifChanged;
+        ImGui::EndDisabled();
+
+        ImGui::TreePop();
+    }
+
+    // ===== Colliders =====
+    if (ImGui::TreeNode("Colliders"))
+    {
+        ImGui::PushItemWidth(200);
+
+        ImGui::Text("Ground Checker");
+        ifChanged = ImGui::DragFloat2("GroundPos", &groundChecker.position.x, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("GroundSize", &groundChecker.size.x, 0.01f) || ifChanged;
+
+        ImGui::Text("Ceiling Checker");
+        ifChanged = ImGui::DragFloat2("CeilingPos", &ceilingChecker.position.x, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("CeilingSize", &ceilingChecker.size.x, 0.01f) || ifChanged;
+
+        ImGui::Text("Left Wall Checker");
+        ifChanged = ImGui::DragFloat2("LeftWallPos", &leftWallChecker.position.x, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("LeftWallSize", &leftWallChecker.size.x, 0.01f) || ifChanged;
+
+        ImGui::Text("Right Wall Checker");
+        ifChanged = ImGui::DragFloat2("RightWallPos", &rightWallChecker.position.x, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("RightWallSize", &rightWallChecker.size.x, 0.01f) || ifChanged;
+
+        ImGui::PopItemWidth();
+        ImGui::TreePop();
+    }
+
+    // ===== Combat =====
+    if (ImGui::TreeNode("Combat"))
+    {
+        ifChanged = ImGui::DragInt("Max Health", &maxHealth, 1.0f, 1, 1000) || ifChanged;
+        ifChanged = ImGui::DragFloat("Attack Buffer", &attackBuffer, 0.01f) || ifChanged;
+
+        ImGui::TreePop();
+    }
+
+    // ===== Others =====
+    if (ImGui::TreeNode("Others"))
+    {
+        ifChanged = ImGui::DragFloat2("Player Size", &playerSize.x, 0.01f) || ifChanged;
+
+        ImGui::TreePop();
+    }
+
+    if (ifChanged)
+        OnDataChanged();
+
+    ImGui::PopItemWidth();
+}
+
+void PlayerStats::CalculateDerivedVariables()
+{
 	moveAcceleration = maxSpeed / maxSpeedTime;
 	stopAcceleration = -maxSpeed / stopTime;
 	turnAcceleration = 2.f * -maxSpeed / turnTime;

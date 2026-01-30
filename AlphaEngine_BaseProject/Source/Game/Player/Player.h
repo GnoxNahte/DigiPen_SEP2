@@ -6,11 +6,12 @@
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/MapGrid.h"
+#include "../../Editor/Editor.h"
 
 /**
  * @brief Controllable player class
  */
-class Player
+class Player : Inspectable
 {
 public:
     enum AnimState
@@ -109,5 +110,7 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
+
+    void DrawInspector() override;
 };
 

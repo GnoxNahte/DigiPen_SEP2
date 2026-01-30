@@ -7,6 +7,7 @@
 #include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
 #include "../../Game/UI.h"
+#include "../../Editor/Editor.h"
 
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -27,8 +28,6 @@ void GSM::Init(SceneState type)
 	QuickGraphics::Init();
 	SaveSystem::Init();
 	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
-
-	LoadState(type);
 
 	// === Damage text testing variables ===
 	//f32 alpha = 1.f;
@@ -63,12 +62,6 @@ void GSM::Update()
 
 		currentScene->Init();
 
-		// Our state
-		bool show_demo_window = true;
-		bool show_another_window = false;
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		while (currentState == nextState)
 		{
 			// Informing the system about the loop's start
@@ -77,6 +70,9 @@ void GSM::Update()
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
+
+			// Allows to dock window anywhere
+			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 			AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
 			//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
@@ -89,6 +85,8 @@ void GSM::Update()
 				nextState = GS_QUIT;
 
 			currentScene->Update();
+			Editor::Update();
+
 			currentScene->Render();
 
 			//timerSystem.Update();
@@ -114,60 +112,9 @@ void GSM::Update()
 			//		alpha = 1.f;
 			//	}
 			//}
-			 
 			
-			// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-			if (show_demo_window)
-				ImGui::ShowDemoWindow(&show_demo_window);
-
-			// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-			{
-				static float f = 0.0f;
-				static int counter = 0;
-
-				ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-				ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-				ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-				ImGui::Checkbox("Another Window", &show_another_window);
-
-				ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-				if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-					counter++;
-				ImGui::SameLine();
-				ImGui::Text("counter = %d", counter);
-
-				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-				ImGui::End();
-			}
-
-			// 3. Show another simple window.
-			if (show_another_window)
-			{
-				ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-				ImGui::Text("Hello from another window!");
-				if (ImGui::Button("Close Me"))
-					show_another_window = false;
-				ImGui::End();
-			}
-
-			// Rendering
-			ImGui::Render();
-
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-			// Update and Render additional Platform Windows
-			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
-
-				// Restore the OpenGL rendering context to the main window DC, since platform windows might have changed it.
-				//wglMakeCurrent(g_MainWindow.hDC, g_hRC);
-			}
-
+			Editor::DrawInspectors();
+			
 			// Informing the system about the loop's end
 			AESysFrameEnd();
 		}
@@ -209,8 +156,8 @@ void GSM::LoadState(SceneState state)
 	switch (state)
 	{
 		//case GS_SPLASH_SCREEN: currentScene = new SplashScreenScene(); break;
-		case GS_MAIN_MENU: currentScene = new MainMenuScene(); break;
-		case GS_GAME:	currentScene = new GameScene();		break;
-		default:		std::cout << "Loading to unknown scene.\n"; break;
+		case GS_MAIN_MENU:	currentScene = new MainMenuScene();	break;
+		case GS_GAME:		currentScene = new GameScene();		break;
+		default:			std::cout << "Loading to unknown scene.\n"; break;
 	}
 }

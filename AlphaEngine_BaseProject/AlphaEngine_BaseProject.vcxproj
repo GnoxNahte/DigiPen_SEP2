@@ -112,6 +112,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp" />
     <ClCompile Include="Saves\SaveData.cpp" />
     <ClCompile Include="Saves\SaveSystem.cpp" />
+    <ClCompile Include="Source\Editor\Editor.cpp" />
+    <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
     <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
     <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
@@ -146,6 +148,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
+    <ClInclude Include="Source\Editor\Editor.h" />
+    <ClInclude Include="Source\Editor\ImGuiHelper.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Game\Environment\MapGrid.h" />
     <ClInclude Include="Source\Game\Environment\MapTile.h" />

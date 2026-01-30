@@ -4,6 +4,8 @@
 #include <limits>
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
+#include <imgui.h>
+#include "../../Editor/ImGuiHelper.h"
 
 Player::Player(MapGrid* map) :
     stats("Assets/config/player-stats.json"), 
@@ -14,6 +16,7 @@ Player::Player(MapGrid* map) :
     velocity{},
     particleSystem{ 50, {} }
 {
+    std::cout << "Construct player";
     Reset(AEVec2{ 2, 4 });
 
     this->map = map;
@@ -461,4 +464,28 @@ void Player::RenderDebugCollider(Box& box)
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
     QuickGraphics::DrawRect(boxPos, box.size);
+}
+
+void Player::DrawInspector()
+{
+    ImGui::Begin("Player");                          // Create a window called "Hello, world!" and append into it.
+    
+    // ========== Runtime ==========
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::Text("Physics");
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+
+        ImGui::Text("Stats");
+        ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
+    }
+
+    // ========== Stats ==========
+    if (ImGui::CollapsingHeader("Stats"))
+    {
+        stats.DrawInspector();
+    }
+
+    ImGui::End();
 }

@@ -52,6 +52,12 @@
     <Filter Include="Library Files\ImGui\backend">
       <UniqueIdentifier>{fb80dfe2-b9dc-41b9-9605-4f06d53d966c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Editor">
+      <UniqueIdentifier>{18f0770a-a63d-4ba8-a625-e715adc39b6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{33977299-7197-4a11-bb84-d0f22fece88a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -143,6 +149,12 @@
     </ClCompile>
     <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_win32.cpp">
       <Filter>Library Files\ImGui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Editor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -244,6 +256,12 @@
     </ClInclude>
     <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.h">
       <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Editor.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\ImGuiHelper.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
