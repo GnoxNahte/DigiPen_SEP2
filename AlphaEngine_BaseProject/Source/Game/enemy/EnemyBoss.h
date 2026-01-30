@@ -62,9 +62,13 @@ private:
 
 
     EnemyAttack attack;
-    float SpecialElapsed{ 5.0f };
 
-
+    // --- Special attack sequence control ---
+    float SpecialElapsed{ 0.0f };           // cooldown timer (seconds)
+    bool specialUnlocked{ false };          // becomes true after first normal attack
+    bool specialBurstActive{ false };       // currently spawning the 5 specials
+    int  specialSpawnsRemaining{ 0 };       // how many left in this burst
+    float specialSpawnTimer{ 0.0f };        // time until next spawn in burst
 
 
     // Debug / collider size (use AEVec2 like Player)
