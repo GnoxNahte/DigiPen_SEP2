@@ -37,19 +37,19 @@ private:
 
     enum AnimState
     {
-       IDLE = 0,
-	   RUN = 1,
-	   ATTACK = 2,
-	   HURT = 3,
-	   TELEPORT = 4,
-	   SPELLCAST = 5,
-	   SPELL1 = 6,
-	   SPELL2 = 7
+        IDLE = 0,
+        RUN = 1,
+        ATTACK = 2,
+        HURT = 3,
+        TELEPORT = 4,
+        SPELLCAST = 5,
+        SPELL1 = 6,
+        SPELL2 = 7
     };
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };
     Sprite sprite;
-    Sprite spell1Vfx;   // extra sprite used only for orb VFX
+    Sprite specialAttackVfx;   // extra sprite used only for special attack VFX
 
     AEVec2 facingDirection{ 1.f, 0.f };
 
@@ -62,6 +62,8 @@ private:
 
 
     EnemyAttack attack;
+    float SpecialElapsed{ 5.0f };
+
 
 
 

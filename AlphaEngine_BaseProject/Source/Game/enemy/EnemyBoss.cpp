@@ -46,7 +46,7 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 }
 */
 
-struct GlowOrb
+struct SpecialAttack
 {
     AEVec2 pos{ 0.f, 0.f };
     AEVec2 vel{ 0.f, 0.f };
@@ -70,7 +70,7 @@ struct GlowOrb
     void Render(Sprite& vfx, float sx, float sy) const
     {
         AEMtx33 m;
-        const bool faceRight = (vel.x >= 0.0f);   // orb direction
+        const bool faceRight = (vel.x >= 0.0f);   // special attack direction
         // scale to make it a vertical lightning
         AEMtx33Scale(&m, sx, sy);
 
@@ -99,16 +99,16 @@ struct GlowOrb
 };
 
 // Global list for testing (fine while you only have 1 EnemyA / no boss yet)
-static std::vector<GlowOrb> g_orbs;
+static std::vector<SpecialAttack> g_specialAttacks;
 
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
-    , spell1Vfx("Assets/Craftpix/Bringer_of_Death3.png")
+    , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
 {
     position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
-    spell1Vfx.SetState(SPELL1); // enum 6
+    specialAttackVfx.SetState(SPELL1); // enum 6
 
     // Make sure the enemy is visible by default
     size = AEVec2{ 0.8f, 0.8f };
@@ -156,19 +156,19 @@ void EnemyBoss::Update(const AEVec2& playerPos)
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     attack.Update(dt, absDx, attackDur);
 
-    // Spawn one orb when attack starts (testing)!!!!!!!!!
+    // Spawn one special attack when attack starts (testing)!!!!!!!!!
     if (attack.JustStarted())
     {
         const float dir = (facingDirection.x >= 0.f) ? 1.f : -1.f;
 
-        GlowOrb o;
-        o.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
-        o.vel = AEVec2{ dir * 7.0f, 0.f };      // speed in tiles/sec
-        o.radius = 0.14f;
-        o.life = 1.6f;
-        o.color = 0xFFAA66FF;                   // purple glow (ARGB)
+        SpecialAttack specialAttack;
+        specialAttack.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
+        specialAttack.vel = AEVec2{ dir * 7.0f, 0.f };      // speed in tiles/sec
+        specialAttack.radius = 0.14f;
+        specialAttack.life = 1.6f;
+        specialAttack.color = 0xFFAA66FF;                   // purple glow (ARGB)
 
-        g_orbs.push_back(o);
+        g_specialAttacks.push_back(specialAttack);
     }
 
 
@@ -220,7 +220,7 @@ void EnemyBoss::Update(const AEVec2& playerPos)
             position = nextPos;
         }
 
-		else (chasing = false);
+        else (chasing = false);
 
 
 
@@ -231,12 +231,12 @@ void EnemyBoss::Update(const AEVec2& playerPos)
 
     // Advance sprite frames
     sprite.Update();
-    spell1Vfx.Update();
+    specialAttackVfx.Update();
 
-    // Update + cleanup orbs(TESTING)!!!!!!
-    for (auto& o : g_orbs) o.Update(dt);
-    g_orbs.erase(std::remove_if(g_orbs.begin(), g_orbs.end(),
-        [](const GlowOrb& o) { return !o.alive(); }), g_orbs.end());
+    // Update + cleanup special attacks(TESTING)!!!!!!
+    for (auto& specialAttack : g_specialAttacks) specialAttack.Update(dt);
+    g_specialAttacks.erase(std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
+        [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }), g_specialAttacks.end());
 }
 
 
@@ -271,7 +271,7 @@ void EnemyBoss::Render()
     float px = sprite.metadata.pivot.x;
     float py = sprite.metadata.pivot.y;
 
-   
+
 
     AEMtx33TransApply(
         &m, &m,
@@ -290,10 +290,10 @@ void EnemyBoss::Render()
     AEMtx33Scale(&world, Camera::scale, Camera::scale);
     AEGfxSetTransform(world.m);
 
-    for (const auto& o : g_orbs)
+    for (const auto& specialAttack : g_specialAttacks)
     {
         // render the lightning sprite (this sets its own transform)
-        o.Render(spell1Vfx, 10.0f, 3.0f);
+        specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
 
         // reset back to world transform for world-space debug drawing
         AEGfxSetTransform(world.m);
@@ -302,13 +302,13 @@ void EnemyBoss::Render()
         if (debugDraw)
         {
             QuickGraphics::DrawRect(
-                o.pos.x, o.pos.y,
-                o.debugW, o.debugH,
+                specialAttack.pos.x, specialAttack.pos.y,
+                specialAttack.debugW, specialAttack.debugH,
                 0xFF00FF00,                 // green
                 AE_GFX_MDM_LINES_STRIP
             );
 
-            QuickGraphics::DrawRect(o.pos.x, o.pos.y, 0.05f, 0.05f, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+            QuickGraphics::DrawRect(specialAttack.pos.x, specialAttack.pos.y, 0.05f, 0.05f, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
         }
     }
 
@@ -316,11 +316,10 @@ void EnemyBoss::Render()
     // IMPORTANT: reset back to world before debug draw
     AEGfxSetTransform(world.m);
 
-	//enemy boss debug box
+    //enemy boss debug box
     if (debugDraw)
     {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
     }
 }
-
