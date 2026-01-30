@@ -1,11 +1,9 @@
 #include "EnemyA.h"
 #include <cmath>
-#include "AEEngine.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
 
 #include <vector>
-#include <algorithm>
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 {
