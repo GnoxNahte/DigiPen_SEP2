@@ -120,6 +120,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     attack.hitRange = 1.0f;
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 0.5f;
+    attack.breakRange = attack.startRange;
 }
 
 EnemyBoss::~EnemyBoss()
@@ -139,6 +140,9 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 void EnemyBoss::Update(const AEVec2& playerPos)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
+
+    const float desiredStopDist = (attack.startRange > 0.05f) ? (attack.startRange - 0.05f)
+        : attack.startRange;
 
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
@@ -177,16 +181,19 @@ void EnemyBoss::Update(const AEVec2& playerPos)
     }
     else
     {
+
         if (inAggroRange)
         {
-            // Only chase if player is within aggro range
-            chasing = (absDx > stopDistance);
+            chasing = (absDx > desiredStopDist);
+
+            // always face player
+            if (dx != 0.f)
+                facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
                 velocity.x = dirX * moveSpeed;
-                facingDirection = AEVec2{ dirX, 0.f };
             }
             else
             {
@@ -195,13 +202,24 @@ void EnemyBoss::Update(const AEVec2& playerPos)
 
             velocity.y = 0.f;
 
+            // integrate + clamp so we stop beside player, not inside player
             AEVec2 displacement;
             AEVec2Scale(&displacement, &velocity, dt);
-            AEVec2Add(&position, &position, &displacement);
+            AEVec2 nextPos = position;
+            AEVec2Add(&nextPos, &position, &displacement);
 
-            if (position.y < 0.f)
-                position.y = 0.f;
+            if (chasing)
+            {
+                const float dirX = (dx > 0.f) ? 1.f : -1.f;
+                const float targetX = playerPos.x - dirX * desiredStopDist;
+
+                if (dirX > 0.f && nextPos.x > targetX) { nextPos.x = targetX; velocity.x = 0.f; }
+                if (dirX < 0.f && nextPos.x < targetX) { nextPos.x = targetX; velocity.x = 0.f; }
+            }
+
+            position = nextPos;
         }
+
 		else (chasing = false);
 
 
