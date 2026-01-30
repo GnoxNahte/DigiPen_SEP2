@@ -50,6 +50,12 @@ private:
     Sprite sprite;
     AEVec2 facingDirection{ 1.f, 0.f };  
 
+    // --- Guard / leash (Option 1: stored in enemy instance) ---
+    AEVec2 homePos{ 0.f, 0.f };      // spawn/guard anchor
+    float leashRange{ 6.0f };        // max roam distance from home (tune this)
+    bool returningHome{ false };     // disengage + walk back to home
+
+
 
     float width{ 0.8f };
     float height{ 0.8f };

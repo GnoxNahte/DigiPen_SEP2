@@ -76,7 +76,10 @@ EnemyA::EnemyA(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Alien6.png")  
 {
     position = AEVec2{ initialPosX, initialPosY };
+    homePos = position; // anchor guard point at spawn
     velocity = AEVec2{ 0.f, 0.f };
+
+
 
     // Make sure the enemy is visible by default
     size = AEVec2{ 0.8f, 0.8f };
@@ -117,9 +120,62 @@ void EnemyA::Update(const AEVec2& playerPos)
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
 
+    // --- Guard/leash: do not chase if player baits too far from home ---
+    const float playerFromHome = std::fabs(playerPos.x - homePos.x);
+    const float enemyFromHome = std::fabs(position.x - homePos.x);
+
+    // If player is outside guard area OR enemy somehow got dragged out, return home
+    if (playerFromHome > leashRange || enemyFromHome > leashRange + 0.01f)
+        returningHome = true;
+
+    if (returningHome)
+    {
+        // Cancel combat while returning
+        attack.Reset();
+        chasing = false;
+
+        const float eps = 0.05f;
+        const float dh = homePos.x - position.x;
+        const float absDh = std::fabs(dh);
+
+        velocity.y = 0.f;
+
+        if (absDh <= eps)
+        {
+            // Arrived home
+            position.x = homePos.x;
+            velocity.x = 0.f;
+            returningHome = false;
+        }
+        else
+        {
+            // Move back home
+            const float dirX = (dh > 0.f) ? 1.f : -1.f;
+            facingDirection = AEVec2{ dirX, 0.f };
+            velocity.x = dirX * moveSpeed;
+
+            AEVec2 displacement;
+            AEVec2Scale(&displacement, &velocity, dt);
+            AEVec2 nextPos = position;
+            AEVec2Add(&nextPos, &position, &displacement);
+
+            // Clamp so we don't overshoot home
+            if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
+            if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
+
+            position = nextPos;
+        }
+
+        UpdateAnimation();
+        sprite.Update();
+        return;
+    }
+
 
     //chase detection
     const bool inAggroRange = (absDx <= aggroRange);
+
+
 
 
     // Update attack component
@@ -172,6 +228,13 @@ void EnemyA::Update(const AEVec2& playerPos)
                 if (dirX > 0.f && nextPos.x > targetX) { nextPos.x = targetX; velocity.x = 0.f; }
                 if (dirX < 0.f && nextPos.x < targetX) { nextPos.x = targetX; velocity.x = 0.f; }
             }
+
+            // --- Clamp within guard area ---
+            const float minX = homePos.x - leashRange;
+            const float maxX = homePos.x + leashRange;
+
+            if (nextPos.x < minX) { nextPos.x = minX; velocity.x = 0.f; }
+            if (nextPos.x > maxX) { nextPos.x = maxX; velocity.x = 0.f; }
 
             position = nextPos;
         }
