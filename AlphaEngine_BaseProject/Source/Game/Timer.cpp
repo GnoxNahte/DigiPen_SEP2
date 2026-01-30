@@ -2,24 +2,6 @@
 #include "Time.h"
 #include <iostream>
 
-// Initialize static instance pointer
-TimerSystem* TimerSystem::instance = nullptr;
-
-TimerSystem* TimerSystem::GetInstance() {
-	if (instance == nullptr) {
-		instance = new TimerSystem();
-		std::cout << "TimerSystem singleton created." << std::endl;
-	}
-	return instance;
-}
-
-void TimerSystem::DestroyInstance() {
-	if (instance != nullptr) {
-		std::cout << "TimerSystem singleton destroyed." << std::endl;
-		delete instance;
-		instance = nullptr;
-	}
-}
 void TimerSystem::Update() {
 	CheckTimerCompletion();
 }
@@ -178,15 +160,15 @@ f32 TimerSystem::GetTimerPercentage(u32 timerId) const {
 f64 TimerSystem::GetTimeForTimer(const Timer& timer) const {
 	if (timer.ignorePause && timer.ignoreTimeScale) {
 		// Real-time: never pauses, never scales
-		return Time::GetInstance()->GetElapsedTime();
+		return Time::GetInstance().GetElapsedTime();
 	}
 	else if (!timer.ignorePause && timer.ignoreTimeScale) {
 		// Pauses but doesn't scale
-		return Time::GetInstance()->GetUnpausedElapsedTime();
+		return Time::GetInstance().GetUnpausedElapsedTime();
 	}
 	else {
 		// Normal timer: pauses and scales
-		return Time::GetInstance()->GetScaledElapsedTime();
+		return Time::GetInstance().GetScaledElapsedTime();
 	}
 }
 

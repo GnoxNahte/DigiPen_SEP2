@@ -81,24 +81,24 @@ void GSM::Update()
 			currentScene->Render();
 
 			//timerSystem.Update();
-			Time::GetInstance()->Update();
-			TimerSystem::GetInstance()->Update();
+			Time::GetInstance().Update();
+			TimerSystem::GetInstance().Update();
 
 			// === For Damage Text Testing ===
 			// Can use this as a sample test case if you want to use timers.
 			if (AEInputCheckTriggered(AEVK_K)) {
-				TimerSystem::GetInstance()->AddAnonymousTimer(2.0f);
-				TimerSystem::GetInstance()->AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
-				Time::GetInstance()->TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
-				TimerSystem::GetInstance()->AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
+				TimerSystem::GetInstance().AddAnonymousTimer(2.0f);
+				TimerSystem::GetInstance().AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
+				Time::GetInstance().TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
+				TimerSystem::GetInstance().AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
 			}
 
-			Timer const* timer = TimerSystem::GetInstance()->GetTimerByName("Test timer");
+			Timer const* timer = TimerSystem::GetInstance().GetTimerByName("Test timer");
 			if (timer) {
 				// After it loops loopCount times it will not reset its completion, unpausing the state and allowing other timers to countdown.
 				if (timer->completed) {
-					Time::GetInstance()->TogglePause(); // Unpause
-					TimerSystem::GetInstance()->RemoveTimer("Test timer"); // Delete the timer after use
+					Time::GetInstance().TogglePause(); // Unpause
+					TimerSystem::GetInstance().RemoveTimer("Test timer"); // Delete the timer after use
 					std::cout << "Unpaused!" << '\n';
 				}
 			}
@@ -120,9 +120,6 @@ void GSM::Update()
 
 void GSM::Exit()
 {
-	//timerSystem.Clear();
-	Time::GetInstance()->DestroyInstance();
-	TimerSystem::GetInstance()->DestroyInstance();
 	QuickGraphics::Free();
 }
 

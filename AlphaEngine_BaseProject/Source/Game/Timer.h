@@ -22,11 +22,14 @@ struct Timer {
 };
 class TimerSystem {
 public:
-	// Get singleton instance
-	static TimerSystem* GetInstance();
+	TimerSystem(const TimerSystem&) = delete;
+	TimerSystem& operator=(const TimerSystem&) = delete;
 
-	// Destroy singleton (On shutdown)
-	static void DestroyInstance();
+	// Get a singleton instance of the TimerSystem.
+	static TimerSystem& GetInstance() {
+		static TimerSystem instance;
+		return instance;
+	}
 
 	// Returns total elapsed time in seconds.
 	//f64 GetElapsedTime() const;
@@ -79,12 +82,8 @@ public:
 	void ResetActiveTimerCount() { activeTimerCount = 0; }
 /*_______________________________________________________________________________________*/
 private:
-	static TimerSystem* instance;
 	// Private constructor to prevent direct instantiation
 	TimerSystem() : elapsedTime(0.0), activeTimerCount(0), nextTimerId(1) {}
-	// Delete copy constructor and assignment operator
-	TimerSystem(const TimerSystem&) = delete;
-	TimerSystem& operator=(const TimerSystem&) = delete;
 
 	// Member variables
 	std::vector <Timer> timers; // Vector to store a list of timers.

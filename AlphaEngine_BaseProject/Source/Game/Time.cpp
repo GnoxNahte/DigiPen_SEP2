@@ -1,24 +1,6 @@
 #include "Time.h"
 #include <iostream>
 
-Time* Time::instance = nullptr;
-
-Time* Time::GetInstance() {
-    if (instance == nullptr) {
-        instance = new Time();
-        std::cout << "Time system created." << std::endl;
-    }
-    return instance;
-}
-
-void Time::DestroyInstance() {
-    if (instance != nullptr) {
-        std::cout << "Time system destroyed." << std::endl;
-        delete instance;
-        instance = nullptr;
-    }
-}
-
 void Time::Update() {
     deltaTime = AEFrameRateControllerGetFrameTime();
 
