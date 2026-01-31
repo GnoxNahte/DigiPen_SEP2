@@ -9,6 +9,7 @@ enum SceneState
 
 	GS_QUIT,
 	GS_RESTART,
+	GS_LEVEL_EDITOR
 };
 
 // NOTE: 

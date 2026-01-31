@@ -121,6 +121,8 @@ void GameScene::Render()
 		GSM::ChangeScene(SceneState::GS_GAME);
 	else if (AEInputCheckTriggered(AEVK_T))
 		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
+	else if (AEInputCheckTriggered(AEVK_Y))
+		GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
 }
 
 void GameScene::Exit()

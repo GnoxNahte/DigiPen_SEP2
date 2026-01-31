@@ -49,6 +49,9 @@
     <Filter Include="Header Files\Game\enemy">
       <UniqueIdentifier>{d0aa3d34-5fc9-4bb9-96f6-adb14b2d37e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{b1018c7e-7300-4623-811b-2a11a1d6108f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -125,6 +128,12 @@
     </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
       <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Time.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EditorUI.cpp">
+      <Filter>Source Files\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -208,6 +217,12 @@
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
       <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorUI.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

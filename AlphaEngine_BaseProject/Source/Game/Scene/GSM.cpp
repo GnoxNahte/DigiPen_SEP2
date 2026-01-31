@@ -1,13 +1,15 @@
+
 #include "GSM.h"
 #include "AEEngine.h"
 #include "GameScene.h"
 #include "MainMenuScene.h"
-#include "../../Utils/QuickGraphics.h"
+#include "../../Utils/QuickGraphics.h" 
 #include "../../../Saves/SaveSystem.h"
 #include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
 #include "../../Game/UI.h"
+//#include "LevelEditorScene.h"
 
 BaseScene* GSM::currentScene = nullptr;
 
@@ -144,6 +146,9 @@ void GSM::LoadState(SceneState state)
 		//case GS_SPLASH_SCREEN: currentScene = new SplashScreenScene(); break;
 		case GS_MAIN_MENU: currentScene = new MainMenuScene(); break;
 		case GS_GAME:	currentScene = new GameScene();		break;
+		case SceneState::GS_LEVEL_EDITOR:           // <--- add this
+			//currentScene = new LevelEditorScene();  // <--- add this
+			break;
 		default:		std::cout << "Loading to unknown scene.\n"; break;
 	}
 }
