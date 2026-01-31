@@ -1,15 +1,13 @@
 #include "LevelEditorScene.h"
-#include "leveleditor.hpp"   // your gamestate functions
+#include "leveleditor.h"   // gamestate functions
 
 LevelEditorScene::LevelEditorScene()
 {
-    // your project already uses: load() moved to constructor
     GameState_LevelEditor_Load();
 }
 
 LevelEditorScene::~LevelEditorScene()
 {
-    // your project already uses: unload() moved to destructor
     GameState_LevelEditor_Unload();
 }
 

@@ -135,6 +135,12 @@
     <ClCompile Include="EditorUI.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Scene\LevelEditorScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\leveleditor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -221,8 +227,14 @@
     <ClInclude Include="Source\Game\Time.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EditorUI.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="leveleditor.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\LevelEditorScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\EditorUI.hpp">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
