@@ -468,16 +468,16 @@ void Player::RenderDebugCollider(Box& box)
 
 void Player::DrawInspector()
 {
-    ImGui::Begin("Player");                          // Create a window called "Hello, world!" and append into it.
+    ImGui::Begin("Player"); 
     
     // ========== Runtime ==========
     if (ImGui::CollapsingHeader("Runtime"))
     {
-        ImGui::Text("Physics");
+        ImGui::SeparatorText("Physics");
         ImGui::DragFloat2("Position", &position.x, 0.1f);
         ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
 
-        ImGui::Text("Stats");
+        ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
     }
 

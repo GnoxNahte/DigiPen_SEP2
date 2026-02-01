@@ -3,18 +3,7 @@
 #include <vector>
 #include <functional>
 
-/**
- * @brief An interface for objects that can be inspected (Shows up in editor)
- * @todo make some parts debug only
- */
-class Inspectable
-{
-public:
-	bool enableInspector = false;
-	Inspectable();
-	~Inspectable();
-	virtual void DrawInspector() = 0;
-};
+#include "EditorUtils.h"
 
 class Editor
 {
@@ -33,6 +22,7 @@ private:
 
 	bool showInspectors = false;
 	bool showDemoWindow = false;
+	bool showColliders = false;
 
 	// @todo - benchmark, change to map if got lots of unregisters
 	std::vector<std::reference_wrapper<Inspectable>> menuObjs;

@@ -6,8 +6,6 @@
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
 
-#include <iostream>
-
 #include <windows.h>
 #include <imgui.h>
 #include <imgui_impl_win32.h>
@@ -43,7 +41,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
 	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
+	AEGfxSetTransparency(1.0f);	
+	AEGfxSetTextureMode(AE_GFX_TM_PRECISE);
 
 	// === ImGui setup ===
 	IMGUI_CHECKVERSION();

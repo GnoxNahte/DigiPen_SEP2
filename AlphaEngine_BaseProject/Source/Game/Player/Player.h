@@ -6,12 +6,11 @@
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/MapGrid.h"
-#include "../../Editor/Editor.h"
-
+#include "../../Engine/GameObject.h"
 /**
  * @brief Controllable player class
  */
-class Player : Inspectable
+class Player : Component
 {
 public:
     enum AnimState

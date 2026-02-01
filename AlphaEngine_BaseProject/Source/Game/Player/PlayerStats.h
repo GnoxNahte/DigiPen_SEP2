@@ -90,7 +90,7 @@ struct PlayerStats
     void LoadFileData();
     void OnDataChanged();
 
-    // This class doesnt inherit from Inspectable cos Player will call function instead
+    // Player will call this instead of editor
     void DrawInspector();
 private:
     void CalculateDerivedVariables();
