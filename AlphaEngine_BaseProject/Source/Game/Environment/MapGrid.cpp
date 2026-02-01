@@ -118,7 +118,15 @@ inline const MapTile* MapGrid::GetTile(int x, int y)
 #endif
 	return &(tiles[y * size.x + x]);
 }
+//level editor 
+void MapGrid::SetTile(int x, int y, MapTile::Type type)
+{
+	if (x < 0 || x >= size.x || y < 0 || y >= size.y)
+		return;
 
+	tiles[y * size.x + x].type = type;
+}
+//level editor
 bool MapGrid::CheckPointCollision(float x, float y)
 {
 	int index = WorldToIndex(x, y);

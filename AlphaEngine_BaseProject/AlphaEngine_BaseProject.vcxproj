@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -134,7 +134,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="traps.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="leveleditor.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\EditorUI.hpp" />
@@ -148,6 +147,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
     <ClInclude Include="Source\Game\Scene\GameScene.h" />
     <ClInclude Include="Source\Game\Scene\GSM.h" />
+    <ClInclude Include="Source\Game\Scene\leveleditor.h" />
     <ClInclude Include="Source\Game\Scene\LevelEditorScene.h" />
     <ClInclude Include="Source\Game\Scene\MainMenuScene.h" />
     <ClInclude Include="Source\Game\Time.h" />
