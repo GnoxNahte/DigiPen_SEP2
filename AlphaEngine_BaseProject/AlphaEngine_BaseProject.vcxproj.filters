@@ -58,6 +58,12 @@
     <Filter Include="Source Files\Editor">
       <UniqueIdentifier>{33977299-7197-4a11-bb84-d0f22fece88a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Game\enemy">
+      <UniqueIdentifier>{f26eff54-ceb2-4675-b745-db5d564a6e8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\enemy">
+      <UniqueIdentifier>{d0aa3d34-5fc9-4bb9-96f6-adb14b2d37e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -158,6 +164,12 @@
     </ClCompile>
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
       <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -268,6 +280,15 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\ImGuiHelper.h">
       <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyA.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

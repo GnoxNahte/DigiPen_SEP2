@@ -1,0 +1,14 @@
+{
+  "stateInfo": [
+    { "name": "IDLE",       "frameCount": 8, "sampleRate": 12 },
+    { "name": "RUN",        "frameCount": 8, "sampleRate": 12 },
+    { "name": "ATTACK",     "frameCount": 4, "sampleRate": 8  },
+    { "name": "HURT",       "frameCount": 3, "sampleRate": 8  },
+    { "name": "TELEPORT",   "frameCount": 8, "sampleRate": 12 },
+    { "name": "SPELL_CAST", "frameCount": 8, "sampleRate": 8 },
+    { "name": "SPELL1",     "frameCount": 7, "sampleRate": 12 },
+    { "name": "SPELL2",     "frameCount": 7, "sampleRate": 12 }
+  ],
+  "defaultSampleRate": 12,
+  "pivot": { "x": 0.5, "y": 1.4 }
+}

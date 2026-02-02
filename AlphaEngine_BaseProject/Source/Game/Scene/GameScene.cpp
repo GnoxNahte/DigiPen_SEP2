@@ -3,11 +3,15 @@
 #include "../../Utils/AEExtras.h"
 
 
+
+
 GameScene::GameScene() : 
-	player(&map), 
 	map(50, 50),
+	player(&map), 
+	enemyA(30, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
-	testParticleSystem(20, {})
+	testParticleSystem(20, {}),
+	enemyBoss(35, 2.90f)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
 	// =============================== Traps Setup (debug) ===========================
@@ -43,6 +47,20 @@ void GameScene::Update()
 {
 	camera.Update();
 	player.Update();
+
+
+	AEVec2 p = player.GetPosition();
+
+	//ENEMY AI
+	//enemyA.Update(p);
+	//enemyBoss.Update(p);
+
+	if (enemyA.PollAttackHit())
+	{
+		// later: apply player damage
+		// for now: print / debug
+		std::cout << "Enemy HIT!\n";
+	}
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	trapMgr.Update(dt, player);
 
@@ -60,6 +78,8 @@ void GameScene::Render()
 	map.Render();
 	//trapMgr.Render();   // for debug
 	player.Render();
+	enemyA.Render();
+	enemyBoss.Render();
 
 	// === Code below is for DEBUG ONLY ===
 	testParticleSystem.Render();
