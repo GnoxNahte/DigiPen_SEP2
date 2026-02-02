@@ -112,5 +112,6 @@ private:
     void RenderDebugCollider(Box& box);
 
     void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
 };
 

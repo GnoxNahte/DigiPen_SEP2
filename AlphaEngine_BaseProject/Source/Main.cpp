@@ -29,7 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// ===== Setup window and AlphaEngine =====
 
 	// Using custom window procedure
-	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 240, false, WndProc);
+	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, WndProc);
 	
 	// Changing the window title
 	AESysSetWindowTitle("GAM 150"); // @todo: change name

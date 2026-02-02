@@ -1,5 +1,6 @@
 #pragma once
 
+#include <AEVec2.h>
 
 /**
  * @brief An interface for objects that can be inspected (Shows up in editor)
@@ -12,4 +13,10 @@ public:
 	Inspectable();
 	~Inspectable();
 	virtual void DrawInspector() = 0;
+
+	/**
+	 * @brief  Check if the mouse clicked on this object
+	 * @return Returns if mouse pos is in object
+	 */
+	virtual bool CheckIfClicked(const AEVec2& mousePos);
 };

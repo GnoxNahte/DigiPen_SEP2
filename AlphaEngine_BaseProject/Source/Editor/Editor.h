@@ -13,18 +13,20 @@ public:
 
 	static void Update();
 	static void DrawInspectors();
-
 private:
-	// Singleton
-	static Editor& Get();
-
-	Editor();
-
 	bool showInspectors = false;
 	bool showDemoWindow = false;
 	bool showColliders = false;
 
+	Inspectable* focusedObject = nullptr;
+
 	// @todo - benchmark, change to map if got lots of unregisters
 	std::vector<std::reference_wrapper<Inspectable>> menuObjs;
+
+	// Singleton
+	static Editor& Get();
+	Editor();
+
+	void DrawMenus();
 };
 

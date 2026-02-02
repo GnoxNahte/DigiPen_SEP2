@@ -150,6 +150,20 @@ SceneState GSM::GetState()
 	return currentState;
 }
 
+std::string GSM::GetStateName(SceneState state)
+{
+	switch (state)
+	{
+		case GS_QUIT: return "QUIT";
+		case GS_RESTART: return "RESTART";
+		case GS_SPLASH_SCREEN: return "Splash Screen";
+		case GS_MAIN_MENU: return "Main Menu";
+		case GS_GAME: return "Game";
+
+		default: return "Unknown";
+	}
+}
+
 void GSM::LoadState(SceneState state)
 {
 	// @todo add other states.
