@@ -58,12 +58,6 @@
     <Filter Include="Source Files\Editor">
       <UniqueIdentifier>{33977299-7197-4a11-bb84-d0f22fece88a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Engine">
-      <UniqueIdentifier>{6a5d408a-863e-4a87-bb41-88949a9e244f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Engine">
-      <UniqueIdentifier>{998d6a1b-0d27-43ee-9253-d2726d6d373d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -164,15 +158,6 @@
     </ClCompile>
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
       <Filter>Source Files\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Physics.cpp">
-      <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\GameObject.cpp">
-      <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\CommonTypes.cpp">
-      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -283,15 +268,6 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\ImGuiHelper.h">
       <Filter>Header Files\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\CommonTypes.h">
-      <Filter>Header Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\GameObject.h">
-      <Filter>Header Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Physics.h">
-      <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
