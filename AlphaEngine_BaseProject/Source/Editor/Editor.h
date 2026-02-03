@@ -13,6 +13,8 @@ public:
 
 	static void Update();
 	static void DrawInspectors();
+
+	static bool GetShowColliders();
 private:
 	bool showInspectors = false;
 	bool showDemoWindow = false;

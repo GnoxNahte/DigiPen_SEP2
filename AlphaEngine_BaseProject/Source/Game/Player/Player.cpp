@@ -5,7 +5,7 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 #include <imgui.h>
-#include "../../Editor/ImGuiHelper.h"
+#include "../../Editor/Editor.h"
 
 Player::Player(MapGrid* map) :
     stats("Assets/config/player-stats.json"), 
@@ -62,7 +62,7 @@ void Player::Render()
     particleSystem.Render();
 
     // Local scale. For flipping sprite's facing direction
-    bool ifFaceRight = (velocity.x != 0.f) ? (velocity.x > 0) : (facingDirection.x > 0);
+    bool ifFaceRight = (velocity.x != 0.f && !IsAttacking()) ? (velocity.x > 0) : (facingDirection.x > 0);
     // Multiply height by 0.74f because sprite aspect ratio isn't a square
     AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f * 0.74f);
     AEMtx33TransApply(
@@ -151,7 +151,7 @@ void Player::UpdateInput()
     if (AEInputCheckTriggered(AEVK_SPACE))
         AEGetTime(&lastJumpPressed);
 
-    if (inputDirection.x != 0 || inputDirection.y != 0)
+    if ((inputDirection.x != 0 || inputDirection.y != 0) && !IsAttacking())
         facingDirection = inputDirection;
 
     if (AEInputCheckCurr(AEVK_X))
@@ -356,7 +356,7 @@ void Player::UpdateAttacks()
 
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
-    if (AEInputCheckCurr(AEVK_LCTRL))
+    if (Editor::GetShowColliders())
         QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFFFF0000);
 }
 
@@ -463,25 +463,27 @@ void Player::RenderDebugCollider(Box& box)
 {
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
-    QuickGraphics::DrawRect(boxPos, box.size);
+    QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
 }
 
 void Player::DrawInspector()
 {
     ImGui::Begin("Player"); 
     
-    // ========== Runtime ==========
+    // === Runtime ===
     if (ImGui::CollapsingHeader("Runtime"))
     {
         ImGui::SeparatorText("Physics");
         ImGui::DragFloat2("Position", &position.x, 0.1f);
         ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+        ImGui::DragFloat2("Facing direction", &facingDirection.x, 0.1f);
 
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
+        ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
     }
 
-    // ========== Stats ==========
+    // === Stats ===
     if (ImGui::CollapsingHeader("Stats"))
     {
         stats.DrawInspector();

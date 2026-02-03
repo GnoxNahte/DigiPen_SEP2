@@ -42,6 +42,8 @@ void Editor::Update()
 			}
 		}
 	}
+
+	instance.showColliders = AEInputCheckCurr(AEVK_LCTRL);
 }
 
 void Editor::DrawInspectors()
@@ -61,6 +63,11 @@ void Editor::DrawInspectors()
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+bool Editor::GetShowColliders()
+{
+	return Get().showColliders;
 }
 
 Editor& Editor::Get()
@@ -94,9 +101,16 @@ void Editor::DrawMenus()
 				ImGui::EndMenu();
 			}
 
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Debug"))
+		{
+			ImGui::MenuItem("Show colliders", "Ctrl", &instance.showColliders);
+
 			if (ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow))
 				ImGui::ShowDemoWindow();
-
+			
 			ImGui::EndMenu();
 		}
 
