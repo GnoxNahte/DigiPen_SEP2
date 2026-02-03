@@ -1,5 +1,62 @@
 #include "UI.h"
+#include "../Utils/MeshGenerator.h"
 #include <string>
+
+void UI::InitCards(char const* filepath) {
+	// Initialize card mesh and textures.
+	cardMesh = MeshGenerator::GetRectMesh(1,1);
+	cardTex = AEGfxTextureLoad(filepath);
+}
+void UI::DrawCards() {
+	// Create a scale matrix that scales by scaling factor.
+	AEMtx33 scale = { 0 };
+	float scalingFactor = 0.5f;
+	AEMtx33Scale(&scale, CARD_WIDTH * scalingFactor, CARD_HEIGHT * scalingFactor);
+
+	// Create a rotation matrix, base card doesn't rotate.
+	AEMtx33 rotate = { 0 };
+	AEMtx33Rot(&rotate, 0);
+
+	// Create a translation matrix that translates by
+	// 200 in the x-axis and 100 in the y-axis
+	AEMtx33 translate = { 0 };
+	AEMtx33Trans(&translate, (AEGfxGetWinMaxX()/2), (AEGfxGetWinMaxY()/2));
+
+	// Concatenate the matrices into the 'transform' variable.
+	AEMtx33 transform = { 0 };
+	AEMtx33Concat(&transform, &rotate, &scale);
+	AEMtx33Concat(&transform, &translate, &transform);
+
+	// Draw something with texture.
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+
+	// Set the the color to multiply to white, so that the sprite can 
+	// display the full range of colors (default is black).
+	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
+
+	// Set the color to add to nothing, so that we don't alter the sprite's color
+	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// Set blend mode to AE_GFX_BM_BLEND, which will allow transparency.
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(1.0f);
+
+	// Tell Alpha Engine to use the texture stored in pTex
+	AEGfxTextureSet(cardTex, 0, 0);
+
+	// Tell Alpha Engine to use the matrix in 'transform' to apply onto all 
+	// the vertices of the mesh that we are about to choose to draw in the next line.
+	AEGfxSetTransform(transform.m);
+
+	// Tell Alpha Engine to draw the mesh with the above settings.
+	AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
+}
+
+void UI::FreeCards() {
+	// Free card textures and meshes.
+	AEGfxTextureUnload(cardTex);
+	AEGfxMeshFree(cardMesh);
+}
 
 void UI::InitDamageFont(char const* filepath, int sizeType, int sizeNumber) {
 	damageTypeFont = AEGfxCreateFont(filepath, sizeType);
@@ -10,6 +67,7 @@ void UI::PrintDamageText(int damage, AEVec2 position, f32 scale, f32 alpha, int 
 	std::string damageType = {};
 	std::string damageNumber = {};
 	f32 r, g, b = {};
+	// TODO : centralize dmg text, and offset are temporarily hardcoded values to test functionality
 	switch (damageCase) {
 		case DAMAGE_TYPE_NORMAL:
 			r = 1.0f, g = 1.0f, b = 1.0f;
@@ -46,4 +104,13 @@ void UI::PrintDamageText(int damage, AEVec2 position, f32 scale, f32 alpha, int 
 			AEGfxPrint(damageTypeFont, damageType.c_str(), position.x, position.y, scale * 1.25f * 0.75f, r, g, b, alpha + 0.5f);
 			break;
 	}
+}
+
+void UI::Init() {
+	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
+	UI::InitCards("Assets/0_CardBack.png");
+}
+
+void UI::Render() {
+	UI::DrawCards();
 }
