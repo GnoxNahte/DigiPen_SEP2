@@ -50,6 +50,9 @@ public:
     void Reset(const AEVec2& initialPos);
 
     void TakeDamage(int dmg);
+
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
     
     // === Getters ===
     const AEVec2& GetPosition() const;
@@ -110,8 +113,5 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
-
-    void DrawInspector() override;
-    bool CheckIfClicked(const AEVec2& mousePos) override;
 };
 
