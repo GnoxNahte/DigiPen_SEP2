@@ -1,0 +1,12 @@
+{
+  "stateInfo": [
+    { "name": "ATTACK",   "frameCount": 13,  "sampleRate": 12  },
+    { "name": "DEATH",    "frameCount": 7, "sampleRate": 10 },
+    { "name": "HURT", "frameCount": 3, "sampleRate": 8 },
+    { "name": "IDLE",   "frameCount": 5,  "sampleRate": 8  },
+    { "name": "RUN",  "frameCount": 8, "sampleRate": 12 }
+  ],
+  "defaultSampleRate": 12,
+  "pivot": { "x": 0.5, "y": 0.35 }
+}
+

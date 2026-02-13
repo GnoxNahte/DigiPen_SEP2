@@ -39,11 +39,11 @@ private:
 
     enum AnimState
     {
-        IDLE1 = 0,
-        RUN = 1,
-        ATTACK = 2,
-        JUMP = 3,
-        DEATH = 4
+        ATTACK = 0,
+        DEATH = 1,
+        HURT = 2,
+        IDLE = 3,
+        RUN = 4
     };
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };

@@ -22,7 +22,7 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 
 
 EnemyA::EnemyA(float initialPosX, float initialPosY)
-    : sprite("Assets/Craftpix/Alien6.png")  
+    : sprite("Assets/Craftpix/Druid.png")  
 {
     position = AEVec2{ initialPosX, initialPosY };
     homePos = position; // anchor guard point at spawn
@@ -211,7 +211,7 @@ void EnemyA::UpdateAnimation()
     if (std::fabs(velocity.x) > 8.0f)
         sprite.SetState(RUN);
     else
-        sprite.SetState(IDLE1);
+        sprite.SetState(IDLE);
 }
 
 
