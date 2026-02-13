@@ -6,6 +6,7 @@
 #include "../Environment/traps.h"
 #include "GSM.h"
 #include "../enemy/EnemyA.h"
+#include "../enemy/EnemyB.h"
 #include "../enemy/EnemyBoss.h"
 
 
@@ -22,6 +23,7 @@ private:
 	Player player;
 	Camera camera;
 	EnemyA enemyA;
+	EnemyB enemyB;
 	EnemyBoss enemyBoss;
 	MapGrid map;
 	ParticleSystem testParticleSystem;

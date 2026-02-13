@@ -9,6 +9,7 @@ GameScene::GameScene() :
 	map(50, 50),
 	player(&map), 
 	enemyA(30, 3),
+	enemyB(25, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20, {}),
 	enemyBoss(35, 2.90f)
@@ -51,6 +52,7 @@ void GameScene::Update()
 
 	AEVec2 p = player.GetPosition();
 	enemyA.Update(p);
+	enemyB.Update(p);
 	enemyBoss.Update(p);
 
 	if (enemyA.PollAttackHit())
@@ -77,6 +79,7 @@ void GameScene::Render()
 	//trapMgr.Render();   // for debug
 	player.Render();
 	enemyA.Render();
+	enemyB.Render();
 	enemyBoss.Render();
 
 	// === Code below is for DEBUG ONLY ===
