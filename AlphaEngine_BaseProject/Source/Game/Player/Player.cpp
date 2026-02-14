@@ -494,7 +494,6 @@ void Player::DrawInspector()
 
 bool Player::CheckIfClicked(const AEVec2& mousePos)
 {
-    //std::cout << 
     return  fabsf(position.x - mousePos.x) < stats.playerSize.x &&
             fabsf(position.y - mousePos.y) < stats.playerSize.y;
 }
