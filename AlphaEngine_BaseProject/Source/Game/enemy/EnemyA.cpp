@@ -208,7 +208,7 @@ void EnemyA::UpdateAnimation()
         return;
     }
 
-    if (std::fabs(velocity.x) > 8.0f)
+    if (std::fabs(velocity.x) > 2.0f)
         sprite.SetState(RUN);
     else
         sprite.SetState(IDLE);
@@ -225,7 +225,7 @@ void EnemyA::Render()
         (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
 
     // Local scale (flip X if facing left). Match Player's 2.0f scaling.
-    AEMtx33Scale(&transform, faceRight ? 2.f : -2.f, 2.f);
+    AEMtx33Scale(&transform, faceRight ? 4.f : -4.f, 4.f);
 
     // Pivot correction, same formula as Player
     AEMtx33TransApply(
