@@ -53,7 +53,7 @@ void GameScene::Update()
 	AEVec2 p = player.GetPosition();
 	enemyA.Update(p);
 	enemyB.Update(p);
-	enemyBoss.Update(p);
+	enemyBoss.Update(p, player.IsFacingRight());
 
 	if (enemyA.PollAttackHit())
 	{
