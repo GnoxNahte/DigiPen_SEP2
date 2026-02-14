@@ -106,6 +106,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Saves\SaveData.cpp" />
     <ClCompile Include="Saves\SaveSystem.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
+    <ClCompile Include="Source\Game\enemy\Enemy.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyA.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyB.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp" />
@@ -135,6 +136,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\Game\Camera.h" />
+    <ClInclude Include="Source\Game\enemy\Enemy.h" />
     <ClInclude Include="Source\Game\enemy\EnemyA.h" />
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h" />
     <ClInclude Include="Source\Game\enemy\EnemyB.h" />

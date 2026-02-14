@@ -8,6 +8,7 @@
 #include "../enemy/EnemyA.h"
 #include "../enemy/EnemyB.h"
 #include "../enemy/EnemyBoss.h"
+#include "../enemy/Enemy.h"
 
 
 class GameScene : public BaseScene
@@ -22,11 +23,14 @@ public:
 private:
 	Player player;
 	Camera camera;
-	EnemyA enemyA;
-	EnemyB enemyB;
+	//EnemyA enemyA;
+	//EnemyB enemyB;
 	EnemyBoss enemyBoss;
 	MapGrid map;
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
+	// remove EnemyA.h / EnemyB.h includes
+	Enemy enemyA;
+	Enemy enemyB;
 };
 

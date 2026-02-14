@@ -5,11 +5,16 @@
 
 
 
+
+
 GameScene::GameScene() : 
 	map(50, 50),
 	player(&map), 
-	enemyA(30, 3),
-	enemyB(25, 3),
+	//enemyA(30, 3),
+	//enemyB(25, 3),
+	enemyA(Enemy::Preset::Druid, 30, 3),
+	enemyB(Enemy::Preset::Skeleton, 25, 3),
+
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(20, {}),
 	enemyBoss(35, 2.90f)
@@ -42,6 +47,7 @@ GameScene::~GameScene()
 void GameScene::Init()
 {
 	player.Reset(AEVec2{ 2, 2 });
+
 }
 
 void GameScene::Update()
