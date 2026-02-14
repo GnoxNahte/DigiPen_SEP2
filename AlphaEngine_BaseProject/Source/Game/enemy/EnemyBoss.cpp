@@ -150,7 +150,6 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             const float behindDir = playerFacingRight ? -1.f : 1.f;
 
             position.x = playerPos.x + behindDir * teleportBehindOffset;
-            position.y = playerPos.y; // optional; if you want boss to stay on its own y, remove this line.
 
             // Boss should face the player after teleport (same direction as player facing)
             facingDirection = AEVec2{ playerFacingRight ? 1.f : -1.f, 0.f };
