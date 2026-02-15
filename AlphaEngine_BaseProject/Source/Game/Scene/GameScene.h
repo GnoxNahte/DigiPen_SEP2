@@ -1,6 +1,7 @@
 #pragma once
 #include "../Player/Player.h"
 #include "../Camera.h"
+#include <cmath>
 #include "../Environment/MapGrid.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/traps.h"

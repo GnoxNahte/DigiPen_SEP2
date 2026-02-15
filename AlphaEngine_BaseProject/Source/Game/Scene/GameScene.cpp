@@ -4,7 +4,15 @@
 
 
 
-
+//AABB collision helper
+/*static bool AABB_Overlap(const AEVec2& aPos, const AEVec2& aSize,
+	const AEVec2& bPos, const AEVec2& bSize)
+{
+	const float dx = std::fabs(aPos.x - bPos.x);
+	const float dy = std::fabs(aPos.y - bPos.y);
+	return dx <= (aSize.x + bSize.x) * 0.5f
+		&& dy <= (aSize.y + bSize.y) * 0.5f;
+}*/
 
 
 GameScene::GameScene() : 
@@ -58,15 +66,33 @@ void GameScene::Update()
 
 	AEVec2 p = player.GetPosition();
 	enemyA.Update(p);
-	enemyB.Update(p);
-	enemyBoss.Update(p, player.IsFacingRight());
+	//enemyB.Update(p);
+	//enemyBoss.Update(p, player.IsFacingRight());
 
-	if (enemyA.PollAttackHit())
-	{
-		// later: apply player damage
-		// for now: print / debug
-		std::cout << "Enemy HIT!\n";
-	}
+	const AEVec2 pPos = player.GetPosition();
+	const AEVec2 pSize = player.GetStats().playerSize;
+
+	auto EnemyTryHitPlayer = [&](Enemy& e, int dmg)
+		{
+			if (!e.PollAttackHit()) return;
+
+			const AEVec2 ePos = e.GetPosition();
+
+			const float dx = std::fabs(pPos.x - ePos.x);
+			const float dy = std::fabs(pPos.y - ePos.y);
+
+			// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
+			if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
+			{
+				player.TakeDamage(dmg);
+				std::cout << "Enemy HIT player!\n";
+			}
+		};
+
+
+	EnemyTryHitPlayer(enemyA, 1);
+	EnemyTryHitPlayer(enemyB, 1);
+
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	trapMgr.Update(dt, player);
 

@@ -23,7 +23,12 @@ Enemy::Config Enemy::MakePreset(Preset preset)
     case Preset::Druid:
         c.spritePath = "Assets/Craftpix/Druid.png";
         c.renderScale = 4.f;
-        c.runVelThreshold = 2.0f;   // match your old EnemyA
+        c.runVelThreshold = 0.1f;
+        c.attackHitRange = 1.6f;    // try 1.4–2.0
+        c.attackStartRange = 1.8f;  // must be >= hitRange usually
+        c.attackBreakRange = 2.2f;  // how far before attack cancels
+        c.attackStartRange = 1.4f;
+
         break;
 
     case Preset::Skeleton:

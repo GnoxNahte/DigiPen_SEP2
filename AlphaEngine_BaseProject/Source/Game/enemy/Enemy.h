@@ -61,6 +61,10 @@ public:
     bool   IsChasing() const { return chasing; }
     bool   IsReturningHome() const { return returningHome; }
 
+    float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
+    int   GetAttackDamage() const { return 1; }                  
+
+
     // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
 
