@@ -36,7 +36,7 @@ void ParticleSystem::Update()
 	if (pool.GetSize() == 0)
 		return;
 
-	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+	std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?
@@ -67,33 +67,32 @@ void ParticleSystem::Free()
 
 Particle& ParticleSystem::SpawnParticle()
 {
+	return SpawnParticle(emitter);
+}
+
+Particle& ParticleSystem::SpawnParticle(const EmitterSettings& _emitter)
+{
 	Particle& p = pool.Get();
 	p.spawnTime = (float)AEGetTime(nullptr);
-	p.position.x = AEExtras::RandomRange(emitter.spawnPosRangeX);
-	p.position.y = AEExtras::RandomRange(emitter.spawnPosRangeY);
-	p.lifetime =  AEExtras::RandomRange(emitter.lifetimeRange);
+	p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
+	p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
+	p.lifetime =  AEExtras::RandomRange(_emitter.lifetimeRange);
 
-	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
-	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
+	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
+	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
 
 	return p;
 }
 
 void ParticleSystem::SpawnParticleBurst(const EmitterSettings& _emitter, size_t spawnCount)
 {
-	float currTime = (float)AEGetTime(nullptr);
-
 	for (size_t i = 0; i < spawnCount; i++)
-	{
-		Particle& p = pool.Get();
-		p.spawnTime = currTime;
-		p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
-		p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
-		p.lifetime = AEExtras::RandomRange(_emitter.lifetimeRange);
+		SpawnParticle(_emitter);
+}
 
-		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
-		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
-	}
+void ParticleSystem::SpawnParticleBurst(size_t spawnCount)
+{
+	SpawnParticleBurst(emitter, spawnCount);
 }
 
 void ParticleSystem::SetSpawnRate(float spawnRate)

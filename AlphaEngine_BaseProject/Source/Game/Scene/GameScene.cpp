@@ -10,7 +10,14 @@ GameScene::GameScene() :
 	player(&map), 
 	enemyA(30, 3),
 	camera({ 1,1 }, { 49, 49 }, 64),
-	testParticleSystem(20, {}),
+	testParticleSystem(
+		20, 
+		ParticleSystem::EmitterSettings{ 
+			.angleRange{ PI / 3, PI / 4 },
+			.speedRange{ 30.f, 50.f },
+			.lifetimeRange{1.f, 2.f},
+		} 
+	),
 	enemyBoss(35, 2.90f)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
@@ -23,7 +30,7 @@ GameScene::GameScene() :
 	//	Box{ {6.5f, 4.f}, {3.f, 1.f} }, 
 	//	1.f, 1.f, 10, true
 	//);
-
+	// 
 	//plate.AddLinkedTrap(&spikes);
 
 	//trapMgr.Spawn<LavaPool>(
@@ -31,7 +38,7 @@ GameScene::GameScene() :
 	//	2, 0.2f
 	//);
 
-
+	
 }
 
 GameScene::~GameScene()
@@ -67,9 +74,10 @@ void GameScene::Update()
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
 
 	// === Particle system test ===
-	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 50000.f : 0.f);
+	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
+	//testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 5000000.f : 0.f);
 	if (AEInputCheckTriggered(AEVK_G))
-		testParticleSystem.SpawnParticleBurst({ 2,2 }, 300);
+		testParticleSystem.SpawnParticleBurst( 300);
 	testParticleSystem.Update();
 }
 
@@ -77,12 +85,12 @@ void GameScene::Render()
 {
 	map.Render();
 	//trapMgr.Render();   // for debug
+	testParticleSystem.Render();
 	player.Render();
 	enemyA.Render();
 	enemyBoss.Render();
 
 	// === Code below is for DEBUG ONLY ===
-	testParticleSystem.Render();
 
 	// === Debug Info ===
 	std::string hp = "HP: " + std::to_string(player.GetHealth());
