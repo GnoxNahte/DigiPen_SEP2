@@ -1,4 +1,4 @@
-#include "Enemy.h"
+﻿#include "Enemy.h"
 
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
@@ -24,8 +24,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Druid.png";
         c.renderScale = 4.f;
         c.runVelThreshold = 0.1f;
-        c.attackHitRange = 1.6f;    // try 1.4�2.0
-        c.attackStartRange = 1.8f;  // must be >= hitRange usually
+        c.attackHitRange = 1.6f;    // try 1.4–2.0
         c.attackBreakRange = 2.2f;  // how far before attack cancels
         c.attackStartRange = 1.4f;
 
@@ -35,6 +34,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Skeleton.png";
         c.renderScale = 2.f;
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
+ 
         break;
     }
 
@@ -95,12 +95,55 @@ void Enemy::Update(const AEVec2& playerPos)
     const float playerFromHome = std::fabs(playerPos.x - homePos.x);
     const float enemyFromHome = std::fabs(position.x - homePos.x);
 
-    if (playerFromHome > cfg.leashRange || enemyFromHome > cfg.leashRange + 0.01f)
-        returningHome = true;
+    const bool inAggroRange = (absDx <= cfg.aggroRange);
+
+    // Hysteresis so we don't spam switch at the boundary
+    const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
+    const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED (tune 0.1~0.5)
+
+    // ENTER return-home mode if player OR enemy goes beyond leash
+    if (!returningHome)
+    {
+        if (playerFromHome > leashEnter || enemyFromHome > leashEnter)
+            returningHome = true;
+    }
+    else
+    {
+        // CANCEL return-home mode if player re-engages AND enemy has come back within leash
+        // (so it can safely chase again without instantly re-triggering leash)
+        if (inAggroRange && playerFromHome <= cfg.leashRange && enemyFromHome <= leashExit)
+            returningHome = false;
+    }
 
     if (returningHome)
     {
-        attack.Reset();
+
+        // ✅ Allow attacks while returning home (no chasing)
+        if (inAggroRange)
+        {
+            // Face player
+            if (dx != 0.f)
+                facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
+
+            const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
+            attack.Update(dt, absDx, attackDur);
+
+            // If currently attacking, stop moving and just play attack anim
+            if (attack.IsAttacking())
+            {
+                velocity = AEVec2{ 0.f, 0.f };
+                UpdateAnimation();
+                sprite.Update();
+                return;
+            }
+        }
+        else
+        {
+            // Player is not near, so no reason to keep attack state
+            attack.Reset();
+        }
+
+        // ✅ Continue walking back home as normal
         chasing = false;
 
         const float eps = 0.05f;
@@ -118,14 +161,17 @@ void Enemy::Update(const AEVec2& playerPos)
         else
         {
             const float dirX = (dh > 0.f) ? 1.f : -1.f;
+            // Face home while walking
             facingDirection = AEVec2{ dirX, 0.f };
             velocity.x = dirX * cfg.moveSpeed;
 
             AEVec2 displacement;
             AEVec2Scale(&displacement, &velocity, dt);
+
             AEVec2 nextPos = position;
             AEVec2Add(&nextPos, &position, &displacement);
 
+            // Clamp so we don't overshoot home
             if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
             if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
 
@@ -137,8 +183,6 @@ void Enemy::Update(const AEVec2& playerPos)
         return;
     }
 
-    // --- Aggro ---
-    const bool inAggroRange = (absDx <= cfg.aggroRange);
 
     // Update attack component (needs attack anim duration)
     const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
@@ -197,6 +241,14 @@ void Enemy::Update(const AEVec2& playerPos)
 
             position = nextPos;
         }
+        else
+        {
+            // Player left aggro fast -> stop "running in place"
+            chasing = false;
+            velocity.x = 0.f;
+            velocity.y = 0.f;
+        }
+
     }
 
     UpdateAnimation();

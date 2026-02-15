@@ -30,8 +30,8 @@ public:
         float runVelThreshold = 0.1f; // when to play RUN instead of IDLE
 
         // Attack tuning
-        float attackStartRange = 1.2f;
-        float attackHitRange = 1.0f;
+        float attackStartRange = 1.1f;
+        float attackHitRange = 1.5f;
         float attackCooldown = 0.8f;
         float attackHitTimeNormalized = 0.5f; // 0..1
         float attackBreakRange = 1.2f;
