@@ -17,9 +17,7 @@
 
 GameScene::GameScene() : 
 	map(50, 50),
-	player(&map), 
-	//enemyA(30, 3),
-	//enemyB(25, 3),
+	player(&map),
 	enemyA(Enemy::Preset::Druid, 30, 3),
 	enemyB(Enemy::Preset::Skeleton, 25, 3),
 
@@ -65,12 +63,37 @@ void GameScene::Update()
 
 
 	AEVec2 p = player.GetPosition();
-	enemyA.Update(p);
-	enemyB.Update(p);
-	//enemyBoss.Update(p, player.IsFacingRight());
+	//enemyA.Update(p);
+	//enemyB.Update(p);
+	enemyBoss.Update(p, player.IsFacingRight());
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
+
+	// Boss normal melee attack (ATTACK state via EnemyAttack)
+	if (enemyBoss.PollAttackHit())
+	{
+		// EnemyAttack already checked absDx <= hitRange at hit moment (because Boss uses absDx in attack.Update).
+		// Add a Y tolerance so it doesn't hit through platforms.
+		const float dy = std::fabs(pPos.y - enemyBoss.position.y);
+		const float yTol = (pSize.y * 0.5f) + 0.6f; // tune 0.3~1.0 depending on your level scale
+
+		if (dy <= yTol)
+		{
+			player.TakeDamage(2); // choose your boss damage
+			std::cout << "[Boss] HIT player (melee)\n";
+		}
+	}
+	// Boss special spell damage
+	const int spellHits = enemyBoss.ConsumeSpecialHits(player.GetPosition(),
+		player.GetStats().playerSize);
+	if (spellHits > 0)
+	{
+		const int spellDmg = 1;                 // tune
+		player.TakeDamage(spellHits * spellDmg);
+		std::cout << "[Boss] spell hit x" << spellHits << "\n";
+	}
+
 
 	auto EnemyTryHitPlayer = [&](Enemy& e, int dmg)
 		{

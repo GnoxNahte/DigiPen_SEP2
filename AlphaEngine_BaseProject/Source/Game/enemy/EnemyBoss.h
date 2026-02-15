@@ -28,7 +28,10 @@ public:
 
 
     //for gamescene to use to apply damage later
-    bool PollAttackHit() { return attack.PollHit(); }
+    bool PollAttackHit() { return !isDead && attack.PollHit(); }
+    // returns number of special projectiles that hit the player this frame
+    int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+
 
   
 

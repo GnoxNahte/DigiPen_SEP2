@@ -92,6 +92,16 @@ static float GetAnimTimePerFrame(const Sprite& sprite, int stateIndex)
     return (float)s.timePerFrame;
 }
 
+static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
+    const AEVec2& bPos, const AEVec2& bSize)
+{
+    const float dx = std::fabs(aPos.x - bPos.x);
+    const float dy = std::fabs(aPos.y - bPos.y);
+    return dx <= (aSize.x + bSize.x) * 0.5f
+        && dy <= (aSize.y + bSize.y) * 0.5f;
+}
+
+
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
@@ -104,8 +114,8 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     facingDirection = AEVec2{ 1.f, 0.f };
     chasing = false;
 
-    attack.startRange = 1.2f;
-    attack.hitRange = 1.0f;
+    attack.startRange = 1.8f;
+    attack.hitRange = 1.8f;
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 0.5f;
     attack.breakRange = attack.startRange;
@@ -382,6 +392,32 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
         g_specialAttacks.end()
     );
 }
+
+int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize)
+{
+    if (isDead) return 0;
+
+    int hits = 0;
+
+    for (auto& s : g_specialAttacks)
+    {
+        if (!s.alive()) continue;
+
+        // Use the same debug rect size you draw (so collision matches visuals)
+        const AEVec2 spellSize{ s.debugW, s.debugH };
+
+        if (AABB_Overlap2(s.pos, spellSize, playerPos, playerSize))
+        {
+            ++hits;
+
+            // Consume the projectile so it only hits once
+            s.life = 0.f;
+        }
+    }
+
+    return hits;
+}
+
 
 void EnemyBoss::UpdateAnimation()
 {
