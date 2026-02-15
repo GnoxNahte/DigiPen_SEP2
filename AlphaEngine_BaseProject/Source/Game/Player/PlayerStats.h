@@ -27,6 +27,7 @@ struct PlayerStats
     float turnTime;
     float inAirTurnTime;
 
+    float dashSpeed;
     float dashCooldown;
     float dashTime;
 
@@ -88,6 +89,7 @@ struct PlayerStats
     PlayerStats(std::string file);
 
     void LoadFileData();
+    void SaveFileData();
     void OnDataChanged();
 
     // Player will call this instead of editor

@@ -4,4 +4,5 @@
 
 namespace FileHelper {
     bool TryReadJsonFile(const std::string& path, rapidjson::Document& doc);
+    bool TryWriteJsonFile(const std::string& path, rapidjson::Document& doc);
 }
