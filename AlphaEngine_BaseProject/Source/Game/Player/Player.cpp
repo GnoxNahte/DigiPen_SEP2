@@ -78,7 +78,7 @@ void Player::Render()
 
     sprite.Render();
 
-    if (AEInputCheckCurr(AEVK_LCTRL))
+    if (Editor::GetShowColliders())
     {
         RenderDebugCollider(stats.groundChecker);
         RenderDebugCollider(stats.ceilingChecker);
@@ -159,6 +159,9 @@ void Player::UpdateInput()
 
     if (AEInputCheckCurr(AEVK_X))
         lastAttackHeld = currTime;
+
+    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown + stats.dashTime)
+        dashStartTime = currTime;
 }
 
 void Player::UpdateTriggerColliders()
@@ -181,9 +184,25 @@ void Player::UpdateTriggerColliders()
 void Player::HorizontalMovement()
 {
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
 
+    float dashPercentage = static_cast<float>((currTime - dashStartTime) / stats.dashTime);
+
+    if (dashPercentage < 1.f)
+    {
+        float speed = stats.dashSpeed;
+        // If moving in the same direction
+        if (inputDirection.x * velocity.x >= 0)
+            speed *= 1.5f;
+        if (facingDirection.x < 0.f)
+            speed = -speed;
+        velocity.x = speed;
+
+        /*float value = 1 - dashPercentage * dashPercentage;
+        velocity.x = AEExtras::RemapClamp(value, { 0.f, 1.f }, { stats.dashSpeed, stats.maxSpeed });*/
+    }
     // Slow player down when not pressing any buttons
-    if (inputDirection.x == 0)
+    else if (inputDirection.x == 0)
     {
         float velocityChange = stats.stopAcceleration * dt;
         // -velocityChange because stats.stopAcceleration < 0, so negate that
@@ -192,6 +211,7 @@ void Player::HorizontalMovement()
         // If velocity.x < -velocityChange, set to 0 to make sure it won't overshoot
         else
             velocity.x = 0.f;
+        velocity.x = AEClamp(velocity.x, -stats.maxSpeed, stats.maxSpeed);
     }
     else
     {

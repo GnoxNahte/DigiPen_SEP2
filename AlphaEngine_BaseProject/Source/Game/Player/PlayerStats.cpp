@@ -82,6 +82,7 @@ void PlayerStats::LoadFileData()
 	turnTime = doc["turnTime"].GetFloat();
 	inAirTurnTime = doc["inAirTurnTime"].GetFloat();
 
+	dashSpeed = doc["dashSpeed"].GetFloat();
 	dashCooldown = doc["dashCooldown"].GetFloat();
 	dashTime = doc["dashTime"].GetFloat();
 
@@ -140,6 +141,7 @@ void PlayerStats::SaveFileData()
     doc.AddMember("inAirTurnTime", inAirTurnTime, allocator);
 
     // Dash / Gravity
+    doc.AddMember("dashSpeed", dashSpeed, allocator);
     doc.AddMember("dashCooldown", dashCooldown, allocator);
     doc.AddMember("dashTime", dashTime, allocator);
     doc.AddMember("maxFallVelocity", maxFallVelocity, allocator);
@@ -334,6 +336,10 @@ void PlayerStats::DrawInspector()
         ImGui::TreePop();
     }
 
+    if (ImGui::Button("Reset to File"))
+        LoadFileData();
+
+    ImGui::SameLine();
     if (ImGui::Button("Save"))
         SaveFileData();
 

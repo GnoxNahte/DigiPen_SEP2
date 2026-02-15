@@ -93,12 +93,6 @@ void GameScene::Render()
 	// === Code below is for DEBUG ONLY ===
 
 	// === Debug Info ===
-	std::string hp = "HP: " + std::to_string(player.GetHealth());
-	QuickGraphics::PrintText(hp.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
-
-	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
-	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
-
 	//Box playerBox{ player.GetPosition(), player.GetSize() };
 
 	//Box plateBox{ {2.f, 4.f}, {4.f, 1.f} };
@@ -124,6 +118,13 @@ void GameScene::Render()
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+
+
+	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
+	QuickGraphics::PrintText(str.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+
+	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
+	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R))
 		GSM::ChangeScene(SceneState::GS_GAME);

@@ -10,6 +10,7 @@ Sprite::Sprite(std::string file)
 	uvWidth = 1.f / metadata.cols;
 	uvHeight = 1.f / metadata.rows;
 
+	ifLockCurrent = false;
 	animTimer = 0.f;
 	currStateIndex = nextStateIndex = 0;
 	frameIndex = 0;

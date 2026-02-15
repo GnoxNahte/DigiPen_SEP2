@@ -78,6 +78,7 @@ private:
     AEVec2 facingDirection;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
+    f64 dashStartTime = -1.f;
     
     // === Collision ===
     bool isGroundCollided = false;
