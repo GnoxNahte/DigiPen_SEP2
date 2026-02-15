@@ -27,6 +27,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.attackHitRange = 1.6f;    // try 1.4–2.0
         c.attackBreakRange = 2.2f;  // how far before attack cancels
         c.attackStartRange = 1.4f;
+        c.maxHp = 5;
 
         break;
 
@@ -34,6 +35,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Skeleton.png";
         c.renderScale = 2.f;
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
+        c.maxHp = 3;
  
         break;
     }
@@ -78,12 +80,22 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     attack.cooldown = cfg.attackCooldown;
     attack.hitTimeNormalized = cfg.attackHitTimeNormalized;
     attack.breakRange = cfg.attackBreakRange;
+
+    //enemy life system
+    hp = cfg.maxHp;
+    dead = false;
+
 }
 
 // ---- Update ----
 void Enemy::Update(const AEVec2& playerPos)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
+    if (dead)
+    {
+        sprite.Update(); // keeps death anim playing if it animates
+        return;
+    }
 
     const float desiredStopDist =
         (attack.startRange > 0.05f) ? (attack.startRange - 0.05f) : attack.startRange;
@@ -143,7 +155,7 @@ void Enemy::Update(const AEVec2& playerPos)
             attack.Reset();
         }
 
-        // ✅ Continue walking back home as normal
+        // Continue walking back home as normal
         chasing = false;
 
         const float eps = 0.05f;
@@ -255,9 +267,47 @@ void Enemy::Update(const AEVec2& playerPos)
     sprite.Update();
 }
 
+void Enemy::ApplyDamage(int dmg)
+{
+    if (dead) return;
+    if (dmg <= 0) return;
+
+    hp -= dmg;
+
+    if (hp <= 0)
+    {
+        hp = 0;
+        dead = true;
+
+        // Disable behavior
+        attack.Reset();
+        chasing = false;
+        returningHome = false;
+        velocity = AEVec2{ 0.f, 0.f };
+
+        // Show death sprite
+        sprite.SetState(cfg.animDeath);
+
+        // Optional: stop drawing debug box when dead
+        // debugDraw = false;
+    }
+    else
+    {
+        // Optional: show hurt sprite briefly (only if you want)
+        // sprite.SetState(cfg.animHurt);
+    }
+}
+
+
 // ---- Animation selection ----
 void Enemy::UpdateAnimation()
 {
+    if (dead)
+    {
+        sprite.SetState(cfg.animDeath);
+        return;
+    }
+
     if (attack.IsAttacking())
     {
         sprite.SetState(cfg.animAttack);

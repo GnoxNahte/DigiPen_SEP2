@@ -18,6 +18,9 @@ public:
     {
         const char* spritePath = nullptr;
 
+        int maxHp = 3;   // basic life system
+
+
         // Render
         float renderScale = 2.f;
 
@@ -53,7 +56,16 @@ public:
     void Render();
 
     // For GameScene to apply damage later
-    bool PollAttackHit() { return attack.PollHit(); }
+    bool PollAttackHit() { return !dead && attack.PollHit(); }
+    
+
+    //For enemy life system
+    bool IsDead() const { return dead; }
+    int  GetHP() const { return hp; }
+
+    // For future: player will call this when their attack hits.
+    void ApplyDamage(int dmg);
+
 
     // Useful getters for combat / debugging
     AEVec2 GetPosition() const { return position; }
@@ -88,4 +100,8 @@ private:
     bool chasing{ false };
     bool returningHome{ false };
     bool debugDraw{ true };
+
+    int  hp{ 1 };
+    bool dead{ false };
+
 };
