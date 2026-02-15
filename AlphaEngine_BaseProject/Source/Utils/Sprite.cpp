@@ -2,6 +2,7 @@
 
 #include "Sprite.h"
 #include "MeshGenerator.h"
+#include "../Game/Time.h"
 
 Sprite::Sprite(std::string file) 
 	: uvOffset(0.f, 0.f), metadata(file)
@@ -54,7 +55,7 @@ void Sprite::Update()
 		}
 	}
 
-	animTimer += (float)AEFrameRateControllerGetFrameTime();
+	animTimer += static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 }
 
 void Sprite::Render()

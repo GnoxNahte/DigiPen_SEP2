@@ -18,6 +18,7 @@ public:
     f64 GetScaledElapsedTime() const;     // Game time
     f64 GetUnpausedElapsedTime() const;   // Unscaled but pausable
     f64 GetDeltaTime() const;             // Last frame delta
+    f64 GetScaledDeltaTime() const;       // Last frame scaled delta
 
     // Time scale control
     void SetTimeScale(f32 scale);

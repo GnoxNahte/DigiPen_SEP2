@@ -1,6 +1,7 @@
 #include "Camera.h"
 #include "../Utils/AEExtras.h"
 #include "../Utils/Easing.h"
+#include "../Game/Time.h"
 
 // Default camera scale
 float Camera::scale = 1.f;
@@ -46,7 +47,7 @@ void Camera::SetFollow(const AEVec2* f, float xOffset, float yOffset, bool setPo
 
 void Camera::Update()
 {
-	float dt = (float)AEFrameRateControllerGetFrameTime();
+	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	position = Easing::SmoothDamp(position, *follow, velocity, smoothTime, dt);
 
 	// === Clamp bounds ===

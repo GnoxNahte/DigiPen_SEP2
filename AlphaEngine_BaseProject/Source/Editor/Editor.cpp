@@ -5,6 +5,7 @@
 
 #include "../Game/Scene/GSM.h"
 #include "../Utils/AEExtras.h"
+#include "../Game/Time.h"
 
 void Editor::Register(Inspectable& obj)
 {
@@ -114,9 +115,10 @@ void Editor::DrawMenus()
 			ImGui::EndMenu();
 		}
 
-		static float timeScale = 0; // @todo - Replace this with time scale
+		float timeScale = Time::GetInstance().GetTimeScale(); // @todo - Replace this with time scale
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Time Scale", &timeScale, 0, 2);
+		if (ImGui::SliderFloat("Time Scale", &timeScale, 0, 2))
+			Time::GetInstance().SetTimeScale(timeScale);
 
 
 		ImGui::EndMainMenuBar();

@@ -1,7 +1,7 @@
 #include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
-
+#include "../Time.h"
 
 
 
@@ -68,7 +68,7 @@ void GameScene::Update()
 		// for now: print / debug
 		std::cout << "Enemy HIT!\n";
 	}
-	float dt = (float)AEFrameRateControllerGetFrameTime();
+	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);
 
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
