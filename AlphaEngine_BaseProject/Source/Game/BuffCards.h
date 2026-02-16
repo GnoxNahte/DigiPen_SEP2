@@ -11,15 +11,16 @@ enum CARD_RARITY {
 
 class BuffCards {
 public:
-	void Init();
-	void Render();
-	void Exit();
-	inline static AEGfxTexture* GetCardTexture() { return cardTex; }
-	inline static AEGfxVertexList* GetCardMesh() { return cardMesh; }
+	static void Init();
+	static void Render();
+	static void Exit();
+	inline AEGfxTexture* GetCardBackTexture() const { return cardBackTex; }
+	inline AEGfxVertexList* GetCardMesh() const { return cardMesh; }
 private:
 	// Card texture and mesh
-	inline static AEGfxTexture* cardTex;
-	inline static AEGfxVertexList* cardMesh;
+	inline static AEGfxTexture* cardBackTex = nullptr;
+	inline static AEGfxVertexList* cardMesh = nullptr;
+
 	// Card sprite dimensions
 	static const int CARD_WIDTH = 750;
 	static const int CARD_HEIGHT = 1050;

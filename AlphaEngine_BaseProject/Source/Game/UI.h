@@ -2,6 +2,7 @@
 #include <AEEngine.h>
 #include <string>
 #include "../Utils/ObjectPool.h"
+#include "BuffCards.h"
 
 // Enumeration types for the incoming damage type.
 enum DAMAGE_TYPE {
@@ -53,21 +54,9 @@ public:
 	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
 	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE;  }
 
-	//// Draw cards.
-	//void static DrawCards();
-
-	//// Free card texture and mesh.
-	//void static FreeCards();
-
 private:
 	inline static s8 damageTextFont;
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
-
-	//inline static AEGfxTexture* cardTex;
-	//inline static AEGfxVertexList* cardMesh;
-	//// Card sprite dimensions
-	//static const int CARD_WIDTH = 750;
-	//static const int CARD_HEIGHT = 1050;
 };
