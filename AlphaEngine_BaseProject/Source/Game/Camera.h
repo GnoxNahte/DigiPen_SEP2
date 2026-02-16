@@ -5,8 +5,7 @@ class Camera
 {
 public:
 	static float scale;
-
-	AEVec2 position;
+	static AEVec2 position;
 
 	AEVec2 offset;
 	const AEVec2* follow;

@@ -68,23 +68,23 @@ MapGrid::~MapGrid()
 	AEGfxTextureUnload(tilemapTexture);
 }
 
-void MapGrid::Render(const Camera& camera)
+void MapGrid::Render()
 {
 	AEMtx33 transform;
 
 	// Get corners of screen in world space
-	AEVec2 topLeft, botRight;
-	AEExtras::ScreenToWorldPosition(AEVec2(0, 0), camera.position, topLeft);
-	AEExtras::ScreenToWorldPosition(AEVec2((f32)AEGfxGetWindowWidth(), (f32)AEGfxGetWindowHeight()), camera.position, botRight);
+	AEVec2 bottomLeft, topRight;
+	AEExtras::ScreenToWorldPosition(AEVec2(0, (f32)AEGfxGetWindowHeight()), bottomLeft);
+	AEExtras::ScreenToWorldPosition(AEVec2((f32)AEGfxGetWindowWidth(), 0), topRight);
 
 	// Offset 
-	botRight.x += 1.f;
-	botRight.y += 1.f;
+	topRight.x += 1.f;
+	topRight.y += 1.f;
 
 	// Get grid coordinates for tiles that only the camera can see
 	int minX, minY, maxX, maxY;
-	WorldToGridCoordsClamped(topLeft, minX, minY);
-	WorldToGridCoordsClamped(botRight, maxX, maxY);
+	WorldToGridCoordsClamped(bottomLeft, minX, minY);
+	WorldToGridCoordsClamped(topRight, maxX, maxY);
 
 	//std::cout << std::setw(3) << minX << std::setw(3) << minY << std::setw(3) << maxX << std::setw(3) << maxY << "   ";
 

@@ -6,11 +6,12 @@
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/MapGrid.h"
+#include "../../Editor/EditorUtils.h"
 
 /**
  * @brief Controllable player class
  */
-class Player
+class Player : Inspectable
 {
 public:
     enum AnimState
@@ -49,6 +50,9 @@ public:
     void Reset(const AEVec2& initialPos);
 
     void TakeDamage(int dmg);
+
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
     
     // === Getters ===
     const AEVec2& GetPosition() const;

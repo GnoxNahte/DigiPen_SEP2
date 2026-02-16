@@ -36,7 +36,7 @@ void ParticleSystem::Update()
 	if (pool.GetSize() == 0)
 		return;
 
-	std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
 	// todo - make custom iterator inside object pool instead?

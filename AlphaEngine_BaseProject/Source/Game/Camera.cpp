@@ -4,9 +4,9 @@
 
 // Default camera scale
 float Camera::scale = 1.f;
+AEVec2 Camera::position{ 0.f, 0.f };
 
 Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
-	position(0.f, 0.f), 
 	offset(0, 0), 
 	follow(nullptr),
 	smoothTime(0.2f),
@@ -16,17 +16,16 @@ Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
 	Camera::scale = _scale;
 
 	// Top left and middle of the screen in world space
-	AEVec2 topLeft, middle;
-	AEExtras::ScreenToWorldPosition({ 0.f, 0.f }, position, topLeft);
+	AEVec2 bottomLeft, middle;
+	AEExtras::ScreenToWorldPosition({ 0.f, AEGfxGetWindowHeight() * 0.5f }, bottomLeft);
 	AEExtras::ScreenToWorldPosition(
-		{ AEGfxGetWindowWidth() * 0.5f, AEGfxGetWindowHeight() * 0.5f }, 
-		position, 
+		{ AEGfxGetWindowWidth() * 0.5f, 0.f }, 
 		middle
 	);
 
 	// Distance between the middle and topLeft
 	AEVec2 distAmt;
-	AEVec2Sub(&distAmt, &middle, &topLeft);
+	AEVec2Sub(&distAmt, &middle, &bottomLeft);
 
 	this->minBounds.x = minBounds.x + distAmt.x;
 	this->minBounds.y = minBounds.y + distAmt.y;
