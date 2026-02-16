@@ -23,10 +23,6 @@ SceneState GSM::previousState = GS_QUIT;
 SceneState GSM::currentState = GS_QUIT;
 SceneState GSM::nextState = GS_QUIT;
 
-//f32 alpha = 1.f;
-//f32 scale = 200.f;
-//int damageType = 0; // Testing of cycling through enum types.
-
 void GSM::Init(SceneState type)
 {
 	currentState = nextState = type;
@@ -37,12 +33,6 @@ void GSM::Init(SceneState type)
 	Time::GetInstance();
 	TimerSystem::GetInstance();
 	UI::Init();
-
-	//// === Damage text testing variables ===
-	//f32 alpha = 1.f;
-	//f32 scale = 1.f;
-	//int damageType = 0; // Testing of cycling through enum types.
-
 	// === Timer Testing ===
 	//timerSystem.AddTimer("Test Timer 1", 3.0f);
 
@@ -100,38 +90,19 @@ void GSM::Update()
 
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
-			UI::GetDamageTextSpawner().Update();  // Add this before Render
+			UI::GetDamageTextSpawner().Update();
 			UI::Render();
 
 			//// === For Damage Text Testing ===
-			//if (AEInputCheckTriggered(AEVK_K)) {
-			//	TimerSystem::GetInstance().AddTimer("Damage Scale Timer", 0.28f);
-			//	TimerSystem::GetInstance().AddTimer("Damage Fade Timer", 1.5f);
-			//	damageType = (damageType + 1) % 3; // enum testing
-			//	alpha = 1.0f;
-
-			//}
-			//if (TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer") != nullptr 
-			//	&& TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer")->percentage < 1.f)
-			//{
-			//	scale = static_cast<f32>(1 - TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer")->percentage + 0.95f);
-			//}
-			//if (TimerSystem::GetInstance().GetTimerByName("Damage Fade Timer") != nullptr) {
-			//	alpha = static_cast<f32>(1 - 1.0f * TimerSystem::GetInstance().GetTimerByName("Damage Fade Timer")->percentage);
-			//	if (TimerSystem::GetInstance().GetTimerByName("Damage Fade Timer")->percentage < 1.0f) {
-			//		UI::PrintDamageText(178, { -0.5f, 0.5f }, scale, alpha, damageType);
-			//	}
-			//	else {
-			//		alpha = 1.f;
-			//	}
-			//}
+			//if AEInputCheckCurr/Triggered
 			if (AEInputCheckTriggered(AEVK_K))
 			{
 				AEVec2 pos{};
 				pos.x = AEExtras::RandomRange({ -0.8f, 1.f });
 				pos.y = AEExtras::RandomRange({ -0.8f, -0.5f });
-
-				UI::GetDamageTextSpawner().SpawnDamageText(150, DAMAGE_TYPE_CRIT, pos);
+				DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
+				int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
+				UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
 			}
 			
 			Editor::DrawInspectors();

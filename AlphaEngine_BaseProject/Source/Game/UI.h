@@ -26,8 +26,10 @@ struct DamageText : public ObjectPoolItem {
 	std::string damageNumber{}; // Numerical value of damage to be printed. Crit, resist, normal etc.
 	f32 r{}, g{}, b{}; // RGB values of text.
 	AEVec2 position{}; // Position of text.
-	f32 alpha{}, scale{}; // Alpha and scale values of text.
-	f64 lifetime{}; // Lifetime of text.
+	f32 alpha{}, scale{}, initialScale{}; // Alpha and scale values of text.
+	f64 lifetime{}; // Lifetime of text, excluding neutral time.
+	f64 maxLifetime{}; // Maximum lifetime of text to compute percentage of completion.
+	f64 neutralTime{}; // Neutral time of the text before effects (scaling down and fading out).
 
 	virtual void Init() override;
 	virtual void OnGet() override;
@@ -53,10 +55,10 @@ public:
 	static void Init();
 	static void Render();
 	static void Exit();
-	inline static s8 GetDamageTypeFont() { return damageTypeFont; }
-	inline static s8 GetDamageNumberFont() { return damageNumberFont; }
+	inline static s8 GetDamageTextFont() { return damageTextFont; }
 	inline static DamageTextSpawner& GetDamageTextSpawner() { return damageTextSpawner; }
 	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
+	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE;  }
 	// Print damage text at position with scale and alpha. damageCase references the enums defined above.
 	//void static PrintDamageText(int damage, AEVec2 position, f32 scale, f32 alpha, int damageCase);
 
@@ -76,12 +78,11 @@ public:
 	//int damageType = 0; // Testing of cycling through enum types.
 
 private:
-	inline static s8 damageTypeFont;
-	inline static s8 damageNumberFont;
+	inline static s8 damageTextFont;
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 20;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
-	static const int DAMAGE_TYPE_FONT_SIZE = 48;
-	static const int DAMAGE_NUMBER_FONT_SIZE = 52;
+	static const int DAMAGE_TEXT_FONT_SIZE = 56;
+	//static const int DAMAGE_NUMBER_FONT_SIZE = 56;
 
 //	inline static AEGfxTexture* cardTex;
 //	inline static AEGfxVertexList* cardMesh;
