@@ -5,7 +5,7 @@
 // Enumeration types for card type.
 enum CARD_TYPE {
 	HERMES_FAVOR,
-	TOUGH_SKIN,
+	IRON_DEFENCE,
 	SWITCH_IT_UP,
 	REVITALIZE,
 	SHARPEN
@@ -36,13 +36,15 @@ struct BuffCard {
 class BuffCardScreen {
 public:
 	static void Init();
+	static void Update();
 	static void Render();
 	static void Exit();
-	static void RandomizeCards();
+	//static void RandomizeCards();
 	static void DrawBlackOverlay();
 	static void DrawPromptText();
 	static void DrawDeck();
-	//static void DrawBuffCards();
+	static void FlipCard(int cardIndex); // Trigger flip animation
+	static void ResetFlipSequence();
 	static void DiscardCards();
 	inline AEGfxTexture* GetCardBackTexture() const { return cardBackTex; }
 	inline AEGfxVertexList* GetCardMesh() const { return cardMesh; }
@@ -50,7 +52,7 @@ private:
 
 	// Flags 
 	inline static bool textLoading = false; // To ensure text fading only occurs once.
-	inline static bool shuffling = false; // To ensure the card shuffle happens once per call.
+	inline static bool flipped = false; // To ensure the card flips only occurs once per call.
 
 	// Mesh for black transparent rectangle overlay.
 	inline static AEGfxVertexList* rectMesh = nullptr;
@@ -61,9 +63,19 @@ private:
 
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
+	inline static AEGfxTexture* cardFrontTex[3] = { nullptr }; // 3 different front textures
 	inline static AEGfxVertexList* cardMesh = nullptr;
 
-	// Card sprite dimensions
+	// Card attributes.
+	inline static int cardSelected = 0;
+	inline static f32 cardFlipStates[3] = { -1.0f, -1.0f, -1.0f }; // Start showing backs
+	inline static bool cardFlipping[3] = { false, false, false };
+	inline static int currentFlipIndex = 0;
+	inline static bool allCardsFlipped = false;
+	inline static bool flipTimerCreated[3] = { false, false, false };
+
+	// Constant values
 	static const int CARD_WIDTH = 750;
 	static const int CARD_HEIGHT = 1050;
+	static const int NUM_CARDS = 3;
 };

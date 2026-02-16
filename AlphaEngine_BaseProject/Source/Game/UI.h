@@ -47,6 +47,7 @@ class UI
 {
 public:
 	static void Init();
+	static void Update();
 	static void Render();
 	static void Exit();
 	inline static s8 GetDamageTextFont() { return damageTextFont; }

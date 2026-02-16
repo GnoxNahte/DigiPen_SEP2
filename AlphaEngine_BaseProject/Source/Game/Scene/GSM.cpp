@@ -91,6 +91,7 @@ void GSM::Update()
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
 			UI::GetDamageTextSpawner().Update();
+			UI::Update();
 			UI::Render();
 
 			//// === For Damage Text Testing ===

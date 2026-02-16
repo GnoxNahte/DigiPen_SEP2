@@ -18,10 +18,79 @@ void BuffCardScreen::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	cardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
+	cardFrontTex[0] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
+	cardFrontTex[1] = AEGfxTextureLoad("Assets/Iron_Defence.png");
+	cardFrontTex[2] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
 	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
 }
-void BuffCardScreen::RandomizeCards() {
+void BuffCardScreen::Update() {
+	const float FLIP_SPEED = 5.0f; // Adjust flip speed
 
+	for (int i = 0; i < NUM_CARDS; ++i) {
+		if (cardFlipping[i]) {
+			// Animate from -1.0 (back) to 1.0 (front)
+			cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * AEFrameRateControllerGetFrameTime())	;
+
+			if (cardFlipStates[i] >= 1.0f) {
+				cardFlipStates[i] = 1.0f;
+				cardFlipping[i] = false; // Flip complete
+			}
+		}
+	}
+	// Automated sequential flipping
+	if (!allCardsFlipped) {
+		// Check if we need to start flipping the next card
+		if (currentFlipIndex < NUM_CARDS) {
+			// Create timer for this card if not created yet
+			std::string timerName = "Flip Timer " + std::to_string(currentFlipIndex);
+
+			if (!flipTimerCreated[currentFlipIndex]) {
+				float delay = 0.45f; // Delay between cards
+				TimerSystem::GetInstance().AddTimer(timerName, delay, false);
+				flipTimerCreated[currentFlipIndex] = true;
+			}
+
+			auto* timer = TimerSystem::GetInstance().GetTimerByName(timerName);
+			// Check if timer completed
+			if (timer &&
+				timer->completed) {
+				FlipCard(currentFlipIndex);
+				TimerSystem::GetInstance().RemoveTimer(timerName);
+				currentFlipIndex++; // Move to next card
+			}
+		}
+		else {
+			allCardsFlipped = true; // All cards done
+		}
+	}
+	if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
+		ResetFlipSequence();
+	}
+}
+// This function resets the flip, simulating a shuffle.
+// TODO : The buff card type and rarity should be randomized during this function.
+void BuffCardScreen::ResetFlipSequence()
+{
+	// Reset animation state
+	for (int i = 0; i < NUM_CARDS; ++i)
+	{
+		cardFlipStates[i] = -1.0f;     // Back side again
+		cardFlipping[i] = false;
+		flipTimerCreated[i] = false;
+
+		// Remove any existing timers
+		std::string timerName = "Flip Timer " + std::to_string(i);
+		TimerSystem::GetInstance().RemoveTimer(timerName);
+	}
+
+	currentFlipIndex = 0;
+	allCardsFlipped = false;
+}
+void BuffCardScreen::FlipCard(int cardIndex) {
+	if (cardIndex >= 0 && cardIndex < NUM_CARDS) {
+		cardFlipStates[cardIndex] = -1.0f; // Start from back
+		cardFlipping[cardIndex] = true;
+	}
 }
 // Draw a black overlay when drawing cards.
 void BuffCardScreen::DrawBlackOverlay() {
@@ -78,11 +147,6 @@ void BuffCardScreen::DrawPromptText() {
 }
 // Draw buff cards.
 void BuffCardScreen::DrawDeck() {
-	// Scaling matrix.
-	AEMtx33 scale = { 0 };
-	const f32 CARD_SIZE_MODIFIER = 0.42f;
-	AEMtx33Scale(&scale, CARD_WIDTH * CARD_SIZE_MODIFIER, CARD_HEIGHT * CARD_SIZE_MODIFIER);
-
 	// Rotation matrix.
 	AEMtx33 rotate = { 0 };
 	AEMtx33Rot(&rotate, 0);
@@ -94,80 +158,44 @@ void BuffCardScreen::DrawDeck() {
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(1.0f);
 
-	// Set texture
-	AEGfxTextureSet(cardBackTex, 0, 0);
-
-	// Draw 3 cards with spacing
-	const int NUM_CARDS = 3;
-	const f32 CARD_SPACING = 450.f; // Adjust spacing between cards
+	const f32 CARD_SPACING = 450.f;
+	const f32 CARD_SIZE_MODIFIER = 0.42f;
+	//const f32 CARD_SIZE_SELECTED = 0.5f;
 
 	for (int i = 0; i < NUM_CARDS; ++i) {
-		// Calculate offset for this card
-		// Center the group: offset = (i - 1) * spacing
-		// This makes card 0 at -spacing, card 1 at 0, card 2 at +spacing
+		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
+		AEMtx33 scale = { 0 };
+		float scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
+		float scaleY = CARD_HEIGHT * CARD_SIZE_MODIFIER;
+		AEMtx33Scale(&scale, scaleX, scaleY);
+
+		// Determine which texture to use based on flip progress SIGN
+		AEGfxTexture* currentTexture;
+		if (cardFlipProgress < 0) {
+			currentTexture = cardBackTex;
+		}
+		else {
+			currentTexture = cardFrontTex[i];
+		}
+
 		f32 offsetX = (i - 1) * CARD_SPACING;
 
-		// Translation matrix (different for each card)
 		AEMtx33 translate = { 0 };
 		AEMtx33Trans(&translate,
 			Camera::position.x * Camera::scale + offsetX,
 			Camera::position.y * Camera::scale);
 
-		// Concatenate matrices
 		AEMtx33 transform = { 0 };
 		AEMtx33Concat(&transform, &rotate, &scale);
 		AEMtx33Concat(&transform, &translate, &transform);
 
-		// Draw this card
+		// Set texture BEFORE drawing
+		AEGfxTextureSet(currentTexture, 0, 0);
+
 		AEGfxSetTransform(transform.m);
 		AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
 	}
 }
-/*---------------------------------------
-
-TODO: this function should shuffle out 3 cards from the deck (middle), accounting for shuffle buff triggering this function.
-
-shuffle out from deck (middle).
-align cards to their respective position as they move. (one by one)
-scale to simulate flipping of cards.
-
-rarity emission after they appear.
-
-default first selected to left, scaling up in size to show selected one.
-
------------------------------------------*/
-//void BuffCardScreen::DrawBuffCards() {
-//	// Scaling matrix.
-//	AEMtx33 scale = { 0 };
-//	const f32 CARD_SIZE_MODIFIER = 0.25f;
-//	AEMtx33Scale(&scale, CARD_WIDTH * CARD_SIZE_MODIFIER, CARD_HEIGHT * CARD_SIZE_MODIFIER);
-//
-//	// Rotation matrix.
-//	AEMtx33 rotate = { 0 };
-//	AEMtx33Rot(&rotate, 0);
-//
-//	// Translation matrix.
-//	AEMtx33 translate = { 0 };
-//	AEMtx33Trans(&translate, Camera::position.x * Camera::scale,
-//		Camera::position.y * Camera::scale - 185.f);
-//
-//	// Concatenate the matrices into the 'transform' variable.
-//	AEMtx33 transform = { 0 };
-//	AEMtx33Concat(&transform, &rotate, &scale);
-//	AEMtx33Concat(&transform, &translate, &transform);
-//
-//	// Set render state
-//	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-//	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
-//	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
-//	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-//	AEGfxSetTransparency(1.0f);
-//
-//	// Draw
-//	AEGfxTextureSet(cardBackTex, 0, 0);
-//	AEGfxSetTransform(transform.m);
-//	AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
-//}
 /*----------------------------
 
 TODO: this function simulates discarding all cards for a shuffle buff, which a shuffle buff would call this function
@@ -180,7 +208,6 @@ void BuffCardScreen::DiscardCards() {
 void BuffCardScreen::Render() {
 	DrawBlackOverlay();
 	DrawPromptText();
-	//DrawBuffCards();
 	DrawDeck();
 	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
 	//	textLoading = false;

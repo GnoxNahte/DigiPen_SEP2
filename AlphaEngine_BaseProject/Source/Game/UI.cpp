@@ -11,6 +11,9 @@ void UI::Init() {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
 	BuffCardScreen::Init();
 }
+void UI::Update() {
+	BuffCardScreen::Update();
+}
 void UI::Render() {
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
