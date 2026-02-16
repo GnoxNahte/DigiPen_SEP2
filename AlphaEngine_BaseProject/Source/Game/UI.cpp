@@ -9,7 +9,8 @@
 ---------------------------------------------*/
 void UI::Init() {
 	damageTextFont = AEGfxCreateFont("Assets/Bemock.ttf", DAMAGE_TEXT_FONT_SIZE);
-	//UI::InitCards("Assets/0_CardBack.png");
+	//cardMesh = MeshGenerator::GetRectMesh(1,1);
+	//cardTex = AEGfxTextureLoad("Assets/0_CardBack.png");
 }
 void UI::Render() {
 	damageTextSpawner.Render();
@@ -141,17 +142,12 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 	text.alpha = 1.0f;
 	text.OnGet();
 }
-
-//void UI::InitCards(char const* filepath) {
-//	// Initialize card mesh and textures.
-//	cardMesh = MeshGenerator::GetRectMesh(1,1);
-//	cardTex = AEGfxTextureLoad(filepath);
-//}
+//
 //void UI::DrawCards() {
 //	// Create a scale matrix that scales by scaling factor.
 //	AEMtx33 scale = { 0 };
-//	float scalingFactor = 0.5f;
-//	AEMtx33Scale(&scale, CARD_WIDTH * scalingFactor, CARD_HEIGHT * scalingFactor);
+//	const f32 CARD_SIZE_MODIFIER = 0.35f;
+//	AEMtx33Scale(&scale, CARD_WIDTH * CARD_SIZE_MODIFIER, CARD_HEIGHT * CARD_SIZE_MODIFIER);
 //
 //	// Create a rotation matrix, base card doesn't rotate.
 //	AEMtx33 rotate = { 0 };
@@ -191,7 +187,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 //	// Tell Alpha Engine to draw the mesh with the above settings.
 //	AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
 //}
-
+//
 //void UI::FreeCards() {
 //	// Free card textures and meshes.
 //	AEGfxTextureUnload(cardTex);
