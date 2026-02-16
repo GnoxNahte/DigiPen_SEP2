@@ -14,6 +14,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
 
+#include "../../Utils/AEExtras.h" // temp
+
 BaseScene* GSM::currentScene = nullptr;
 
 // Set inital value. Not sure what to use, make it quit for now
@@ -22,7 +24,7 @@ SceneState GSM::currentState = GS_QUIT;
 SceneState GSM::nextState = GS_QUIT;
 
 //f32 alpha = 1.f;
-//f32 scale = 1.f;
+//f32 scale = 200.f;
 //int damageType = 0; // Testing of cycling through enum types.
 
 void GSM::Init(SceneState type)
@@ -34,10 +36,9 @@ void GSM::Init(SceneState type)
 	SaveSystem::Init();
 	Time::GetInstance();
 	TimerSystem::GetInstance();
-	/*UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);*/
 	UI::Init();
 
-	// === Damage text testing variables ===
+	//// === Damage text testing variables ===
 	//f32 alpha = 1.f;
 	//f32 scale = 1.f;
 	//int damageType = 0; // Testing of cycling through enum types.
@@ -99,17 +100,19 @@ void GSM::Update()
 
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
+			UI::GetDamageTextSpawner().Update();  // Add this before Render
 			UI::Render();
 
 			//// === For Damage Text Testing ===
 			//if (AEInputCheckTriggered(AEVK_K)) {
 			//	TimerSystem::GetInstance().AddTimer("Damage Scale Timer", 0.28f);
 			//	TimerSystem::GetInstance().AddTimer("Damage Fade Timer", 1.5f);
-			//	damageType = (damageType + 1) % 6; // enum testing
+			//	damageType = (damageType + 1) % 3; // enum testing
 			//	alpha = 1.0f;
 
 			//}
-			//if (TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer") != nullptr && TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer")->percentage < 1.f)
+			//if (TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer") != nullptr 
+			//	&& TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer")->percentage < 1.f)
 			//{
 			//	scale = static_cast<f32>(1 - TimerSystem::GetInstance().GetTimerByName("Damage Scale Timer")->percentage + 0.95f);
 			//}
@@ -122,24 +125,14 @@ void GSM::Update()
 			//		alpha = 1.f;
 			//	}
 			//}
-			// === For Timers Testing ===
-			// Can use this as a sample test case if you want to use timers.
-			//if (AEInputCheckTriggered(AEVK_K)) {
-			//	TimerSystem::GetInstance().AddAnonymousTimer(2.0f);
-			//	TimerSystem::GetInstance().AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
-			//	Time::GetInstance().TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
-			//	TimerSystem::GetInstance().AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
-			//}
+			if (AEInputCheckTriggered(AEVK_K))
+			{
+				AEVec2 pos{};
+				pos.x = AEExtras::RandomRange({ -0.8f, 1.f });
+				pos.y = AEExtras::RandomRange({ -0.8f, -0.5f });
 
-			//Timer const* timer = TimerSystem::GetInstance().GetTimerByName("Test timer");
-			//if (timer) {
-			//	// After it loops loopCount times it will not reset its completion, unpausing the state and allowing other timers to countdown.
-			//	if (timer->completed) {
-			//		Time::GetInstance().TogglePause(); // Unpause
-			//		TimerSystem::GetInstance().RemoveTimer("Test timer"); // Delete the timer after use
-			//		std::cout << "Unpaused!" << '\n';
-			//	}
-			//}
+				UI::GetDamageTextSpawner().SpawnDamageText(150, DAMAGE_TYPE_CRIT, pos);
+			}
 			
 			Editor::DrawInspectors();
 
