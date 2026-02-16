@@ -9,11 +9,11 @@
 ---------------------------------------------*/
 void UI::Init() {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
-	BuffCards::Init();
+	BuffCardScreen::Init();
 }
 void UI::Render() {
 	damageTextSpawner.Render();
-	BuffCards::Render();
+	BuffCardScreen::Render();
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
@@ -111,7 +111,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 		case DAMAGE_TYPE_CRIT:
 			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
 			text.scale = 1.25f;
-			text.damageType = "CRIT!";
+			text.damageType = "CRT!";
 			break;
 		case DAMAGE_TYPE_RESIST:
 			text.r = 0.5f, text.g = 0.85f, text.b = 1.0f;
