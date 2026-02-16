@@ -130,7 +130,7 @@ void GameScene::Update()
 
 void GameScene::Render()
 {
-	map.Render(camera);
+	map.Render();
 	//trapMgr.Render();   // for debug
 	player.Render();
 	enemyA.Render();
@@ -167,7 +167,7 @@ void GameScene::Render()
 
 
 	AEVec2 worldMousePos;
-	AEExtras::GetCursorWorldPosition(worldMousePos, camera.position);
+	AEExtras::GetCursorWorldPosition(worldMousePos);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
