@@ -7,21 +7,21 @@
 
 
 
-class EnemyA
+class EnemyB
 {
 public:
-    EnemyA(float initialPosX = 0.f, float initialPosY = 0.f);
-    ~EnemyA();
+    EnemyB(float initialPosX = 0.f, float initialPosY = 0.f);
+    ~EnemyB();
 
     void Update(const AEVec2& playerPos);
     void Render();
 
-    AEVec2 position{ 0.f, 0.f }; 
+    AEVec2 position{ 0.f, 0.f };
 
 
     bool isDead = false;
     bool isAttacking = false;
-    bool isGrounded = true; 
+    bool isGrounded = true;
     bool chasing = false;
 
     //raise to start chasing player
@@ -41,14 +41,14 @@ private:
     {
         ATTACK = 0,
         DEATH = 1,
-        HURT = 2,
+        RUN = 2,
         IDLE = 3,
-        RUN = 4
+        HURT = 4
     };
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };
     Sprite sprite;
-    AEVec2 facingDirection{ 1.f, 0.f };  
+    AEVec2 facingDirection{ 1.f, 0.f };
 
     // --- Guard / leash (Option 1: stored in enemy instance) ---
     AEVec2 homePos{ 0.f, 0.f };      // spawn/guard anchor
@@ -66,7 +66,7 @@ private:
 
     EnemyAttack attack;
 
-   
+
 
     // Debug / collider size (use AEVec2 like Player)
     AEVec2 size{ 0.8f, 0.8f };

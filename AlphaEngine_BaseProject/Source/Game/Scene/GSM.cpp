@@ -14,6 +14,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
 
+#include "../../Utils/AEExtras.h" // temp
+
 BaseScene* GSM::currentScene = nullptr;
 
 // Set inital value. Not sure what to use, make it quit for now
@@ -30,13 +32,7 @@ void GSM::Init(SceneState type)
 	SaveSystem::Init();
 	Time::GetInstance();
 	TimerSystem::GetInstance();
-	UI::InitDamageFont("Assets/Bemock.ttf", 48, 52);
-
-	// === Damage text testing variables ===
-	//f32 alpha = 1.f;
-	//f32 scale = 1.f;
-	//int damageType = 0; // Testing of cycling through enum types.
-
+	UI::Init();
 	// === Timer Testing ===
 	//timerSystem.AddTimer("Test Timer 1", 3.0f);
 
@@ -92,27 +88,21 @@ void GSM::Update()
 
 			currentScene->Render();
 
-			//timerSystem.Update();
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
+			UI::GetDamageTextSpawner().Update();
+			UI::Render();
 
-			// === For Damage Text Testing ===
-			// Can use this as a sample test case if you want to use timers.
-			if (AEInputCheckTriggered(AEVK_K)) {
-				TimerSystem::GetInstance().AddAnonymousTimer(2.0f);
-				TimerSystem::GetInstance().AddAnonymousTimer(5.5f, true, false, false); // Exposing all default params
-				Time::GetInstance().TogglePause(); // Set it to paused state to test timers that are not ignoring pause state
-				TimerSystem::GetInstance().AddTimer("Test timer", 5.0f, false, true, true, true, 2); // Add a timer that ignores pause to unpause after 2 iterations.
-			}
-
-			Timer const* timer = TimerSystem::GetInstance().GetTimerByName("Test timer");
-			if (timer) {
-				// After it loops loopCount times it will not reset its completion, unpausing the state and allowing other timers to countdown.
-				if (timer->completed) {
-					Time::GetInstance().TogglePause(); // Unpause
-					TimerSystem::GetInstance().RemoveTimer("Test timer"); // Delete the timer after use
-					std::cout << "Unpaused!" << '\n';
-				}
+			//// === For Damage Text Testing ===
+			//if AEInputCheckCurr/Triggered
+			if (AEInputCheckTriggered(AEVK_K))
+			{
+				AEVec2 pos{};
+				pos.x = AEExtras::RandomRange({ -0.8f, 1.f });
+				pos.y = AEExtras::RandomRange({ -0.8f, -0.5f });
+				DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
+				int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
+				UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
 			}
 			
 			Editor::DrawInspectors();

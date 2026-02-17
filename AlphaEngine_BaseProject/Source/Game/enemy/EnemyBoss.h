@@ -11,7 +11,8 @@ public:
     EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
     ~EnemyBoss();
 
-    void Update(const AEVec2& playerPos);
+    void Update(const AEVec2& playerPos, bool playerFacingRight);
+
     void Render();
 
     AEVec2 position{ 0.f, 0.f };
@@ -23,11 +24,17 @@ public:
     bool chasing = false;
 
     //raise to start chasing player
-    float aggroRange = 5.0f;
+    float aggroRange = 10.0f;
 
 
     //for gamescene to use to apply damage later
-    bool PollAttackHit() { return attack.PollHit(); }
+    bool PollAttackHit() { return !isDead && attack.PollHit(); }
+    // returns number of special projectiles that hit the player this frame
+    int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+
+
+  
+
 
 
 
@@ -59,6 +66,17 @@ private:
 
     float moveSpeed{ 2.2f };
     float stopDistance{ 0.2f };
+
+       // --- Teleport control ---
+    float teleportCooldownTimer{ 0.0f };   // counts up until teleport triggers
+    float teleportInterval{ 2.0f };        // teleport every 2s (tune)
+    bool  teleportActive{ false };         // currently playing TELEPORT anim
+    float teleportTimer{ 0.0f };           // time since TELEPORT started
+    bool  teleportMoved{ false };          // have we snapped behind player yet?
+
+    float teleportBehindOffset{ 0.9f };    // how far behind player (tune)
+    float teleportMoveNormalized{ 0.5f };  // when to snap (0..1 of teleport anim)
+
 
 
     EnemyAttack attack;

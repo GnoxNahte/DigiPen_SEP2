@@ -140,6 +140,14 @@ const PlayerStats& Player::GetStats() const
     return stats;
 }
 
+bool Player::IsFacingRight() const
+{
+    // match your Render() logic
+    if (velocity.x != 0.f) return velocity.x > 0.f;
+    return facingDirection.x > 0.f;
+}
+
+
 void Player::UpdateInput()
 {
     float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());

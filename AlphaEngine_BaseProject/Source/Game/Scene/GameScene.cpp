@@ -4,11 +4,23 @@
 #include "../Time.h"
 
 
+//AABB collision helper
+/*static bool AABB_Overlap(const AEVec2& aPos, const AEVec2& aSize,
+	const AEVec2& bPos, const AEVec2& bSize)
+{
+	const float dx = std::fabs(aPos.x - bPos.x);
+	const float dy = std::fabs(aPos.y - bPos.y);
+	return dx <= (aSize.x + bSize.x) * 0.5f
+		&& dy <= (aSize.y + bSize.y) * 0.5f;
+}*/
+
 
 GameScene::GameScene() : 
 	map(50, 50),
-	player(&map), 
-	enemyA(30, 3),
+	player(&map),
+	enemyA(Enemy::Preset::Druid, 30, 3),
+	enemyB(Enemy::Preset::Skeleton, 25, 3),
+
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
 		20, 
@@ -48,6 +60,7 @@ GameScene::~GameScene()
 void GameScene::Init()
 {
 	player.Reset(AEVec2{ 2, 2 });
+
 }
 
 void GameScene::Update()
@@ -57,18 +70,61 @@ void GameScene::Update()
 
 
 	AEVec2 p = player.GetPosition();
-
-	//ENEMY AI
 	//enemyA.Update(p);
-	//enemyBoss.Update(p);
+	//enemyB.Update(p);
+	enemyBoss.Update(p, player.IsFacingRight());
 
-	if (enemyA.PollAttackHit())
+	const AEVec2 pPos = player.GetPosition();
+	const AEVec2 pSize = player.GetStats().playerSize;
+
+	// Boss normal melee attack (ATTACK state via EnemyAttack)
+	if (enemyBoss.PollAttackHit())
 	{
-		// later: apply player damage
-		// for now: print / debug
-		std::cout << "Enemy HIT!\n";
+		// EnemyAttack already checked absDx <= hitRange at hit moment (because Boss uses absDx in attack.Update).
+		// Add a Y tolerance so it doesn't hit through platforms.
+		const float dy = std::fabs(pPos.y - enemyBoss.position.y);
+		const float yTol = (pSize.y * 0.5f) + 0.6f; // tune 0.3~1.0 depending on your level scale
+
+		if (dy <= yTol)
+		{
+			player.TakeDamage(2); // choose your boss damage
+			std::cout << "[Boss] HIT player (melee)\n";
+		}
 	}
+	
+	// Boss special spell damage
+	const int spellHits = enemyBoss.ConsumeSpecialHits(player.GetPosition(),
+	player.GetStats().playerSize);
+	if (spellHits > 0)
+	{
+		const int spellDmg = 1;                 // tune
+		player.TakeDamage(spellHits * spellDmg);
+		std::cout << "[Boss] spell hit x" << spellHits << "\n";
+	}
+	
+	
+	auto EnemyTryHitPlayer = [&](Enemy& e, int dmg)
+	{
+		if (!e.PollAttackHit()) return;
+		
+		const AEVec2 ePos = e.GetPosition();
+		
+		const float dx = std::fabs(pPos.x - ePos.x);
+		const float dy = std::fabs(pPos.y - ePos.y);
+		
+		// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
+		if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
+		{
+			player.TakeDamage(dmg);
+			std::cout << "Enemy HIT player!\n";
+		}
+	};
+	
+	
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+	EnemyTryHitPlayer(enemyA, 1);
+	EnemyTryHitPlayer(enemyB, 1);
+
 	trapMgr.Update(dt, player);
 
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
@@ -88,6 +144,7 @@ void GameScene::Render()
 	testParticleSystem.Render();
 	player.Render();
 	enemyA.Render();
+	enemyB.Render();
 	enemyBoss.Render();
 
 	// === Code below is for DEBUG ONLY ===
