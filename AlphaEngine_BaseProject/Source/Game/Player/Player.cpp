@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
+#include "../UI.h"
 
 Player::Player(MapGrid* map) :
     stats("Assets/config/player-stats.json"), 
@@ -17,7 +18,6 @@ Player::Player(MapGrid* map) :
     velocity{},
     particleSystem{ 50, {} }
 {
-    std::cout << "Construct player";
     Reset(AEVec2{ 2, 4 });
 
     this->map = map;
@@ -109,20 +109,31 @@ void Player::Reset(const AEVec2& initialPos)
     isRightWallCollided = false;
 }
 
-void Player::TakeDamage(int dmg)
+void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
 {
     if (dmg <= 0) 
         return;
 
     health = max(health - dmg, 0);
 
+    AEVec2 hitOriginCpy = hitOrigin;
+    AEVec2 hitDirection;
+    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
+    AEVec2Normalize(&hitDirection, &hitDirection);
+
+    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
+    hitDirection.y = max(hitDirection.y, 0.4f);
+    AEVec2Scale(&hitDirection, &hitDirection, 30);
+    std::cout << hitDirection.y << "\n";
+    velocity = hitDirection;
+
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
 #if _DEBUG
     std::cout << "[Player] Damage: " << dmg
         << " HP=" << health << "/" << stats.maxHealth << "\n";
 #endif
 
-    // if animiation and sound is needed for getting hurt
-    // sprite.SetState(AnimState::HURT);
+     sprite.SetState(AnimState::HURT);
 }
 
 const AEVec2& Player::GetPosition() const
@@ -162,7 +173,7 @@ void Player::UpdateInput()
     if (AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_C))
         lastJumpPressed = currTime;
 
-    if ((inputDirection.x != 0 || inputDirection.y != 0) && !IsAttacking())
+    if ((inputDirection.x != 0 || inputDirection.y != 0) && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
         facingDirection = inputDirection;
 
     if (AEInputCheckCurr(AEVK_X))

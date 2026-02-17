@@ -7,7 +7,7 @@
     { "name": "FALLING",        "frameCount": 2 },
     { "name": "SLIDING",        "frameCount": 5 },
     { "name": "IDLE_W_SWORD",   "frameCount": 4 },
-    { "name": "ATTACK_1",       "frameCount": 7, "sampleRate": 24 },
+    { "name": "ATTACK_1",       "frameCount": 8, "sampleRate": 18 },
     { "name": "ATTACK_2",       "frameCount": 3, "sampleRate": 10 },
     { "name": "ATTACK_3",       "frameCount": 6, "sampleRate": 10 },
     { "name": "HURT",           "frameCount": 6 },

@@ -87,7 +87,7 @@ void GameScene::Update()
 
 		if (dy <= yTol)
 		{
-			player.TakeDamage(2); // choose your boss damage
+			player.TakeDamage(2, enemyBoss.position); // choose your boss damage
 			std::cout << "[Boss] HIT player (melee)\n";
 		}
 	}
@@ -98,7 +98,7 @@ void GameScene::Update()
 	if (spellHits > 0)
 	{
 		const int spellDmg = 1;                 // tune
-		player.TakeDamage(spellHits * spellDmg);
+		player.TakeDamage(spellHits * spellDmg, {});
 		std::cout << "[Boss] spell hit x" << spellHits << "\n";
 	}
 	
@@ -115,16 +115,16 @@ void GameScene::Update()
 		// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
 		if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
 		{
-			player.TakeDamage(dmg);
+			player.TakeDamage(dmg, e.GetPosition());
 			std::cout << "Enemy HIT player!\n";
 		}
 	};
 	
 	
-	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	EnemyTryHitPlayer(enemyA, 1);
 	EnemyTryHitPlayer(enemyB, 1);
 
+	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);
 
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;

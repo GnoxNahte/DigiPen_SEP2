@@ -49,7 +49,7 @@ public:
     void Render();
     void Reset(const AEVec2& initialPos);
 
-    void TakeDamage(int dmg);
+    void TakeDamage(int dmg, const AEVec2& hitOrigin);
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
