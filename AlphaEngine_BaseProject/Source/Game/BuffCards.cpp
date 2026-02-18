@@ -11,13 +11,18 @@
 #include "Timer.h"
 
 
+void BuffCardManager::Init() {
+	LoadCardInfo();
+
+}
+
 void BuffCardManager::Update() {
-	if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
-		currentCards = BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
-		//SaveCardInfo();
-		LoadCardInfo();
-		//shuffled = true;
-	}
+	//if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
+	//	currentCards = BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
+	//	//SaveCardInfo();
+	//	LoadCardInfo();
+	//	//shuffled = true;
+	//}
 }
 
 
@@ -215,54 +220,55 @@ void BuffCardScreen::Init() {
 	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
 	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
 	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
+	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
 	srand(static_cast<unsigned int>(time(NULL))); // Seed random number generator with current time for variability.
 }
 
 void BuffCardScreen::Update() {
 
-	//const float FLIP_SPEED = 5.0f; // Adjust flip speed
+	const float FLIP_SPEED = 5.0f; // Adjust flip speed
 
-	//for (int i = 0; i < NUM_CARDS; ++i) {
-	//	if (cardFlipping[i]) {
-	//		// Animate from -1.0 (back) to 1.0 (front)
-	//		cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * AEFrameRateControllerGetFrameTime())	;
+	for (int i = 0; i < NUM_CARDS; ++i) {
+		if (cardFlipping[i]) {
+			// Animate from -1.0 (back) to 1.0 (front)
+			cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * AEFrameRateControllerGetFrameTime())	;
 
-	//		if (cardFlipStates[i] >= 1.0f) {
-	//			cardFlipStates[i] = 1.0f;
-	//			cardFlipping[i] = false; // Flip complete
-	//		}
-	//	}
-	//}
-	//// Automated sequential flipping
-	//if (!allCardsFlipped) {
-	//	// Check if we need to start flipping the next card
-	//	if (currentFlipIndex < NUM_CARDS) {
-	//		// Create timer for this card if not created yet
-	//		std::string timerName = "Flip Timer " + std::to_string(currentFlipIndex);
+			if (cardFlipStates[i] >= 1.0f) {
+				cardFlipStates[i] = 1.0f;
+				cardFlipping[i] = false; // Flip complete
+			}
+		}
+	}
+	// Automated sequential flipping
+	if (!allCardsFlipped) {
+		// Check if we need to start flipping the next card
+		if (currentFlipIndex < NUM_CARDS) {
+			// Create timer for this card if not created yet
+			std::string timerName = "Flip Timer " + std::to_string(currentFlipIndex);
 
-	//		if (!flipTimerCreated[currentFlipIndex]) {
-	//			float delay = 0.45f; // Delay between cards
-	//			TimerSystem::GetInstance().AddTimer(timerName, delay, false);
-	//			flipTimerCreated[currentFlipIndex] = true;
-	//		}
+			if (!flipTimerCreated[currentFlipIndex]) {
+				float delay = 0.45f; // Delay between cards
+				TimerSystem::GetInstance().AddTimer(timerName, delay, false);
+				flipTimerCreated[currentFlipIndex] = true;
+			}
 
-	//		auto* timer = TimerSystem::GetInstance().GetTimerByName(timerName);
-	//		// Check if timer completed
-	//		if (timer &&
-	//			timer->completed) {
-	//			FlipCard(currentFlipIndex);
-	//			TimerSystem::GetInstance().RemoveTimer(timerName);
-	//			currentFlipIndex++; // Move to next card
-	//		}
-	//	}
-	//	else {
-	//		allCardsFlipped = true; // All cards done
-	//	}
-	//}
-	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
-	//	ResetFlipSequence();
-	//}
+			auto* timer = TimerSystem::GetInstance().GetTimerByName(timerName);
+			// Check if timer completed
+			if (timer &&
+				timer->completed) {
+				FlipCard(currentFlipIndex);
+				TimerSystem::GetInstance().RemoveTimer(timerName);
+				currentFlipIndex++; // Move to next card
+			}
+		}
+		else {
+			allCardsFlipped = true; // All cards done
+		}
+	}
+	if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
+		ResetFlipSequence();
+	}
 }
 // This function resets the flip, simulating a shuffle.
 // TODO : The buff card type and rarity should be randomized during this function.
@@ -343,7 +349,7 @@ void BuffCardScreen::DrawPromptText() {
 	}
 }
 // Draw buff cards.
-void BuffCardScreen::DrawDeck() {
+void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 	// Rotation matrix.
 	AEMtx33 rotate = { 0 };
 	AEMtx33Rot(&rotate, 0);
@@ -359,7 +365,7 @@ void BuffCardScreen::DrawDeck() {
 	const f32 CARD_SIZE_MODIFIER = 0.42f;
 	//const f32 CARD_SIZE_SELECTED = 0.5f;
 
-	for (int i = 0; i < NUM_CARDS; ++i) {
+	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
 		AEMtx33 scale = { 0 };
 		float scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
@@ -367,15 +373,16 @@ void BuffCardScreen::DrawDeck() {
 		AEMtx33Scale(&scale, scaleX, scaleY);
 
 		// Determine which texture to use based on flip progress SIGN
-		AEGfxTexture* currentTexture;
+		AEGfxTexture* currentTexture = nullptr;
 		if (cardFlipProgress < 0) {
 			currentTexture = cardBackTex;
 		}
 		else {
-			currentTexture = cardFrontTex[i];
+			// Use the card's type to get the texture
+			currentTexture = cardFrontTex[cards[i].type];
 		}
 
-		f32 offsetX = (i - 1) * CARD_SPACING;
+		f32 offsetX = (i - 1) * CARD_SPACING; // adjust depending on how you center cards
 
 		AEMtx33 translate = { 0 };
 		AEMtx33Trans(&translate,
@@ -405,7 +412,7 @@ void BuffCardScreen::DiscardCards() {
 void BuffCardScreen::Render() {
 	DrawBlackOverlay();
 	DrawPromptText();
-	DrawDeck();
+	DrawDeck(BuffCardManager::GetRandomizedCards());
 	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
 	//	textLoading = false;
 	//}

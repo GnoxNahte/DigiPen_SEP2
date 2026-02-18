@@ -9,6 +9,7 @@
 ---------------------------------------------*/
 void UI::Init() {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	BuffCardManager::Init();
 	BuffCardScreen::Init();
 }
 void UI::Update() {

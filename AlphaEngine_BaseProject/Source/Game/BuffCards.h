@@ -40,12 +40,14 @@ the BuffCardManager will apply the corresponding buffs to the player stats.
 -----------------------------------------------------------------------------*/
 class BuffCardManager {
 public:
+	static void Init();
 	static void Update();
 	static std::vector<BuffCard> RandomizeCards(int numCards); // Returns an array of BuffCards with randomized types and rarities.
 	static CARD_TYPE GetCardType(std::string str); // Get card type from string, used for loading from JSON.
 	static CARD_RARITY GetCardRarity(std::string str); // Get card rarity from string, used for loading from JSON.
 	static void SaveCardInfo(); // Save card names and descriptions to a json file.
 	static void LoadCardInfo(); // Load card names and descriptions from a json file.
+	inline const static std::vector<BuffCard> GetRandomizedCards() { return currentCards; } // Get current card info for rendering and effects.
 	inline static std::string CardTypeToString(CARD_TYPE type) {
 		switch (type) {
 		case HERMES_FAVOR: return "HERMES_FAVOR";
@@ -106,7 +108,7 @@ public:
 	// Prompt text for card drawing.
 	static void DrawPromptText();
 	// Draw the cards with flip animation.
-	static void DrawDeck();
+	static void DrawDeck(const std::vector<BuffCard> cards);
 	static void FlipCard(int cardIndex); // Trigger flip animation
 
 	// Reset flip states and timers to simulate a shuffle, allowing cards to be drawn again.
@@ -129,7 +131,7 @@ private:
 
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
-	static const int UNIQUE_CARD_TEXTURES = 3; // Total number of unique card textures available (for different types and rarities).
+	static const int UNIQUE_CARD_TEXTURES = 4; // Total number of unique card textures available (for different types and rarities).
 	inline static AEGfxTexture* cardFrontTex[UNIQUE_CARD_TEXTURES] = { nullptr }; // 3 different front textures
 	inline static AEGfxVertexList* cardMesh = nullptr;
 
