@@ -15,6 +15,18 @@
 }*/
 
 
+namespace
+{
+	// squared-distance check (no sqrt)
+	bool IsNear(const AEVec2& a, const AEVec2& b, float range)
+	{
+		float dx = b.x - a.x;
+		float dy = b.y - a.y;
+		return (dx * dx + dy * dy) <= (range * range);
+	}
+}
+
+
 GameScene::GameScene() : 
 	map(50, 50),
 	player(&map),
@@ -70,9 +82,20 @@ void GameScene::Update()
 
 
 	AEVec2 p = player.GetPosition();
-	//enemyA.Update(p);
-	//enemyB.Update(p);
-	enemyBoss.Update(p, player.IsFacingRight());
+	enemyA.Update(p);
+	enemyB.Update(p);
+	//enemyBoss.Update(p, player.IsFacingRight());
+
+	if (AEInputCheckTriggered(AEVK_X))
+	{
+		const float attackRange = 1.6f; // tweak to taste
+
+		if (!enemyA.IsDead() && IsNear(p, enemyA.GetPosition(), attackRange))
+			enemyA.ApplyDamage(1);
+
+		if (!enemyB.IsDead() && IsNear(p, enemyB.GetPosition(), attackRange))
+			enemyB.ApplyDamage(1);
+	}
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;

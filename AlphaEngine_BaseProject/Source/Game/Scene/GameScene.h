@@ -22,15 +22,16 @@ public:
 	void Render() override;
 	void Exit() override;
 private:
+	MapGrid map;
 	Player player;
 	Camera camera;
 	//EnemyA enemyA;
 	//EnemyB enemyB;
 	EnemyBoss enemyBoss;
-	MapGrid map;
+
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
-	// remove EnemyA.h / EnemyB.h includes
+
 	Enemy enemyA;
 	Enemy enemyB;
 };

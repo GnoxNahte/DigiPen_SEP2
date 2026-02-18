@@ -18,7 +18,8 @@ public:
     {
         const char* spritePath = nullptr;
 
-        int maxHp = 3;   // basic life system
+        int maxHp = 10;   // basic life system
+        bool hideAfterDeath = false;
 
 
         // Render
@@ -103,5 +104,12 @@ private:
 
     int  hp{ 1 };
     bool dead{ false };
+
+    // Hurt lock: keeps the hurt animation visible long enough to notice
+    float hurtTimeLeft{ 1.0f };
+    float deathTimeLeft{ 0.5f };
+    bool hidden = false;
+  
+
 
 };
