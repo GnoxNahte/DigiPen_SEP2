@@ -1,12 +1,15 @@
 #pragma once
 #include "../Player/Player.h"
 #include "../Camera.h"
+#include <cmath>
 #include "../Environment/MapGrid.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/traps.h"
 #include "GSM.h"
 #include "../enemy/EnemyA.h"
+#include "../enemy/EnemyB.h"
 #include "../enemy/EnemyBoss.h"
+#include "../enemy/Enemy.h"
 
 
 class GameScene : public BaseScene
@@ -21,10 +24,14 @@ public:
 private:
 	Player player;
 	Camera camera;
-	EnemyA enemyA;
+	//EnemyA enemyA;
+	//EnemyB enemyB;
 	EnemyBoss enemyBoss;
 	MapGrid map;
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
+	// remove EnemyA.h / EnemyB.h includes
+	Enemy enemyA;
+	Enemy enemyB;
 };
 

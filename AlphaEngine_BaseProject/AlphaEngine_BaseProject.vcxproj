@@ -117,7 +117,9 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
     <ClCompile Include="Source\Game\BuffCards.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
+    <ClCompile Include="Source\Game\enemy\Enemy.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyA.cpp" />
+    <ClCompile Include="Source\Game\enemy\EnemyB.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp" />
     <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
     <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
@@ -158,8 +160,10 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Editor\ImGuiHelper.h" />
     <ClInclude Include="Source\Game\BuffCards.h" />
     <ClInclude Include="Source\Game\Camera.h" />
+    <ClInclude Include="Source\Game\enemy\Enemy.h" />
     <ClInclude Include="Source\Game\enemy\EnemyA.h" />
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyB.h" />
     <ClInclude Include="Source\Game\enemy\EnemyBoss.h" />
     <ClInclude Include="Source\Game\Environment\MapGrid.h" />
     <ClInclude Include="Source\Game\Environment\MapTile.h" />

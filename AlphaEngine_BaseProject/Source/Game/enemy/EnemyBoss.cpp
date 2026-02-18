@@ -92,6 +92,16 @@ static float GetAnimTimePerFrame(const Sprite& sprite, int stateIndex)
     return (float)s.timePerFrame;
 }
 
+static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
+    const AEVec2& bPos, const AEVec2& bSize)
+{
+    const float dx = std::fabs(aPos.x - bPos.x);
+    const float dy = std::fabs(aPos.y - bPos.y);
+    return dx <= (aSize.x + bSize.x) * 0.5f
+        && dy <= (aSize.y + bSize.y) * 0.5f;
+}
+
+
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
@@ -104,8 +114,8 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     facingDirection = AEVec2{ 1.f, 0.f };
     chasing = false;
 
-    attack.startRange = 1.2f;
-    attack.hitRange = 1.0f;
+    attack.startRange = 1.8f;
+    attack.hitRange = 1.8f;
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 0.5f;
     attack.breakRange = attack.startRange;
@@ -115,7 +125,7 @@ EnemyBoss::~EnemyBoss()
 {
 }
 
-void EnemyBoss::Update(const AEVec2& playerPos)
+void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
@@ -126,6 +136,97 @@ void EnemyBoss::Update(const AEVec2& playerPos)
     const float absDx = std::fabs(dx);
 
     const bool inAggroRange = (absDx <= aggroRange);
+
+    // --- TELEPORT trigger (only when not in special/attack/etc.) ---
+    const bool teleportBlockedBySpecial = g_spellcastUntil5thSpawn;
+    // If teleport is active, we fully own the boss this frame.
+    if (teleportActive)
+    {
+        // Freeze everything while teleporting
+        attack.Reset();
+        chasing = false;
+        velocity.x = 0.f;
+        velocity.y = 0.f;
+
+        teleportTimer += dt;
+
+        const float teleDur = GetAnimDurationSec(sprite, TELEPORT);
+        const float snapTime = (teleDur > 0.f) ? teleDur * teleportMoveNormalized : 0.f;
+
+        // Snap behind player once, mid-animation
+        if (!teleportMoved && teleportTimer >= snapTime)
+        {
+            // If player faces right, behind is left (negative). If faces left, behind is right (positive).
+            const float behindDir = playerFacingRight ? -1.f : 1.f;
+
+            position.x = playerPos.x + behindDir * teleportBehindOffset;
+
+            // Boss should face the player after teleport (same direction as player facing)
+            facingDirection = AEVec2{ playerFacingRight ? 1.f : -1.f, 0.f };
+
+            teleportMoved = true;
+        }
+
+        // End teleport after animation duration, then immediately start ATTACK
+        if (teleDur > 0.f && teleportTimer >= teleDur)
+        {
+            teleportActive = false;
+            teleportTimer = 0.f;
+            teleportMoved = false;
+            teleportCooldownTimer = 0.f;
+
+            // Prime an immediate attack (EnemyAttack auto-starts if in range)
+            const float newDx = playerPos.x - position.x;
+            const float newAbsDx = std::fabs(newDx);
+            const float attackDur = GetAnimDurationSec(sprite, ATTACK);
+
+            attack.Reset();                 // clears cooldownTimer too
+            attack.Update(0.f, newAbsDx, attackDur); // dt=0 is fine; it can still start attack
+        }
+
+        // Don't let normal animation/movement override TELEPORT this frame.
+        sprite.Update();
+        specialAttackVfx.Update();
+
+        // Update + cleanup specials (keep your existing block)
+        for (auto& specialAttack : g_specialAttacks)
+            specialAttack.Update(dt);
+
+        g_specialAttacks.erase(
+            std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
+                [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }),
+            g_specialAttacks.end()
+        );
+
+        return;
+    }
+
+    // Not teleporting: build up teleport timer
+    if (inAggroRange && !attack.IsAttacking() && !teleportBlockedBySpecial && !specialBurstActive)
+    {
+        teleportCooldownTimer += dt;
+
+        if (teleportCooldownTimer >= teleportInterval)
+        {
+            teleportActive = true;
+            teleportTimer = 0.f;
+            teleportMoved = false;
+
+            // Start teleport animation now
+            sprite.SetState(TELEPORT);
+
+            // Freeze immediately
+            attack.Reset();
+            chasing = false;
+            velocity = AEVec2{ 0.f, 0.f };
+        }
+    }
+    else
+    {
+        // Optional: reset if player leaves aggro / boss is busy
+        teleportCooldownTimer = 0.f;
+    }
+
 
     // Update attack component
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
@@ -274,7 +375,7 @@ void EnemyBoss::Update(const AEVec2& playerPos)
 
     // Animation selection:
     // As long as special phase is active, keep SPELLCAST looping (reset/replay is OK)
-    if (!specialPhaseActive)
+    if (!specialPhaseActive && !teleportActive)
         UpdateAnimation();
     // else: do NOT override SPELLCAST (it loops via sprite.Update())
 
@@ -292,19 +393,51 @@ void EnemyBoss::Update(const AEVec2& playerPos)
     );
 }
 
+int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize)
+{
+    if (isDead) return 0;
+
+    int hits = 0;
+
+    for (auto& s : g_specialAttacks)
+    {
+        if (!s.alive()) continue;
+
+        // Use the same debug rect size you draw (so collision matches visuals)
+        const AEVec2 spellSize{ s.debugW, s.debugH };
+
+        if (AABB_Overlap2(s.pos, spellSize, playerPos, playerSize))
+        {
+            ++hits;
+
+            // Consume the projectile so it only hits once
+            s.life = 0.f;
+        }
+    }
+
+    return hits;
+}
+
+
 void EnemyBoss::UpdateAnimation()
 {
+    if (teleportActive)
+    {
+        // Only do this if you are NOT already setting TELEPORT once at teleport start.
+        sprite.SetState(TELEPORT);
+        return;
+    }
+
     if (attack.IsAttacking())
     {
         sprite.SetState(ATTACK);
         return;
     }
 
-    if (chasing)
-        sprite.SetState(RUN);
-    else
-        sprite.SetState(IDLE);
+    if (chasing) sprite.SetState(RUN);
+    else         sprite.SetState(IDLE);
 }
+
 
 void EnemyBoss::Render()
 {

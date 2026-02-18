@@ -1,7 +1,7 @@
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <rapidjson/document.h>
+#include <filesystem>
 #include <imgui.h>
 
 #include "PlayerStats.h"
@@ -28,6 +28,32 @@ namespace
 		
 		LoadBox(obj["collider"].GetObj(), attack.collider);
 	}
+
+    void SaveBox(rapidjson::Value& obj, const Box& box, rapidjson::Document::AllocatorType& allocator)
+    {
+        obj.SetObject();
+
+        rapidjson::Value position(rapidjson::kObjectType);
+        position.AddMember("x", box.position.x, allocator);
+        position.AddMember("y", box.position.y, allocator);
+        obj.AddMember("position", position, allocator);
+
+        rapidjson::Value size(rapidjson::kObjectType);
+        size.AddMember("x", box.size.x, allocator);
+        size.AddMember("y", box.size.y, allocator);
+        obj.AddMember("size", size, allocator);
+    }
+
+    void SaveAttack(rapidjson::Value& obj, const AttackStats& attack, rapidjson::Document::AllocatorType& allocator)
+    {
+        obj.SetObject();
+        obj.AddMember("damage", attack.damage, allocator);
+        obj.AddMember("knockbackForce", attack.knockbackForce, allocator);
+
+        rapidjson::Value collider(rapidjson::kObjectType);
+        SaveBox(collider, attack.collider, allocator);
+        obj.AddMember("collider", collider, allocator);
+    }
 }
 
 PlayerStats::PlayerStats(std::string file) : file(file)
@@ -56,6 +82,7 @@ void PlayerStats::LoadFileData()
 	turnTime = doc["turnTime"].GetFloat();
 	inAirTurnTime = doc["inAirTurnTime"].GetFloat();
 
+	dashSpeed = doc["dashSpeed"].GetFloat();
 	dashCooldown = doc["dashCooldown"].GetFloat();
 	dashTime = doc["dashTime"].GetFloat();
 
@@ -98,6 +125,93 @@ void PlayerStats::LoadFileData()
 	CalculateDerivedVariables();
 }
 
+void PlayerStats::SaveFileData()
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    auto& allocator = doc.GetAllocator();
+
+    // Movement Stats
+    doc.AddMember("maxSpeed", maxSpeed, allocator);
+    doc.AddMember("airStrafeMaxSpeed", airStrafeMaxSpeed, allocator);
+    doc.AddMember("attackMaxSpeedMultiplier", attackMaxSpeedMultiplier, allocator);
+    doc.AddMember("maxSpeedTime", maxSpeedTime, allocator);
+    doc.AddMember("stopTime", stopTime, allocator);
+    doc.AddMember("turnTime", turnTime, allocator);
+    doc.AddMember("inAirTurnTime", inAirTurnTime, allocator);
+
+    // Dash / Gravity
+    doc.AddMember("dashSpeed", dashSpeed, allocator);
+    doc.AddMember("dashCooldown", dashCooldown, allocator);
+    doc.AddMember("dashTime", dashTime, allocator);
+    doc.AddMember("maxFallVelocity", maxFallVelocity, allocator);
+    doc.AddMember("wallSlideMaxSpeedTime", wallSlideMaxSpeedTime, allocator);
+    doc.AddMember("wallSlideMaxSpeed", wallSlideMaxSpeed, allocator);
+
+    // Jump Stats
+    doc.AddMember("maxJumpHeight", maxJumpHeight, allocator);
+    doc.AddMember("minJumpHeight", minJumpHeight, allocator);
+    doc.AddMember("timeToMaxHeight", timeToMaxHeight, allocator);
+    doc.AddMember("timeToGround", timeToGround, allocator);
+    doc.AddMember("gravityMultiplierWhenRelease", gravityMultiplierWhenRelease, allocator);
+    doc.AddMember("coyoteTime", coyoteTime, allocator);
+    doc.AddMember("jumpBuffer", jumpBuffer, allocator);
+    doc.AddMember("wallJumpHorizontalVelocity", wallJumpHorizontalVelocity, allocator);
+    doc.AddMember("wallJumpHorizontalVelocityTowardsWall", wallJumpHorizontalVelocityTowardsWall, allocator);
+
+    // Box Checkers
+    rapidjson::Value groundObj(rapidjson::kObjectType);
+    SaveBox(groundObj, groundChecker, allocator);
+    doc.AddMember("groundChecker", groundObj, allocator);
+
+    rapidjson::Value ceilingObj(rapidjson::kObjectType);
+    SaveBox(ceilingObj, ceilingChecker, allocator);
+    doc.AddMember("ceilingChecker", ceilingObj, allocator);
+
+    rapidjson::Value leftWallObj(rapidjson::kObjectType);
+    SaveBox(leftWallObj, leftWallChecker, allocator);
+    doc.AddMember("leftWallChecker", leftWallObj, allocator);
+
+    rapidjson::Value rightWallObj(rapidjson::kObjectType);
+    SaveBox(rightWallObj, rightWallChecker, allocator);
+    doc.AddMember("rightWallChecker", rightWallObj, allocator);
+
+    // Player Size
+    rapidjson::Value playerSizeObj(rapidjson::kObjectType);
+    playerSizeObj.AddMember("x", playerSize.x, allocator);
+    playerSizeObj.AddMember("y", playerSize.y, allocator);
+    doc.AddMember("playerSize", playerSizeObj, allocator);
+
+    // Combat
+    doc.AddMember("maxHealth", maxHealth, allocator);
+    doc.AddMember("attackBuffer", attackBuffer, allocator);
+
+    // Attack Arrays
+    rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
+    for (const auto& attack : groundAttacks)
+    {
+        rapidjson::Value attackVal(rapidjson::kObjectType);
+        SaveAttack(attackVal, attack, allocator);
+        groundAttacksArr.PushBack(attackVal, allocator);
+    }
+    doc.AddMember("groundAttacks", groundAttacksArr, allocator);
+
+    rapidjson::Value airAttacksArr(rapidjson::kArrayType);
+    for (const auto& attack : airAttacks)
+    {
+        rapidjson::Value attackVal(rapidjson::kObjectType);
+        SaveAttack(attackVal, attack, allocator);
+        airAttacksArr.PushBack(attackVal, allocator);
+    }
+    doc.AddMember("airAttacks", airAttacksArr, allocator);
+
+    std::string actualAssetPath = "../../" + file;
+    if (std::filesystem::exists(actualAssetPath))
+        FileHelper::TryWriteJsonFile(actualAssetPath, doc);
+    
+    FileHelper::TryWriteJsonFile(file, doc);
+}
+
 void PlayerStats::OnDataChanged()
 {
 	CalculateDerivedVariables();
@@ -120,6 +234,7 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Stop Time", &stopTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Turn Time", &turnTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("In Air Turn Time", &inAirTurnTime, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Dash Speed", &dashSpeed, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Cooldown", &dashCooldown, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Time", &dashTime, 0.01f) || ifChanged;
 
@@ -220,6 +335,13 @@ void PlayerStats::DrawInspector()
 
         ImGui::TreePop();
     }
+
+    if (ImGui::Button("Reset to File"))
+        LoadFileData();
+
+    ImGui::SameLine();
+    if (ImGui::Button("Save"))
+        SaveFileData();
 
     if (ifChanged)
         OnDataChanged();

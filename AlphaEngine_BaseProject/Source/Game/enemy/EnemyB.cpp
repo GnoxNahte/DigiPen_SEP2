@@ -1,4 +1,5 @@
-#include "EnemyA.h"
+#pragma once
+#include "EnemyB.h"
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
@@ -21,8 +22,8 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 
 
 
-EnemyA::EnemyA(float initialPosX, float initialPosY)
-    : sprite("Assets/Craftpix/Druid.png")  
+EnemyB::EnemyB(float initialPosX, float initialPosY)
+    : sprite("Assets/Craftpix/Skeleton.png")
 {
     position = AEVec2{ initialPosX, initialPosY };
     homePos = position; // anchor guard point at spawn
@@ -45,7 +46,7 @@ EnemyA::EnemyA(float initialPosX, float initialPosY)
 
 }
 
-EnemyA::~EnemyA()
+EnemyB::~EnemyB()
 {
 }
 
@@ -59,7 +60,7 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 }
 
 
-void EnemyA::Update(const AEVec2& playerPos)
+void EnemyB::Update(const AEVec2& playerPos)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
@@ -188,7 +189,7 @@ void EnemyA::Update(const AEVec2& playerPos)
             position = nextPos;
         }
 
-   
+
 
     }
 
@@ -200,15 +201,15 @@ void EnemyA::Update(const AEVec2& playerPos)
 }
 
 
-void EnemyA::UpdateAnimation()
+void EnemyB::UpdateAnimation()
 {
     if (attack.IsAttacking())
     {
-        sprite.SetState(ATTACK); 
+        sprite.SetState(ATTACK);
         return;
     }
 
-    if (std::fabs(velocity.x) > 2.0f)
+    if (std::fabs(velocity.x) > 8.0f)
         sprite.SetState(RUN);
     else
         sprite.SetState(IDLE);
@@ -217,7 +218,7 @@ void EnemyA::UpdateAnimation()
 
 
 
-void EnemyA::Render() 
+void EnemyB::Render()
 {
     AEMtx33 transform;
     // === Draw sprite using the same transform pipeline as Player ===
@@ -225,7 +226,7 @@ void EnemyA::Render()
         (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
 
     // Local scale (flip X if facing left). Match Player's 2.0f scaling.
-    AEMtx33Scale(&transform, faceRight ? 4.f : -4.f, 4.f);
+    AEMtx33Scale(&transform, faceRight ? 2.f : -2.f, 2.f);
 
     // Pivot correction, same formula as Player
     AEMtx33TransApply(

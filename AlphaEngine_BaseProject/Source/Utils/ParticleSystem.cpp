@@ -1,9 +1,11 @@
+#include <iostream>
+#include <limits>
+
 #include "ParticleSystem.h"
 #include "MeshGenerator.h"
 #include "../Game/Camera.h"
 #include "../Utils/AEExtras.h"
-#include <iostream>
-#include <limits>
+#include "../Game/Time.h"
 
 ParticleSystem::ParticleSystem(int initialSize, const EmitterSettings& emitter) : 
 	pool(initialSize),
@@ -20,12 +22,12 @@ ParticleSystem::~ParticleSystem()
 
 void ParticleSystem::Init()
 {
-	lastSpawnTime = (float)AEGetTime(nullptr);
+	lastSpawnTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 }
 
 void ParticleSystem::Update()
 {
-	float currTime = (float)AEGetTime(nullptr);
+	float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 	while (currTime > lastSpawnTime)
 	{
 		lastSpawnTime += timeBetweenSpawn;
@@ -38,7 +40,7 @@ void ParticleSystem::Update()
 
 	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
 
-	float dt = (float)AEFrameRateControllerGetFrameTime();
+	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	// todo - make custom iterator inside object pool instead?
 	for (int i = static_cast<int>(pool.GetSize()) - 1; i >= 0; --i)
 	{
@@ -67,33 +69,32 @@ void ParticleSystem::Free()
 
 Particle& ParticleSystem::SpawnParticle()
 {
-	Particle& p = pool.Get();
-	p.spawnTime = (float)AEGetTime(nullptr);
-	p.position.x = AEExtras::RandomRange(emitter.spawnPosRangeX);
-	p.position.y = AEExtras::RandomRange(emitter.spawnPosRangeY);
-	p.lifetime =  AEExtras::RandomRange(emitter.lifetimeRange);
+	return SpawnParticle(emitter);
+}
 
-	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(emitter.angleRange));
-	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(emitter.speedRange));
+Particle& ParticleSystem::SpawnParticle(const EmitterSettings& _emitter)
+{
+	Particle& p = pool.Get();
+	p.spawnTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+	p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
+	p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
+	p.lifetime =  AEExtras::RandomRange(_emitter.lifetimeRange);
+
+	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
+	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
 
 	return p;
 }
 
 void ParticleSystem::SpawnParticleBurst(const EmitterSettings& _emitter, size_t spawnCount)
 {
-	float currTime = (float)AEGetTime(nullptr);
-
 	for (size_t i = 0; i < spawnCount; i++)
-	{
-		Particle& p = pool.Get();
-		p.spawnTime = currTime;
-		p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
-		p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
-		p.lifetime = AEExtras::RandomRange(_emitter.lifetimeRange);
+		SpawnParticle(_emitter);
+}
 
-		AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
-		AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
-	}
+void ParticleSystem::SpawnParticleBurst(size_t spawnCount)
+{
+	SpawnParticleBurst(emitter, spawnCount);
 }
 
 void ParticleSystem::SetSpawnRate(float spawnRate)
@@ -107,7 +108,7 @@ void ParticleSystem::SetSpawnRate(float spawnRate)
 	}
 
 	timeBetweenSpawn = 1.f / spawnRate;
-	float currTime = (float)AEGetTime(nullptr);
+	float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 	if (lastSpawnTime - currTime > timeBetweenSpawn)
 		lastSpawnTime = currTime + timeBetweenSpawn;
 }
@@ -132,7 +133,7 @@ void Particle::Render(AEGfxVertexList* mesh)
 	// Camera scale. Scales translation too.
 	AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 	AEGfxSetTransform(transform.m);
-	AEGfxSetTransparency(1.f - ((float)AEGetTime(nullptr) - spawnTime) / lifetime);
+	AEGfxSetTransparency(1.f - (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - spawnTime) / lifetime);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
 }
 

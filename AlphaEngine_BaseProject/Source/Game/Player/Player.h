@@ -49,7 +49,7 @@ public:
     void Render();
     void Reset(const AEVec2& initialPos);
 
-    void TakeDamage(int dmg);
+    void TakeDamage(int dmg, const AEVec2& hitOrigin);
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
@@ -58,6 +58,8 @@ public:
     const AEVec2& GetPosition() const;
     int GetHealth() const;
     const PlayerStats& GetStats() const;
+    bool IsFacingRight() const;
+
 private:
     PlayerStats stats;
     Sprite sprite;
@@ -78,6 +80,7 @@ private:
     AEVec2 facingDirection;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
+    f64 dashStartTime = -1.f;
     
     // === Collision ===
     bool isGroundCollided = false;
