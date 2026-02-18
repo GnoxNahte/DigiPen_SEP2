@@ -1,0 +1,22 @@
+{
+    "cards": [
+        {
+            "type": "IRON_DEFENCE",
+            "rarity": "UNCOMMON",
+            "name": "Card 1",
+            "description": "A mysterious buff."
+        },
+        {
+            "type": "SWITCH_IT_UP",
+            "rarity": "EPIC",
+            "name": "Card 2",
+            "description": "A mysterious buff."
+        },
+        {
+            "type": "HERMES_FAVOR",
+            "rarity": "UNCOMMON",
+            "name": "Card 3",
+            "description": "A mysterious buff."
+        }
+    ]
+}

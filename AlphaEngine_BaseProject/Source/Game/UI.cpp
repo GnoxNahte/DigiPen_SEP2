@@ -12,6 +12,7 @@ void UI::Init() {
 	BuffCardScreen::Init();
 }
 void UI::Update() {
+	BuffCardManager::Update();
 	BuffCardScreen::Update();
 }
 void UI::Render() {
