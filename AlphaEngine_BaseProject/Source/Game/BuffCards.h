@@ -80,7 +80,7 @@ private:
 	inline static int cardSelected = 0; // Current selected card.
 	inline static std::vector<BuffCard> currentCards; // Store current cards for reference in rendering and effects.
 
-	inline static const std::string file = "BuffCardInfo.json"; // File to save card info to.
+	inline static const std::string file = "buff-cards-info.json"; // File to save card info to.
 };
 /*----------------------------------------------------------------------------
 The BuffCardScreen is responsible for rendering the card drawing screen, 

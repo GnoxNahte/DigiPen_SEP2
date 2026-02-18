@@ -13,7 +13,7 @@
 
 void BuffCardManager::Update() {
 	if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
-		//currentCards = BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
+		currentCards = BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
 		//SaveCardInfo();
 		LoadCardInfo();
 		//shuffled = true;
@@ -141,7 +141,7 @@ void BuffCardManager::SaveCardInfo() {
 	doc.AddMember("cards", cardArray, allocator);
 
 	// Build the path
-	std::string actualAssetPath = "../../" + file;
+	std::string actualAssetPath = "../../Assets/config/" + file;
 
 	// Ensure the directory exists before writing
 	std::filesystem::create_directories(std::filesystem::path(actualAssetPath).parent_path());
@@ -154,7 +154,7 @@ void BuffCardManager::LoadCardInfo() {
 	currentCards.clear(); // clear previous cards
 
 	// Build the path to the JSON file
-	std::string actualAssetPath = "../../" + file;
+	std::string actualAssetPath = "../../Assets/config/" + file;
 
 	if (!std::filesystem::exists(actualAssetPath)) {
 		std::cout << "Card info file does not exist: " << actualAssetPath << std::endl;
