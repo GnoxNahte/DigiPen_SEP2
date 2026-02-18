@@ -141,12 +141,6 @@ const AEVec2& Player::GetPosition() const
     return position;
 }
 
-AEVec2* Player::GetPositionPtr()
-{
-    return &position;
-}
-
-
 int Player::GetHealth() const
 {
     return health;

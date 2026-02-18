@@ -33,6 +33,7 @@ GameScene::GameScene() :
 	enemyA(Enemy::Preset::Druid, 30, 3),
 	enemyB(Enemy::Preset::Skeleton, 25, 3),
 
+
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
 		20, 
@@ -72,6 +73,11 @@ GameScene::~GameScene()
 void GameScene::Init()
 {
 	player.Reset(AEVec2{ 2, 2 });
+	std::vector<EnemyManager::SpawnInfo> spawns;
+	spawns.push_back({ Enemy::Preset::Druid, {30.f, 3.f} });
+	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 3.f} });
+	enemyMgr.SetSpawns(spawns);
+	enemyMgr.SpawnAll();
 
 }
 
@@ -80,21 +86,24 @@ void GameScene::Update()
 	camera.Update();
 	player.Update();
 
+	enemyMgr.UpdateAll(player.GetPosition());
 
 	AEVec2 p = player.GetPosition();
-	enemyA.Update(p);
-	enemyB.Update(p);
-	//enemyBoss.Update(p, player.IsFacingRight());
+	enemyBoss.Update(p, player.IsFacingRight());
+
+	
+
+
 
 	if (AEInputCheckTriggered(AEVK_X))
 	{
 		const float attackRange = 1.6f; // tweak to taste
 
-		if (!enemyA.IsDead() && IsNear(p, enemyA.GetPosition(), attackRange))
-			enemyA.ApplyDamage(1);
-
-		if (!enemyB.IsDead() && IsNear(p, enemyB.GetPosition(), attackRange))
-			enemyB.ApplyDamage(1);
+		enemyMgr.ForEachEnemy([&](Enemy& e)
+			{
+				if (!e.IsDead() && IsNear(p, e.GetPosition(), attackRange))
+					e.ApplyDamage(1);
+			});
 	}
 
 	const AEVec2 pPos = player.GetPosition();
@@ -124,28 +133,27 @@ void GameScene::Update()
 		player.TakeDamage(spellHits * spellDmg, {});
 		std::cout << "[Boss] spell hit x" << spellHits << "\n";
 	}
-	
-	
-	auto EnemyTryHitPlayer = [&](Enemy& e, int dmg)
-	{
-		if (!e.PollAttackHit()) return;
-		
-		const AEVec2 ePos = e.GetPosition();
-		
-		const float dx = std::fabs(pPos.x - ePos.x);
-		const float dy = std::fabs(pPos.y - ePos.y);
-		
-		// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
-		if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
+
+	enemyMgr.ForEachEnemy([&](Enemy& e)
 		{
-			player.TakeDamage(dmg, e.GetPosition());
-			std::cout << "Enemy HIT player!\n";
-		}
-	};
-	
-	
-	EnemyTryHitPlayer(enemyA, 1);
-	EnemyTryHitPlayer(enemyB, 1);
+			// do player/enemy AABB checks here
+			// if hit: e.ApplyDamage(1);
+
+			if (!e.PollAttackHit()) return;
+
+			const AEVec2 ePos = e.GetPosition();
+
+			const float dx = std::fabs(pPos.x - ePos.x);
+			const float dy = std::fabs(pPos.y - ePos.y);
+
+			// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
+			if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
+			{
+				player.TakeDamage(e.GetAttackDamage(), e.GetPosition());
+				std::cout << "Enemy HIT player!\n";
+			}
+		});
+
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);
@@ -166,9 +174,9 @@ void GameScene::Render()
 	//trapMgr.Render();   // for debug
 	testParticleSystem.Render();
 	player.Render();
-	enemyA.Render();
-	enemyB.Render();
 	enemyBoss.Render();
+	enemyMgr.RenderAll();
+
 
 	// === Code below is for DEBUG ONLY ===
 

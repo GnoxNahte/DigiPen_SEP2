@@ -19,6 +19,7 @@ public:
         const char* spritePath = nullptr;
 
         int maxHp = 10;   // basic life system
+        int attackDamage = 1;
         bool hideAfterDeath = false;
 
 
@@ -75,7 +76,7 @@ public:
     bool   IsReturningHome() const { return returningHome; }
 
     float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
-    int   GetAttackDamage() const { return 1; }                  
+    int   GetAttackDamage() const { return cfg.attackDamage; }                  
 
 
     // Optional knobs

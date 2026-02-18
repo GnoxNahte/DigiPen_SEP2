@@ -6,10 +6,10 @@
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/traps.h"
 #include "GSM.h"
-#include "../enemy/EnemyA.h"
-#include "../enemy/EnemyB.h"
 #include "../enemy/EnemyBoss.h"
 #include "../enemy/Enemy.h"
+#include "../enemy/EnemyManager.h"
+
 
 
 class GameScene : public BaseScene
@@ -34,5 +34,7 @@ private:
 
 	Enemy enemyA;
 	Enemy enemyB;
+
+	EnemyManager enemyMgr;
 };
 
