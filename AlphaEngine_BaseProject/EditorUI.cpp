@@ -1,5 +1,6 @@
 #include "EditorUI.hpp"
 
+
 // font (set from outside using EditorUI_SetFont)
 static s8 gUiFontId = 0;
 static constexpr float UI_TEXT_SCALE = 1.0f;
@@ -78,7 +79,6 @@ static void PrintText(const char* text, float x, float y, float scale,
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.0f);
-
     AEGfxPrint(gUiFontId, text, x, y, scale, r, g, b, a);
 
     // back to color for rectangles
