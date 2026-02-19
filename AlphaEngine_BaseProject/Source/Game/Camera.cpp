@@ -32,16 +32,16 @@ Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
 	Camera::scale = _scale;
 
 	// Top left and middle of the screen in world space
-	AEVec2 bottomLeft, middle;
-	AEExtras::ScreenToWorldPosition({ 0.f, AEGfxGetWindowHeight() * 0.5f }, bottomLeft);
+	AEVec2 LeftMiddle, TopMiddle;
+	AEExtras::ScreenToWorldPosition({ 0.f, AEGfxGetWindowHeight() * 0.5f }, LeftMiddle);
 	AEExtras::ScreenToWorldPosition(
 		{ AEGfxGetWindowWidth() * 0.5f, 0.f },
-		middle
+		TopMiddle
 	);
 
-	// Distance between the middle and topLeft
+	// Distance between the middle and Left
 	AEVec2 distAmt;
-	AEVec2Sub(&distAmt, &middle, &bottomLeft);
+	AEVec2Sub(&distAmt, &TopMiddle, &LeftMiddle);
 
 	// Save half-view extents and room size in world space
 	halfView = distAmt;
