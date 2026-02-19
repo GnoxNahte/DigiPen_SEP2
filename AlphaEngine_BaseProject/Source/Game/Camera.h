@@ -1,6 +1,7 @@
 #pragma once
 #include "AEEngine.h"
 
+
 class Camera
 {
 public:
@@ -13,6 +14,14 @@ public:
 	AEVec2 minBounds;
 	AEVec2 maxBounds;
 	AEVec2 deadzoneRange; // @todo
+
+	// === Room-based camera data (Celeste-style) ===
+	// halfView: half the screen size in world units (x = half-width, y = half-height)
+	AEVec2 halfView;
+	// roomSize: full screen size in world units
+	AEVec2 roomSize;
+	// roomTarget: camera center for the current room (camera eases toward this)
+	AEVec2 roomTarget;
 
 	AEVec2 velocity;
 	float smoothTime;

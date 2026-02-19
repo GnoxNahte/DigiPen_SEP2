@@ -28,6 +28,8 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.attackBreakRange = 2.2f;  // how far before attack cancels
         c.attackStartRange = 1.4f;
         c.maxHp = 5;
+        c.hideAfterDeath = true;
+        c.attackDamage = 2;
 
         break;
 
@@ -35,7 +37,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Skeleton.png";
         c.renderScale = 2.f;
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
-        c.maxHp = 3;
+        c.maxHp = 10;
  
         break;
     }
@@ -93,7 +95,40 @@ void Enemy::Update(const AEVec2& playerPos)
     const float dt = (float)AEFrameRateControllerGetFrameTime();
     if (dead)
     {
-        sprite.Update(); // keeps death anim playing if it animates
+        // Advance animation until the final frame starts, then stop updating so it doesn't loop.
+        if (deathTimeLeft > 0.f)
+        {
+            float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
+            if (tpf <= 0.f) tpf = 0.1f;
+
+            // Only update while we're not yet in the "last frame window"
+            if (deathTimeLeft > tpf)
+                sprite.Update();
+
+            deathTimeLeft -= dt;
+            if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
+        }
+        if (deathTimeLeft <= 0.f && cfg.hideAfterDeath)
+            hidden = true;
+
+        return;
+    }
+
+    // Hurt lock: keep the HURT row visible long enough to notice (play full row once)
+    if (hurtTimeLeft > 0.f)
+    {
+        hurtTimeLeft -= dt;
+
+        // While hurt, stop attacking / moving and just play the hurt animation
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+        // Force hurt state while timer is active (prevents any override)
+        sprite.SetState(cfg.animHurt);
+
+ 
+        sprite.Update();
         return;
     }
 
@@ -111,7 +146,7 @@ void Enemy::Update(const AEVec2& playerPos)
 
     // Hysteresis so we don't spam switch at the boundary
     const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
-    const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED (tune 0.1~0.5)
+    const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED
 
     // ENTER return-home mode if player OR enemy goes beyond leash
     if (!returningHome)
@@ -121,26 +156,21 @@ void Enemy::Update(const AEVec2& playerPos)
     }
     else
     {
-        // CANCEL return-home mode if player re-engages AND enemy has come back within leash
-        // (so it can safely chase again without instantly re-triggering leash)
         if (inAggroRange && playerFromHome <= cfg.leashRange && enemyFromHome <= leashExit)
             returningHome = false;
     }
 
     if (returningHome)
     {
-
-        // ✅ Allow attacks while returning home (no chasing)
+        // Allow attacks while returning home (no chasing)
         if (inAggroRange)
         {
-            // Face player
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
             const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
             attack.Update(dt, absDx, attackDur);
 
-            // If currently attacking, stop moving and just play attack anim
             if (attack.IsAttacking())
             {
                 velocity = AEVec2{ 0.f, 0.f };
@@ -151,11 +181,9 @@ void Enemy::Update(const AEVec2& playerPos)
         }
         else
         {
-            // Player is not near, so no reason to keep attack state
             attack.Reset();
         }
 
-        // Continue walking back home as normal
         chasing = false;
 
         const float eps = 0.05f;
@@ -173,7 +201,6 @@ void Enemy::Update(const AEVec2& playerPos)
         else
         {
             const float dirX = (dh > 0.f) ? 1.f : -1.f;
-            // Face home while walking
             facingDirection = AEVec2{ dirX, 0.f };
             velocity.x = dirX * cfg.moveSpeed;
 
@@ -183,7 +210,6 @@ void Enemy::Update(const AEVec2& playerPos)
             AEVec2 nextPos = position;
             AEVec2Add(&nextPos, &position, &displacement);
 
-            // Clamp so we don't overshoot home
             if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
             if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
 
@@ -194,7 +220,6 @@ void Enemy::Update(const AEVec2& playerPos)
         sprite.Update();
         return;
     }
-
 
     // Update attack component (needs attack anim duration)
     const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
@@ -213,7 +238,6 @@ void Enemy::Update(const AEVec2& playerPos)
         {
             chasing = (absDx > desiredStopDist);
 
-            // Face player
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
@@ -229,7 +253,6 @@ void Enemy::Update(const AEVec2& playerPos)
 
             velocity.y = 0.f;
 
-            // Integrate + clamp beside player
             AEVec2 displacement;
             AEVec2Scale(&displacement, &velocity, dt);
             AEVec2 nextPos = position;
@@ -244,7 +267,6 @@ void Enemy::Update(const AEVec2& playerPos)
                 if (dirX < 0.f && nextPos.x < targetX) { nextPos.x = targetX; velocity.x = 0.f; }
             }
 
-            // Clamp within guard area
             const float minX = homePos.x - cfg.leashRange;
             const float maxX = homePos.x + cfg.leashRange;
 
@@ -255,12 +277,10 @@ void Enemy::Update(const AEVec2& playerPos)
         }
         else
         {
-            // Player left aggro fast -> stop "running in place"
             chasing = false;
             velocity.x = 0.f;
             velocity.y = 0.f;
         }
-
     }
 
     UpdateAnimation();
@@ -278,6 +298,7 @@ void Enemy::ApplyDamage(int dmg)
     {
         hp = 0;
         dead = true;
+        hidden = false;
 
         // Disable behavior
         attack.Reset();
@@ -286,15 +307,24 @@ void Enemy::ApplyDamage(int dmg)
         velocity = AEVec2{ 0.f, 0.f };
 
         // Show death sprite
-        sprite.SetState(cfg.animDeath);
+        sprite.SetState(cfg.animDeath, false, nullptr);
+        deathTimeLeft = GetAnimDurationSec(sprite, cfg.animDeath);
+        if (deathTimeLeft <= 0.f)
+            deathTimeLeft = 0.5f; // fallback
 
-        // Optional: stop drawing debug box when dead
-        // debugDraw = false;
     }
     else
     {
-        // Optional: show hurt sprite briefly (only if you want)
-        // sprite.SetState(cfg.animHurt);
+        // Play the full HURT row once.
+        // We lock animation selection for the duration of the row so UpdateAnimation() won't override it.
+        hurtTimeLeft = GetAnimDurationSec(sprite, cfg.animHurt);
+        if (hurtTimeLeft <= 0.3f)
+            hurtTimeLeft = 0.3f; // fallback if meta has no timing
+
+        // Cancel any ongoing attack so the hurt is actually visible
+        attack.Reset();
+
+        sprite.SetState(cfg.animHurt);
     }
 }
 
@@ -304,7 +334,13 @@ void Enemy::UpdateAnimation()
 {
     if (dead)
     {
-        sprite.SetState(cfg.animDeath);
+       
+        return;
+    }
+
+    if (hurtTimeLeft > 0.f)
+    {
+        sprite.SetState(cfg.animHurt);
         return;
     }
 
@@ -323,6 +359,8 @@ void Enemy::UpdateAnimation()
 // ---- Render ----
 void Enemy::Render()
 {
+    if (hidden) return;
+
     AEMtx33 transform;
 
     const bool faceRight =

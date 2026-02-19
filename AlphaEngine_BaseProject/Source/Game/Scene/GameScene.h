@@ -6,10 +6,10 @@
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/traps.h"
 #include "GSM.h"
-#include "../enemy/EnemyA.h"
-#include "../enemy/EnemyB.h"
 #include "../enemy/EnemyBoss.h"
 #include "../enemy/Enemy.h"
+#include "../enemy/EnemyManager.h"
+
 
 
 class GameScene : public BaseScene
@@ -22,16 +22,19 @@ public:
 	void Render() override;
 	void Exit() override;
 private:
+	MapGrid map;
 	Player player;
 	Camera camera;
 	//EnemyA enemyA;
 	//EnemyB enemyB;
 	EnemyBoss enemyBoss;
-	MapGrid map;
+
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
-	// remove EnemyA.h / EnemyB.h includes
+
 	Enemy enemyA;
 	Enemy enemyB;
+
+	EnemyManager enemyMgr;
 };
 

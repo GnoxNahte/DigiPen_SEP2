@@ -58,7 +58,9 @@ public:
     const AEVec2& GetPosition() const;
     int GetHealth() const;
     const PlayerStats& GetStats() const;
-    bool IsFacingRight() const;
+ 
+   bool IsFacingRight() const;
+
 
 private:
     PlayerStats stats;

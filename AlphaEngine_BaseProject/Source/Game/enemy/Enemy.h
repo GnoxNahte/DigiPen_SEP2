@@ -18,7 +18,9 @@ public:
     {
         const char* spritePath = nullptr;
 
-        int maxHp = 3;   // basic life system
+        int maxHp = 10;   // basic life system
+        int attackDamage = 1;
+        bool hideAfterDeath = false;
 
 
         // Render
@@ -74,7 +76,7 @@ public:
     bool   IsReturningHome() const { return returningHome; }
 
     float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
-    int   GetAttackDamage() const { return 1; }                  
+    int   GetAttackDamage() const { return cfg.attackDamage; }                  
 
 
     // Optional knobs
@@ -103,5 +105,12 @@ private:
 
     int  hp{ 1 };
     bool dead{ false };
+
+    // Hurt lock: keeps the hurt animation visible long enough to notice
+    float hurtTimeLeft{ 1.0f };
+    float deathTimeLeft{ 0.5f };
+    bool hidden = false;
+  
+
 
 };
