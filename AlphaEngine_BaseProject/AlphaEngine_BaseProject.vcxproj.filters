@@ -165,14 +165,17 @@
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
       <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\Time.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\enemy\Enemy.cpp">
-      <Filter>Source Files\Game\enemy</Filter>
+    <ClCompile Include="Source\Game\BuffCards.cpp">
+      <Filter>Source Files\Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -284,6 +287,9 @@
     <ClInclude Include="Source\Editor\ImGuiHelper.h">
       <Filter>Header Files\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyA.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
@@ -293,11 +299,8 @@
     <ClInclude Include="Source\Game\Time.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\Enemy.h">
-      <Filter>Header Files\Game\enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyManager.h">
-      <Filter>Header Files\Game\enemy</Filter>
+    <ClInclude Include="Source\Game\BuffCards.h">
+      <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

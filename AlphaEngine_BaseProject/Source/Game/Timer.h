@@ -15,9 +15,9 @@ struct Timer {
 	u32 completedCount = 0; // Number of times this timer has completed (for recurring timers).
 	u32 id = 0; // Unique identifier for the timer.
 	bool isAnonymous = false; // Whether the timer is anonymous (no name).
-	bool ignoreTimeScale; // Whether the timer ignores time scale.
-	bool ignorePause; // Whether the timer ignores pause state.
-	bool loopable; // Whether the timer loops upon completion.
+	bool ignoreTimeScale = false; // Whether the timer ignores time scale.
+	bool ignorePause = false; // Whether the timer ignores pause state.
+	bool loopable = false; // Whether the timer loops upon completion.
 	u32 loopCount = 0; // Number of times the timer has looped.
 };
 class TimerSystem {

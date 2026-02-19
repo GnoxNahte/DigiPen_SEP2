@@ -1,21 +1,25 @@
 #include "UI.h"
 #include "../Utils/ObjectPool.h"
 #include "../Utils/MeshGenerator.h"
-//#include "../Utils/AEExtras.h"
-#include "Camera.h"
-#include "../Utils/AEExtras.h"
 #include <string>
+#include "BuffCards.h"
+#include "../Utils/AEExtras.h"
 
 /*--------------------------------------------
 			 General UI Functions
 ---------------------------------------------*/
 void UI::Init() {
-	damageTextFont = AEGfxCreateFont("Assets/Bemock.ttf", DAMAGE_TEXT_FONT_SIZE);
-	//UI::InitCards("Assets/0_CardBack.png");
+	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	BuffCardManager::Init();
+	BuffCardScreen::Init();
+}
+void UI::Update() {
+	BuffCardManager::Update();
+	BuffCardScreen::Update();
 }
 void UI::Render() {
 	damageTextSpawner.Render();
-	//UI::DrawCards();
+	//BuffCardScreen::Render();
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
@@ -51,7 +55,6 @@ void DamageText::Render()
 	f32 verticalSpacing = (UI::GetDamageTextFontSize() / windowHeight) * 2.f * scale;
 
 	s8 font = UI::GetDamageTextFont();
-
 	AEVec2 viewportPos;
 	AEExtras::WorldToViewportPosition(position, viewportPos);
 	viewportPos.x = viewportPos.x * 2 - 1.f;
@@ -80,7 +83,6 @@ DamageTextSpawner::DamageTextSpawner (int initialPoolSize) // Constructor
 
 void DamageTextSpawner::Update()
 {
-	//std::cout << damageTextPool.GetSize() << '\n'; // debug
 	for (int i = static_cast<int>(damageTextPool.GetSize()) - 1; i >= 0; --i)
 	{
 		DamageText& text = damageTextPool.pool[i];
@@ -119,7 +121,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 		case DAMAGE_TYPE_CRIT:
 			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
 			text.scale = 1.25f;
-			text.damageType = "CRIT!";
+			text.damageType = "CRT!";
 			break;
 		case DAMAGE_TYPE_RESIST:
 			text.r = 0.5f, text.g = 0.85f, text.b = 1.0f;
@@ -148,59 +150,3 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 	text.alpha = 1.0f;
 	text.OnGet();
 }
-
-//void UI::InitCards(char const* filepath) {
-//	// Initialize card mesh and textures.
-//	cardMesh = MeshGenerator::GetRectMesh(1,1);
-//	cardTex = AEGfxTextureLoad(filepath);
-//}
-//void UI::DrawCards() {
-//	// Create a scale matrix that scales by scaling factor.
-//	AEMtx33 scale = { 0 };
-//	float scalingFactor = 0.5f;
-//	AEMtx33Scale(&scale, CARD_WIDTH * scalingFactor, CARD_HEIGHT * scalingFactor);
-//
-//	// Create a rotation matrix, base card doesn't rotate.
-//	AEMtx33 rotate = { 0 };
-//	AEMtx33Rot(&rotate, 0);
-//
-//	// Create a translation matrix that translates by
-//	// 200 in the x-axis and 100 in the y-axis
-//	AEMtx33 translate = { 0 };
-//	AEMtx33Trans(&translate, (AEGfxGetWinMaxX()/2), (AEGfxGetWinMaxY()/2));
-//
-//	// Concatenate the matrices into the 'transform' variable.
-//	AEMtx33 transform = { 0 };
-//	AEMtx33Concat(&transform, &rotate, &scale);
-//	AEMtx33Concat(&transform, &translate, &transform);
-//
-//	// Draw something with texture.
-//	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-//
-//	// Set the the color to multiply to white, so that the sprite can 
-//	// display the full range of colors (default is black).
-//	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
-//
-//	// Set the color to add to nothing, so that we don't alter the sprite's color
-//	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
-//
-//	// Set blend mode to AE_GFX_BM_BLEND, which will allow transparency.
-//	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-//	AEGfxSetTransparency(1.0f);
-//
-//	// Tell Alpha Engine to use the texture stored in pTex
-//	AEGfxTextureSet(cardTex, 0, 0);
-//
-//	// Tell Alpha Engine to use the matrix in 'transform' to apply onto all 
-//	// the vertices of the mesh that we are about to choose to draw in the next line.
-//	AEGfxSetTransform(transform.m);
-//
-//	// Tell Alpha Engine to draw the mesh with the above settings.
-//	AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
-//}
-
-//void UI::FreeCards() {
-//	// Free card textures and meshes.
-//	AEGfxTextureUnload(cardTex);
-//	AEGfxMeshFree(cardMesh);
-//}

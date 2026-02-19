@@ -2,6 +2,7 @@
 #include <AEEngine.h>
 #include <string>
 #include "../Utils/ObjectPool.h"
+#include "BuffCards.h"
 
 // Enumeration types for the incoming damage type.
 enum DAMAGE_TYPE {
@@ -11,13 +12,6 @@ enum DAMAGE_TYPE {
 	DAMAGE_TYPE_MISS,
 	DAMAGE_TYPE_ENEMY_ATTACK,
 	DAMAGE_TYPE_ENEMY_MISS
-};
-
-enum CARD_RARITY {
-	RARITY_UNCOMMON,
-	RARITY_RARE,
-	RARITY_EPIC,
-	RARITY_LEGENDARY
 };
 
 
@@ -53,40 +47,17 @@ class UI
 {
 public:
 	static void Init();
+	static void Update();
 	static void Render();
 	static void Exit();
 	inline static s8 GetDamageTextFont() { return damageTextFont; }
 	inline static DamageTextSpawner& GetDamageTextSpawner() { return damageTextSpawner; }
 	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
 	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE;  }
-	// Print damage text at position with scale and alpha. damageCase references the enums defined above.
-	//void static PrintDamageText(int damage, AEVec2 position, f32 scale, f32 alpha, int damageCase);
-
-	//// Initialize cards
-	//void static InitCards(char const* filepath);
-
-	//// Draw cards.
-	////void static DrawCards();
-
-	//// Free card texture and mesh.
-	//void static FreeCards();
-
-	
-	// Damage text variables
-	//f32 alpha = 1.f;
-	//f32 scale = 1.f;
-	//int damageType = 0; // Testing of cycling through enum types.
 
 private:
 	inline static s8 damageTextFont;
-	static const int MAX_DAMAGE_TEXT_INSTANCES = 20;
+	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
-	//static const int DAMAGE_NUMBER_FONT_SIZE = 56;
-
-//	inline static AEGfxTexture* cardTex;
-//	inline static AEGfxVertexList* cardMesh;
-//	// Card sprite dimensions
-//	static const int CARD_WIDTH = 750;
-//	static const int CARD_HEIGHT = 1050;
 };
