@@ -30,10 +30,6 @@ namespace
 GameScene::GameScene() : 
 	map(50, 50),
 	player(&map),
-	enemyA(Enemy::Preset::Druid, 30, 3),
-	enemyB(Enemy::Preset::Skeleton, 25, 3),
-
-
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
 		20, 
@@ -83,8 +79,8 @@ void GameScene::Init()
 
 void GameScene::Update()
 {
-	camera.Update();
 	player.Update();
+	camera.Update();
 
 	enemyMgr.UpdateAll(player.GetPosition());
 
