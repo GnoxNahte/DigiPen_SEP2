@@ -186,7 +186,9 @@ private:
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
 	static const int UNIQUE_CARD_TEXTURES = 5; // Total number of unique card textures available (for different types and rarities).
-	inline static AEGfxTexture* cardFrontTex[UNIQUE_CARD_TEXTURES] = { nullptr }; // 3 different front textures
+	inline static AEGfxTexture* cardFrontTex[UNIQUE_CARD_TEXTURES] = { nullptr }; // 5 different front textures
+	static const int UNIQUE_RARITY_TEXTURES = 4; // Total number of unique rarity textures available (for different rarities).
+	inline static AEGfxTexture* cardRarityTex[UNIQUE_RARITY_TEXTURES] = { nullptr }; // 4 different rarities
 	inline static AEGfxVertexList* cardMesh = nullptr;
 
 	// Card visual attributes.

@@ -31,12 +31,20 @@ void BuffCardManager::Init() {
 void BuffCardScreen::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+
+	// Card assets
 	cardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
 	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
 	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
 	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
 	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
+
+	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
+	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
+	cardRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
+	cardRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+
 	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
 	cardBuffFont = AEGfxCreateFont("Assets/Pixellari.ttf", CARD_BUFF_FONT_SIZE);
 	srand(static_cast<unsigned int>(time(NULL))); // Seed random number generator with current time for variability.
@@ -507,6 +515,23 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 		AEGfxTextureSet(currentTexture, 0, 0);
 		AEGfxSetTransform(transform.m);
 		AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
+
+		// --- Draw Rarity/Emission Overlay ---
+		AEGfxTexture* emissionTex = cardRarityTex[cards[i].rarity];
+		if (emissionTex) {
+			AEMtx33 emissionScale;
+			float EMISSION_SCALE = 1.15f; // 50% bigger than card
+			AEMtx33Scale(&emissionScale, scaleX * EMISSION_SCALE, scaleY * EMISSION_SCALE);
+
+			// Use same rotation and translation
+			AEMtx33 emissionTransform;
+			AEMtx33Concat(&emissionTransform, &rotate, &emissionScale);
+			AEMtx33Concat(&emissionTransform, &translate, &emissionTransform);
+
+			AEGfxTextureSet(emissionTex, 0, 0);
+			AEGfxSetTransform(emissionTransform.m);
+			AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
+		}
 	}
 }
 // Draw the description of the card when flipped.
