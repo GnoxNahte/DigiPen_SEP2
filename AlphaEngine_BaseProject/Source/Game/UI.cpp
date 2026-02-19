@@ -3,6 +3,7 @@
 #include "../Utils/MeshGenerator.h"
 #include <string>
 #include "BuffCards.h"
+#include "../Utils/AEExtras.h"
 
 /*--------------------------------------------
 			 General UI Functions
@@ -54,19 +55,23 @@ void DamageText::Render()
 	f32 verticalSpacing = (UI::GetDamageTextFontSize() / windowHeight) * 2.f * scale;
 
 	s8 font = UI::GetDamageTextFont();
+	AEVec2 viewportPos;
+	AEExtras::WorldToViewportPosition(position, viewportPos);
+	viewportPos.x = viewportPos.x * 2 - 1.f;
+	viewportPos.y = viewportPos.y * 2 - 1.f;
 
 	// Print Damage Type.
 	AEGfxPrint(font,
 		damageType.c_str(),
-		position.x - typeOffsetX * 0.5f,
-		position.y + verticalSpacing * 0.5f,
+		viewportPos.x - typeOffsetX * 0.5f,
+		viewportPos.y + verticalSpacing * 0.5f,
 		scale,
 		r, g, b, alpha);
 	// Print Damage Number.
 	AEGfxPrint(font,
 		damageNumber.c_str(),
-		position.x - numberOffsetX * 0.5f,
-		position.y - verticalSpacing * 0.5f,
+		viewportPos.x - numberOffsetX * 0.5f,
+		viewportPos.y + verticalSpacing * 0.5f,
 		scale,
 		r, g, b, alpha);
 }
