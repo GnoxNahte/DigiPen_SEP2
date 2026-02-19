@@ -2,16 +2,6 @@
 #include "../Utils/AEExtras.h"
 #include "../Utils/Easing.h"
 #include "../Game/Time.h"
-
-#include "Camera.h"
-#include "../Utils/AEExtras.h"
-#include "../Utils/Easing.h"
-#include "../Game/Time.h"
-
-// NOTE:
-// This camera has been switched to a room-based (Celeste-style) system.
-// The camera no longer follows the player continuously.
-// Instead, it eases toward a stored "roomTarget" (room center), and when the
 // followed object crosses the current room edge, we shift the roomTarget by
 // exactly one screen-sized "roomSize" in that direction.
 
@@ -65,8 +55,7 @@ void Camera::SetFollow(const AEVec2* f, float xOffset, float yOffset, bool setPo
 	this->offset.y = yOffset;
 
 	// Room-based start: snap the roomTarget to the room that contains the follow position.
-	// (We keep offset stored but intentionally do not apply it here to avoid breaking
-	// existing gameplay that previously relied on offset having no effect.)
+
 	if (f)
 	{
 		// Room grid origin is the map min bound (camera-center min minus half view).
