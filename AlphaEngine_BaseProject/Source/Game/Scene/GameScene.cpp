@@ -90,7 +90,7 @@ void GameScene::Update()
 	
 
 
-
+	// --REMOVE LATER, basic attack mechanics for TESTING PURPOSES ONLY--
 	if (AEInputCheckTriggered(AEVK_X))
 	{
 		const float attackRange = 1.6f; // tweak to taste
