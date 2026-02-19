@@ -1,4 +1,4 @@
-﻿// leveleditor.cpp
+// leveleditor.cpp
 #include "AEEngine.h"            // keep engine first (prevents prototype weirdness)
 #include "leveleditor.h"
 

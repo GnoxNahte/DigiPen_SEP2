@@ -53,7 +53,7 @@ struct EditorUIIO
 void EditorUI_Init();
 void EditorUI_Shutdown();
 
-// set font used by AEGfxPrint (font id returned by AEGfxCreateFont)
+// set font used by AEGfxPrint
 void EditorUI_SetFont(s8 fontId);
 
 // draw ui (mx,my are from AEInputGetCursorPosition, origin top-left)
