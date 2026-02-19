@@ -18,24 +18,80 @@ BuffCard::BuffCard( // Constructor
 	std::string cEffect,
 	int eValue1,
 	int eValue2,
+	bool slcted,
 	AEVec2 pos) :
 	rarity{ cr }, type{ ct }, cardName{ cName }, cardDesc{ cDesc }, cardEffect{ cEffect }, 
-	effectValue1 {eValue1}, effectValue2{ eValue2 }, cardPos{ pos }
+	effectValue1{ eValue1 }, effectValue2{ eValue2 }, selected{ slcted }, cardPos {pos}
 	{/* empty by design */}
 
 void BuffCardManager::Init() {
 	LoadCardInfo();
+	cardSelected = 0; // Initialize selected card index to 0 at the start of selection.
+}
+void BuffCardScreen::Init() {
+	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	cardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
+	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
+	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
+	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
+	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
+	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
+	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
+	cardBuffFont = AEGfxCreateFont("Assets/Pixellari.ttf", CARD_BUFF_FONT_SIZE);
+	srand(static_cast<unsigned int>(time(NULL))); // Seed random number generator with current time for variability.
 }
 
 void BuffCardManager::Update() {
-	if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
+	if (!shuffled) { // Randomize cards only once per shuffle event, controlled by the shuffled flag.
 		BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
-		//SaveCardInfo();
-		//LoadCardInfo();
-		//shuffled = true;
+		shuffled = true;
 	}
+	SelectCards(randomizedCards);
 }
+void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
+	if (cards.empty()) {
+		return;
+	}
 
+	// Use a small positive value (0.1) so the card has visual "meat" before selection
+	const float INTERACTION_THRESHOLD = 0.1f;
+
+	// Check the progress of the CURRENTLY active card in the sequence
+	// instead of just index 0.
+	int currentIndex = BuffCardScreen::GetCurrentFlipIndex();
+
+	// Safety check for bounds
+	if (currentIndex >= cards.size()) {
+		currentIndex = (int)cards.size() - 1;
+	}
+
+	float progress = BuffCardScreen::GetCardFlipStates().at(currentIndex);
+
+	if (progress >= INTERACTION_THRESHOLD && !firstCardSelected) {
+		// Automatically select the first card that becomes visible
+		cards[0].selected = true;
+		firstCardSelected = true;
+	}
+	if (firstCardSelected) {
+		if (AEInputCheckTriggered(AEVK_RIGHT) || AEInputCheckTriggered(AEVK_D)) {
+			cardSelected = static_cast<int>((cardSelected + 1) % cards.size()); // Move selection right, wrap around
+			// Deselect all cards first
+			for (BuffCard& c : cards) {
+				c.selected = false;
+			}
+		}
+		else if (AEInputCheckTriggered(AEVK_LEFT) || AEInputCheckTriggered(AEVK_A)) {
+			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size()); // Move selection left, wrap around
+			// Deselect all cards first
+			for (BuffCard& c : cards) {
+				c.selected = false;
+			}
+		}
+		cards[cardSelected].selected = true;
+	}
+
+}
 CARD_RARITY BuffCardManager::DetermineRarity() {
 	f32 rarityRoll = AEExtras::RandomRange({ 0.f, 1.f }); // Get a random float between 0 and 1 to determine rarity.
 	for (const RarityThreshold entry : rarityTable) {
@@ -48,16 +104,12 @@ CARD_RARITY BuffCardManager::DetermineRarity() {
 }
 
 CARD_TYPE BuffCardManager::DetermineType(CARD_RARITY rarity) {
-	std::vector<BuffCard> cardPool;
-	if (rarity == RARITY_UNCOMMON) {
-		cardPool = GetUncommonCards();
-	} else if (rarity == RARITY_RARE) {
-		cardPool = GetRareCards();
-	} else if (rarity == RARITY_EPIC) {
-		cardPool = GetEpicCards();
-	} else if (rarity == RARITY_LEGENDARY) {
-		cardPool = GetLegendaryCards();
-	}
+	const std::vector<BuffCard>& cardPool = 
+		(rarity == RARITY_UNCOMMON) ? uncommonCards :
+		(rarity == RARITY_RARE) ? rareCards :
+		(rarity == RARITY_EPIC) ? epicCards :
+		legendaryCards;
+
 	if (cardPool.empty()) {
 		std::cout << "CARD POOL IS EMPTY !!!";
 		return HERMES_FAVOR; // Fallback if pool is empty
@@ -81,6 +133,7 @@ Randomize card types and rarities for the current set of cards.
 Called once per shuffle.
 --------------------------------------------------------------*/
 void BuffCardManager::RandomizeCards(int numCards) {
+	randomizedCards.clear();
 	for (int i = 0; i < numCards; ++i) {
 
 		/*--------------------------------------------------------------------
@@ -88,17 +141,27 @@ void BuffCardManager::RandomizeCards(int numCards) {
 		and the pool of possible buffs.
 		----------------------------------------------------------------------*/
 		CARD_RARITY rarity{ DetermineRarity() };
-		/*--------------------------------------------------------------------
-		Handling of card type. Some card types only appear in certain rarities,
-		such as legendary cards only having access to the most powerful buffs.
-		----------------------------------------------------------------------*/
-		CARD_TYPE type{ DetermineType(rarity) };
 
-		// Create card name and description based on type and rarity (placeholder logic).
-		std::string cardName = "Card " + std::to_string(i + 1);
-		std::string cardDesc = "A mysterious buff.";
-		std::string cardEffect = "Effect goes here.";
-		randomizedCards.push_back(BuffCard(rarity, type, cardName, cardDesc, cardEffect));
+		const std::vector<BuffCard>* pool = nullptr;
+		switch (rarity) {
+		case RARITY_UNCOMMON: pool = &uncommonCards; break;
+		case RARITY_RARE: pool = &rareCards; break;
+		case RARITY_EPIC: pool = &epicCards; break;
+		case RARITY_LEGENDARY: pool = &legendaryCards; break;
+		}
+
+		if (pool && !pool->empty()) {
+			// Get a float [0,1)
+			float roll = AEExtras::RandomRange({ 0.f, 1.f });
+
+			// Convert to an index
+			size_t index = static_cast<size_t>(roll * pool->size());
+
+			// Clamp just in case roll == 1.0
+			if (index >= pool->size()) index = pool->size() - 1;
+
+			randomizedCards.push_back((*pool)[index]);
+		}
 	}
 	/*----------------------------------------------------------------------------------------------------
 	Checks if the randomization is working correctly by printing out the randomized cards to the console.
@@ -203,21 +266,7 @@ void BuffCardManager::LoadCardInfo() {
 	std::cout << "Loaded " << allCards.size() << " cards from JSON." << std::endl;
 }
 
-void BuffCardScreen::Init() {
-	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	cardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
-	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
-	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
-	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
-	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
-	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
-	srand(static_cast<unsigned int>(time(NULL))); // Seed random number generator with current time for variability.
-}
-
 void BuffCardScreen::Update() {
-
-	const float FLIP_SPEED = 5.0f; // Adjust flip speed
 
 	for (int i = 0; i < NUM_CARDS; ++i) {
 		if (cardFlipping[i]) {
@@ -278,6 +327,11 @@ void BuffCardScreen::ResetFlipSequence()
 
 	currentFlipIndex = 0;
 	allCardsFlipped = false;
+	BuffCardManager::IsCardSelected() = false;
+	BuffCardManager::CurrentSelectedCard() = 0;
+
+	// Randomize new cards
+	BuffCardManager::RandomizeCards(NUM_CARDS);
 }
 void BuffCardScreen::FlipCard(int cardIndex) {
 	if (cardIndex >= 0 && cardIndex < NUM_CARDS) {
@@ -306,7 +360,7 @@ void BuffCardScreen::DrawBlackOverlay() {
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(rectMesh, AE_GFX_MDM_TRIANGLES);
 }
-void BuffCardScreen::DrawPromptText() {
+void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int selectedIdx) {
 	if (!textLoading) {
 		TimerSystem::GetInstance().AddTimer("Choose Buff Timer", 1.2f);
 		textLoading = true;
@@ -336,15 +390,51 @@ void BuffCardScreen::DrawPromptText() {
 			1.0f,
 			1.0f, 1.0f, 1.0f,
 			1.0f);
+		// 1. Get the current selected card's data
+		if (selectedIdx < 0 || selectedIdx >= cards.size()) return;
+		const BuffCard& selected = cards[selectedIdx];
+
+		// 2. Setup Base Coordinates (NDC)
+		// We want the text at the bottom-center of the screen
+		float baseTextX = -0.85f; // Left-ish start for alignment
+		float titleY = -0.7f;    // Near the bottom
+		float descY = -0.8f;    // Below the title
+		float effectY = -0.9f;  // Below the description
+
+		// 3. Draw "Choose a buff" Header
+		// (Your existing code for this is fine as a global prompt)
+
+		if (allCardsFlipped) {
+			AEGfxPrint(buffPromptFont,
+				selected.cardName.c_str(),
+				baseTextX, titleY,
+				1.0f,               // Scale
+				1.0f, 1.0f, 1.0f,   // Color
+				1.0f);              // Alpha
+
+			AEGfxPrint(cardBuffFont,
+				selected.cardDesc.c_str(),
+				baseTextX, descY,
+				0.8f,               // Slightly smaller scale for desc
+				0.8f, 0.8f, 0.8f,   // Slightly dimmer white/grey
+				1.0f);
+
+			AEGfxPrint(cardBuffFont,
+				selected.cardEffect.c_str(),
+				baseTextX, effectY,
+				0.8f,               // Slightly smaller scale for desc
+				0.8f, 0.8f, 0.8f,   // Slightly dimmer white/grey
+				1.0f);
+		}
 	}
 }
 // Draw buff cards.
 void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
-	// Rotation matrix.
-	AEMtx33 rotate = { 0 };
-	AEMtx33Rot(&rotate, 0);
+	// Rotation matrix
+	//AEMtx33 rotate = { 0 };
+	//AEMtx33Rot(&rotate, 0);
 
-	// Set render state
+	// Render state
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
 	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
@@ -353,55 +443,79 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 
 	const f32 CARD_SPACING = 450.f;
 	const f32 CARD_SIZE_MODIFIER = 0.42f;
-	//const f32 CARD_SIZE_SELECTED = 0.5f;
+	//const f32 CARD_SIZE_SELECTED = 0.46f;
+
+	const float FLOAT_AMPLITUDE = 15.f;  // Vertical float
+	const float FLOAT_SPEED = 4.f;       // Vertical oscillation speed
+	const float SCALE_PULSE = 0.03f;     // Scale increase for pulse
+	const float WOBBLE_AMPLITUDE = 8.f;  // Horizontal wobble
+	const float WOBBLE_SPEED = 2.f;      // Horizontal wobble speed
 
 	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
-		AEMtx33 scale = { 0 };
+		float t = static_cast<float>(AEGetTime(nullptr));
+
+		// Calculate how "active" the wobble should be.
+		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)
+		// and 0.0 when fully flat. We can blend this with your 'selected' state.
+		float flipActivity = 1.0f - abs(cardFlipProgress);
+
 		float scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
 		float scaleY = CARD_HEIGHT * CARD_SIZE_MODIFIER;
+		f32 offsetX = (i - 1) * CARD_SPACING;
+		f32 offsetY = 0.f;
+
+		if (allCardsFlipped && cards[i].selected) {
+			float currentWobbleSpeed = WOBBLE_SPEED;
+			float currentWobbleAmp = WOBBLE_AMPLITUDE;
+
+			if (cards[i].selected) {
+				// Boost the effect if selected
+				offsetY += sinf(t * FLOAT_SPEED) * FLOAT_AMPLITUDE;
+				offsetX += sinf(t * currentWobbleSpeed) * currentWobbleAmp;
+
+				scaleX *= (1.0f + SCALE_PULSE);
+				scaleY *= (1.0f + SCALE_PULSE);
+			}
+			else {
+				// Even if not selected, add a tiny bit of "flip juice" 
+				// so it doesn't look static while turning.
+				offsetX += sinf(t * FLOAT_SPEED + i) * (flipActivity * 10.0f);
+				offsetY += cosf(t * FLOAT_SPEED + i) * (flipActivity * 5.0f);
+			}
+		}
+		// --- ROTATION (The key to making it look natural) ---
+		AEMtx33 rotate{ 0 };
+		// Add a slight tilt that is strongest while the card is flipping
+		float tiltAngle = flipActivity * 0.1f * sinf(t * 2.0f + i);
+		AEMtx33Rot(&rotate, tiltAngle);
+
+		AEMtx33 scale;
 		AEMtx33Scale(&scale, scaleX, scaleY);
 
-		// Determine which texture to use based on flip progress SIGN
-		AEGfxTexture* currentTexture = nullptr;
-		if (cardFlipProgress < 0) {
-			currentTexture = cardBackTex;
-		}
-		else {
-			// Use the card's type to get the texture
-			currentTexture = cardFrontTex[cards[i].type];
-		}
+		AEGfxTexture* currentTexture = (cardFlipProgress < 0) ? cardBackTex : cardFrontTex[cards[i].type];
 
-		f32 offsetX = (i - 1) * CARD_SPACING; // adjust depending on how you center cards
-
-		AEMtx33 translate = { 0 };
+		AEMtx33 translate;
 		AEMtx33Trans(&translate,
 			Camera::position.x * Camera::scale + offsetX,
-			Camera::position.y * Camera::scale);
+			Camera::position.y * Camera::scale + offsetY);
 
-		AEMtx33 transform = { 0 };
+		AEMtx33 transform;
 		AEMtx33Concat(&transform, &rotate, &scale);
 		AEMtx33Concat(&transform, &translate, &transform);
 
-		// Set texture BEFORE drawing
 		AEGfxTextureSet(currentTexture, 0, 0);
-
 		AEGfxSetTransform(transform.m);
 		AEGfxMeshDraw(cardMesh, AE_GFX_MDM_TRIANGLES);
 	}
 }
-/*----------------------------
-
-TODO: this function simulates discarding all cards for a shuffle buff, which a shuffle buff would call this function
-then call drawbuffcards again after all cards have been cleared from screen.
-
----------------------------------*/
-void BuffCardScreen::DiscardCards() {
-
-}
+// Draw the description of the card when flipped.
+//void BuffCardScreen::DrawCardDesc(const BuffCard& card) {
+//	
+//}
 void BuffCardScreen::Render() {
 	DrawBlackOverlay();
-	DrawPromptText();
+	DrawPromptText(BuffCardManager::GetRandomizedCards(), BuffCardManager::CurrentSelectedCard());
 	DrawDeck(BuffCardManager::GetRandomizedCards());
 	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
 	//	textLoading = false;

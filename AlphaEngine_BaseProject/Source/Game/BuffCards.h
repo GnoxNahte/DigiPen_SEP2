@@ -1,5 +1,6 @@
 #pragma once
 #include "AEEngine.h"
+#include "AETypes.h"
 #include <string>
 #include <vector>
 
@@ -41,7 +42,8 @@ struct BuffCard {
 	std::string cardName{};
 	std::string cardDesc{};
 	std::string cardEffect{};
-	int effectValue1{}, effectValue2{}; // Numerical values representing the strength of the buff (percentage-based).
+	int effectValue1{}, effectValue2{};
+	bool selected{}; // Numerical values representing the strength of the buff (percentage-based).
 	AEVec2 cardPos{};
 	BuffCard(CARD_RARITY cr = RARITY_UNCOMMON, // Constructor
 			 CARD_TYPE ct = HERMES_FAVOR,
@@ -50,6 +52,7 @@ struct BuffCard {
 			 std::string cEffect = "No effect.",
 			 int eValue1 = 0,
 			 int eValue2 = 0,
+			 bool slcted = false,
 			 AEVec2 pos = { 0,0 });
 
 };
@@ -66,10 +69,18 @@ public:
 	static void RandomizeCards(int numCards); // Returns an array of BuffCards with randomized types and rarities.
 	static CARD_RARITY DetermineRarity(); // Determine card rarity based on a random roll and predefined thresholds.
 	static CARD_TYPE DetermineType(CARD_RARITY rarity); // Determine card rarity based on a random roll and predefined thresholds.
-	inline static std::vector<BuffCard> GetUncommonCards() { return uncommonCards; }
-	inline static std::vector<BuffCard> GetRareCards() { return rareCards; }
-	inline static std::vector<BuffCard> GetEpicCards() { return epicCards; }
-	inline static std::vector<BuffCard> GetLegendaryCards() { return legendaryCards; }
+
+	// Getter functions for the card pools based on rarity, used for randomization and rendering.
+	inline static const std::vector<BuffCard> GetUncommonCards() { return uncommonCards; }
+	inline static const std::vector<BuffCard> GetRareCards() { return rareCards; }
+	inline static const std::vector<BuffCard> GetEpicCards() { return epicCards; }
+	inline static const std::vector<BuffCard> GetLegendaryCards() { return legendaryCards; }
+	inline static const std::vector<BuffCard> GetRandomizedCards() { return randomizedCards; }
+
+
+	static void SelectCards(std::vector<BuffCard>& cards); // Handle player input for selecting a card and applying its effect.
+	inline static bool& IsCardSelected() { return firstCardSelected; }
+	inline static int& CurrentSelectedCard() { return cardSelected; }
 	/*--------------------------------------------------------------------------
 							File Reading and Writing
 	--------------------------------------------------------------------------*/
@@ -98,9 +109,6 @@ public:
 		}
 	}
 
-
-	inline const static std::vector<BuffCard> GetRandomizedCards() { return randomizedCards; } // Get current card info for rendering and effects.
-
 private:
 	static const int UNCOMMON_CARDS = 2; // Number of uncommon cards in the pool.
 	static const int RARE_CARDS = 2; // Number of rare cards in the pool.
@@ -109,6 +117,7 @@ private:
 
 	// Flags
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
+	inline static bool firstCardSelected = false; // Flag to ensure the delay timer is only added once for the first card selection.
 
 	inline static int cardSelected = 0; // Current selected card.
 
@@ -141,24 +150,24 @@ public:
 	static void Render();
 	static void Exit();
 
-
-
-	// Standardise to 3 buffs for drawing to screen. Boss guarantees legendary buffs.
+	// Standardise to 3 buffs for drawing to screen.
 	inline static const int NUM_CARDS = 3;
 	// Black overlay for card drawing.
 	static void DrawBlackOverlay();
-
 	// Prompt text for card drawing.
-	static void DrawPromptText();
+	static void DrawPromptText(const std::vector<BuffCard>& cards, int selectedIdx);
 	// Draw the cards with flip animation.
 	static void DrawDeck(const std::vector<BuffCard> cards);
 	static void FlipCard(int cardIndex); // Trigger flip animation
+	//static void DrawCardDesc(const BuffCard& card); // Draw the description of the card when flipped.
 
 	// Reset flip states and timers to simulate a shuffle, allowing cards to be drawn again.
 	static void ResetFlipSequence();
-	static void DiscardCards();
 	inline AEGfxTexture* GetCardBackTexture() const { return cardBackTex; }
 	inline AEGfxVertexList* GetCardMesh() const { return cardMesh; }
+	inline static const bool GetCardsFlipStatus() { return allCardsFlipped; } // Check if all cards have been flipped to show fronts and descriptions.
+	inline static const std::vector<f32> GetCardFlipStates() { return cardFlipStates; }
+	inline static const int GetCurrentFlipIndex() { return currentFlipIndex; }
 private:
 
 	// Flags 
@@ -170,7 +179,9 @@ private:
 
 	// Font for cards and tooltips
 	inline static s8 buffPromptFont;
+	inline static s8 cardBuffFont;
 	static const int BUFF_PROMPT_FONT_SIZE = 36;
+	static const int CARD_BUFF_FONT_SIZE = 32;
 
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
@@ -179,11 +190,13 @@ private:
 	inline static AEGfxVertexList* cardMesh = nullptr;
 
 	// Card visual attributes.
-	inline static f32 cardFlipStates[3] = { -1.0f, -1.0f, -1.0f }; // Start showing backs
+	inline static std::vector<f32> cardFlipStates { -1.0f, -1.0f, -1.0f }; // Start showing backs
+	inline static f32 cardYOffset[NUM_CARDS] = { 0 }; // 0 = normal
 	inline static bool cardFlipping[3] = { false, false, false };
 	inline static int currentFlipIndex = 0;
 	inline static bool allCardsFlipped = false;
 	inline static bool flipTimerCreated[3] = { false, false, false };
+	inline static const float FLIP_SPEED = 10.5f; // Adjust flip speed
 
 	// Constant values
 	static const int CARD_WIDTH = 750;
