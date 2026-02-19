@@ -10,93 +10,104 @@
 #include "Camera.h"
 #include "Timer.h"
 
+BuffCard::BuffCard( // Constructor
+	CARD_RARITY cr,
+	CARD_TYPE ct,
+	std::string cName,
+	std::string cDesc,
+	std::string cEffect,
+	int eValue1,
+	int eValue2,
+	AEVec2 pos) :
+	rarity{ cr }, type{ ct }, cardName{ cName }, cardDesc{ cDesc }, cardEffect{ cEffect }, 
+	effectValue1 {eValue1}, effectValue2{ eValue2 }, cardPos{ pos }
+	{/* empty by design */}
 
 void BuffCardManager::Init() {
 	LoadCardInfo();
-
 }
 
 void BuffCardManager::Update() {
-	//if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
-	//	currentCards = BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
-	//	//SaveCardInfo();
-	//	LoadCardInfo();
-	//	//shuffled = true;
-	//}
+	if (!shuffled && AEInputCheckTriggered(AEVK_P)) {
+		BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
+		//SaveCardInfo();
+		//LoadCardInfo();
+		//shuffled = true;
+	}
 }
 
+CARD_RARITY BuffCardManager::DetermineRarity() {
+	f32 rarityRoll = AEExtras::RandomRange({ 0.f, 1.f }); // Get a random float between 0 and 1 to determine rarity.
+	for (const RarityThreshold entry : rarityTable) {
+		if (rarityRoll < entry.threshold) {
+			std::cout << "Determined Rarity: " << CardRarityToString(entry.rarity) << " for roll: " << rarityRoll << std::endl;
+			return entry.rarity;
+		}
+	}
+	return RARITY_UNCOMMON; // default fallback, should never reach here if thresholds are set correctly.
+}
+
+CARD_TYPE BuffCardManager::DetermineType(CARD_RARITY rarity) {
+	std::vector<BuffCard> cardPool;
+	if (rarity == RARITY_UNCOMMON) {
+		cardPool = GetUncommonCards();
+	} else if (rarity == RARITY_RARE) {
+		cardPool = GetRareCards();
+	} else if (rarity == RARITY_EPIC) {
+		cardPool = GetEpicCards();
+	} else if (rarity == RARITY_LEGENDARY) {
+		cardPool = GetLegendaryCards();
+	}
+	if (cardPool.empty()) {
+		std::cout << "CARD POOL IS EMPTY !!!";
+		return HERMES_FAVOR; // Fallback if pool is empty
+	}
+
+	// Generate random float [0, 1)
+	f32 cardTypeRoll = AEExtras::RandomRange({ 0.f, 1.f });
+
+	// Map roll to an index in cardPool
+	size_t index = static_cast<size_t>(cardTypeRoll * cardPool.size());
+
+	// Clamp index to valid range (in case roll == 1.0)
+	if (index >= cardPool.size()) {
+		index = cardPool.size() - 1;
+	}
+	return cardPool[index].type;
+}
 
 /*-------------------------------------------------------------
 Randomize card types and rarities for the current set of cards.
 Called once per shuffle.
 --------------------------------------------------------------*/
-std::vector<BuffCard> BuffCardManager::RandomizeCards(int numCards) {
-	std::vector<BuffCard> randomizedCards{};
+void BuffCardManager::RandomizeCards(int numCards) {
 	for (int i = 0; i < numCards; ++i) {
 
 		/*--------------------------------------------------------------------
 		Handling of card rarity. Rarity determines the strength of the buffs
 		and the pool of possible buffs.
 		----------------------------------------------------------------------*/
-		CARD_RARITY rarity{};
-		f32 rarityRoll = AEExtras::RandomRange({ 0.f, 1.f }); // Get a random float between 0 and 1 to determine rarity.
-
-		std::cout << "RARITY ROLLED : " << rarityRoll << std::endl;
-		// 50% chance for UNCOMMON, 25% for RARE, 15% for EPIC, 10% for LEGENDARY
-		if (rarityRoll < 0.5) {
-			rarity = RARITY_UNCOMMON;
-			std::cout << "UNCOMMON" << std::endl;
-		}
-		else if (rarityRoll < 0.75) {
-			rarity = RARITY_RARE;
-			std::cout << "RARE" << std::endl;
-		}
-		else if (rarityRoll < 0.9) {
-			rarity = RARITY_EPIC;
-			std::cout << "EPIC" << std::endl;
-		}
-		else {
-			rarity = RARITY_LEGENDARY;
-			std::cout << "LEGENDARY" << std::endl;
-		}
+		CARD_RARITY rarity{ DetermineRarity() };
 		/*--------------------------------------------------------------------
 		Handling of card type. Some card types only appear in certain rarities,
 		such as legendary cards only having access to the most powerful buffs.
 		----------------------------------------------------------------------*/
-		f32 cardTypeRoll = AEExtras::RandomRange({ 0.f, 1.f });
-		// Handling the type of the cards.
-		CARD_TYPE type{};
-		if (rarity == RARITY_LEGENDARY) { // If legendary, guarantee switch it up or revitalise.
-			type = (cardTypeRoll < 0.5f) ? SWITCH_IT_UP : REVITALIZE;
-		}
-		else { // Otherwise, all types are available.
-			if (cardTypeRoll < 0.2f) {
-				type = HERMES_FAVOR;
-			}
-			else if (cardTypeRoll < 0.4f) {
-				type = IRON_DEFENCE;
-			}
-			else if (cardTypeRoll < 0.6f) {
-				type = SWITCH_IT_UP;
-			}
-			else if (cardTypeRoll < 0.8f) {
-				type = REVITALIZE;
-			}
-			else {
-				type = SHARPEN;
-			}
-		}
+		CARD_TYPE type{ DetermineType(rarity) };
 
 		// Create card name and description based on type and rarity (placeholder logic).
 		std::string cardName = "Card " + std::to_string(i + 1);
 		std::string cardDesc = "A mysterious buff.";
-		randomizedCards.push_back(BuffCard(rarity, type, cardName, cardDesc));
+		std::string cardEffect = "Effect goes here.";
+		randomizedCards.push_back(BuffCard(rarity, type, cardName, cardDesc, cardEffect));
 	}
+	/*----------------------------------------------------------------------------------------------------
+	Checks if the randomization is working correctly by printing out the randomized cards to the console.
+	----------------------------------------------------------------------------------------------------*/
 	for (int i = 0; i < numCards; ++i) {
-		std::cout << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
-			<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << std::endl;
+		std::cout << "RANDOMIZED CARD " << i  << "  "  << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
+			<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << "Desc: " << randomizedCards[i].cardDesc << "Effect: " 
+			<< randomizedCards[i].cardEffect << std::endl;
 	}
-	return randomizedCards;
 }
 
 CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
@@ -115,48 +126,8 @@ CARD_RARITY BuffCardManager::GetCardRarity(std::string rarityStr) {
 	else return RARITY_UNCOMMON; // default fallback
 }
 
-void BuffCardManager::SaveCardInfo() {
-	rapidjson::Document doc;
-	doc.SetObject();
-	auto& allocator = doc.GetAllocator();
-
-	// Create a JSON array to store all cards
-	rapidjson::Value cardArray(rapidjson::kArrayType);
-
-	for (auto& card : currentCards) {
-		rapidjson::Value cardObj(rapidjson::kObjectType);
-
-		cardObj.AddMember("type",
-			rapidjson::Value(BuffCardManager::CardTypeToString(card.type).c_str(), allocator),
-			allocator);
-
-		cardObj.AddMember("rarity",
-			rapidjson::Value(BuffCardManager::CardRarityToString(card.rarity).c_str(), allocator),
-			allocator);
-
-		// Save name and description as strings
-		cardObj.AddMember("name", rapidjson::Value(card.cardName.c_str(), allocator), allocator);
-		cardObj.AddMember("description", rapidjson::Value(card.cardDesc.c_str(), allocator), allocator);
-
-		// Add this card to the array
-		cardArray.PushBack(cardObj, allocator);
-	}
-
-	// Add the array to the root document
-	doc.AddMember("cards", cardArray, allocator);
-
-	// Build the path
-	std::string actualAssetPath = "../../Assets/config/" + file;
-
-	// Ensure the directory exists before writing
-	std::filesystem::create_directories(std::filesystem::path(actualAssetPath).parent_path());
-
-	// Save JSON
-	FileHelper::TryWriteJsonFile(actualAssetPath, doc);
-}
-
 void BuffCardManager::LoadCardInfo() {
-	currentCards.clear(); // clear previous cards
+	allCards.clear(); // clear previous cards
 
 	// Build the path to the JSON file
 	std::string actualAssetPath = "../../Assets/config/" + file;
@@ -183,35 +154,54 @@ void BuffCardManager::LoadCardInfo() {
 		BuffCard card;
 
 		// Read type and rarity as integers
-		if (cardObj.HasMember("type") && cardObj["type"].IsString())
+		if (cardObj.HasMember("type") && cardObj["type"].IsString()) {
 			card.type = GetCardType(cardObj["type"].GetString());
+		}
 
-		if (cardObj.HasMember("rarity") && cardObj["rarity"].IsString())
+		if (cardObj.HasMember("rarity") && cardObj["rarity"].IsString()) {
 			card.rarity = GetCardRarity(cardObj["rarity"].GetString());
+		}
 
 		// Read name and description
-		if (cardObj.HasMember("name") && cardObj["name"].IsString())
+		if (cardObj.HasMember("name") && cardObj["name"].IsString()) {
 			card.cardName = cardObj["name"].GetString();
+		}
 
-		if (cardObj.HasMember("description") && cardObj["description"].IsString())
+		if (cardObj.HasMember("description") && cardObj["description"].IsString()) {
 			card.cardDesc = cardObj["description"].GetString();
+		}
+		if (cardObj.HasMember("effect") && cardObj["effect"].IsString()) {
+			card.cardEffect = cardObj["effect"].GetString();
+		}
+		if (cardObj.HasMember("effect_value_1") && cardObj["effect_value_1"].IsInt()) {
+			card.effectValue1 = cardObj["effect_value_1"].GetInt();
+		}
+		if (cardObj.HasMember("effect_value_2") && cardObj["effect_value_2"].IsInt()) {
+			card.effectValue2 = cardObj["effect_value_2"].GetInt();
+		}
 
-		currentCards.push_back(card);
+		allCards.push_back(card);
 
-		std::cout << "Loaded card: " << card.cardName << " - Rarity: " << CardRarityToString(card.rarity)
-			<< ", Type: " << CardTypeToString(card.type) << std::endl;
+		if (card.rarity == RARITY_UNCOMMON) {
+			uncommonCards.push_back(card);
+		}
+		else if (card.rarity == RARITY_RARE) {
+			rareCards.push_back(card);
+		}
+		else if (card.rarity == RARITY_EPIC) {
+			epicCards.push_back(card);
+		}
+		else if (card.rarity == RARITY_LEGENDARY) {
+			legendaryCards.push_back(card);
+		}
+
+		//std::cout << "Loaded card: " << card.cardName << " Type: " << BuffCardManager::CardTypeToString(card.type) << ", Rarity: " 
+		//	<< BuffCardManager::CardRarityToString(card.rarity) << "\nDescription: " << card.cardDesc << "\nEffect: " << card.cardEffect 
+		//	<<" Effect value 1: "  << card.effectValue1 << " Effect value 2:" << card.effectValue2 << std::endl;
 	}
 
-	std::cout << "Loaded " << currentCards.size() << " cards from JSON." << std::endl;
+	std::cout << "Loaded " << allCards.size() << " cards from JSON." << std::endl;
 }
-
-
-BuffCard::BuffCard(CARD_RARITY cr, // Constructor
-	CARD_TYPE ct,
-	std::string cName,
-	std::string cDesc,
-	AEVec2 pos) :
-	rarity{ cr }, type{ ct }, cardName{ cName }, cardDesc{ cDesc }, cardPos{ pos } {/* empty by design */}
 
 void BuffCardScreen::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
@@ -266,7 +256,7 @@ void BuffCardScreen::Update() {
 			allCardsFlipped = true; // All cards done
 		}
 	}
-	if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
+	if (AEInputCheckTriggered(AEVK_L)) { // Remember to set textloading back to false for fadeonce flag.
 		ResetFlipSequence();
 	}
 }

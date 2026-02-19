@@ -19,16 +19,37 @@ enum CARD_RARITY {
 	RARITY_EPIC,
 	RARITY_LEGENDARY
 };
+
+struct RarityThreshold {
+	CARD_RARITY rarity;
+	float threshold; // cumulative probability (0.0 - 1.0)
+};
+
+// Define thresholds for rarity randomization. 
+// The probabilities are cumulative, so they should be in ascending 
+// order and the last threshold should be 1.0.
+inline static const RarityThreshold rarityTable[] = {
+	{ RARITY_UNCOMMON, 0.50f }, // 50% chance for uncommon
+	{ RARITY_RARE, 0.85f }, // 35% chance for rare (0.85 - 0.50)
+	{ RARITY_EPIC, 0.95f }, // 10% chance for epic (0.95 - 0.85)
+	{ RARITY_LEGENDARY, 1.0f } // 5% chance for legendary (1.0 - 0.95)
+};
+
 struct BuffCard {
 	CARD_RARITY rarity{};
 	CARD_TYPE type{};
 	std::string cardName{};
 	std::string cardDesc{};
+	std::string cardEffect{};
+	int effectValue1{}, effectValue2{}; // Numerical values representing the strength of the buff (percentage-based).
 	AEVec2 cardPos{};
 	BuffCard(CARD_RARITY cr = RARITY_UNCOMMON, // Constructor
 			 CARD_TYPE ct = HERMES_FAVOR,
 			 std::string cName = "Unnamed Card",
 			 std::string cDesc = "No description provided.",
+			 std::string cEffect = "No effect.",
+			 int eValue1 = 0,
+			 int eValue2 = 0,
 			 AEVec2 pos = { 0,0 });
 
 };
@@ -42,12 +63,20 @@ class BuffCardManager {
 public:
 	static void Init();
 	static void Update();
-	static std::vector<BuffCard> RandomizeCards(int numCards); // Returns an array of BuffCards with randomized types and rarities.
+	static void RandomizeCards(int numCards); // Returns an array of BuffCards with randomized types and rarities.
+	static CARD_RARITY DetermineRarity(); // Determine card rarity based on a random roll and predefined thresholds.
+	static CARD_TYPE DetermineType(CARD_RARITY rarity); // Determine card rarity based on a random roll and predefined thresholds.
+	inline static std::vector<BuffCard> GetUncommonCards() { return uncommonCards; }
+	inline static std::vector<BuffCard> GetRareCards() { return rareCards; }
+	inline static std::vector<BuffCard> GetEpicCards() { return epicCards; }
+	inline static std::vector<BuffCard> GetLegendaryCards() { return legendaryCards; }
+	/*--------------------------------------------------------------------------
+							File Reading and Writing
+	--------------------------------------------------------------------------*/
 	static CARD_TYPE GetCardType(std::string str); // Get card type from string, used for loading from JSON.
 	static CARD_RARITY GetCardRarity(std::string str); // Get card rarity from string, used for loading from JSON.
-	static void SaveCardInfo(); // Save card names and descriptions to a json file.
 	static void LoadCardInfo(); // Load card names and descriptions from a json file.
-	inline const static std::vector<BuffCard> GetRandomizedCards() { return currentCards; } // Get current card info for rendering and effects.
+	// Convert CARD_TYPE to string
 	inline static std::string CardTypeToString(CARD_TYPE type) {
 		switch (type) {
 		case HERMES_FAVOR: return "HERMES_FAVOR";
@@ -58,7 +87,6 @@ public:
 		default: return "UNKNOWN_TYPE";
 		}
 	}
-
 	// Convert CARD_RARITY to string
 	inline static std::string CardRarityToString(CARD_RARITY rarity) {
 		switch (rarity) {
@@ -70,6 +98,9 @@ public:
 		}
 	}
 
+
+	inline const static std::vector<BuffCard> GetRandomizedCards() { return randomizedCards; } // Get current card info for rendering and effects.
+
 private:
 	static const int UNCOMMON_CARDS = 2; // Number of uncommon cards in the pool.
 	static const int RARE_CARDS = 2; // Number of rare cards in the pool.
@@ -80,9 +111,21 @@ private:
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
 
 	inline static int cardSelected = 0; // Current selected card.
-	inline static std::vector<BuffCard> currentCards; // Store current cards for reference in rendering and effects.
 
-	inline static const std::string file = "buff-cards-info.json"; // File to save card info to.
+	// Store the current set of randomized cards for rendering and applying effects.
+	inline static std::vector<BuffCard> randomizedCards;
+
+	//Store all cards read from file to feed into different rarity vectors.
+	inline static std::vector<BuffCard> allCards;
+
+	// Different rarity vectors to determine what card is attained based on the rarity rolled.
+	inline static std::vector<BuffCard> uncommonCards;
+	inline static std::vector<BuffCard> rareCards;
+	inline static std::vector<BuffCard> epicCards;
+	inline static std::vector<BuffCard> legendaryCards;
+
+
+	inline static const std::string file = "buff-cards-pool.json"; // File to save card info to.
 };
 /*----------------------------------------------------------------------------
 The BuffCardScreen is responsible for rendering the card drawing screen, 
@@ -131,7 +174,7 @@ private:
 
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
-	static const int UNIQUE_CARD_TEXTURES = 4; // Total number of unique card textures available (for different types and rarities).
+	static const int UNIQUE_CARD_TEXTURES = 5; // Total number of unique card textures available (for different types and rarities).
 	inline static AEGfxTexture* cardFrontTex[UNIQUE_CARD_TEXTURES] = { nullptr }; // 3 different front textures
 	inline static AEGfxVertexList* cardMesh = nullptr;
 
