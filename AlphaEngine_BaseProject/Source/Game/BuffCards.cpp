@@ -55,7 +55,7 @@ void BuffCardScreen::Init() {
 
 void BuffCardManager::Update() {
 	if (!shuffled && roomCleared) { // Randomize cards only once per shuffle event, controlled by the shuffled flag.
-		BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
+		BuffCardManager::RandomizeCards(NUM_CARDS);
 		shuffled = true;
 	}
 	// Handle player input for card selection and applying effects. 
@@ -77,7 +77,6 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		return;
 	}
 
-	// Use a small positive value (0.1) so the card has visual "meat" before selection
 	const float INTERACTION_THRESHOLD = 0.1f;
 
 	// Check the progress of the CURRENTLY active card in the sequence
@@ -97,30 +96,85 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		firstCardSelected = true;
 	}
 	if (firstCardSelected) {
+		bool keyboardInputDetected = false;
+
+		// --- KEYBOARD INPUT ---
 		if (AEInputCheckTriggered(AEVK_RIGHT) || AEInputCheckTriggered(AEVK_D)) {
-			cardSelected = static_cast<int>((cardSelected + 1) % cards.size()); // Move selection right, wrap around
-			// Deselect all cards first
-			for (BuffCard& c : cards) {
-				c.selected = false;
-			}
+			std::cout << "Hovered RIGHT once - play hover once sound\n";
+			cardSelected = static_cast<int>((cardSelected + 1) % cards.size());
+			keyboardInputDetected = true;
 		}
 		else if (AEInputCheckTriggered(AEVK_LEFT) || AEInputCheckTriggered(AEVK_A)) {
-			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size()); // Move selection left, wrap around
-			// Deselect all cards first
+			std::cout << "Hovered LEFT once - play hover once sound\n";
+			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size());
+			keyboardInputDetected = true;
+		}
+
+		if (keyboardInputDetected) {
+			mousePosInitialized = false; // Reset so mouse needs to move to take control again
 			for (BuffCard& c : cards) {
 				c.selected = false;
 			}
+			cards[cardSelected].selected = true;
 		}
-		cards[cardSelected].selected = true;
+
+		// --- MOUSE INPUT ---
+		s32 mouseX{}, mouseY{};
+		AEInputGetCursorPosition(&mouseX, &mouseY);
+
+		// Only update selection via mouse IF the mouse has actually moved
+		// This prevents the "snap-back" when you use the keyboard while the mouse is sitting still
+		static s32 lastStoredMouseX = 0, lastStoredMouseY = 0;
+
+		if (mouseX != lastStoredMouseX || mouseY != lastStoredMouseY) {
+			lastStoredMouseX = mouseX;
+			lastStoredMouseY = mouseY;
+
+			for (int i = 0; i < (int)cards.size(); ++i) {
+				if (Button::CheckMouseInRectButton(
+					BuffCardScreen::cachedCardRects[i].pos,
+					BuffCardScreen::cachedCardRects[i].size)) {
+
+					// Only change if the mouse moved to a DIFFERENT card
+					if (cardSelected != i) {
+						for (BuffCard& c : cards) c.selected = false;
+						cardSelected = i;
+						cards[cardSelected].selected = true;
+						std::cout << "Hovered MOUSE once - play hover once sound\n";
+					}
+					break;
+				}
+			}
+		}
 		if (AEInputCheckTriggered(AEVK_SPACE) && !cardSelectedThisUpdate) {
 			cardSelectedThisUpdate = true;
 			ApplyCardEffect(cards[cardSelected]);
 			Time::GetInstance().SetTimeScale(1.0f);
-			// Apply card effect here. For now, just print the selected card to the console for testing.
-
-			std::cout << "Selected Card: " << cards[cardSelected].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
-				<< ", Type:" << BuffCardManager::CardTypeToString(cards[cardSelected].type)  << " Effect: "
+			std::cout << "Selected Card: " << cards[cardSelected].cardName 
+				<< '\n' << "Rarity: "
+				<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
+				<< '\n' << "Type:"
+				<< BuffCardManager::CardTypeToString(cards[cardSelected].type) 
+				<< '\n' << "Effect: "
 				<< cards[cardSelected].cardEffect << std::endl;
+		}
+		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
+			// Perform the same rect check again for the click event
+			if (Button::CheckMouseInRectButton(
+				BuffCardScreen::cachedCardRects[cardSelected].pos,
+				BuffCardScreen::cachedCardRects[cardSelected].size)) {
+
+				cardSelectedThisUpdate = true;
+				ApplyCardEffect(cards[cardSelected]);
+				Time::GetInstance().SetTimeScale(1.0f);
+				std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
+					<< '\n' << "Rarity: "
+					<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
+					<< '\n' << "Type:"
+					<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
+					<< '\n' << "Effect: "
+					<< cards[cardSelected].cardEffect << std::endl;
+			}
 		}
 	}
 
@@ -494,10 +548,7 @@ void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int sele
 }
 // Draw buff cards.
 void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
-	// Rotation matrix
-	//AEMtx33 rotate = { 0 };
-	//AEMtx33Rot(&rotate, 0);
-
+	cachedCardRects.clear();
 	// Render state
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
@@ -561,6 +612,13 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 			Camera::position.x * Camera::scale + offsetX,
 			Camera::position.y * Camera::scale + offsetY);
 
+		//std::cout << "Card position : (" << Camera::position.x * Camera::scale + offsetX << ", " << Camera::position.y * Camera::scale + offsetY << ")\n";
+		//std::cout << "Card scale : (" << scaleX << ", " << scaleY << ")\n";
+		AEVec2 rectPos = { Camera::position.x * Camera::scale + offsetX, Camera::position.y * Camera::scale + offsetY };
+		AEVec2 rectSize = { scaleX, scaleY };
+		cachedCardRects.push_back({ rectPos, rectSize });
+		
+
 		AEMtx33 transform;
 		AEMtx33Concat(&transform, &rotate, &scale);
 		AEMtx33Concat(&transform, &translate, &transform);
@@ -592,10 +650,15 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 //	
 //}
 void BuffCardScreen::Render() {
-	if (!BuffCardManager::IsCardSelectedThisUpdate() && BuffCardManager::IsRoomCleared()) {
+	if (BuffCardManager::IsRoomCleared()) {
+		// Overlay fades independently - always draw it while room is cleared
 		DrawBlackOverlay();
-		DrawPromptText(BuffCardManager::GetRandomizedCards(), BuffCardManager::CurrentSelectedCard());
-		DrawDeck(BuffCardManager::GetRandomizedCards());
+
+		// Cards and text only show while player hasn't selected yet
+		if (!BuffCardManager::IsCardSelectedThisUpdate()) {
+			DrawPromptText(BuffCardManager::GetRandomizedCards(), BuffCardManager::CurrentSelectedCard());
+			DrawDeck(BuffCardManager::GetRandomizedCards());
+		}
 	}
 	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
 	//	textLoading = false;

@@ -96,15 +96,18 @@ void GSM::Update()
 
 			//// === For Damage Text Testing ===
 			//if AEInputCheckCurr/Triggered
-			if (AEInputCheckTriggered(AEVK_K))
-			{
-				AEVec2 pos{};
-				pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
-				pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
-				DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
-				int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
-				UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
-			}
+			//if (AEInputCheckTriggered(AEVK_K))
+			//{
+			//	AEVec2 pos{};
+			//	pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
+			//	pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
+			//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
+			//	int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
+			//	UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
+			//}
+			AEVec2 pos{};
+			AEVec2 size{};
+			Button::CheckMouseInRectButton(pos,size);
 			
 			Editor::DrawInspectors();
 

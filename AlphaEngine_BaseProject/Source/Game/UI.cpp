@@ -4,6 +4,7 @@
 #include <string>
 #include "BuffCards.h"
 #include "../Utils/AEExtras.h"
+#include "Camera.h"
 
 /*--------------------------------------------
 			 General UI Functions
@@ -150,4 +151,15 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 	text.position = position;
 	text.alpha = 1.0f;
 	text.OnGet();
+}
+/*--------------------------------------
+			Button Functions
+---------------------------------------*/
+bool Button::CheckMouseInRectButton(AEVec2 pos, AEVec2 size) {
+	s32 mouseX, mouseY;
+	AEInputGetCursorPosition(&mouseX, &mouseY);
+	return (mouseX >= pos.x - size.x * 0.5f &&
+		mouseX <= pos.x + size.x * 0.5f &&
+		mouseY >= pos.y - size.y * 0.5f &&
+		mouseY <= pos.y + size.y * 0.5f);
 }

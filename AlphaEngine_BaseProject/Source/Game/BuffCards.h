@@ -23,6 +23,9 @@ enum CARD_RARITY {
 	RARITY_LEGENDARY
 };
 
+// Standardise to 3 buffs for drawing to screen.
+inline static const int NUM_CARDS = 3;
+
 struct RarityThreshold {
 	CARD_RARITY rarity;
 	float threshold; // cumulative probability (0.0 - 1.0)
@@ -125,12 +128,12 @@ private:
 	// Flags
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
 	inline static bool firstCardSelected = false; // Flag to ensure the delay timer is only added once for the first card selection.
-
 	// Flag to track if the current room has been cleared, allowing card selection to occur only after clearing a room.
 	inline static bool roomCleared = false;
-
 	// Flag to track if a card has been selected in the current update cycle, preventing multiple selections in one update.
 	inline static bool cardSelectedThisUpdate = false;
+	// Flag to initialize mouse position on initial use of mouse.
+	inline static bool mousePosInitialized = false;
 
 	inline static int cardSelected = 0; // Current selected card.
 
@@ -163,8 +166,12 @@ public:
 	static void Render();
 	static void Exit();
 
-	// Standardise to 3 buffs for drawing to screen.
-	inline static const int NUM_CARDS = 3;
+	struct BuffCardRect {
+		AEVec2 pos;
+		AEVec2 size;
+	};
+	inline static std::vector<BuffCardRect> cachedCardRects{};
+
 	// Black overlay for card drawing.
 	static void DrawBlackOverlay();
 	// Prompt text for card drawing.
@@ -218,7 +225,7 @@ private:
 	static const int CARD_WIDTH = 750;
 	static const int CARD_HEIGHT = 1050;
 
-
-	inline static f32 overlayAlpha = 0.85f;
-	inline static f32 fadeSpeed = 5.f;
+	// Black overlay attributes.
+	inline static f32 overlayAlpha = 0.75f;
+	inline static f32 fadeSpeed = 3.5f;
 };
