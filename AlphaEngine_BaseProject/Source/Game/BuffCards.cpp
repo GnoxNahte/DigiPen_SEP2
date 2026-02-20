@@ -469,7 +469,7 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)
-		// and 0.0 when fully flat. We can blend this with your 'selected' state.
+		// and 0.0 when fully flat.
 		float flipActivity = 1.0f - abs(cardFlipProgress);
 
 		float scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
@@ -482,7 +482,6 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 			float currentWobbleAmp = WOBBLE_AMPLITUDE;
 
 			if (cards[i].selected) {
-				// Boost the effect if selected
 				offsetY += sinf(t * FLOAT_SPEED) * FLOAT_AMPLITUDE;
 				offsetX += sinf(t * currentWobbleSpeed) * currentWobbleAmp;
 
@@ -490,8 +489,6 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 				scaleY *= (1.0f + SCALE_PULSE);
 			}
 			else {
-				// Even if not selected, add a tiny bit of "flip juice" 
-				// so it doesn't look static while turning.
 				offsetX += sinf(t * FLOAT_SPEED + i) * (flipActivity * 10.0f);
 				offsetY += cosf(t * FLOAT_SPEED + i) * (flipActivity * 5.0f);
 			}
@@ -524,7 +521,7 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 		AEGfxTexture* emissionTex = cardRarityTex[cards[i].rarity];
 		if (emissionTex) {
 			AEMtx33 emissionScale;
-			float EMISSION_SCALE = 1.15f; // 50% bigger than card
+			float EMISSION_SCALE = 1.15f; // 15% bigger than card
 			AEMtx33Scale(&emissionScale, scaleX * EMISSION_SCALE, scaleY * EMISSION_SCALE);
 
 			// Use same rotation and translation
@@ -555,8 +552,30 @@ void BuffCardScreen::Exit() {
 		// Free card meshes.
 		AEGfxMeshFree(cardMesh);
 	}
+	if (rectMesh) {
+		// Free rectangle mesh used for overlay.
+		AEGfxMeshFree(rectMesh);
+	}
 	if (cardBackTex) {
-		// Free card textures.
+		// Free card back textures
 		AEGfxTextureUnload(cardBackTex);
+	}
+	// Free card front textures.
+	for (auto& tex : cardFrontTex)
+	{
+		if (tex)
+		{
+			AEGfxTextureUnload(tex);
+			tex = nullptr;
+		}
+	}
+	// Free rarity overlay textures.
+	for (auto& tex : cardRarityTex)
+	{
+		if (tex)
+		{
+			AEGfxTextureUnload(tex);
+			tex = nullptr;
+		}
 	}
 }

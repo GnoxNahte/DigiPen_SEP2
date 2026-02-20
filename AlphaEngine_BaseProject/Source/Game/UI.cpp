@@ -23,6 +23,7 @@ void UI::Render() {
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
+	BuffCardScreen::Exit();
 }
 /*--------------------------------------
 		  Damage Text Functions

@@ -123,6 +123,9 @@ private:
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
 	inline static bool firstCardSelected = false; // Flag to ensure the delay timer is only added once for the first card selection.
 
+	// Flag to track if a card has been selected in the current update cycle, preventing multiple selections in one update.
+	inline static bool cardSelectedThisUpdate = false;
+
 	inline static int cardSelected = 0; // Current selected card.
 
 	// Store the current set of randomized cards for rendering and applying effects.
