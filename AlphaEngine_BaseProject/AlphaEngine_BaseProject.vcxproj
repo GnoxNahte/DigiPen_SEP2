@@ -104,7 +104,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EditorUI.cpp" />
-    <ClCompile Include="LevelIO.cpp" />
     <ClCompile Include="Saves\SaveData.cpp" />
     <ClCompile Include="Saves\SaveSystem.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
@@ -118,6 +117,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Game\Scene\GSM.cpp" />
     <ClCompile Include="Source\Game\Scene\leveleditor.cpp" />
     <ClCompile Include="Source\Game\Scene\LevelEditorScene.cpp" />
+    <ClCompile Include="Source\Game\Scene\LevelIO.cpp" />
     <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp" />
     <ClCompile Include="Source\Game\Time.cpp" />
     <ClCompile Include="Source\Game\Timer.cpp" />
@@ -135,7 +135,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="traps.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LevelIO.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\EditorUI.hpp" />
@@ -151,6 +150,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\Scene\GSM.h" />
     <ClInclude Include="Source\Game\Scene\leveleditor.h" />
     <ClInclude Include="Source\Game\Scene\LevelEditorScene.h" />
+    <ClInclude Include="Source\Game\Scene\LevelIO.h" />
     <ClInclude Include="Source\Game\Scene\MainMenuScene.h" />
     <ClInclude Include="Source\Game\Time.h" />
     <ClInclude Include="Source\Game\Timer.h" />

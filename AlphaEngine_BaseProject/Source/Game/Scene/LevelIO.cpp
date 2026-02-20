@@ -1,9 +1,16 @@
 #include "LevelIO.h"
+
+#include "../Environment/MapGrid.h"
+#include "../Environment/MapTile.h"
+#include "../Environment/traps.h"   // used only for Trap::Type values (stored as int)
+
 #include <fstream>
 #include <sstream>
 
-static const char* TrapTypeToString(Trap::Type t)
+// ---------- trap type helpers (int <-> string) ----------
+static const char* TrapTypeToString(int typeInt)
 {
+    const auto t = static_cast<Trap::Type>(typeInt);
     switch (t)
     {
     case Trap::Type::LavaPool:      return "lavapool";
@@ -13,14 +20,15 @@ static const char* TrapTypeToString(Trap::Type t)
     }
 }
 
-static bool StringToTrapType(const std::string& s, Trap::Type& out)
+static bool StringToTrapType(const std::string& s, int& outTypeInt)
 {
-    if (s == "lavapool") { out = Trap::Type::LavaPool; return true; }
-    if (s == "pressureplate") { out = Trap::Type::PressurePlate; return true; }
-    if (s == "spikeplate") { out = Trap::Type::SpikePlate; return true; }
+    if (s == "lavapool") { outTypeInt = (int)Trap::Type::LavaPool; return true; }
+    if (s == "pressureplate") { outTypeInt = (int)Trap::Type::PressurePlate; return true; }
+    if (s == "spikeplate") { outTypeInt = (int)Trap::Type::SpikePlate; return true; }
     return false;
 }
 
+// ---------- save/load ----------
 bool SaveLevelToFile(const char* filename, const LevelData& lvl)
 {
     std::ofstream out(filename);
@@ -31,12 +39,11 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
     out << "spawn " << (int)lvl.spawn.x << " " << (int)lvl.spawn.y << "\n";
 
     out << "tiles\n";
-    // tiles stored row-major: [y*cols + x]
     for (int y = 0; y < lvl.rows; ++y)
     {
         for (int x = 0; x < lvl.cols; ++x)
         {
-            int v = lvl.tiles[y * lvl.cols + x];
+            const int v = lvl.tiles[y * lvl.cols + x];
             out << v;
             if (x + 1 < lvl.cols) out << ' ';
         }
@@ -47,20 +54,22 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
     for (const auto& t : lvl.traps)
     {
         out << TrapTypeToString(t.type) << ' ';
-        out << t.box.position.x << ' ' << t.box.position.y << ' ';
-        out << t.box.size.x << ' ' << t.box.size.y << ' ';
+        out << t.pos.x << ' ' << t.pos.y << ' ';
+        out << t.size.x << ' ' << t.size.y << ' ';
 
-        if (t.type == Trap::Type::LavaPool)
+        const auto tt = static_cast<Trap::Type>(t.type);
+
+        if (tt == Trap::Type::LavaPool)
         {
             out << "dpt " << t.damagePerTick << " tick " << t.tickInterval;
         }
-        else if (t.type == Trap::Type::SpikePlate)
+        else if (tt == Trap::Type::SpikePlate)
         {
             out << "up " << t.upTime << " down " << t.downTime
                 << " dmg " << t.damageOnHit
                 << " startDisabled " << (t.startDisabled ? 1 : 0);
         }
-        else if (t.type == Trap::Type::PressurePlate)
+        else if (tt == Trap::Type::PressurePlate)
         {
             out << "id " << t.id << " links " << (int)t.links.size();
             for (int id : t.links) out << ' ' << id;
@@ -80,22 +89,20 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     std::string word;
     int version = 0;
 
-    in >> word >> version; // version N
+    in >> word >> version;
     if (!in || word != "version") return false;
 
-    in >> word >> outLvl.rows >> outLvl.cols; // size r c
+    in >> word >> outLvl.rows >> outLvl.cols;
     if (!in || word != "size") return false;
 
-    in >> word >> outLvl.spawn.x >> outLvl.spawn.y; // spawn x y
+    in >> word >> outLvl.spawn.x >> outLvl.spawn.y;
     if (!in || word != "spawn") return false;
 
-    in >> word; // tiles
+    in >> word;
     if (!in || word != "tiles") return false;
 
     outLvl.tiles.assign(outLvl.rows * outLvl.cols, 0);
-
     for (int y = 0; y < outLvl.rows; ++y)
-    {
         for (int x = 0; x < outLvl.cols; ++x)
         {
             int v = 0;
@@ -103,9 +110,8 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
             if (!in) return false;
             outLvl.tiles[y * outLvl.cols + x] = v;
         }
-    }
 
-    in >> word; // traps
+    in >> word;
     if (!in || word != "traps") return false;
 
     int trapCount = 0;
@@ -115,9 +121,8 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     outLvl.traps.clear();
     outLvl.traps.reserve((size_t)trapCount);
 
-    // consume endline
     std::string line;
-    std::getline(in, line);
+    std::getline(in, line); // consume remainder of line
 
     for (int i = 0; i < trapCount; ++i)
     {
@@ -126,29 +131,29 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
 
         std::istringstream ss(line);
 
+        TrapDefSimple t{};
         std::string typeStr;
-        TrapDef t{};
 
         ss >> typeStr;
         if (!StringToTrapType(typeStr, t.type)) return false;
 
-        ss >> t.box.position.x >> t.box.position.y >> t.box.size.x >> t.box.size.y;
+        ss >> t.pos.x >> t.pos.y >> t.size.x >> t.size.y;
         if (!ss) return false;
 
-        // parse key-value params
+        const auto tt = static_cast<Trap::Type>(t.type);
+
         while (ss)
         {
             std::string key;
             ss >> key;
             if (!ss) break;
 
-            if (t.type == Trap::Type::LavaPool)
+            if (tt == Trap::Type::LavaPool)
             {
                 if (key == "dpt") ss >> t.damagePerTick;
                 else if (key == "tick") ss >> t.tickInterval;
-                else { /* ignore unknown */ }
             }
-            else if (t.type == Trap::Type::SpikePlate)
+            else if (tt == Trap::Type::SpikePlate)
             {
                 if (key == "up") ss >> t.upTime;
                 else if (key == "down") ss >> t.downTime;
@@ -158,9 +163,8 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                     int v = 0; ss >> v;
                     t.startDisabled = (v != 0);
                 }
-                else { /* ignore */ }
             }
-            else if (t.type == Trap::Type::PressurePlate)
+            else if (tt == Trap::Type::PressurePlate)
             {
                 if (key == "id") ss >> t.id;
                 else if (key == "links")
@@ -173,7 +177,6 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                         t.links.push_back(id);
                     }
                 }
-                else { /* ignore */ }
             }
         }
 
@@ -183,8 +186,9 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     return true;
 }
 
-void BuildLevelDataFromEditor(const MapGrid& grid, int rows, int cols,
-    const std::vector<TrapDef>& traps,
+// ---------- editor bridge ----------
+void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
+    const std::vector<TrapDefSimple>& traps,
     const AEVec2& spawn,
     LevelData& out)
 {
@@ -195,18 +199,16 @@ void BuildLevelDataFromEditor(const MapGrid& grid, int rows, int cols,
     out.traps = traps;
 
     for (int y = 0; y < rows; ++y)
-    {
         for (int x = 0; x < cols; ++x)
         {
             const MapTile* t = grid.GetTile(x, y);
             out.tiles[y * cols + x] = t ? (int)t->type : 0;
         }
-    }
 }
 
 bool ApplyLevelDataToEditor(const LevelData& lvl,
     MapGrid*& ioGrid,
-    std::vector<TrapDef>& ioTraps,
+    std::vector<TrapDefSimple>& ioTraps,
     AEVec2& ioSpawn)
 {
     if (lvl.rows <= 0 || lvl.cols <= 0) return false;
@@ -216,7 +218,6 @@ bool ApplyLevelDataToEditor(const LevelData& lvl,
     ioGrid = new MapGrid(lvl.rows, lvl.cols);
 
     for (int y = 0; y < lvl.rows; ++y)
-    {
         for (int x = 0; x < lvl.cols; ++x)
         {
             int v = lvl.tiles[y * lvl.cols + x];
@@ -224,7 +225,6 @@ bool ApplyLevelDataToEditor(const LevelData& lvl,
             if (v >= MapTile::typeCount) v = 0;
             ioGrid->SetTile(x, y, (MapTile::Type)v);
         }
-    }
 
     ioTraps = lvl.traps;
     ioSpawn = lvl.spawn;

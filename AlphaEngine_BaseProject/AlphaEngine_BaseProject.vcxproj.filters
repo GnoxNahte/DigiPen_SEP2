@@ -141,8 +141,8 @@
     <ClCompile Include="EditorUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LevelIO.cpp">
-      <Filter>Header Files\Game\Scene</Filter>
+    <ClCompile Include="Source\Game\Scene\LevelIO.cpp">
+      <Filter>Source Files\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -239,8 +239,8 @@
     <ClInclude Include="Source\Game\Scene\leveleditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LevelIO.h">
-      <Filter>Header Files\Game\Scene</Filter>
+    <ClInclude Include="Source\Game\Scene\LevelIO.h">
+      <Filter>Source Files\Editor</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

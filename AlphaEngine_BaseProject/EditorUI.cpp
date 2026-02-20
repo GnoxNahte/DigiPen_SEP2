@@ -1,7 +1,7 @@
 #include "EditorUI.hpp"
 
 // font (set from outside using EditorUI_SetFont)
-static s8 gUiFontId = -1;
+static s8 gUiFontId = -1;                 // FIX: start invalid, not 0
 static constexpr float UI_TEXT_SCALE = 1.0f;
 
 void EditorUI_SetFont(s8 fontId)
@@ -71,18 +71,41 @@ static void DrawRect(float cx, float cy, float w, float h, float r, float g, flo
     AEGfxMeshDraw(gUiQuad, AE_GFX_MDM_TRIANGLES);
 }
 
-static void PrintText(const char* text, float x, float y, float scale,
+// FIX: AEGfxPrint expects NORMALIZED coords [-1..1], but UI uses pixels.
+// convert pixel x/y (0..W, 0..H) -> normalized (-1..1).
+static inline float PxToNdcX(float px, float w)
+{
+    return (px / (w * 0.5f)) - 1.0f;
+}
+
+static inline float PxToNdcY(float py, float h)
+{
+    return (py / (h * 0.5f)) - 1.0f;
+}
+
+static void PrintText(const char* text, float xPx, float yPx, float scale,
     float r, float g, float b, float a)
 {
     if (gUiFontId < 0 || !text)
         return;
+
+    const float w = (float)AEGfxGetWindowWidth();
+    const float h = (float)AEGfxGetWindowHeight();
+
+    // convert pixels -> normalized coords for AEGfxPrint
+    const float xN = PxToNdcX(xPx, w);
+    const float yN = PxToNdcY(yPx, h);
 
     // fonts typically require texture mode + blending
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.0f);
 
-    AEGfxPrint(gUiFontId, text, x, y, scale, r, g, b, a);
+    // force known-good color state (prevents invisible text)
+    AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
+    AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
+
+    AEGfxPrint(gUiFontId, text, xN, yN, scale, r, g, b, a);
 
     // back to color for rectangles
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);

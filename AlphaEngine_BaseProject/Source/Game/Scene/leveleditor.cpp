@@ -1,5 +1,5 @@
 ﻿// leveleditor.cpp
-#include "AEEngine.h"            // keep engine first (prevents prototype weirdness)
+#include "AEEngine.h"
 #include "leveleditor.h"
 
 #include "../Environment/MapGrid.h"
@@ -8,49 +8,60 @@
 #include "../../Utils/AEExtras.h"
 
 #include "EditorUI.hpp"
-#include "LevelIO.h"             // NEW: save/load + trap defs
+#include "LevelIO.h"
+
+// only for Trap::Type enum values (stored as int in TrapDefSimple)
+#include "../Environment/traps.h"
 
 #include <vector>
-#include <cmath>                 // floorf
+#include <queue>
+#include <cmath>
+#include <cstdio>
 
 /*========================================================
     configuration
 ========================================================*/
 
-// IMPORTANT: MapGrid in your codebase is MapGrid(rows, cols)
-static constexpr int GRID_ROWS = 50;
-static constexpr int GRID_COLS = 100;
+static constexpr int   GRID_ROWS = 50;
+static constexpr int   GRID_COLS = 100;
+static constexpr float CAMERA_SCALE = 64.0f;
+static constexpr float CAMERA_SPEED = 10.0f;
 
-static constexpr float CAMERA_SCALE = 64.0f;   // pixels per tile
-static constexpr float CAMERA_SPEED = 10.0f;   // tiles per second
-
-// where to save
 static const char* LEVEL_PATH = "Assets/level01.lvl";
 
 /*========================================================
-    editor state
+    state
 ========================================================*/
 
 static MapGrid* gMap = nullptr;
 static Camera* gCamera = nullptr;
 
-// ui
 static EditorUIState gUI{};
 static EditorUIIO    gUIIO{};
-static s8            gUIFont = -1;
 
-// edit/play toggle (your editor already uses this)
-static int gPlayMode = 0; // 0 = edit, 1 = play
+static s8 gUIFont = -1;
 
-// backend extras
-static std::vector<TrapDef> gTrapDefs; // traps placed in editor
-static AEVec2 gSpawn{ 5.0f, 5.0f };    // optional spawn point
+// editor data
+static std::vector<TrapDefSimple> gTrapDefs;
+static AEVec2 gSpawn{ 5.0f, 5.0f };
+
+// debug/status
+static char gStatus[128] = "";
+
+// FIX: sample input ONCE per frame in Update, re-use in Draw
+static s32  gMouseX = 0, gMouseY = 0;
+static bool gMouseLTriggered = false;
 
 /*========================================================
     helpers
 ========================================================*/
 
-static void ApplyCamera()
+static bool InBounds(int x, int y)
+{
+    return x >= 0 && x < GRID_COLS && y >= 0 && y < GRID_ROWS;
+}
+
+static void ApplyWorldCamera()
 {
     if (!gCamera) return;
 
@@ -60,7 +71,23 @@ static void ApplyCamera()
     );
 }
 
-// ui brush -> tile type (ONLY for solid terrain)
+// AEGfxPrint uses normalized coords [-1..1]
+static inline float PxToNdcX(float px, float w) { return (px / (w * 0.5f)) - 1.0f; }
+static inline float PxToNdcY(float py, float h) { return (py / (h * 0.5f)) - 1.0f; }
+
+static void DebugTextPx(const char* text, float xPx, float yPx)
+{
+    if (gUIFont < 0 || !text) return;
+
+    const float w = (float)AEGfxGetWindowWidth();
+    const float h = (float)AEGfxGetWindowHeight();
+
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxPrint(gUIFont, text, PxToNdcX(xPx, w), PxToNdcY(yPx, h), 1.0f, 1, 1, 1, 1);
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+}
+
 static MapTile::Type BrushToTile(EditorTile brush)
 {
     switch (brush)
@@ -71,12 +98,18 @@ static MapTile::Type BrushToTile(EditorTile brush)
     }
 }
 
+static MapTile::Type GetTileType(int x, int y)
+{
+    const MapTile* t = gMap->GetTile(x, y);
+    return t ? t->type : MapTile::Type::NONE;
+}
+
 static void RemoveTrapsAtCell(int tx, int ty)
 {
-    for (size_t i = 0; i < gTrapDefs.size(); )
+    for (size_t i = 0; i < gTrapDefs.size();)
     {
-        const int ex = (int)std::floor(gTrapDefs[i].box.position.x);
-        const int ey = (int)std::floor(gTrapDefs[i].box.position.y);
+        const int ex = (int)std::floor(gTrapDefs[i].pos.x);
+        const int ey = (int)std::floor(gTrapDefs[i].pos.y);
 
         if (ex == tx && ey == ty)
             gTrapDefs.erase(gTrapDefs.begin() + i);
@@ -85,27 +118,24 @@ static void RemoveTrapsAtCell(int tx, int ty)
     }
 }
 
-static void PlaceSpikeTrapAtCell(int tx, int ty)
+static void PlaceSpikeTrapAtCell(int tx, int ty, float worldX, float worldY)
 {
-    TrapDef t;
-    t.type = Trap::Type::SpikePlate;
+    TrapDefSimple t;
+    t.type = (int)Trap::Type::SpikePlate;
 
-    // box centered inside tile
-    t.box.position = AEVec2{ tx + 0.5f, ty + 0.5f };
-    t.box.size = AEVec2{ 1.0f, 1.0f };
+    t.pos = gUI.snapToGrid ? AEVec2{ tx + 0.5f, ty + 0.5f } : AEVec2{ worldX, worldY };
+    t.size = AEVec2{ 1.0f, 1.0f };
 
-    // default params
     t.upTime = 1.0f;
     t.downTime = 1.0f;
     t.damageOnHit = 10;
     t.startDisabled = false;
 
-    // replace existing spike at same cell (optional)
     bool replaced = false;
     for (auto& e : gTrapDefs)
     {
-        const int ex = (int)std::floor(e.box.position.x);
-        const int ey = (int)std::floor(e.box.position.y);
+        const int ex = (int)std::floor(e.pos.x);
+        const int ey = (int)std::floor(e.pos.y);
 
         if (ex == tx && ey == ty && e.type == t.type)
         {
@@ -119,13 +149,55 @@ static void PlaceSpikeTrapAtCell(int tx, int ty)
         gTrapDefs.push_back(t);
 }
 
+static void ClearLevel()
+{
+    for (int y = 0; y < GRID_ROWS; ++y)
+        for (int x = 0; x < GRID_COLS; ++x)
+            gMap->SetTile(x, y, MapTile::Type::NONE);
+
+    gTrapDefs.clear();
+    gSpawn = AEVec2{ 5.f, 5.f };
+    sprintf_s(gStatus, "cleared");
+}
+
+static void FloodFillTiles(int sx, int sy, MapTile::Type to)
+{
+    if (!InBounds(sx, sy)) return;
+
+    const MapTile::Type from = GetTileType(sx, sy);
+    if (from == to) return;
+
+    std::queue<std::pair<int, int>> q;
+    q.push({ sx, sy });
+
+    while (!q.empty())
+    {
+        auto [x, y] = q.front();
+        q.pop();
+
+        if (!InBounds(x, y)) continue;
+        if (GetTileType(x, y) != from) continue;
+
+        gMap->SetTile(x, y, to);
+
+        q.push({ x + 1, y });
+        q.push({ x - 1, y });
+        q.push({ x, y + 1 });
+        q.push({ x, y - 1 });
+    }
+}
+
 /*========================================================
     editor update
 ========================================================*/
 
 static void UpdateEditor(float dt)
 {
-    // camera movement (disabled while ui capturing mouse)
+    // play mode freezes editing (ui still works)
+    if (gUI.playMode)
+        return;
+
+    // camera movement
     if (!gUIIO.mouseCaptured)
     {
         if (AEInputCheckCurr(AEVK_W)) gCamera->position.y += CAMERA_SPEED * dt;
@@ -134,31 +206,28 @@ static void UpdateEditor(float dt)
         if (AEInputCheckCurr(AEVK_D)) gCamera->position.x += CAMERA_SPEED * dt;
     }
 
-    ApplyCamera();
+    ApplyWorldCamera();
 
-    // if ui is using the mouse, do not paint/place
+    // block editor interactions if the cursor is over the ui panel
     if (gUIIO.mouseCaptured)
         return;
 
-    // mouse -> world -> tile
-    s32 mx, my;
-    AEInputGetCursorPosition(&mx, &my);
-
+    // mouse -> world
     AEVec2 world;
-    const f32 screenY = (f32)AEGfxGetWindowHeight() - (f32)my;
-    AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, screenY }, gCamera->position, world);
+    const f32 screenY = (f32)AEGfxGetWindowHeight() - (f32)gMouseY;
+    AEExtras::ScreenToWorldPosition(AEVec2{ (f32)gMouseX, screenY }, gCamera->position, world);
 
     const int tx = (int)std::floor(world.x);
     const int ty = (int)std::floor(world.y);
-
-    // bounds check (optional safety)
-    if (tx < 0 || tx >= GRID_COLS || ty < 0 || ty >= GRID_ROWS)
+    if (!InBounds(tx, ty))
         return;
 
-    const bool lmbHeld = AEInputCheckCurr(AEVK_LBUTTON);
+    // drag paint: action is held or triggered
+    const bool lmbAction = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON)
+        : AEInputCheckTriggered(AEVK_LBUTTON);
+
     const bool rmbTrig = AEInputCheckTriggered(AEVK_RBUTTON);
 
-    // right click: erase tile + remove traps at cell
     if (rmbTrig)
     {
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
@@ -166,8 +235,7 @@ static void UpdateEditor(float dt)
         return;
     }
 
-    // left hold: tool action
-    if (!lmbHeld)
+    if (!lmbAction)
         return;
 
     switch (gUI.tool)
@@ -176,12 +244,13 @@ static void UpdateEditor(float dt)
     {
         if (gUI.brush == EditorTile::Spike)
         {
-            // spike is NOT a tile in your MapTile::Type, treat as entity
-            PlaceSpikeTrapAtCell(tx, ty);
+            PlaceSpikeTrapAtCell(tx, ty, world.x, world.y);
         }
         else
         {
             gMap->SetTile(tx, ty, BrushToTile(gUI.brush));
+            if (gUI.brush == EditorTile::Empty)
+                RemoveTrapsAtCell(tx, ty);
         }
     } break;
 
@@ -189,6 +258,26 @@ static void UpdateEditor(float dt)
     {
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
         RemoveTrapsAtCell(tx, ty);
+    } break;
+
+    case EditorTool::Fill:
+    {
+        if (gUI.brush == EditorTile::Spike)
+        {
+            sprintf_s(gStatus, "fill: spike ignored");
+        }
+        else
+        {
+            FloodFillTiles(tx, ty, BrushToTile(gUI.brush));
+            sprintf_s(gStatus, "fill region");
+        }
+    } break;
+
+    case EditorTool::Select:
+    {
+        // select tool: set spawn point
+        gSpawn = gUI.snapToGrid ? AEVec2{ tx + 0.5f, ty + 0.5f } : world;
+        sprintf_s(gStatus, "spawn set: %.1f %.1f", gSpawn.x, gSpawn.y);
     } break;
 
     default:
@@ -202,38 +291,29 @@ static void UpdateEditor(float dt)
 
 void GameState_LevelEditor_Load()
 {
-    // IMPORTANT: compile-safe even if some TU sees CreateFont as s32
-    const auto fontId = AEGfxCreateFont("Assets/buggy-font.ttf", 18);
-    gUIFont = static_cast<s8>(fontId);
+    gUIFont = AEGfxCreateFont("Assets/buggy-font.ttf", 18);
 }
 
 void GameState_LevelEditor_Init()
 {
-    // create map
     if (!gMap)
         gMap = new MapGrid(GRID_ROWS, GRID_COLS);
 
-    // create camera (tile space bounds)
     if (!gCamera)
-        gCamera = new Camera(
-            { 0.f, 0.f },
-            { (float)GRID_COLS, (float)GRID_ROWS },
-            CAMERA_SCALE
-        );
+        gCamera = new Camera({ 0.f, 0.f }, { (float)GRID_COLS, (float)GRID_ROWS }, CAMERA_SCALE);
 
     gCamera->position = { GRID_COLS * 0.5f, GRID_ROWS * 0.5f };
-    ApplyCamera();
+    ApplyWorldCamera();
 
-    // init ui
     EditorUI_Init();
     EditorUI_SetFont(gUIFont);
 
     gUI = EditorUIState{};
     gUIIO = EditorUIIO{};
 
-    // reset backend state
     gTrapDefs.clear();
     gSpawn = AEVec2{ 5.f, 5.f };
+    sprintf_s(gStatus, "ready");
 }
 
 void GameState_LevelEditor_Update()
@@ -241,84 +321,114 @@ void GameState_LevelEditor_Update()
     AEInputUpdate();
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
-    // draw/update ui FIRST so mouseCaptured is valid for editor logic
-    s32 mx, my;
-    AEInputGetCursorPosition(&mx, &my);
-    EditorUI_Draw(
-        gUI, gUIIO,
-        (int)AEGfxGetWindowWidth(),
-        (int)AEGfxGetWindowHeight(),
-        mx, my,
-        AEInputCheckTriggered(AEVK_LBUTTON)
-    );
+    // sample mouse + click ONCE per frame (FIX for ui buttons)
+    AEInputGetCursorPosition(&gMouseX, &gMouseY);
+    gMouseLTriggered = AEInputCheckTriggered(AEVK_LBUTTON);
 
-    // handle ui actions (save/load/clear)
+    // IMPORTANT: update capture info for THIS frame so UpdateEditor gating works
+   
+    const int windowH = (int)AEGfxGetWindowHeight();
+
+    const float mx = (float)gMouseX;
+    const float my = (float)(windowH - gMouseY);
+
+    // same condition used by EditorUI_Draw
+    gUIIO.mouseCaptured = (mx >= 0.0f && mx <= gUI.panelW && my >= 0.0f && my <= (float)windowH);
+
+    // handle ui actions from PREVIOUS draw call (flags persist until next EditorUI_Draw resets them)
+    if (gUI.requestClearMap)
+    {
+        ClearLevel();
+        gUI.requestClearMap = false;
+    }
+
     if (gUI.requestSave)
     {
         LevelData lvl;
         BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS, gTrapDefs, gSpawn, lvl);
-        SaveLevelToFile(LEVEL_PATH, lvl);
+
+        if (SaveLevelToFile(LEVEL_PATH, lvl))
+            sprintf_s(gStatus, "saved: %s", LEVEL_PATH);
+        else
+            sprintf_s(gStatus, "save failed");
+
+        gUI.requestSave = false;
     }
 
     if (gUI.requestLoad)
     {
         LevelData lvl;
-        if (LoadLevelFromFile(LEVEL_PATH, lvl))
-            ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gSpawn);
+        if (LoadLevelFromFile(LEVEL_PATH, lvl) && ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gSpawn))
+            sprintf_s(gStatus, "loaded: %s", LEVEL_PATH);
+        else
+            sprintf_s(gStatus, "load failed");
+
+        gUI.requestLoad = false;
     }
 
-    if (gUI.requestClearMap)
+    if (gUI.requestResetPlayer)
     {
-        for (int y = 0; y < GRID_ROWS; ++y)
-            for (int x = 0; x < GRID_COLS; ++x)
-                gMap->SetTile(x, y, MapTile::Type::NONE);
-
-        gTrapDefs.clear();
+        sprintf_s(gStatus, "reset player (todo)");
+        gUI.requestResetPlayer = false;
     }
 
-    // toggle play/edit (optional)
-    if (AEInputCheckTriggered(AEVK_TAB))
-        gPlayMode = !gPlayMode;
-
-    if (!gPlayMode)
-        UpdateEditor(dt);
-
-    // NOTE: play mode hook (later):
-    // if (gPlayMode) spawn real traps into TrapManager from gTrapDefs
+    UpdateEditor(dt);
 }
 
 void GameState_LevelEditor_Draw()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
+
+    // ---- draw map (world camera) ----
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-
-    // draw map
     if (gMap && gCamera)
+    {
+        ApplyWorldCamera();
         gMap->Render(*gCamera);
+    }
 
-    // TODO (later): draw trap previews in editor
-    // e.g. draw colored boxes or icons at gTrapDefs positions
-
-    // ui overlay
-    s32 mx, my;
-    AEInputGetCursorPosition(&mx, &my);
+    // ---- draw ui (screen space) ----
+    // NOTE: if ui clicks still don't register, we will sample click here instead.
     EditorUI_Draw(
         gUI, gUIIO,
         (int)AEGfxGetWindowWidth(),
         (int)AEGfxGetWindowHeight(),
-        mx, my,
-        AEInputCheckTriggered(AEVK_LBUTTON)
+        gMouseX, gMouseY,
+        gMouseLTriggered
     );
+
+    // ---- debug overlay ----
+    if (gUI.showDebug)
+    {
+        const float w = (float)AEGfxGetWindowWidth();
+        const float h = (float)AEGfxGetWindowHeight();
+
+        float x = w - 360.0f;
+        float y = h - 40.0f;
+
+        char line[256];
+
+        sprintf_s(line, "mode: %s", gUI.playMode ? "play" : "edit");
+        DebugTextPx(line, x, y); y -= 22.0f;
+
+        sprintf_s(line, "tool: %d  brush: %d", (int)gUI.tool, (int)gUI.brush);
+        DebugTextPx(line, x, y); y -= 22.0f;
+
+        sprintf_s(line, "spawn: %.1f %.1f", gSpawn.x, gSpawn.y);
+        DebugTextPx(line, x, y); y -= 22.0f;
+
+        sprintf_s(line, "traps: %d", (int)gTrapDefs.size());
+        DebugTextPx(line, x, y); y -= 22.0f;
+
+        DebugTextPx(gStatus, x, y);
+    }
 }
+
 
 void GameState_LevelEditor_Free()
 {
-    delete gMap;
-    gMap = nullptr;
-
-    delete gCamera;
-    gCamera = nullptr;
-
+    delete gMap; gMap = nullptr;
+    delete gCamera; gCamera = nullptr;
     gTrapDefs.clear();
 }
 
