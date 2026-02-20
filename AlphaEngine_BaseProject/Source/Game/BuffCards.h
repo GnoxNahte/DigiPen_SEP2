@@ -71,6 +71,7 @@ public:
 	static void RandomizeCards(int numCards); // Returns an array of BuffCards with randomized types and rarities.
 	static CARD_RARITY DetermineRarity(); // Determine card rarity based on a random roll and predefined thresholds.
 	static CARD_TYPE DetermineType(CARD_RARITY rarity); // Determine card rarity based on a random roll and predefined thresholds.
+	static void ApplyCardEffect(const BuffCard& card); // Apply the effect of the selected card to the player stats.
 
 	// Getter functions for the card pools based on rarity, used for randomization and rendering.
 	inline static const std::vector<BuffCard> GetUncommonCards() { return uncommonCards; }
@@ -83,6 +84,8 @@ public:
 	static void SelectCards(std::vector<BuffCard>& cards); // Handle player input for selecting a card and applying its effect.
 	inline static bool& IsCardSelected() { return firstCardSelected; }
 	inline static int& CurrentSelectedCard() { return cardSelected; }
+	inline static bool& IsCardSelectedThisUpdate() { return cardSelectedThisUpdate; }
+	inline static bool& IsRoomCleared() { return roomCleared; } // To allow card selection to occur only after clearing a room.
 	/*--------------------------------------------------------------------------
 							File Reading and Writing
 	--------------------------------------------------------------------------*/
@@ -122,6 +125,9 @@ private:
 	// Flags
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
 	inline static bool firstCardSelected = false; // Flag to ensure the delay timer is only added once for the first card selection.
+
+	// Flag to track if the current room has been cleared, allowing card selection to occur only after clearing a room.
+	inline static bool roomCleared = false;
 
 	// Flag to track if a card has been selected in the current update cycle, preventing multiple selections in one update.
 	inline static bool cardSelectedThisUpdate = false;
@@ -175,6 +181,7 @@ public:
 	inline static const bool GetCardsFlipStatus() { return allCardsFlipped; } // Check if all cards have been flipped to show fronts and descriptions.
 	inline static const std::vector<f32> GetCardFlipStates() { return cardFlipStates; }
 	inline static const int GetCurrentFlipIndex() { return currentFlipIndex; }
+	inline static bool& GetTextLoadingStatus() { return textLoading; } // To allow fade in of text only once for each card draw.
 private:
 
 	// Flags 
@@ -210,4 +217,8 @@ private:
 	// Constant values
 	static const int CARD_WIDTH = 750;
 	static const int CARD_HEIGHT = 1050;
+
+
+	inline static f32 overlayAlpha = 0.85f;
+	inline static f32 fadeSpeed = 5.f;
 };

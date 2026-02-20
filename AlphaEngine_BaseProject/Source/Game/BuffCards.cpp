@@ -6,6 +6,7 @@
 #include "../Utils/AEExtras.h"
 #include "../Utils/FileHelper.h"
 #include "../Game/UI.h"
+#include "Time.h"
 #include "BuffCards.h"
 #include "Camera.h"
 #include "Timer.h"
@@ -53,11 +54,23 @@ void BuffCardScreen::Init() {
 }
 
 void BuffCardManager::Update() {
-	if (!shuffled) { // Randomize cards only once per shuffle event, controlled by the shuffled flag.
+	if (!shuffled && roomCleared) { // Randomize cards only once per shuffle event, controlled by the shuffled flag.
 		BuffCardManager::RandomizeCards(BuffCardScreen::NUM_CARDS);
 		shuffled = true;
 	}
+	// Handle player input for card selection and applying effects. 
+	// Called every update to check for input, but will only apply effect 
+	// once per selection due to the cardSelectedThisUpdate flag.
 	SelectCards(randomizedCards);
+}
+void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
+	if (card.type == SWITCH_IT_UP) {
+		// If the card effect is "Switch It Up", trigger a shuffle by resetting the flip sequence and allowing new cards to be drawn.
+		BuffCardScreen::ResetFlipSequence();
+		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
+	}
+	BuffCardScreen::GetTextLoadingStatus() = false;
+
 }
 void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 	if (cards.empty()) {
@@ -99,6 +112,16 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			}
 		}
 		cards[cardSelected].selected = true;
+		if (AEInputCheckTriggered(AEVK_SPACE) && !cardSelectedThisUpdate) {
+			cardSelectedThisUpdate = true;
+			ApplyCardEffect(cards[cardSelected]);
+			Time::GetInstance().SetTimeScale(1.0f);
+			// Apply card effect here. For now, just print the selected card to the console for testing.
+
+			std::cout << "Selected Card: " << cards[cardSelected].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
+				<< ", Type:" << BuffCardManager::CardTypeToString(cards[cardSelected].type)  << " Effect: "
+				<< cards[cardSelected].cardEffect << std::endl;
+		}
 	}
 
 }
@@ -106,7 +129,7 @@ CARD_RARITY BuffCardManager::DetermineRarity() {
 	f32 rarityRoll = AEExtras::RandomRange({ 0.f, 1.f }); // Get a random float between 0 and 1 to determine rarity.
 	for (const RarityThreshold entry : rarityTable) {
 		if (rarityRoll < entry.threshold) {
-			std::cout << "Determined Rarity: " << CardRarityToString(entry.rarity) << " for roll: " << rarityRoll << std::endl;
+			//std::cout << "Determined Rarity: " << CardRarityToString(entry.rarity) << " for roll: " << rarityRoll << std::endl;
 			return entry.rarity;
 		}
 	}
@@ -177,9 +200,9 @@ void BuffCardManager::RandomizeCards(int numCards) {
 	Checks if the randomization is working correctly by printing out the randomized cards to the console.
 	----------------------------------------------------------------------------------------------------*/
 	for (int i = 0; i < numCards; ++i) {
-		std::cout << "RANDOMIZED CARD " << i  << "  "  << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
-			<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << "Desc: " << randomizedCards[i].cardDesc << "Effect: " 
-			<< randomizedCards[i].cardEffect << std::endl;
+		//std::cout << "RANDOMIZED CARD " << i  << "  "  << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
+			//<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << "Desc: " << randomizedCards[i].cardDesc << "Effect: " 
+			//<< randomizedCards[i].cardEffect << std::endl;
 	}
 }
 
@@ -292,7 +315,7 @@ void BuffCardScreen::Update() {
 		}
 	}
 	// Automated sequential flipping
-	if (!allCardsFlipped) {
+	if (!allCardsFlipped && BuffCardManager::IsRoomCleared()) {
 		// Check if we need to start flipping the next card
 		if (currentFlipIndex < NUM_CARDS) {
 			// Create timer for this card if not created yet
@@ -300,7 +323,7 @@ void BuffCardScreen::Update() {
 
 			if (!flipTimerCreated[currentFlipIndex]) {
 				float delay = 0.45f; // Delay between cards
-				TimerSystem::GetInstance().AddTimer(timerName, delay, false);
+				TimerSystem::GetInstance().AddTimer(timerName, delay, false, true);
 				flipTimerCreated[currentFlipIndex] = true;
 			}
 
@@ -317,14 +340,34 @@ void BuffCardScreen::Update() {
 			allCardsFlipped = true; // All cards done
 		}
 	}
-	if (AEInputCheckTriggered(AEVK_L)) { // Remember to set textloading back to false for fadeonce flag.
+	// Call this function every time we want to reshuffle and draw new cards, 
+	// such as when the player picks "Switch It Up" or after a card selection is made.
+	if (AEInputCheckTriggered(AEVK_L)) {
 		ResetFlipSequence();
 	}
+	f32 dt = static_cast<f32>(AEFrameRateControllerGetFrameTime());
+
+	if (BuffCardManager::IsCardSelectedThisUpdate())
+	{
+		// Fade OUT
+		overlayAlpha -= fadeSpeed * dt;
+	}
+	else
+	{
+		// Fade IN
+		overlayAlpha += fadeSpeed * dt;
+	}
+
+	// Clamp
+	if (overlayAlpha < 0.f) overlayAlpha = 0.f;
+	if (overlayAlpha > 0.85f) overlayAlpha = 0.85f;
 }
 // This function resets the flip, simulating a shuffle.
 // TODO : The buff card type and rarity should be randomized during this function.
 void BuffCardScreen::ResetFlipSequence()
 {
+	BuffCardManager::IsRoomCleared() = true;
+	Time::GetInstance().SetTimeScale(0); // Pause time to prevent player interaction during shuffle
 	// Reset animation state
 	for (int i = 0; i < NUM_CARDS; ++i)
 	{
@@ -341,6 +384,7 @@ void BuffCardScreen::ResetFlipSequence()
 	allCardsFlipped = false;
 	BuffCardManager::IsCardSelected() = false;
 	BuffCardManager::CurrentSelectedCard() = 0;
+	BuffCardManager::IsCardSelectedThisUpdate() = false;
 
 	// Randomize new cards
 	BuffCardManager::RandomizeCards(NUM_CARDS);
@@ -352,29 +396,37 @@ void BuffCardScreen::FlipCard(int cardIndex) {
 	}
 }
 // Draw a black overlay when drawing cards.
-void BuffCardScreen::DrawBlackOverlay() {
+void BuffCardScreen::DrawBlackOverlay()
+{
+	if (overlayAlpha <= 0.0f)
+		return;
+
 	AEMtx33 scale, rotate, translate, transform;
-	// Intentionally scale the overlay to be big so that it covers the entire screen.
-	AEMtx33Scale(&scale, static_cast<f32>(AEGfxGetWindowWidth() * 2), 
+
+	AEMtx33Scale(&scale,
+		static_cast<f32>(AEGfxGetWindowWidth() * 2),
 		static_cast<f32>(AEGfxGetWindowHeight() * 2));
+
 	AEMtx33Rot(&rotate, 0.0f);
-	AEMtx33Trans(&translate, Camera::position.x * Camera::scale, Camera::position.y * Camera::scale);
+	AEMtx33Trans(&translate,
+		Camera::position.x * Camera::scale,
+		Camera::position.y * Camera::scale);
 
 	AEMtx33Concat(&transform, &rotate, &scale);
 	AEMtx33Concat(&transform, &translate, &transform);
 
 	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 	AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
-	AEGfxSetColorToAdd(0.f,0.f,0.f,0.85f);
+	AEGfxSetColorToAdd(0.f, 0.f, 0.f, overlayAlpha);
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(0.85f);
+	AEGfxSetTransparency(overlayAlpha);
 
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(rectMesh, AE_GFX_MDM_TRIANGLES);
 }
 void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int selectedIdx) {
 	if (!textLoading) {
-		TimerSystem::GetInstance().AddTimer("Choose Buff Timer", 1.2f);
+		TimerSystem::GetInstance().AddTimer("Choose Buff Timer", 1.2f, true, true);
 		textLoading = true;
 	}
 	// Approximate text width calculation
@@ -540,9 +592,11 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 //	
 //}
 void BuffCardScreen::Render() {
-	DrawBlackOverlay();
-	DrawPromptText(BuffCardManager::GetRandomizedCards(), BuffCardManager::CurrentSelectedCard());
-	DrawDeck(BuffCardManager::GetRandomizedCards());
+	if (!BuffCardManager::IsCardSelectedThisUpdate() && BuffCardManager::IsRoomCleared()) {
+		DrawBlackOverlay();
+		DrawPromptText(BuffCardManager::GetRandomizedCards(), BuffCardManager::CurrentSelectedCard());
+		DrawDeck(BuffCardManager::GetRandomizedCards());
+	}
 	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
 	//	textLoading = false;
 	//}
