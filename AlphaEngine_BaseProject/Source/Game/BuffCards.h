@@ -10,7 +10,9 @@ enum CARD_TYPE {
 	IRON_DEFENCE,
 	SWITCH_IT_UP,
 	REVITALIZE,
-	SHARPEN
+	SHARPEN,
+	BERSERKER,
+	FEATHERWEIGHT
 };
 
 // Enumeration types for card rarity.
@@ -95,6 +97,8 @@ public:
 		case SWITCH_IT_UP: return "SWITCH_IT_UP";
 		case REVITALIZE: return "REVITALIZE";
 		case SHARPEN: return "SHARPEN";
+		case BERSERKER: return "BERSERKER";
+		case FEATHERWEIGHT: return "FEATHERWEIGHT";
 		default: return "UNKNOWN_TYPE";
 		}
 	}
@@ -110,10 +114,10 @@ public:
 	}
 
 private:
-	static const int UNCOMMON_CARDS = 2; // Number of uncommon cards in the pool.
-	static const int RARE_CARDS = 2; // Number of rare cards in the pool.
-	static const int EPIC_CARDS = 2; // Number of epic cards in the pool.
-	static const int LEGENDARY_CARDS = 1; // Number of legendary cards in the pool.
+	static const int UNCOMMON_CARDS = 20; // Number of uncommon cards in the pool.
+	static const int RARE_CARDS = 20; // Number of rare cards in the pool.
+	static const int EPIC_CARDS = 20; // Number of epic cards in the pool.
+	static const int LEGENDARY_CARDS = 10; // Number of legendary cards in the pool.
 
 	// Flags
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.
@@ -185,7 +189,7 @@ private:
 
 	// Card texture and mesh
 	inline static AEGfxTexture* cardBackTex = nullptr;
-	static const int UNIQUE_CARD_TEXTURES = 5; // Total number of unique card textures available (for different types and rarities).
+	static const int UNIQUE_CARD_TEXTURES = 20; // Total number of unique card textures available (for different types and rarities).
 	inline static AEGfxTexture* cardFrontTex[UNIQUE_CARD_TEXTURES] = { nullptr }; // 5 different front textures
 	static const int UNIQUE_RARITY_TEXTURES = 4; // Total number of unique rarity textures available (for different rarities).
 	inline static AEGfxTexture* cardRarityTex[UNIQUE_RARITY_TEXTURES] = { nullptr }; // 4 different rarities

@@ -39,6 +39,8 @@ void BuffCardScreen::Init() {
 	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
 	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
+	cardFrontTex[BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
+	cardFrontTex[FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
 
 	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
 	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
@@ -187,6 +189,8 @@ CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
 	else if (typeStr == "SWITCH_IT_UP") return SWITCH_IT_UP;
 	else if (typeStr == "REVITALIZE") return REVITALIZE;
 	else if (typeStr == "SHARPEN") return SHARPEN;
+	else if (typeStr == "BERSERKER") return BERSERKER;
+	else if (typeStr == "FEATHERWEIGHT") return FEATHERWEIGHT;
 	else return HERMES_FAVOR; // default fallback
 }
 CARD_RARITY BuffCardManager::GetCardRarity(std::string rarityStr) {

@@ -19,7 +19,7 @@ void UI::Update() {
 }
 void UI::Render() {
 	damageTextSpawner.Render();
-	//BuffCardScreen::Render();
+	BuffCardScreen::Render();
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
