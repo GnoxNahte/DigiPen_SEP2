@@ -99,8 +99,8 @@ void GSM::Update()
 			if (AEInputCheckTriggered(AEVK_K))
 			{
 				AEVec2 pos{};
-				pos.x = AEExtras::RandomRange({ -0.8f, 1.f });
-				pos.y = AEExtras::RandomRange({ -0.8f, -0.5f });
+				pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
+				pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
 				DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
 				int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
 				UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
@@ -126,6 +126,7 @@ void GSM::Update()
 void GSM::Exit()
 {
 	QuickGraphics::Free();
+	UI::Exit();
 }
 
 void GSM::ChangeScene(SceneState state)

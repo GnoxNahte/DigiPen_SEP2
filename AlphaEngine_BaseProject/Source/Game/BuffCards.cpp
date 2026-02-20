@@ -602,19 +602,17 @@ void BuffCardScreen::Render() {
 	//}
 }
 void BuffCardScreen::Exit() {
+	// Free meshes
 	if (cardMesh) {
-		// Free card meshes.
 		AEGfxMeshFree(cardMesh);
 	}
 	if (rectMesh) {
-		// Free rectangle mesh used for overlay.
 		AEGfxMeshFree(rectMesh);
 	}
+	// Free textures
 	if (cardBackTex) {
-		// Free card back textures
 		AEGfxTextureUnload(cardBackTex);
 	}
-	// Free card front textures.
 	for (auto& tex : cardFrontTex)
 	{
 		if (tex)
@@ -623,7 +621,6 @@ void BuffCardScreen::Exit() {
 			tex = nullptr;
 		}
 	}
-	// Free rarity overlay textures.
 	for (auto& tex : cardRarityTex)
 	{
 		if (tex)
@@ -632,4 +629,7 @@ void BuffCardScreen::Exit() {
 			tex = nullptr;
 		}
 	}
+	// Free fonts
+	AEGfxDestroyFont(buffPromptFont);
+	AEGfxDestroyFont(cardBuffFont);
 }

@@ -72,7 +72,7 @@ void DamageText::Render()
 	AEGfxPrint(font,
 		damageNumber.c_str(),
 		viewportPos.x - numberOffsetX * 0.5f,
-		viewportPos.y + verticalSpacing * 0.5f,
+		viewportPos.y - verticalSpacing * 0.5f,
 		scale,
 		r, g, b, alpha);
 }
