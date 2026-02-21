@@ -118,7 +118,21 @@ bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId)
     {
         hp = 0;
         isDead = true;
+        sprite.SetState(DEATH, false, nullptr);
+        deathTimeLeft = GetAnimDurationSec(sprite, DEATH);
+        if (deathTimeLeft <= 0.f)
+            deathTimeLeft = 0.5f; // fallback
         attack.Reset();
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+        teleportActive = false;
+        specialBurstActive = false;
+        specialSpawnsRemaining = 0;
+        specialSpawnTimer = 0.f;
+        g_spellcastUntil5thSpawn = false;
+        g_specialAttacks.clear();
         // (optional: stop specials/teleport etc)
         return true;
     }
@@ -177,6 +191,30 @@ EnemyBoss::~EnemyBoss()
 void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
+
+    if (isDead)
+    {
+        // Ensure we are in DEATH state (safe to call; SetState ignores same-state)
+        sprite.SetState(DEATH);
+
+        // Same logic as regular Enemy: update until the last frame starts, then stop updating.
+        if (deathTimeLeft > 0.f)
+        {
+            float tpf = GetAnimTimePerFrame(sprite, DEATH);
+            if (tpf <= 0.f) tpf = 0.1f;
+
+            if (deathTimeLeft > tpf)
+                sprite.Update();
+
+            deathTimeLeft -= dt;
+            if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
+
+			if (deathTimeLeft <= 0.f) hideAfterDeath = true;
+        }
+
+
+        return;
+    }
 
     // Tick invulnerability
     if (invulnTimer > 0.f)
@@ -526,6 +564,9 @@ void EnemyBoss::UpdateAnimation()
 
 void EnemyBoss::Render()
 {
+
+    if (hideAfterDeath) return;
+
     AEMtx33 m;
 
     const bool faceRight =

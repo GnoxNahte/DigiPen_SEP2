@@ -110,8 +110,8 @@ private:
     bool debugDraw{ true };
 
     // --- Health / damage ---
-    int   maxHP{ 40 };
-    int   hp{ 40 };
+    int   maxHP{ 10 };
+    int   hp{ 10 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };
@@ -122,5 +122,9 @@ private:
 
     // Used only if you pass attackInstanceId >= 0 (optional)
     int   lastHitAttackId{ -1 };
+
+    float deathTimeLeft{ 0.0f };
+
+	bool hideAfterDeath{ false };
 };
 
