@@ -101,6 +101,45 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
+bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId  /* = -1 */)
+{
+    if (!isDead || dmg <= 0 || invulnTimer > 0) return false;
+
+    // Optional: prevent multi-hit from the same swing
+    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId) return false;
+
+    // Apply
+    if (attackInstanceId >= 0)
+        lastHitAttackId = attackInstanceId;
+
+    hp -= dmg;
+    if (hp <= 0)
+    {
+        hp = 0;
+        isDead = true;
+
+        // stop boss from dealing damage after death
+        attack.Reset();
+        // you can also clear specials here later if you want
+    }
+
+    invulnTimer = invulnDuration;
+    return true;
+}
+
+
+bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
+    int dmg, int attackInstanceId)
+{
+    if (isDead) return false;
+
+    // AABB_Overlap2 assumes pos = center, size = full width/height.
+    // matches: DrawRect(position.x, position.y, size.x, size.y, ...)
+    if (!AABB_Overlap2(hitPos, hitSize, position, size))
+        return false;
+
+    return TryTakeDamage(dmg, attackInstanceId);
+}
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
@@ -117,7 +156,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     attack.startRange = 1.8f;
     attack.hitRange = 1.8f;
     attack.cooldown = 0.8f;
-    attack.hitTimeNormalized = 0.5f;
+    attack.hitTimeNormalized = 1.5f;
     attack.breakRange = attack.startRange;
 }
 
@@ -128,6 +167,13 @@ EnemyBoss::~EnemyBoss()
 void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
+
+    // Tick invulnerability
+    if (invulnTimer > 0.f)
+    {
+        invulnTimer -= dt;
+        if (invulnTimer < 0.f) invulnTimer = 0.f;
+    }
 
     const float desiredStopDist = (attack.startRange > 0.05f) ? (attack.startRange - 0.05f)
         : attack.startRange;
@@ -452,6 +498,9 @@ void EnemyBoss::Render()
 
     float px = sprite.metadata.pivot.x;
     float py = sprite.metadata.pivot.y;
+
+    if (!faceRight)
+        px = 1.0f - px;
 
     AEMtx33TransApply(
         &m, &m,

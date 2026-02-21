@@ -65,6 +65,9 @@ public:
     bool IsDead() const { return dead; }
     int  GetHP() const { return hp; }
 
+    // Returns true if damage was actually applied.
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+
     // For future: player will call this when their attack hits.
     void ApplyDamage(int dmg);
 
@@ -110,6 +113,7 @@ private:
     float hurtTimeLeft{ 1.0f };
     float deathTimeLeft{ 0.5f };
     bool hidden = false;
+    int lastHitAttackId{ -1 };
   
 
 

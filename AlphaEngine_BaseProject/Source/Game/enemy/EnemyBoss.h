@@ -31,6 +31,18 @@ public:
     bool PollAttackHit() { return !isDead && attack.PollHit(); }
     // returns number of special projectiles that hit the player this frame
     int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+    // Single hurtbox for now (same as your debug rect in Render()).
+    AEVec2 GetHurtboxPos() const { return position; }
+    AEVec2 GetHurtboxSize() const { return size; }
+    int GetHP() const { return hp; }
+    int GetMaxHP() const { return maxHP; }
+
+    bool IsInvulnerable() const { return invulnTimer > 0.f; }
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+    // Convenience: checks overlap vs boss hurtbox first, then applies damage.
+    bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
+        int dmg, int attackInstanceId = -1);
+
 
 
   
@@ -51,7 +63,7 @@ private:
         TELEPORT = 4,
         SPELLCAST = 5,
         SPELL1 = 6,
-        SPELL2 = 7
+        DEATH = 7
     };
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };
@@ -92,5 +104,15 @@ private:
     // Debug / collider size (use AEVec2 like Player)
     AEVec2 size{ 0.8f, 0.8f };
     bool debugDraw{ true };
+
+    // --- Health / damage ---
+    int   maxHP{ 40 };
+    int   hp{ 40 };
+
+    float invulnTimer{ 0.0f };
+    float invulnDuration{ 0.20f };
+
+    // Used only if you pass attackInstanceId >= 0 (optional)
+    int   lastHitAttackId{ -1 };
 };
 #pragma once

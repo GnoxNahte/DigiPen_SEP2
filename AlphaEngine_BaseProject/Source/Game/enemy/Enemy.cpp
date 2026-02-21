@@ -287,11 +287,18 @@ void Enemy::Update(const AEVec2& playerPos)
     sprite.Update();
 }
 
-void Enemy::ApplyDamage(int dmg)
+bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
 {
-    if (dead) return;
-    if (dmg <= 0) return;
+    if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
 
+    // : prevent repeated hits from the SAME attack swing
+    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
+        return false;
+
+    if (attackInstanceId >= 0)
+        lastHitAttackId = attackInstanceId;
+
+    // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
 
     if (hp <= 0)
@@ -300,32 +307,32 @@ void Enemy::ApplyDamage(int dmg)
         dead = true;
         hidden = false;
 
-        // Disable behavior
         attack.Reset();
         chasing = false;
         returningHome = false;
         velocity = AEVec2{ 0.f, 0.f };
 
-        // Show death sprite
         sprite.SetState(cfg.animDeath, false, nullptr);
         deathTimeLeft = GetAnimDurationSec(sprite, cfg.animDeath);
         if (deathTimeLeft <= 0.f)
-            deathTimeLeft = 0.5f; // fallback
-
+            deathTimeLeft = 0.5f;
     }
     else
     {
-        // Play the full HURT row once.
-        // We lock animation selection for the duration of the row so UpdateAnimation() won't override it.
         hurtTimeLeft = GetAnimDurationSec(sprite, cfg.animHurt);
         if (hurtTimeLeft <= 0.3f)
-            hurtTimeLeft = 0.3f; // fallback if meta has no timing
+            hurtTimeLeft = 0.3f;
 
-        // Cancel any ongoing attack so the hurt is actually visible
         attack.Reset();
-
         sprite.SetState(cfg.animHurt);
     }
+
+    return true;
+}
+
+void Enemy::ApplyDamage(int dmg)
+{
+	(void)TryTakeDamage(dmg, -1);
 }
 
 
