@@ -3,7 +3,7 @@
     { "name": "IDLE",       "frameCount": 8, "sampleRate": 12 },
     { "name": "RUN",        "frameCount": 8, "sampleRate": 12 },
     { "name": "ATTACK",     "frameCount": 8, "sampleRate": 12  },
-    { "name": "HURT",       "frameCount": 8, "sampleRate": 12  },
+    { "name": "HURT",       "frameCount": 3, "sampleRate": 6  },
     { "name": "TELEPORT",   "frameCount": 8, "sampleRate": 6 },
     { "name": "SPELL_CAST", "frameCount": 8, "sampleRate": 10 },
     { "name": "SPELL1",     "frameCount": 7, "sampleRate": 12 },

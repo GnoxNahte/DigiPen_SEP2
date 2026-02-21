@@ -37,6 +37,10 @@ public:
     int GetHP() const { return hp; }
     int GetMaxHP() const { return maxHP; }
 
+    
+
+
+
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
     bool TryTakeDamage(int dmg, int attackInstanceId = -1);
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
@@ -109,10 +113,14 @@ private:
     int   maxHP{ 40 };
     int   hp{ 40 };
 
+    // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
+    float hurtTimeLeft{ 0.0f };
+    float minHurtDuration{ 0.30f };
+
     float invulnTimer{ 0.0f };
     float invulnDuration{ 0.20f };
 
     // Used only if you pass attackInstanceId >= 0 (optional)
     int   lastHitAttackId{ -1 };
 };
-#pragma once
+

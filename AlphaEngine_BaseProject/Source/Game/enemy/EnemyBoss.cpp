@@ -101,27 +101,37 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId  /* = -1 */)
+bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId)
 {
-    if (!isDead || dmg <= 0 || invulnTimer > 0) return false;
+    if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
+        return false;
 
-    // Optional: prevent multi-hit from the same swing
-    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId) return false;
+    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
+        return false;
 
-    // Apply
     if (attackInstanceId >= 0)
         lastHitAttackId = attackInstanceId;
 
     hp -= dmg;
+
     if (hp <= 0)
     {
         hp = 0;
         isDead = true;
-
-        // stop boss from dealing damage after death
         attack.Reset();
-        // you can also clear specials here later if you want
+        // (optional: stop specials/teleport etc)
+        return true;
     }
+
+    // start hurt lock
+    hurtTimeLeft = GetAnimDurationSec(sprite, HURT);
+    if (hurtTimeLeft < minHurtDuration) hurtTimeLeft = minHurtDuration;
+
+    attack.Reset();
+    velocity = AEVec2{ 0.f, 0.f };
+    chasing = false;
+
+    sprite.SetState(HURT);
 
     invulnTimer = invulnDuration;
     return true;
@@ -173,6 +183,35 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     {
         invulnTimer -= dt;
         if (invulnTimer < 0.f) invulnTimer = 0.f;
+    }
+
+    if (hurtTimeLeft > 0.f)
+    {
+        hurtTimeLeft -= dt;
+        if (hurtTimeLeft < 0.f) hurtTimeLeft = 0.f;
+
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+    
+        sprite.Update();
+        specialAttackVfx.Update();
+
+        if (specialBurstActive)
+        {
+			sprite.SetState(SPELLCAST);
+        }
+
+        // keep specials updating 
+        for (auto& s : g_specialAttacks) s.Update(dt);
+        g_specialAttacks.erase(
+            std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
+                [](const SpecialAttack& s) { return !s.alive(); }),
+            g_specialAttacks.end()
+        );
+
+        return;
     }
 
     const float desiredStopDist = (attack.startRange > 0.05f) ? (attack.startRange - 0.05f)

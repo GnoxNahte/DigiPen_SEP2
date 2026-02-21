@@ -100,6 +100,9 @@ void GameScene::Update()
 				if (!e.IsDead() && IsNear(p, e.GetPosition(), attackRange))
 					e.ApplyDamage(1);
 			});
+
+		if (IsNear(p, enemyBoss.GetHurtboxPos(), attackRange))
+			enemyBoss.TryTakeDamage(1);
 	}
 
 	const AEVec2 pPos = player.GetPosition();
