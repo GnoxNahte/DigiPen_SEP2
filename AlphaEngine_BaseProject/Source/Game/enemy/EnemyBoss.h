@@ -126,5 +126,11 @@ private:
     float deathTimeLeft{ 0.0f };
 
 	bool hideAfterDeath{ false };
+
+    // --- Boss UI (screen-space healthbar) ---
+    float hpBarShown{ 1.0f };          // 0..1 smoothed display
+    float hpBarDrainPerSec{ 0.60f };   // smaller = slower drain (tune)
+    bool  showHealthbar{ true };       // optional toggle
+    void RenderHealthbar() const;
 };
 
