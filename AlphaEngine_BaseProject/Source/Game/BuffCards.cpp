@@ -208,8 +208,6 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		}
 		if (AEInputCheckTriggered(AEVK_SPACE) && !cardSelectedThisUpdate) {
 			cardSelectedThisUpdate = true;
-			ApplyCardEffect(cards[cardSelected]);
-			Time::GetInstance().SetTimeScale(1.0f);
 			if (cards[cardSelected].type != SWITCH_IT_UP &&
 				cards[cardSelected].type != REVITALIZE) {
 				// Add the buff if card type is not an instant use type 
@@ -217,13 +215,15 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				// instead of a buff application.
 				AddBuff(cards[cardSelected]); // Add the selected card to the current buffs for reference and UI display.
 			}
-			std::cout << "Selected Card: " << cards[cardSelected].cardName 
+			std::cout << "Selected Card: " << cards[cardSelected].cardName
 				<< '\n' << "Rarity: "
 				<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
 				<< '\n' << "Type:"
-				<< BuffCardManager::CardTypeToString(cards[cardSelected].type) 
+				<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
 				<< '\n' << "Effect: "
 				<< cards[cardSelected].cardEffect << std::endl;
+			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+			Time::GetInstance().SetTimeScale(1.0f);
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
 			// Perform the same rect check again for the click event
@@ -232,8 +232,6 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				BuffCardScreen::cachedCardRects[cardSelected].size)) {
 
 				cardSelectedThisUpdate = true;
-				ApplyCardEffect(cards[cardSelected]);
-				Time::GetInstance().SetTimeScale(1.0f);
 				if (cards[cardSelected].type != SWITCH_IT_UP &&
 					cards[cardSelected].type != REVITALIZE) {
 					AddBuff(cards[cardSelected]);
@@ -245,6 +243,8 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
 					<< '\n' << "Effect: "
 					<< cards[cardSelected].cardEffect << std::endl;
+				ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+				Time::GetInstance().SetTimeScale(1.0f);
 			}
 		}
 	}
