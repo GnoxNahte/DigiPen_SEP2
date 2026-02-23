@@ -47,9 +47,9 @@ void QuickGraphics::DrawRect(const AEVec2& position, const AEVec2& scale, u32 co
 void QuickGraphics::SetColorToMultiply(u32 color)
 {
     AEGfxSetColorToMultiply(
-        (float)((color >> 16) & 0xFF), // Red
-        (float)((color >> 8) & 0xFF), // Green
-        (float)((color >> 0) & 0xFF), // Blue
-        (float)((color >> 24) & 0xFF)// Alpha
+        (float)((color >> 16) & 0xFF) / 255.0f, // Red
+        (float)((color >> 8) & 0xFF) / 255.0f, // Green
+        (float)((color >> 0) & 0xFF) / 255.0f, // Blue
+        (float)((color >> 24) & 0xFF) / 255.0f// Alpha
     );
 }
