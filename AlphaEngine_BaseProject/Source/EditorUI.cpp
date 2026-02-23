@@ -1,5 +1,5 @@
 // EditorUI.cpp
-#include "EditorUI.hpp"
+#include "EditorUI.h"
 
 static s8  gUiFontId = 0;
 static int gCachedWindowW = 1280;

@@ -11,7 +11,7 @@ enum SceneState
 	GS_SPLASH_SCREEN,
 	GS_MAIN_MENU,
 	GS_GAME,
-	GS_LEVEL_EDITOR,
+	
 
 	GS_SCENE_COUNT,
 };
