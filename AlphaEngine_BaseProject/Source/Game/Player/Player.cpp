@@ -8,19 +8,20 @@
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
 #include "../UI.h"
+#include "../../Utils/PhysicsUtils.h"
 
-Player::Player(MapGrid* map) :
+Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
     facingDirection{},
     inputDirection{},
     transform{},
     velocity{},
-    particleSystem{ 50, {} }
+    particleSystem{ 50, {} },
+    map(map),
+    enemyManager(enemyManager)
 {
     Reset(AEVec2{ 2, 4 });
-
-    this->map = map;
 
     health = stats.maxHealth;
 
@@ -391,15 +392,21 @@ void Player::UpdateAttacks()
     if (IsAnimGroundAttack())
         attack = &stats.groundAttacks[animState - AnimState::ATTACK_1];
     else if (IsAnimAirAttack())
-        attack = &stats.groundAttacks[animState - AnimState::AIR_ATTACK_1];
+        attack = &stats.airAttacks[animState - AnimState::AIR_ATTACK_1];
     // Else, not attacking
     else
         return;
 
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
+
+    enemyManager->ForEachEnemy([&](Enemy& enemy) {
+        if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()))
+            enemy.ApplyDamage(1);
+    });
+
     if (Editor::GetShowColliders())
-        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFFFF0000);
+        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF0000FF, AE_GFX_MDM_LINES_STRIP);
 }
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)

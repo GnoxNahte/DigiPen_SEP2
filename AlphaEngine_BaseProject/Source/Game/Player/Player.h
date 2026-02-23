@@ -7,6 +7,7 @@
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
+#include "../enemy/EnemyManager.h"
 
 /**
  * @brief Controllable player class
@@ -43,7 +44,7 @@ public:
         ANIM_COUNT
     };
 
-    Player(MapGrid* map);
+    Player(MapGrid* map, EnemyManager* enemyManager);
     ~Player();
     void Update();
     void Render();
@@ -95,6 +96,7 @@ private:
 
     // === References to other systems ===
     MapGrid* map;
+    EnemyManager* enemyManager;
 
     // ===== Helper Functions =====
     void UpdateInput();
