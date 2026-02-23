@@ -1,4 +1,4 @@
-#include "EditorUI.hpp"
+#include "EditorUI.h"
 
 // font (set from outside using EditorUI_SetFont)
 static s8 gUiFontId = 0;

@@ -7,7 +7,7 @@
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 
-#include "EditorUI.hpp"
+#include "../../EditorUI.h"
 #include "LevelIO.h"
 #include "../Environment/traps.h"
 
@@ -157,7 +157,7 @@ static void UpdateEditor(float dt)
 
     AEVec2 world;
     const f32 screenY = (f32)AEGfxGetWindowHeight() - (f32)my;
-    AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, screenY }, gCamera->position, world);
+    AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, screenY }, world);
 
     const int tx = (int)std::floor(world.x);
     const int ty = (int)std::floor(world.y);
@@ -315,7 +315,7 @@ void GameState_LevelEditor_Draw()
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 
     ApplyWorldCamera();
-    gMap->Render(*gCamera);
+    gMap->Render();
 
     // ui overlay
     s32 mx, my;

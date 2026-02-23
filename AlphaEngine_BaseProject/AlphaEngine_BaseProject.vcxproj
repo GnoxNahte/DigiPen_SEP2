@@ -103,7 +103,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="EditorUI.cpp" />
     <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="..\Extern\imgui\include\imgui.cpp" />
@@ -113,6 +112,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp" />
     <ClCompile Include="Saves\SaveData.cpp" />
     <ClCompile Include="Saves\SaveSystem.cpp" />
+    <ClCompile Include="Source\EditorUI.cpp" />
     <ClCompile Include="Source\Editor\Editor.cpp" />
     <ClCompile Include="Source\Editor\EditorUtils.cpp" />
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
@@ -157,7 +157,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
-    <ClInclude Include="Source\EditorUI.hpp" />
+    <ClInclude Include="Source\EditorUI.h" />
     <ClInclude Include="Source\Editor\Editor.h" />
     <ClInclude Include="Source\Editor\EditorUtils.h" />
     <ClInclude Include="Source\Editor\ImGuiHelper.h" />
