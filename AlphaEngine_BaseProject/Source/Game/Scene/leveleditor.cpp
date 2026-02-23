@@ -544,7 +544,7 @@ void GameState_LevelEditor_Draw()
 
     AEGfxSetBackgroundColor(0.10f, 0.10f, 0.10f);
 
-    AEMtx33 identity;
+    //AEMtx33 identity;
     AEMtx33Identity(&identity);
     AEGfxSetTransform(identity.m);
 

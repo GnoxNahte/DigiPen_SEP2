@@ -7,6 +7,7 @@ enum SceneState
 	GS_QUIT = -2,
 	GS_RESTART = -1,
 
+	GS_LEVEL_EDITOR,
 	GS_SPLASH_SCREEN,
 	GS_MAIN_MENU,
 	GS_GAME,

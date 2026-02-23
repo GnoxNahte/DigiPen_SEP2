@@ -64,7 +64,6 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include;$(ProjectDir)\Source</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include;$(SolutionDir)Extern\imgui\include;$(SolutionDir)Extern\imgui\include\backends</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -159,6 +158,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\EditorUI.hpp" />
+    <ClInclude Include="Source\EditorUI.h" />
     <ClInclude Include="Source\Editor\Editor.h" />
     <ClInclude Include="Source\Editor\EditorUtils.h" />
     <ClInclude Include="Source\Editor\ImGuiHelper.h" />
