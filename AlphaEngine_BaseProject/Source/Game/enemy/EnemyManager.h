@@ -8,7 +8,7 @@
 #include "AEEngine.h"    
 #include "Enemy.h"   
 
-class EnemyManager
+class EnemyManager 
 {
 public:
     struct SpawnInfo

@@ -181,7 +181,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     attack.hitRange = 1.8f;
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 1.5f;
-    attack.breakRange = attack.startRange;
+    attack.breakRange = 99999.0f;
 }
 
 EnemyBoss::~EnemyBoss()
