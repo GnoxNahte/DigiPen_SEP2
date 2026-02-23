@@ -2,7 +2,6 @@
 #include <AEEngine.h>
 #include <string>
 #include "../Utils/ObjectPool.h"
-#include "BuffCards.h"
 // Enumeration types for the incoming damage type.
 enum DAMAGE_TYPE {
 	DAMAGE_TYPE_NORMAL,
@@ -53,10 +52,10 @@ public:
 	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE; }
 
 private:
-	inline static s8 damageTextFont;
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
-	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
+	inline static s8 damageTextFont;
+	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
 };
 // Enums for button states, to determine how the button should react to player interaction and what visuals to show.
 enum BUTTON_STATE {

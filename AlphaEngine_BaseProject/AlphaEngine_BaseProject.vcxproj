@@ -116,6 +116,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Editor\Editor.cpp" />
     <ClCompile Include="Source\Editor\EditorUtils.cpp" />
     <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
+    <ClCompile Include="Source\Game\Background.cpp" />
     <ClCompile Include="Source\Game\BuffCards.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
     <ClCompile Include="Source\Game\enemy\Enemy.cpp" />
@@ -162,6 +163,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Editor\Editor.h" />
     <ClInclude Include="Source\Editor\EditorUtils.h" />
     <ClInclude Include="Source\Editor\ImGuiHelper.h" />
+    <ClInclude Include="Source\Game\Background.h" />
     <ClInclude Include="Source\Game\BuffCards.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Game\enemy\Enemy.h" />
