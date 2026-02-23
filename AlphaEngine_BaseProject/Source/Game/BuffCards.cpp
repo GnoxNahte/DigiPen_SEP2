@@ -64,10 +64,70 @@ void BuffCardManager::Update() {
 	SelectCards(randomizedCards);
 }
 void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
-	if (card.type == SWITCH_IT_UP) {
+	switch (card.type) {
+	case (HERMES_FAVOR):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (IRON_DEFENCE):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (SWITCH_IT_UP):
 		// If the card effect is "Switch It Up", trigger a shuffle by resetting the flip sequence and allowing new cards to be drawn.
 		BuffCardScreen::ResetFlipSequence();
 		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
+		break;
+	case (REVITALIZE):
+		break;
+	case (SHARPEN):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (BERSERKER):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (FEATHERWEIGHT):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		}
+		break;
 	}
 	BuffCardScreen::GetTextLoadingStatus() = false;
 
@@ -148,15 +208,22 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		}
 		if (AEInputCheckTriggered(AEVK_SPACE) && !cardSelectedThisUpdate) {
 			cardSelectedThisUpdate = true;
-			ApplyCardEffect(cards[cardSelected]);
-			Time::GetInstance().SetTimeScale(1.0f);
-			std::cout << "Selected Card: " << cards[cardSelected].cardName 
+			if (cards[cardSelected].type != SWITCH_IT_UP &&
+				cards[cardSelected].type != REVITALIZE) {
+				// Add the buff if card type is not an instant use type 
+				// like "Switch It Up", which triggers a shuffle effect 
+				// instead of a buff application.
+				AddBuff(cards[cardSelected]); // Add the selected card to the current buffs for reference and UI display.
+			}
+			std::cout << "Selected Card: " << cards[cardSelected].cardName
 				<< '\n' << "Rarity: "
 				<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
 				<< '\n' << "Type:"
-				<< BuffCardManager::CardTypeToString(cards[cardSelected].type) 
+				<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
 				<< '\n' << "Effect: "
 				<< cards[cardSelected].cardEffect << std::endl;
+			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+			Time::GetInstance().SetTimeScale(1.0f);
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
 			// Perform the same rect check again for the click event
@@ -165,8 +232,10 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				BuffCardScreen::cachedCardRects[cardSelected].size)) {
 
 				cardSelectedThisUpdate = true;
-				ApplyCardEffect(cards[cardSelected]);
-				Time::GetInstance().SetTimeScale(1.0f);
+				if (cards[cardSelected].type != SWITCH_IT_UP &&
+					cards[cardSelected].type != REVITALIZE) {
+					AddBuff(cards[cardSelected]);
+				}
 				std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
 					<< '\n' << "Rarity: "
 					<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
@@ -174,6 +243,8 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
 					<< '\n' << "Effect: "
 					<< cards[cardSelected].cardEffect << std::endl;
+				ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+				Time::GetInstance().SetTimeScale(1.0f);
 			}
 		}
 	}
@@ -573,16 +644,16 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)
 		// and 0.0 when fully flat.
-		float flipActivity = 1.0f - abs(cardFlipProgress);
+		f32 flipActivity = 1.0f - abs(cardFlipProgress);
 
-		float scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
-		float scaleY = CARD_HEIGHT * CARD_SIZE_MODIFIER;
+		f32 scaleX = CARD_WIDTH * CARD_SIZE_MODIFIER * abs(cardFlipProgress);
+		f32 scaleY = CARD_HEIGHT * CARD_SIZE_MODIFIER;
 		f32 offsetX = (i - 1) * CARD_SPACING;
 		f32 offsetY = 0.f;
 
 		if (allCardsFlipped && cards[i].selected) {
-			float currentWobbleSpeed = WOBBLE_SPEED;
-			float currentWobbleAmp = WOBBLE_AMPLITUDE;
+			f32 currentWobbleSpeed = WOBBLE_SPEED;
+			f32 currentWobbleAmp = WOBBLE_AMPLITUDE;
 
 			if (cards[i].selected) {
 				offsetY += sinf(t * FLOAT_SPEED) * FLOAT_AMPLITUDE;
@@ -596,10 +667,10 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 				offsetY += cosf(t * FLOAT_SPEED + i) * (flipActivity * 5.0f);
 			}
 		}
-		// --- ROTATION (The key to making it look natural) ---
+		// ROTATION
 		AEMtx33 rotate{ 0 };
 		// Add a slight tilt that is strongest while the card is flipping
-		float tiltAngle = flipActivity * 0.1f * sinf(t * 2.0f + i);
+		f32 tiltAngle = flipActivity * 0.1f * sinf(t * 2.0f + i);
 		AEMtx33Rot(&rotate, tiltAngle);
 
 		AEMtx33 scale;
