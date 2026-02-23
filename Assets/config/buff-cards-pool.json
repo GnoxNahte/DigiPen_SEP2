@@ -164,8 +164,8 @@
       "name": "Featherweight",
       "description": "Lighter than a falling leaf. The abyss below must wait.",
       "effect": "Reduce gravity and maximum fall speed by 5%.",
-      "effect_value_1": 10,
-      "effect_value_2": 10
+      "effect_value_1": 15,
+      "effect_value_2": 15
     }
 
 

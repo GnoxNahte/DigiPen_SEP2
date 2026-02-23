@@ -64,10 +64,70 @@ void BuffCardManager::Update() {
 	SelectCards(randomizedCards);
 }
 void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
-	if (card.type == SWITCH_IT_UP) {
+	switch (card.type) {
+	case (HERMES_FAVOR):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (IRON_DEFENCE):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (SWITCH_IT_UP):
 		// If the card effect is "Switch It Up", trigger a shuffle by resetting the flip sequence and allowing new cards to be drawn.
 		BuffCardScreen::ResetFlipSequence();
 		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
+		break;
+	case (REVITALIZE):
+		break;
+	case (SHARPEN):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (BERSERKER):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_LEGENDARY):
+			break;
+		}
+		break;
+	case (FEATHERWEIGHT):
+		switch (card.rarity) {
+		case (RARITY_UNCOMMON):
+			break;
+		case (RARITY_RARE):
+			break;
+		case (RARITY_EPIC):
+			break;
+		}
+		break;
 	}
 	BuffCardScreen::GetTextLoadingStatus() = false;
 
