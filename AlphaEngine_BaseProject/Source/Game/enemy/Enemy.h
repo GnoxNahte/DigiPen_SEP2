@@ -3,8 +3,10 @@
 #include "../../Utils/Sprite.h"
 #include "EnemyAttack.h"
 #include <AEVec2.h>
+#include "IDamageable.h"
 
-class Enemy
+
+class Enemy : public IDamageable
 {
 public:
     // Presets to replace EnemyA / EnemyB
@@ -54,6 +56,9 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
+        AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
+    AEVec2 GetHurtboxSize() const override { return GetSize(); }
+
     void Update(const AEVec2& playerPos);
     void Render();
 
@@ -66,7 +71,7 @@ public:
     int  GetHP() const { return hp; }
 
     // Returns true if damage was actually applied.
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
 
     // For future: player will call this when their attack hits.
     void ApplyDamage(int dmg);

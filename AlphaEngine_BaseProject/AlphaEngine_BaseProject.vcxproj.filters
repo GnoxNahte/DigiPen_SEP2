@@ -305,5 +305,8 @@
     <ClInclude Include="Source\Game\enemy\EnemyManager.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Game\enemy\IDamageable.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -2,10 +2,11 @@
 #include "../../Utils/Sprite.h" 
 #include "EnemyAttack.h"
 #include <AEVec2.h>
+#include "IDamageable.h"
 
 
 
-class EnemyBoss
+class EnemyBoss : public IDamageable
 {
 public:
     EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
@@ -14,7 +15,7 @@ public:
     void Update(const AEVec2& playerPos, bool playerFacingRight);
 
     void Render();
-
+    
     AEVec2 position{ 0.f, 0.f };
 
 
@@ -26,7 +27,7 @@ public:
     //raise to start chasing player
     float aggroRange = 10.0f;
 
-
+    bool IsDead() const override { return isDead; }
     //for gamescene to use to apply damage later
     bool PollAttackHit() { return !isDead && attack.PollHit(); }
     // returns number of special projectiles that hit the player this frame
@@ -42,7 +43,7 @@ public:
 
 
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg, int attackInstanceId = -1);

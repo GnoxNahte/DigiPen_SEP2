@@ -72,6 +72,7 @@ void GameScene::Init()
 	std::vector<EnemyManager::SpawnInfo> spawns;
 	spawns.push_back({ Enemy::Preset::Druid, {30.f, 3.f} });
 	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 3.f} });
+	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
 
@@ -95,14 +96,21 @@ void GameScene::Update()
 	{
 		const float attackRange = 1.6f; // tweak to taste
 
-		enemyMgr.ForEachEnemy([&](Enemy& e)
+		/*enemyMgr.ForEachEnemy([&](Enemy& e)
 			{
 				if (!e.IsDead() && IsNear(p, e.GetPosition(), attackRange))
 					e.ApplyDamage(1);
 			});
 
 		if (IsNear(p, enemyBoss.GetHurtboxPos(), attackRange))
-			enemyBoss.TryTakeDamage(1);
+			enemyBoss.TryTakeDamage(1);*/
+
+		enemyMgr.ForEachDamageable([&](IDamageable& target)
+			{
+				if (target.IsDead()) return;
+				if (!target.IsDead() && IsNear(p, target.GetHurtboxPos(), attackRange))
+				target.TryTakeDamage(1);
+			});
 	}
 
 	const AEVec2 pPos = player.GetPosition();

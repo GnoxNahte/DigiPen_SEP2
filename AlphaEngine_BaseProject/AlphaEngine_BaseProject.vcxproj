@@ -162,6 +162,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h" />
     <ClInclude Include="Source\Game\enemy\EnemyBoss.h" />
     <ClInclude Include="Source\Game\enemy\EnemyManager.h" />
+    <ClInclude Include="Source\Game\enemy\IDamageable.h" />
     <ClInclude Include="Source\Game\Environment\MapGrid.h" />
     <ClInclude Include="Source\Game\Environment\MapTile.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
