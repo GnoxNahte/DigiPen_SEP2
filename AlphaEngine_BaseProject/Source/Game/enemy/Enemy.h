@@ -4,9 +4,10 @@
 #include "EnemyAttack.h"
 #include <AEVec2.h>
 #include "IDamageable.h"
+#include "../../Editor/EditorUtils.h"
 
 
-class Enemy : public IDamageable
+class Enemy : public IDamageable, Inspectable
 {
 public:
     // Presets to replace EnemyA / EnemyB
@@ -56,8 +57,11 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
-        AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
+    AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
     AEVec2 GetHurtboxSize() const override { return GetSize(); }
+
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
 
     void Update(const AEVec2& playerPos);
     void Render();
@@ -73,8 +77,8 @@ public:
     // Returns true if damage was actually applied.
     bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
 
-    // For future: player will call this when their attack hits.
-    void ApplyDamage(int dmg);
+ 
+    //void ApplyDamage(int dmg);
 
 
     // Useful getters for combat / debugging
