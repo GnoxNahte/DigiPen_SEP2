@@ -1,7 +1,6 @@
 #include "EditorUI.hpp"
 
-// font (set from outside using EditorUI_SetFont)
-static s8 gUiFontId = -1;                 // FIX: start invalid, not 0
+static s8 gUiFontId = -1;
 static constexpr float UI_TEXT_SCALE = 1.0f;
 
 void EditorUI_SetFont(s8 fontId)
@@ -9,24 +8,19 @@ void EditorUI_SetFont(s8 fontId)
     gUiFontId = fontId;
 }
 
-// simple 1x1 quad mesh for ui rectangles
 static AEGfxVertexList* gUiQuad = nullptr;
 
 static AEGfxVertexList* CreateUnitQuad(u32 color)
 {
     AEGfxMeshStart();
 
-    AEGfxTriAdd(
-        -0.5f, -0.5f, color, 0.0f, 1.0f,
+    AEGfxTriAdd(-0.5f, -0.5f, color, 0.0f, 1.0f,
         0.5f, -0.5f, color, 1.0f, 1.0f,
-        -0.5f, 0.5f, color, 0.0f, 0.0f
-    );
+        -0.5f, 0.5f, color, 0.0f, 0.0f);
 
-    AEGfxTriAdd(
-        0.5f, -0.5f, color, 1.0f, 1.0f,
+    AEGfxTriAdd(0.5f, -0.5f, color, 1.0f, 1.0f,
         0.5f, 0.5f, color, 1.0f, 0.0f,
-        -0.5f, 0.5f, color, 0.0f, 0.0f
-    );
+        -0.5f, 0.5f, color, 0.0f, 0.0f);
 
     return AEGfxMeshEnd();
 }
@@ -45,7 +39,6 @@ void EditorUI_Shutdown()
     }
 }
 
-// helpers
 static inline float ScreenY_To_UIY(int windowH, s32 myTopLeft)
 {
     return (float)(windowH - myTopLeft);
@@ -71,43 +64,26 @@ static void DrawRect(float cx, float cy, float w, float h, float r, float g, flo
     AEGfxMeshDraw(gUiQuad, AE_GFX_MDM_TRIANGLES);
 }
 
-// FIX: AEGfxPrint expects NORMALIZED coords [-1..1], but UI uses pixels.
-// convert pixel x/y (0..W, 0..H) -> normalized (-1..1).
-static inline float PxToNdcX(float px, float w)
-{
-    return (px / (w * 0.5f)) - 1.0f;
-}
+static inline float PxToNdcX(float px, float w) { return (px / (w * 0.5f)) - 1.0f; }
+static inline float PxToNdcY(float py, float h) { return (py / (h * 0.5f)) - 1.0f; }
 
-static inline float PxToNdcY(float py, float h)
-{
-    return (py / (h * 0.5f)) - 1.0f;
-}
-
-static void PrintText(const char* text, float xPx, float yPx, float scale,
+static void PrintTextPx(const char* text, float xPx, float yPx, float scale,
     float r, float g, float b, float a)
 {
-    if (gUiFontId < 0 || !text)
-        return;
+    if (gUiFontId < 0 || !text) return;
 
     const float w = (float)AEGfxGetWindowWidth();
     const float h = (float)AEGfxGetWindowHeight();
 
-    // convert pixels -> normalized coords for AEGfxPrint
-    const float xN = PxToNdcX(xPx, w);
-    const float yN = PxToNdcY(yPx, h);
+    const float x = PxToNdcX(xPx, w);
+    const float y = PxToNdcY(yPx, h);
 
-    // fonts typically require texture mode + blending
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.0f);
 
-    // force known-good color state (prevents invisible text)
-    AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
-    AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
+    AEGfxPrint(gUiFontId, text, x, y, scale, r, g, b, a);
 
-    AEGfxPrint(gUiFontId, text, xN, yN, scale, r, g, b, a);
-
-    // back to color for rectangles
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 }
 
@@ -116,14 +92,14 @@ static bool Button(const char* label,
     float mx, float my, bool pressed,
     bool selected = false)
 {
-    bool hot = PointInRect(mx, my, x, y, w, h);
+    const bool hot = PointInRect(mx, my, x, y, w, h);
 
     float r = 0.18f, g = 0.18f, b = 0.18f, a = 0.90f;
     if (selected) { r = 0.20f; g = 0.35f; b = 0.20f; }
     if (hot) { r += 0.08f; g += 0.08f; b += 0.08f; }
 
     DrawRect(x + w * 0.5f, y + h * 0.5f, w, h, r, g, b, a);
-    PrintText(label, x + 10.0f, y + (h * 0.5f) - 6.0f, UI_TEXT_SCALE, 1, 1, 1, 1);
+    PrintTextPx(label, x + 10.0f, y + (h * 0.5f) - 6.0f, UI_TEXT_SCALE, 1, 1, 1, 1);
 
     return hot && pressed;
 }
@@ -138,6 +114,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     s32 mxTL, s32 myTL,
     bool mouseLPressed)
 {
+    // reset one-frame actions
     ui.requestResetPlayer = false;
     ui.requestClearMap = false;
     ui.requestSave = false;
@@ -146,12 +123,14 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     io.mouseCaptured = false;
     io.keyboardCaptured = false;
 
-    float mx = (float)mxTL;
-    float my = ScreenY_To_UIY(windowH, myTL);
+    const float mx = (float)mxTL;
+    const float my = ScreenY_To_UIY(windowH, myTL);
 
+    // ui camera
     AEGfxSetCamPosition(windowW * 0.5f, windowH * 0.5f);
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 
+    // panel bg
     DrawRect(ui.panelW * 0.5f, windowH * 0.5f, ui.panelW, (float)windowH,
         0.12f, 0.12f, 0.12f, 0.95f);
 
@@ -163,7 +142,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     float w = ui.panelW - ui.pad * 2.0f;
     float h = ui.rowH;
 
-    PrintText("level editor", x, y + 12.0f, UI_TEXT_SCALE, 1, 1, 1, 1);
+    PrintTextPx("level editor", x, y + 12.0f, UI_TEXT_SCALE, 1, 1, 1, 1);
     y -= (ui.rowH + ui.gap);
     SeparatorLine(x, y + ui.rowH + 2.0f, w);
     y -= ui.gap;
@@ -188,21 +167,21 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         ui.requestClearMap = true;
     y -= (ui.rowH + ui.gap);
 
-    if (Button("save (stub)", x, y, w, h, mx, my, mouseLPressed))
+    if (Button("save", x, y, w, h, mx, my, mouseLPressed))
         ui.requestSave = true;
     y -= (ui.rowH + ui.gap);
 
-    if (Button("load (stub)", x, y, w, h, mx, my, mouseLPressed))
+    if (Button("load", x, y, w, h, mx, my, mouseLPressed))
         ui.requestLoad = true;
     y -= (ui.rowH + ui.gap);
 
     SeparatorLine(x, y + ui.rowH + 2.0f, w);
     y -= ui.gap;
 
-    PrintText("tools", x, y + 12.0f, UI_TEXT_SCALE, 0.85f, 0.85f, 0.85f, 1);
+    PrintTextPx("tools", x, y + 12.0f, UI_TEXT_SCALE, 0.85f, 0.85f, 0.85f, 1);
     y -= (ui.rowH + ui.gap);
 
-    float halfW = (w - ui.gap) * 0.5f;
+    const float halfW = (w - ui.gap) * 0.5f;
 
     if (Button("paint", x, y, halfW, h, mx, my, mouseLPressed, ui.tool == EditorTool::Paint))
         ui.tool = EditorTool::Paint;
@@ -219,7 +198,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     SeparatorLine(x, y + ui.rowH + 2.0f, w);
     y -= ui.gap;
 
-    PrintText("palette", x, y + 12.0f, UI_TEXT_SCALE, 0.85f, 0.85f, 0.85f, 1);
+    PrintTextPx("palette", x, y + 12.0f, UI_TEXT_SCALE, 0.85f, 0.85f, 0.85f, 1);
     y -= (ui.rowH + ui.gap);
 
     if (Button("eraser (empty)", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Empty))
