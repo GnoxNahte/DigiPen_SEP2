@@ -82,6 +82,9 @@ public:
 	inline static const std::vector<BuffCard> GetEpicCards() { return epicCards; }
 	inline static const std::vector<BuffCard> GetLegendaryCards() { return legendaryCards; }
 	inline static const std::vector<BuffCard> GetRandomizedCards() { return randomizedCards; }
+	// Get the current buffs the player has, for reference when applying new buffs and for displaying in the UI.
+	inline static const std::vector<BuffCard>& GetCurrentBuffs() { return currentBuffs; }
+	inline static void AddBuff(const BuffCard& card) { currentBuffs.push_back(card); }
 
 
 	static void SelectCards(std::vector<BuffCard>& cards); // Handle player input for selecting a card and applying its effect.
@@ -148,6 +151,9 @@ private:
 	inline static std::vector<BuffCard> rareCards;
 	inline static std::vector<BuffCard> epicCards;
 	inline static std::vector<BuffCard> legendaryCards;
+
+	// Store the current buffs the player has, to be displayed in the UI and for reference when applying new buffs.
+	inline static std::vector<BuffCard> currentBuffs{};
 
 
 	inline static const std::string file = "buff-cards-pool.json"; // File to save card info to.

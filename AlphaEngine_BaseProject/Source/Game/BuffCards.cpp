@@ -210,6 +210,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			cardSelectedThisUpdate = true;
 			ApplyCardEffect(cards[cardSelected]);
 			Time::GetInstance().SetTimeScale(1.0f);
+			if (cards[cardSelected].type != SWITCH_IT_UP &&
+				cards[cardSelected].type != REVITALIZE) {
+				// Add the buff if card type is not an instant use type 
+				// like "Switch It Up", which triggers a shuffle effect 
+				// instead of a buff application.
+				AddBuff(cards[cardSelected]); // Add the selected card to the current buffs for reference and UI display.
+			}
 			std::cout << "Selected Card: " << cards[cardSelected].cardName 
 				<< '\n' << "Rarity: "
 				<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
@@ -227,6 +234,10 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				cardSelectedThisUpdate = true;
 				ApplyCardEffect(cards[cardSelected]);
 				Time::GetInstance().SetTimeScale(1.0f);
+				if (cards[cardSelected].type != SWITCH_IT_UP &&
+					cards[cardSelected].type != REVITALIZE) {
+					AddBuff(cards[cardSelected]);
+				}
 				std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
 					<< '\n' << "Rarity: "
 					<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)

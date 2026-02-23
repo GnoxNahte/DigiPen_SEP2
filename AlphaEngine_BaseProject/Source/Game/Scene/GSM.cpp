@@ -16,6 +16,7 @@
 #include <imgui_impl_win32.h>
 
 #include "../../Utils/AEExtras.h" // temp
+#include "../BuffCards.h"
 
 BaseScene* GSM::currentScene = nullptr;
 
@@ -97,7 +98,15 @@ void GSM::Update()
 			UI::GetDamageTextSpawner().Update();
 			UI::Update();
 			UI::Render();
-
+			// For checking current buffs vector
+			if (AEInputCheckTriggered(AEVK_P)) {
+				std::cout << "Current buffs :\n";
+				for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
+					std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
+						<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
+						<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
+				}
+			}
 			// === For Damage Text Testing ===
 			//if AEInputCheckCurr/Triggered
 			//if (AEInputCheckTriggered(AEVK_K))
