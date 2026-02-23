@@ -350,6 +350,21 @@ static void UpdateEditor(float dt)
 {
     if (!gMap || !gCamera) return;
 
+    if (!gUIIO.mouseCaptured)
+    {
+        s32 scroll = 0;
+        AEInputMouseWheelDelta(&scroll);
+        char buf[64];
+        sprintf_s(buf, "scroll=%d scale=%.2f\n", (int)scroll, (double)Camera::scale);
+        OutputDebugStringA(buf);
+        if (scroll != 0)
+        {
+            float factor = 1.0f + (float)scroll * ZOOM_SPEED;
+            Camera::scale *= factor;
+            if (Camera::scale < ZOOM_MIN) Camera::scale = ZOOM_MIN;
+            if (Camera::scale > ZOOM_MAX) Camera::scale = ZOOM_MAX;
+        }
+    }
     // camera movement
     if (!gUIIO.mouseCaptured)
     {
@@ -358,15 +373,7 @@ static void UpdateEditor(float dt)
         if (AEInputCheckCurr(AEVK_A)) gCamera->position.x -= CAMERA_SPEED * dt;
         if (AEInputCheckCurr(AEVK_D)) gCamera->position.x += CAMERA_SPEED * dt;
 
-        s32 scroll = 0;
-        AEInputMouseWheelDelta(&scroll);
-        if (scroll != 0)
-        {
-            float factor = 1.0f + (float)scroll * ZOOM_SPEED;
-            Camera::scale *= factor;
-            if (Camera::scale < ZOOM_MIN) Camera::scale = ZOOM_MIN;
-            if (Camera::scale > ZOOM_MAX) Camera::scale = ZOOM_MAX;
-        }
+    
     }
 
     ApplyWorldCamera();
@@ -482,10 +489,7 @@ void GameState_LevelEditor_Update()
     if (!gMap || !gCamera) return;
 
     const float dt = (float)AEFrameRateControllerGetFrameTime();
-
-    // ── play mode toggle requests ───────────────────────────────────────────
-    if (AEInputCheckTriggered(AEVK_TAB))
-        SetPlayMode(!gInPlayMode);
+  
 
     // ui button requests play/stop; consume here (ui should not run enter/exit)
     if (gUI.requestTogglePlay)
@@ -597,7 +601,7 @@ void GameState_LevelEditor_Draw()
         (int)AEGfxGetWindowWidth(),
         (int)AEGfxGetWindowHeight(),
         mx, my,
-        AEInputCheckCurr(AEVK_LBUTTON)
+        AEInputCheckTriggered(AEVK_LBUTTON)
     );
 
     // ── save feedback ─────────────────────────────────────────────────────────

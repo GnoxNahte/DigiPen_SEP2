@@ -10,12 +10,8 @@
 #include <filesystem>
 #include <system_error>
 
-
 namespace
 {
-    // we store trap type as int in the save file, but also accept strings.
-    // this keeps the format human-readable and avoids needing traps.h in LevelIO.h.
-
     const char* TrapTypeToString(int typeAsInt)
     {
         const Trap::Type t = static_cast<Trap::Type>(typeAsInt);
@@ -52,6 +48,37 @@ namespace
         }
 
         return StringToTrapTypeInt(token, outTypeAsInt);
+    }
+
+    const char* EnemyPresetToString(int presetAsInt)
+    {
+        // matches Enemy::Preset order (see Enemy.h)
+        switch (presetAsInt)
+        {
+        case 0: return "druid";
+        case 1: return "skeleton";
+        default: return "unknown";
+        }
+    }
+
+    bool ParseEnemyPreset(const std::string& token, int& outPresetAsInt)
+    {
+        // accept either an int ("0") or a string ("druid")
+        bool isNumber = !token.empty();
+        for (char c : token)
+        {
+            if (!std::isdigit((unsigned char)c) && c != '-' && c != '+') { isNumber = false; break; }
+        }
+
+        if (isNumber)
+        {
+            outPresetAsInt = std::stoi(token);
+            return true;
+        }
+
+        if (token == "druid") { outPresetAsInt = 0; return true; }
+        if (token == "skeleton") { outPresetAsInt = 1; return true; }
+        return false;
     }
 
     void TrimLeft(std::string& s)
@@ -127,6 +154,13 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
         }
 
         out << "\n";
+    }
+
+    out << "enemies " << (int)lvl.enemies.size() << "\n";
+    for (const auto& e : lvl.enemies)
+    {
+        out << "enemy " << EnemyPresetToString(e.preset) << ' '
+            << e.pos.x << ' ' << e.pos.y << "\n";
     }
 
     out.flush();
@@ -253,11 +287,55 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         outLvl.traps.push_back(t);
     }
 
+    // enemies block (optional for older files)
+    // if the file ends here, that's fine.
+    if (!(in >> word))
+        return true;
+
+    if (word != "enemies")
+        return false;
+
+    int enemyCount = 0;
+    in >> enemyCount;
+    if (!in || enemyCount < 0) return false;
+
+    outLvl.enemies.clear();
+    outLvl.enemies.reserve((size_t)enemyCount);
+
+    std::getline(in, line); // consume endline
+
+    for (int i = 0; i < enemyCount; ++i)
+    {
+        std::getline(in, line);
+        if (!in) return false;
+
+        TrimLeft(line);
+        if (line.empty()) { --i; continue; }
+
+        std::istringstream ss(line);
+        std::string tag;
+        ss >> tag;
+        if (!ss || tag != "enemy") return false;
+
+        std::string presetTok;
+        ss >> presetTok;
+        if (!ss) return false;
+
+        EnemyDefSimple e;
+        if (!ParseEnemyPreset(presetTok, e.preset)) return false;
+
+        ss >> e.pos.x >> e.pos.y;
+        if (!ss) return false;
+
+        outLvl.enemies.push_back(e);
+    }
+
     return true;
 }
 
 void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
     const std::vector<TrapDefSimple>& traps,
+    const std::vector<EnemyDefSimple>& enemies,
     const AEVec2& spawn,
     LevelData& out)
 {
@@ -266,6 +344,7 @@ void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
     out.cols = cols;
     out.spawn = spawn;
     out.traps = traps;
+    out.enemies = enemies;
 
     out.tiles.assign((size_t)rows * (size_t)cols, (int)MapTile::Type::NONE);
 
@@ -283,6 +362,7 @@ void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
 bool ApplyLevelDataToEditor(const LevelData& lvl,
     MapGrid*& ioGrid,
     std::vector<TrapDefSimple>& ioTraps,
+    std::vector<EnemyDefSimple>& ioEnemies,
     AEVec2& ioSpawn)
 {
     if (lvl.rows <= 0 || lvl.cols <= 0) return false;
@@ -305,6 +385,7 @@ bool ApplyLevelDataToEditor(const LevelData& lvl,
     }
 
     ioTraps = lvl.traps;
+    ioEnemies = lvl.enemies;
     ioSpawn = lvl.spawn;
     return true;
 }

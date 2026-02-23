@@ -26,6 +26,14 @@ struct TrapDefSimple
     std::vector<int> links;
 };
 
+// enemy spawn markers saved by the editor.
+// preset is stored as an int to avoid including Enemy.h here.
+struct EnemyDefSimple
+{
+    int preset = 0; // Enemy::Preset stored as int
+    AEVec2 pos{ 0,0 };
+};
+
 struct LevelData
 {
     int rows = 0;
@@ -34,6 +42,7 @@ struct LevelData
     AEVec2 spawn{ 5.f, 5.f };
     std::vector<int> tiles;                 // row-major
     std::vector<TrapDefSimple> traps;
+    std::vector<EnemyDefSimple> enemies;
 };
 
 bool SaveLevelToFile(const char* filename, const LevelData& lvl);
@@ -43,10 +52,12 @@ bool LoadLevelFromFile(const char* filename, LevelData& out);
 // so we take MapGrid& (not const MapGrid&).
 void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
     const std::vector<TrapDefSimple>& traps,
+    const std::vector<EnemyDefSimple>& enemies,
     const AEVec2& spawn,
     LevelData& out);
 
 bool ApplyLevelDataToEditor(const LevelData& lvl,
     MapGrid*& ioGrid,
     std::vector<TrapDefSimple>& ioTraps,
+    std::vector<EnemyDefSimple>& ioEnemies,
     AEVec2& ioSpawn);
