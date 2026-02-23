@@ -3,10 +3,11 @@
 #include "EnemyAttack.h"
 #include <AEVec2.h>
 #include "IDamageable.h"
+#include "../../Editor/EditorUtils.h"
 
 
 
-class EnemyBoss : public IDamageable
+class EnemyBoss : public IDamageable, Inspectable
 {
 public:
     EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
@@ -23,6 +24,7 @@ public:
     bool isAttacking = false;
     bool isGrounded = true;
     bool chasing = false;
+    int attackDamage = 10;
 
     //raise to start chasing player
     float aggroRange = 10.0f;
@@ -38,10 +40,14 @@ public:
     int GetHP() const { return hp; }
     int GetMaxHP() const { return maxHP; }
 
+	//IMGUI inspector
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
+
     
 
 
-
+    int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
     bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.

@@ -126,7 +126,7 @@ void GameScene::Update()
 
 		if (dy <= yTol)
 		{
-			player.TakeDamage(2, enemyBoss.position); // choose your boss damage
+			player.TakeDamage(enemyBoss.attackDamage, enemyBoss.position); // choose your boss damage
 			std::cout << "[Boss] HIT player (melee)\n";
 		}
 	}

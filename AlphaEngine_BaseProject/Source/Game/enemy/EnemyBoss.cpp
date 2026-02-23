@@ -2,11 +2,11 @@
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
-
 #include <AEVec2.h>
 #include <Windows.h>
 #include <vector>
 #include <algorithm>
+#include <imgui.h>
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 {
@@ -652,6 +652,60 @@ void EnemyBoss::Render()
 
     // make sure we’re not stuck in additive mode from VFX
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+}
+
+void EnemyBoss::DrawInspector()
+{
+    ImGui::Begin("EnemyBoss");
+
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+
+        ImGui::Checkbox("Dead", &isDead);
+        ImGui::Checkbox("Attacking", &isAttacking);
+        ImGui::Checkbox("Grounded", &isGrounded);
+        ImGui::Checkbox("Chasing", &chasing);
+    }
+
+    if (ImGui::CollapsingHeader("HP"))
+    {
+        ImGui::SliderInt("MaxHP", &hp, 0, maxHP);
+        ImGui::Text("MaxHP: %d", maxHP);
+    }
+
+	if (ImGui::CollapsingHeader("Attack"))
+    {
+        ImGui::SliderInt("AttackDamage", &attackDamage, 0, 20);
+        ImGui::DragFloat("StartRange", &attack.startRange, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("HitRange", &attack.hitRange, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("Cooldown", &attack.cooldown, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("HitTimeNorm", &attack.hitTimeNormalized, 0.05f, 0.1f, 3.f);
+        ImGui::DragFloat("BreakRange", &attack.breakRange, 0.05f, 0.f, 20.f);
+    }
+
+    if (ImGui::CollapsingHeader("Tuning"))
+    {
+        ImGui::DragFloat("AggroRange", &aggroRange, 0.05f, 0.f, 100.f);
+        ImGui::DragFloat("MoveSpeed", &moveSpeed, 0.05f, 0.f, 20.f);
+
+        ImGui::SeparatorText("Teleport");
+        ImGui::DragFloat("TeleportInterval", &teleportInterval, 0.05f, 0.1f, 10.f);
+        ImGui::DragFloat("BehindOffset", &teleportBehindOffset, 0.05f, 0.f, 5.f);
+
+        ImGui::SeparatorText("Debug");
+        ImGui::Checkbox("DebugDraw", &debugDraw);
+        ImGui::Checkbox("ShowHealthbar", &showHealthbar);
+    }
+
+    ImGui::End();
+}
+
+bool EnemyBoss::CheckIfClicked(const AEVec2& mousePos)
+{
+    return fabsf(position.x - mousePos.x) < size.x &&
+        fabsf(position.y - mousePos.y) < size.y;
 }
 
 void EnemyBoss::RenderHealthbar() const
