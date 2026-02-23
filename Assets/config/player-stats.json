@@ -71,6 +71,7 @@
         {
             "damage": 10,
             "knockbackForce": 5.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.5,
@@ -85,6 +86,7 @@
         {
             "damage": 20,
             "knockbackForce": 7.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.3,
@@ -99,6 +101,7 @@
         {
             "damage": 30,
             "knockbackForce": 8.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.1,
@@ -115,6 +118,7 @@
         {
             "damage": 15,
             "knockbackForce": 6.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.4,
@@ -129,6 +133,7 @@
         {
             "damage": 25,
             "knockbackForce": 8.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.4,
@@ -143,6 +148,7 @@
         {
             "damage": 50,
             "knockbackForce": 10.0,
+            "recoilSpeed": 10.0,
             "collider": {
                 "position": {
                     "x": 0.4,

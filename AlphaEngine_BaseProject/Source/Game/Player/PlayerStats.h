@@ -8,6 +8,7 @@ struct AttackStats
 {
     int damage;
     float knockbackForce;
+    float recoilSpeed;
     Box collider;
 };
 

@@ -61,6 +61,7 @@ public:
     const PlayerStats& GetStats() const;
  
    bool IsFacingRight() const;
+   AnimState GetAnimState() const;
 
 
 private:
@@ -116,6 +117,7 @@ private:
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();
+    void Attack(AnimState toState);
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
 
