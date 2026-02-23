@@ -8,6 +8,7 @@
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
 #include "../../Game/UI.h"
+#include "../../Game/Background.h"
 #include "../../Editor/Editor.h"
 
 #include <imgui.h>
@@ -33,6 +34,7 @@ void GSM::Init(SceneState type)
 	Time::GetInstance();
 	TimerSystem::GetInstance();
 	UI::Init();
+	Background::Init();
 	// === Timer Testing ===
 	//timerSystem.AddTimer("Test Timer 1", 3.0f);
 
@@ -83,6 +85,8 @@ void GSM::Update()
 			if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
 				nextState = GS_QUIT;
 
+			Background::Render();
+
 			currentScene->Update();
 			Editor::Update();
 
@@ -94,14 +98,14 @@ void GSM::Update()
 			UI::Update();
 			UI::Render();
 
-			//// === For Damage Text Testing ===
+			// === For Damage Text Testing ===
 			//if AEInputCheckCurr/Triggered
 			//if (AEInputCheckTriggered(AEVK_K))
 			//{
 			//	AEVec2 pos{};
 			//	pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
 			//	pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
-			//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,5 }));
+			//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,6 }));
 			//	int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
 			//	UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
 			//}

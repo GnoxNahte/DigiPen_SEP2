@@ -1,10 +1,8 @@
 #include "UI.h"
 #include "../Utils/ObjectPool.h"
-#include "../Utils/MeshGenerator.h"
 #include <string>
 #include "BuffCards.h"
 #include "../Utils/AEExtras.h"
-#include "Camera.h"
 
 /*--------------------------------------------
 			 General UI Functions
