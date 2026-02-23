@@ -7,6 +7,8 @@
 #include <vector>
 #include <algorithm>
 #include <imgui.h>
+#include "../../Utils/AEExtras.h"
+
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 {
@@ -190,19 +192,30 @@ EnemyBoss::~EnemyBoss()
 
 void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
-    const float dt = (float)AEFrameRateControllerGetFrameTime();
 
-	const float target = (maxHP > 0) ? ((float)hp / (float)maxHP) : 0.f;
-    // If taking damage: drain slowly; if healing: snap up (or make it faster)
-    if (hpBarShown > target)
-    {
-		hpBarShown -= hpBarDrainPerSec * dt;
-        if (hpBarShown < target) hpBarShown = target;
-    }
-    else
-    {
-        hpBarShown = target;
-    }
+	float dt = (float)AEFrameRateControllerGetFrameTime();
+    float hpTarget = (maxHP > 0) ? (float)hp / (float)maxHP : 0.f;
+    hpTarget = max(0.f, min(1.f, hpTarget));
+
+    // Trigger chip delay ONLY when HP drops this frame
+    if (hpTarget < prevHpTarget)
+        hpChipDelay = 0.15f;
+
+    prevHpTarget = hpTarget;
+
+    // Front follows fast
+    hpBarFront += (hpTarget - hpBarFront) * (1.0f - expf(-18.0f * dt));
+
+    // Delay countdown
+    hpChipDelay = max(0.f, hpChipDelay - dt);
+
+    // Chip follows slow AFTER delay
+    if (hpChipDelay <= 0.f)
+        hpBarChip += (hpBarFront - hpBarChip) * (1.0f - expf(-3.5f * dt));
+
+    // Keep chip >= front (chip is the “old” HP)
+    if (hpBarChip < hpBarFront)
+        hpBarChip = hpBarFront;
 
     //clamp just in case
 	if (hpBarShown < 0.f) hpBarShown = 0.f;
@@ -278,6 +291,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float absDx = std::fabs(dx);
 
     const bool inAggroRange = (absDx <= aggroRange);
+	if (inAggroRange) bossEngaged = inAggroRange;
 
     // --- TELEPORT trigger (only when not in special/attack/etc.) ---
     const bool teleportBlockedBySpecial = g_spellcastUntil5thSpawn;
@@ -713,44 +727,67 @@ void EnemyBoss::RenderHealthbar() const
 {
 	if (!showHealthbar) return;
     if (hideAfterDeath) return;
+    if (!bossEngaged) return;
       
     AEMtx33 ui;
     AEMtx33Scale(&ui, 1.f, 1.f);
     AEGfxSetTransform(ui.m);
 
-    const float barW = 1.6f;   // total width
-    const float barH = 0.07f;  // height
-    //const float barY = 0.82f;  // near top
-    //const float leftX = position.x; // barW * 0.5
+    // --- HUD anchor in screen pixels ---
+    const float screenW = (float)AEGfxGetWindowWidth();
 
-    //fill bar
-    const float barY = position.y + 2.0f;
-    const float barCenterX = position.x;         // where the full bar is centered
+    const float topMarginPx = 30.f;   // distance from top of screen
+    const float barPxW = 520.f;  // pixel width
+    const float barPxH = 18.f;   // pixel height
+
+    AEVec2 barCenterWorld;
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx + barPxH * 0.5f }, barCenterWorld);
+
+    AEVec2 leftWorld, rightWorld, topWorld, bottomWorld;
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f - barPxW * 0.5f, topMarginPx + barPxH * 0.5f }, leftWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f + barPxW * 0.5f, topMarginPx + barPxH * 0.5f }, rightWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx }, topWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx + barPxH }, bottomWorld);
+
+    const float barW = fabsf(rightWorld.x - leftWorld.x);
+    const float barH = fabsf(bottomWorld.y - topWorld.y);
+
+    const float barCenterX = barCenterWorld.x;
+    const float barY = barCenterWorld.y;
+
     const float barLeftX = barCenterX - barW * 0.5f;
-    const float fillW = barW * hpBarShown;
-    const float fillCenterX = barLeftX + fillW * 0.5f;
+    //const float fillW = barW * hpBarShown;
+    //const float fillCenterX = barLeftX + fillW * 0.5f;
+
+    float chipW = barW * hpBarChip;
+    float frontW = barW * hpBarFront;
+
+    float chipCenterX = barLeftX + chipW * 0.5f;
+    float frontCenterX = barLeftX + frontW * 0.5f;
     AEGfxSetBlendMode(AE_GFX_BM_BLEND); // safety
 
     // Background
-    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFF1A1A1A, AE_GFX_MDM_TRIANGLES);
+    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_TRIANGLES);
 
     // Border 
-    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_LINES_STRIP);
+   QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_LINES_STRIP);
 
-    if (fillW > 0.001f)
+    
+
+    if (frontW > 0.001f)
     {
-        //const float fillCenterX = leftX + fillW * 0.5f;
-        QuickGraphics::DrawRect(fillCenterX, barY, fillW, barH, 0xFFFF0000, AE_GFX_MDM_TRIANGLES);
-    }
+        // Chip (delayed)
+        QuickGraphics::DrawRect(chipCenterX, barY, chipW, barH, 0xFF7A0000, AE_GFX_MDM_TRIANGLES);
 
-  
+        QuickGraphics::DrawRect(frontCenterX, barY, frontW, barH, 0xFFFF0000, AE_GFX_MDM_TRIANGLES);
+    }
+   
 
     // Text (optional)
    // (Top-left label + HP numbers)
-    /*
-    std::string label = "BOSS";
+    std::string label = "Bringer of Death";
     QuickGraphics::PrintText(label.c_str(), -0.95f, 0.88f, 0.35f, 1, 1, 1, 1);
-
+    /*
     std::string hpStr = std::to_string(hp) + " / " + std::to_string(maxHP);
     QuickGraphics::PrintText(hpStr.c_str(), 0.55f, 0.88f, 0.35f, 1, 1, 1, 1);
     */

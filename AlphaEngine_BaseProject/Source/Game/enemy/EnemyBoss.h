@@ -137,5 +137,10 @@ private:
     float hpBarDrainPerSec{ 0.60f };   // smaller = slower drain (tune)
     bool  showHealthbar{ true };       // optional toggle
     void RenderHealthbar() const;
+    bool bossEngaged{ false }; // becomes true once player enters aggro range
+    float hpBarFront = 1.0f;   // fast bar (actual HP)
+    float hpBarChip = 1.0f;   // delayed bar (chip trail)
+    float hpChipDelay = 0.0f; // delay before chip starts shrinking
+    float prevHpTarget = 1.0f;
 };
 
