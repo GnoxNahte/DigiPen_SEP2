@@ -1,4 +1,4 @@
-﻿// leveleditor.cpp
+﻿
 #include "AEEngine.h"
 #include "leveleditor.h"
 
@@ -9,6 +9,7 @@
 
 #include "../../EditorUI.h"
 #include "LevelIO.h"
+
 #include "../Environment/traps.h"
 #include "../Player/Player.h"
 #include "../enemy/Enemy.h"
@@ -17,7 +18,6 @@
 
 #include <vector>
 #include <cmath>
-#include <cstdio>
 
 /*========================================================
     configuration
@@ -44,22 +44,15 @@ static EditorUIState gUI{};
 static EditorUIIO    gUIIO{};
 static s8            gUIFont = -1;
 
-// ── editor data ──────────────────────────────────────────────────────────────
-static std::vector<TrapDefSimple> gTrapDefs;
-static AEVec2                     gSpawn{ 5.0f, 5.0f };
-
-struct EnemySpawnDef
-{
-    Enemy::Preset preset;
-    AEVec2        pos;
-};
-static std::vector<EnemySpawnDef> gEnemyDefs;
+static std::vector<TrapDefSimple>   gTrapDefs;
+static std::vector<EnemyDefSimple>  gEnemyDefs;     // ✅ matches LevelIO
+static AEVec2                       gSpawn{ 5.0f, 5.0f };
 
 static float gSaveMessageTimer = 0.f;
 static bool  gSaveSuccess = false;
 
 /*========================================================
-    play mode state  (null when not in play mode)
+    play mode state
 ========================================================*/
 
 static Player* gPlayPlayer = nullptr;
@@ -67,8 +60,7 @@ static TrapManager* gPlayTraps = nullptr;
 static EnemyManager* gPlayEnemies = nullptr;
 static Camera* gPlayCamera = nullptr;
 
-// authoritative runtime mode flag (ui.playMode is just presentation)
-static bool gInPlayMode = false;
+static bool gInPlayMode = false; // authoritative runtime flag
 
 /*========================================================
     helpers
@@ -82,6 +74,7 @@ static bool InBounds(int x, int y)
 static void ApplyWorldCamera()
 {
     if (!gCamera) return;
+
     AEGfxSetCamPosition(
         gCamera->position.x * Camera::scale,
         gCamera->position.y * Camera::scale
@@ -110,6 +103,8 @@ static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
     t.type = (int)trapType;
     t.pos = AEVec2{ tx + 0.5f, ty + 0.5f };
     t.size = AEVec2{ 1.0f, 1.0f };
+
+    // default spike params (safe)
     t.upTime = 1.0f;
     t.downTime = 1.0f;
     t.damageOnHit = 10;
@@ -119,8 +114,13 @@ static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
     {
         int ex = (int)std::floor(e.pos.x);
         int ey = (int)std::floor(e.pos.y);
-        if (ex == tx && ey == ty && e.type == t.type) { e = t; return; }
+        if (ex == tx && ey == ty && e.type == t.type)
+        {
+            e = t;
+            return;
+        }
     }
+
     gTrapDefs.push_back(t);
 }
 
@@ -141,15 +141,17 @@ static void RemoveEnemyAtCell(int tx, int ty)
 
 static void PlaceEnemyAtCell(int tx, int ty, Enemy::Preset preset)
 {
-    // one enemy per cell — replace if already occupied
     RemoveEnemyAtCell(tx, ty);
-    EnemySpawnDef e{};
-    e.preset = preset;
+
+    EnemyDefSimple e{};
+    e.preset = (int)preset; // ✅ stored as int for IO friendliness
     e.pos = AEVec2{ tx + 0.5f, ty + 0.5f };
     gEnemyDefs.push_back(e);
 }
 
-// ── overlay quad ─────────────────────────────────────────────────────────────
+/*========================================================
+    overlay quad
+========================================================*/
 
 static AEGfxVertexList* gOverlayQuad = nullptr;
 
@@ -188,9 +190,14 @@ static void DrawWorldRect(float worldX, float worldY, float worldW, float worldH
     AEGfxMeshDraw(gOverlayQuad, AE_GFX_MDM_TRIANGLES);
 }
 
-// play mode lifecycle (forward declarations)
+/*========================================================
+    play mode (forward decl + mode switch)
+========================================================*/
+
 static void PlayMode_Enter();
 static void PlayMode_Exit();
+static void PlayMode_Update(float dt);
+static void PlayMode_Render();
 
 static void SetPlayMode(bool enabled)
 {
@@ -198,7 +205,7 @@ static void SetPlayMode(bool enabled)
         return;
 
     gInPlayMode = enabled;
-    gUI.playMode = enabled; // keep ui in sync
+    gUI.playMode = enabled; // keep ui synced
 
     if (gInPlayMode) PlayMode_Enter();
     else             PlayMode_Exit();
@@ -210,21 +217,17 @@ static void SetPlayMode(bool enabled)
 
 static void PlayMode_Enter()
 {
-    // build play camera following player spawn
     gPlayCamera = new Camera(
         { 0.f, 0.f },
         { (float)GRID_COLS, (float)GRID_ROWS },
         CAMERA_SCALE
     );
 
-    // player (uses the editor's MapGrid directly — no copy needed)
     gPlayPlayer = new Player(gMap);
     gPlayPlayer->Reset(gSpawn);
-
-    // position camera directly on spawn — we'll track player manually each frame
     gPlayCamera->position = gSpawn;
 
-    // traps — build runtime trap objects from editor defs
+    // traps
     gPlayTraps = new TrapManager();
     for (const auto& td : gTrapDefs)
     {
@@ -241,8 +244,6 @@ static void PlayMode_Enter()
         else if (td.type == (int)Trap::Type::PressurePlate)
         {
             gPlayTraps->Spawn<PressurePlate>(box);
-            // note: linking pressure plates to spikes is not wired here yet
-            // (requires id-based lookup — add when needed)
         }
         else if (td.type == (int)Trap::Type::LavaPool)
         {
@@ -253,8 +254,10 @@ static void PlayMode_Enter()
     // enemies
     gPlayEnemies = new EnemyManager();
     std::vector<EnemyManager::SpawnInfo> spawns;
+    spawns.reserve(gEnemyDefs.size());
     for (const auto& ed : gEnemyDefs)
-        spawns.push_back({ ed.preset, ed.pos });
+        spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
 }
@@ -266,20 +269,21 @@ static void PlayMode_Exit()
     delete gPlayEnemies; gPlayEnemies = nullptr;
     delete gPlayCamera;  gPlayCamera = nullptr;
 
-    // restore editor camera
     ApplyWorldCamera();
 }
 
 static void PlayMode_Update(float dt)
 {
+    (void)dt;
+
     if (!gPlayPlayer || !gPlayCamera) return;
 
-    // quick controls
     if (AEInputCheckTriggered(AEVK_ESCAPE))
     {
         SetPlayMode(false);
         return;
     }
+
     if (AEInputCheckTriggered(AEVK_R))
     {
         gPlayPlayer->Reset(gSpawn);
@@ -287,21 +291,20 @@ static void PlayMode_Update(float dt)
     }
 
     gPlayPlayer->Update();
-    // manually follow player — avoids any SetFollow/Update internals
     gPlayCamera->position = gPlayPlayer->GetPosition();
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
-
     gPlayEnemies->UpdateAll(pPos);
 
-    // enemy attacks player
     const AEVec2 pSize = gPlayPlayer->GetStats().playerSize;
     gPlayEnemies->ForEachEnemy([&](Enemy& e)
         {
             if (!e.PollAttackHit()) return;
+
             const AEVec2 ePos = e.GetPosition();
             const float dx = std::fabs(pPos.x - ePos.x);
             const float dy = std::fabs(pPos.y - ePos.y);
+
             if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
                 gPlayPlayer->TakeDamage(e.GetAttackDamage(), e.GetPosition());
         });
@@ -313,28 +316,30 @@ static void PlayMode_Render()
 {
     if (!gPlayPlayer || !gPlayCamera) return;
 
-    // apply play camera before ANY world rendering
     AEGfxSetCamPosition(
         gPlayCamera->position.x * Camera::scale,
         gPlayCamera->position.y * Camera::scale
     );
     Camera::position = gPlayCamera->position;
 
-    // tiles
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     gMap->Render();
 
-    // trap overlay (for debug visibility)
+    // optional trap overlay for visibility
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetColorToAdd(0, 0, 0, 0);
+
     for (const auto& td : gTrapDefs)
     {
         float wx = td.pos.x - td.size.x * 0.5f;
         float wy = td.pos.y - td.size.y * 0.5f;
+
         float r, g, b;
         if (td.type == (int)Trap::Type::SpikePlate) { r = 0.85f; g = 0.20f; b = 0.20f; }
         else if (td.type == (int)Trap::Type::PressurePlate) { r = 0.20f; g = 0.75f; b = 0.20f; }
         else continue;
+
         DrawWorldRect(wx, wy, td.size.x, td.size.y, r, g, b, 0.50f);
     }
 
@@ -350,38 +355,39 @@ static void UpdateEditor(float dt)
 {
     if (!gMap || !gCamera) return;
 
-    if (!gUIIO.mouseCaptured)
-    {
-        s32 scroll = 0;
-        AEInputMouseWheelDelta(&scroll);
-        char buf[64];
-        sprintf_s(buf, "scroll=%d scale=%.2f\n", (int)scroll, (double)Camera::scale);
-        OutputDebugStringA(buf);
-        if (scroll != 0)
-        {
-            float factor = 1.0f + (float)scroll * ZOOM_SPEED;
-            Camera::scale *= factor;
-            if (Camera::scale < ZOOM_MIN) Camera::scale = ZOOM_MIN;
-            if (Camera::scale > ZOOM_MAX) Camera::scale = ZOOM_MAX;
-        }
-    }
-    // camera movement
+    // camera movement (blocked when mouse on ui)
     if (!gUIIO.mouseCaptured)
     {
         if (AEInputCheckCurr(AEVK_W)) gCamera->position.y += CAMERA_SPEED * dt;
         if (AEInputCheckCurr(AEVK_S)) gCamera->position.y -= CAMERA_SPEED * dt;
         if (AEInputCheckCurr(AEVK_A)) gCamera->position.x -= CAMERA_SPEED * dt;
         if (AEInputCheckCurr(AEVK_D)) gCamera->position.x += CAMERA_SPEED * dt;
+    }
 
-    
+    // zoom: do NOT depend on gUIIO.mouseCaptured (can be stale in update)
+    // instead, block zoom when cursor is over left ui panel.
+    s32 mx = 0, my = 0;
+    AEInputGetCursorPosition(&mx, &my);
+    const bool overUIPanel = (mx >= 0 && mx < (s32)gUI.panelW);
+
+    if (!overUIPanel)
+    {
+        s32 scroll = 0;
+        AEInputMouseWheelDelta(&scroll);
+        if (scroll != 0)
+        {
+            float factor = 1.0f + (float)scroll * ZOOM_SPEED;
+            Camera::scale *= factor;
+
+            if (Camera::scale < ZOOM_MIN) Camera::scale = ZOOM_MIN;
+            if (Camera::scale > ZOOM_MAX) Camera::scale = ZOOM_MAX;
+        }
     }
 
     ApplyWorldCamera();
 
+    // don’t paint if mouse is in ui panel
     if (gUIIO.mouseCaptured) return;
-
-    s32 mx, my;
-    AEInputGetCursorPosition(&mx, &my);
 
     AEVec2 world{};
     AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, (f32)my }, world);
@@ -412,7 +418,7 @@ static void UpdateEditor(float dt)
         return;
     }
 
-    // Paint
+    // paint
     switch (gUI.brush)
     {
     case EditorTile::Ground:
@@ -431,9 +437,11 @@ static void UpdateEditor(float dt)
 
     case EditorTile::Enemy:
     {
-        Enemy::Preset preset = (gUI.enemyPreset == EditorEnemyPreset::Skeleton)
+        Enemy::Preset preset =
+            (gUI.enemyPreset == EditorEnemyPreset::Skeleton)
             ? Enemy::Preset::Skeleton
             : Enemy::Preset::Druid;
+
         PlaceEnemyAtCell(tx, ty, preset);
         break;
     }
@@ -450,7 +458,7 @@ void GameState_LevelEditor_Load()
     if (fontId < 0) fontId = AEGfxCreateFont("../Assets/buggy-font.ttf", 14);
     if (fontId < 0) fontId = AEGfxCreateFont("../../Assets/buggy-font.ttf", 14);
 
-    gUIFont = static_cast<s8>(fontId);
+    gUIFont = (s8)fontId;
     if (gUIFont < 0) OutputDebugStringA("EditorUI: font load failed\n");
 }
 
@@ -467,6 +475,7 @@ void GameState_LevelEditor_Init()
         );
 
     gCamera->position = { GRID_COLS * 0.5f, GRID_ROWS * 0.5f };
+    Camera::scale = CAMERA_SCALE;
     ApplyWorldCamera();
 
     EditorUI_Init();
@@ -489,24 +498,27 @@ void GameState_LevelEditor_Update()
     if (!gMap || !gCamera) return;
 
     const float dt = (float)AEFrameRateControllerGetFrameTime();
-  
 
-    // ui button requests play/stop; consume here (ui should not run enter/exit)
+    // tab toggles play mode too
+    if (AEInputCheckTriggered(AEVK_TAB))
+        SetPlayMode(!gInPlayMode);
+
+    // ui requested toggle
     if (gUI.requestTogglePlay)
     {
         SetPlayMode(!gInPlayMode);
         gUI.requestTogglePlay = false;
     }
 
-    // if something else changed ui.playMode (safety), honor it
+    // safety sync
     if (gUI.playMode != gInPlayMode)
         SetPlayMode(gUI.playMode);
 
-    // ── file requests (editor-only) ─────────────────────────────────────────
+    // save / load / clear (editor only)
     if (!gInPlayMode && gUI.requestSave)
     {
         LevelData lvl;
-        BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS, gTrapDefs, gSpawn, lvl);
+        BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS, gTrapDefs, gEnemyDefs, gSpawn, lvl);
         gSaveSuccess = SaveLevelToFile(LEVEL_PATH, lvl);
         gSaveMessageTimer = 2.5f;
         gUI.requestSave = false;
@@ -517,7 +529,8 @@ void GameState_LevelEditor_Update()
     {
         LevelData lvl;
         if (LoadLevelFromFile(LEVEL_PATH, lvl))
-            ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gSpawn);
+            ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gEnemyDefs, gSpawn);
+
         gUI.requestLoad = false;
     }
 
@@ -526,6 +539,7 @@ void GameState_LevelEditor_Update()
         for (int row = 0; row < GRID_ROWS; ++row)
             for (int col = 0; col < GRID_COLS; ++col)
                 gMap->SetTile(col, row, MapTile::Type::NONE);
+
         gTrapDefs.clear();
         gEnemyDefs.clear();
         gSpawn = { 5.f, 5.f };
@@ -535,11 +549,8 @@ void GameState_LevelEditor_Update()
     if (gSaveMessageTimer > 0.f)
         gSaveMessageTimer -= dt;
 
-    // ── tick ─────────────────────────────────────────────────────────────────
-    if (gInPlayMode)
-        PlayMode_Update(dt);
-    else
-        UpdateEditor(dt);
+    if (gInPlayMode) PlayMode_Update(dt);
+    else             UpdateEditor(dt);
 }
 
 void GameState_LevelEditor_Draw()
@@ -552,47 +563,60 @@ void GameState_LevelEditor_Draw()
     AEMtx33Identity(&identity);
     AEGfxSetTransform(identity.m);
 
+    // ── world ──────────────────────────────────────────────────────────────
     if (gInPlayMode)
     {
-        PlayMode_Render();
+        PlayMode_Render(); // ✅ prevents C4505 (/WX) unused static warning
     }
     else
     {
         ApplyWorldCamera();
 
-        // sprite tiles
+        // map
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
         gMap->Render();
 
-        // trap overlays
+        // overlays
         AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
         AEGfxSetColorToAdd(0, 0, 0, 0);
+
+        // traps
         for (const auto& t : gTrapDefs)
         {
             float wx = t.pos.x - t.size.x * 0.5f;
             float wy = t.pos.y - t.size.y * 0.5f;
+
             float r, g, b;
             if (t.type == (int)Trap::Type::SpikePlate) { r = 0.85f; g = 0.20f; b = 0.20f; }
             else if (t.type == (int)Trap::Type::PressurePlate) { r = 0.20f; g = 0.75f; b = 0.20f; }
             else continue;
+
             DrawWorldRect(wx, wy, t.size.x, t.size.y, r, g, b, 0.70f);
         }
 
-        // enemy spawn markers — yellow
+        // enemy spawns
         for (const auto& ed : gEnemyDefs)
         {
             float wx = ed.pos.x - 0.5f;
             float wy = ed.pos.y - 0.5f;
-            float r = 1.0f, g = 0.85f, b = 0.0f;
-            if (ed.preset == Enemy::Preset::Skeleton) { r = 0.6f; g = 0.6f; b = 1.0f; } // blue for skeleton
+
+            float r = 1.0f, g = 0.85f, b = 0.0f; // yellow default
+
+            // ✅ preset stored as int
+            if (ed.preset == (int)Enemy::Preset::Skeleton)
+            {
+                r = 0.6f; g = 0.6f; b = 1.0f; // blue for skeleton
+            }
+
             DrawWorldRect(wx, wy, 1.f, 1.f, r, g, b, 0.70f);
         }
 
-        // spawn point marker — white cross (just a small bright quad)
+        // spawn marker
         DrawWorldRect(gSpawn.x - 0.15f, gSpawn.y - 0.15f, 0.3f, 0.3f, 1, 1, 1, 1);
     }
 
-    // ── UI ────────────────────────────────────────────────────────────────────
+    // ── ui ─────────────────────────────────────────────────────────────────
     s32 mx, my;
     AEInputGetCursorPosition(&mx, &my);
 
@@ -601,24 +625,26 @@ void GameState_LevelEditor_Draw()
         (int)AEGfxGetWindowWidth(),
         (int)AEGfxGetWindowHeight(),
         mx, my,
-        AEInputCheckTriggered(AEVK_LBUTTON)
+        AEInputCheckTriggered(AEVK_LBUTTON) // ✅ fixes play/stop lag (no spam)
     );
 
-    // ── save feedback ─────────────────────────────────────────────────────────
-    if (gSaveMessageTimer > 0.f)
+    // ── save feedback ───────────────────────────────────────────────────────
+    if (gSaveMessageTimer > 0.f && gUIFont >= 0)
     {
         const char* msg = gSaveSuccess ? "level saved!" : "save failed!";
         float r = gSaveSuccess ? 0.2f : 1.0f;
         float g = gSaveSuccess ? 1.0f : 0.2f;
+
         AEGfxSetBlendMode(AE_GFX_BM_BLEND);
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
         AEGfxSetColorToAdd(0, 0, 0, 0);
         AEGfxSetColorToMultiply(1, 1, 1, 1);
         AEGfxSetTransparency(1.f);
+
         AEGfxPrint(gUIFont, msg, 0.1f, 0.85f, 1.0f, r, g, 0.2f, 1.0f);
     }
 
-    // restore world camera
+    // restore
     ApplyWorldCamera();
     AEMtx33Identity(&identity);
     AEGfxSetTransform(identity.m);
@@ -626,12 +652,14 @@ void GameState_LevelEditor_Draw()
 
 void GameState_LevelEditor_Free()
 {
-    // ensure play mode is torn down cleanly
-    if (gInPlayMode) SetPlayMode(false);
+    if (gInPlayMode)
+        SetPlayMode(false);
 
     OverlayShutdown();
+
     delete gMap;    gMap = nullptr;
     delete gCamera; gCamera = nullptr;
+
     gTrapDefs.clear();
     gEnemyDefs.clear();
 }
@@ -639,6 +667,7 @@ void GameState_LevelEditor_Free()
 void GameState_LevelEditor_Unload()
 {
     EditorUI_Shutdown();
+
     if (gUIFont >= 0)
     {
         AEGfxDestroyFont(gUIFont);

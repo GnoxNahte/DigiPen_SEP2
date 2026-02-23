@@ -2,7 +2,7 @@
 
 #include "../Environment/MapGrid.h"
 #include "../Environment/MapTile.h"
-#include "../Environment/traps.h" // only needed here for human-readable type strings
+#include "../Environment/traps.h" // for Trap::Type names
 
 #include <fstream>
 #include <sstream>
@@ -34,25 +34,20 @@ namespace
 
     bool ParseTrapType(const std::string& token, int& outTypeAsInt)
     {
-        // accept either an int ("2") or a string ("spikeplate")
         bool isNumber = !token.empty();
         for (char c : token)
         {
             if (!std::isdigit((unsigned char)c) && c != '-' && c != '+') { isNumber = false; break; }
         }
 
-        if (isNumber)
-        {
-            outTypeAsInt = std::stoi(token);
-            return true;
-        }
-
+        if (isNumber) { outTypeAsInt = std::stoi(token); return true; }
         return StringToTrapTypeInt(token, outTypeAsInt);
     }
 
     const char* EnemyPresetToString(int presetAsInt)
     {
-        // matches Enemy::Preset order (see Enemy.h)
+        // match your Enemy::Preset order:
+        // 0 = Druid, 1 = Skeleton
         switch (presetAsInt)
         {
         case 0: return "druid";
@@ -63,19 +58,13 @@ namespace
 
     bool ParseEnemyPreset(const std::string& token, int& outPresetAsInt)
     {
-        // accept either an int ("0") or a string ("druid")
         bool isNumber = !token.empty();
         for (char c : token)
         {
             if (!std::isdigit((unsigned char)c) && c != '-' && c != '+') { isNumber = false; break; }
         }
 
-        if (isNumber)
-        {
-            outPresetAsInt = std::stoi(token);
-            return true;
-        }
-
+        if (isNumber) { outPresetAsInt = std::stoi(token); return true; }
         if (token == "druid") { outPresetAsInt = 0; return true; }
         if (token == "skeleton") { outPresetAsInt = 1; return true; }
         return false;
@@ -95,7 +84,7 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
     if (lvl.rows <= 0 || lvl.cols <= 0) return false;
     if ((int)lvl.tiles.size() != lvl.rows * lvl.cols) return false;
 
-    // ensure parent directory exists (fixes "Assets/..." not found)
+    // ensure parent directory exists
     {
         std::error_code ec;
         std::filesystem::path p(filename);
@@ -164,7 +153,7 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
     }
 
     out.flush();
-    return out.good(); // IMPORTANT: only succeed if stream stayed healthy
+    return out.good();
 }
 
 bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
@@ -179,18 +168,18 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     std::string word;
     int version = 0;
 
-    in >> word >> version; // version N
+    in >> word >> version;
     if (!in || word != "version") return false;
     if (version != 1) return false;
 
-    in >> word >> outLvl.rows >> outLvl.cols; // size r c
+    in >> word >> outLvl.rows >> outLvl.cols;
     if (!in || word != "size") return false;
     if (outLvl.rows <= 0 || outLvl.cols <= 0) return false;
 
-    in >> word >> outLvl.spawn.x >> outLvl.spawn.y; // spawn x y
+    in >> word >> outLvl.spawn.x >> outLvl.spawn.y;
     if (!in || word != "spawn") return false;
 
-    in >> word; // tiles
+    in >> word;
     if (!in || word != "tiles") return false;
 
     outLvl.tiles.assign((size_t)outLvl.rows * (size_t)outLvl.cols, (int)MapTile::Type::NONE);
@@ -205,7 +194,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         }
     }
 
-    in >> word; // traps
+    in >> word;
     if (!in || word != "traps") return false;
 
     int trapCount = 0;
@@ -216,7 +205,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     outLvl.traps.reserve((size_t)trapCount);
 
     std::string line;
-    std::getline(in, line); // consume endline
+    std::getline(in, line);
 
     for (int i = 0; i < trapCount; ++i)
     {
@@ -230,8 +219,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
 
         std::string tag;
         ss >> tag;
-        if (!ss) return false;
-        if (tag != "trap") return false;
+        if (!ss || tag != "trap") return false;
 
         std::string typeTok;
         ss >> typeTok;
@@ -287,13 +275,9 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         outLvl.traps.push_back(t);
     }
 
-    // enemies block (optional for older files)
-    // if the file ends here, that's fine.
-    if (!(in >> word))
-        return true;
-
-    if (word != "enemies")
-        return false;
+    // enemies block (required for version 1 files we write)
+    in >> word;
+    if (!in || word != "enemies") return false;
 
     int enemyCount = 0;
     in >> enemyCount;
@@ -302,7 +286,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     outLvl.enemies.clear();
     outLvl.enemies.reserve((size_t)enemyCount);
 
-    std::getline(in, line); // consume endline
+    std::getline(in, line);
 
     for (int i = 0; i < enemyCount; ++i)
     {
@@ -313,6 +297,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         if (line.empty()) { --i; continue; }
 
         std::istringstream ss(line);
+
         std::string tag;
         ss >> tag;
         if (!ss || tag != "enemy") return false;
