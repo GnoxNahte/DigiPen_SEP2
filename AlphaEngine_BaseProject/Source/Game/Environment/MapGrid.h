@@ -15,7 +15,7 @@ public:
 
 	~MapGrid();
 
-	void Render(const Camera& camera);
+	void Render();
 
 	inline const MapTile* GetTile(int x, int y);
 

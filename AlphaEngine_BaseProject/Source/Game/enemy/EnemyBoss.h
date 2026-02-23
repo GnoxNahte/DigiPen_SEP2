@@ -11,7 +11,8 @@ public:
     EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
     ~EnemyBoss();
 
-    void Update(const AEVec2& playerPos);
+    void Update(const AEVec2& playerPos, bool playerFacingRight);
+
     void Render();
 
     AEVec2 position{ 0.f, 0.f };
@@ -23,11 +24,29 @@ public:
     bool chasing = false;
 
     //raise to start chasing player
-    float aggroRange = 5.0f;
+    float aggroRange = 10.0f;
 
 
     //for gamescene to use to apply damage later
-    bool PollAttackHit() { return attack.PollHit(); }
+    bool PollAttackHit() { return !isDead && attack.PollHit(); }
+    // returns number of special projectiles that hit the player this frame
+    int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+    // Single hurtbox for now (same as your debug rect in Render()).
+    AEVec2 GetHurtboxPos() const { return position; }
+    AEVec2 GetHurtboxSize() const { return size; }
+    int GetHP() const { return hp; }
+    int GetMaxHP() const { return maxHP; }
+
+    bool IsInvulnerable() const { return invulnTimer > 0.f; }
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+    // Convenience: checks overlap vs boss hurtbox first, then applies damage.
+    bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
+        int dmg, int attackInstanceId = -1);
+
+
+
+  
+
 
 
 
@@ -44,7 +63,7 @@ private:
         TELEPORT = 4,
         SPELLCAST = 5,
         SPELL1 = 6,
-        SPELL2 = 7
+        DEATH = 7
     };
     void UpdateAnimation();
     AEVec2 velocity{ 0.f, 0.f };
@@ -60,6 +79,17 @@ private:
     float moveSpeed{ 2.2f };
     float stopDistance{ 0.2f };
 
+       // --- Teleport control ---
+    float teleportCooldownTimer{ 0.0f };   // counts up until teleport triggers
+    float teleportInterval{ 2.0f };        // teleport every 2s (tune)
+    bool  teleportActive{ false };         // currently playing TELEPORT anim
+    float teleportTimer{ 0.0f };           // time since TELEPORT started
+    bool  teleportMoved{ false };          // have we snapped behind player yet?
+
+    float teleportBehindOffset{ 0.9f };    // how far behind player (tune)
+    float teleportMoveNormalized{ 0.5f };  // when to snap (0..1 of teleport anim)
+
+
 
     EnemyAttack attack;
 
@@ -74,5 +104,15 @@ private:
     // Debug / collider size (use AEVec2 like Player)
     AEVec2 size{ 0.8f, 0.8f };
     bool debugDraw{ true };
+
+    // --- Health / damage ---
+    int   maxHP{ 40 };
+    int   hp{ 40 };
+
+    float invulnTimer{ 0.0f };
+    float invulnDuration{ 0.20f };
+
+    // Used only if you pass attackInstanceId >= 0 (optional)
+    int   lastHitAttackId{ -1 };
 };
 #pragma once

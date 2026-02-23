@@ -45,13 +45,20 @@ public:
 	void Free();
 
 	Particle& SpawnParticle();
+	Particle& SpawnParticle(const EmitterSettings& _emitter);
 
 	/**
 	 * @brief				Spawn a burst of particles
-	 * @param position		Center position of burst
+	 * @param emitter		Custom emitter, ignoring the current emitter
 	 * @param spawnCount	Number of particles to spawn
 	 */
 	void SpawnParticleBurst(const EmitterSettings& emitter, size_t spawnCount);
+
+	/**
+	 * @brief				Spawn a burst of particles using the current emitter settings
+	 * @param spawnCount	Number of particles to spawn
+	 */
+	void SpawnParticleBurst(size_t spawnCount);
 
 	void SetSpawnRate(float spawnRate);
 

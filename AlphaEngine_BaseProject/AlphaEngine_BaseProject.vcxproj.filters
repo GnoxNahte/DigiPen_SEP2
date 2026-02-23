@@ -43,6 +43,21 @@
     <Filter Include="Source Files\Game\Scene">
       <UniqueIdentifier>{832b943c-8d30-4fe9-9f40-b0fe7827392c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library Files">
+      <UniqueIdentifier>{6623137f-f328-4f44-bd71-f37459752c7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library Files\ImGui">
+      <UniqueIdentifier>{b59d2ceb-c115-4a9f-a406-9e258d503177}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library Files\ImGui\backend">
+      <UniqueIdentifier>{fb80dfe2-b9dc-41b9-9605-4f06d53d966c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Editor">
+      <UniqueIdentifier>{18f0770a-a63d-4ba8-a625-e715adc39b6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{33977299-7197-4a11-bb84-d0f22fece88a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Game\enemy">
       <UniqueIdentifier>{f26eff54-ceb2-4675-b745-db5d564a6e8a}</UniqueIdentifier>
     </Filter>
@@ -123,8 +138,35 @@
     <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp">
       <Filter>Source Files\Game\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\enemy\EnemyA.cpp">
-      <Filter>Source Files\Game\enemy</Filter>
+    <ClCompile Include="..\Extern\imgui\include\imgui.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_demo.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_draw.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_tables.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.cpp">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_win32.cpp">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Editor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\EditorUtils.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
+      <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
       <Filter>Source Files\Game\enemy</Filter>
@@ -143,6 +185,12 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Scene\LevelIO.cpp">
       <Filter>Source Files\Editor</Filter>
+      </ClCompile>
+    <ClCompile Include="Source\Game\BuffCards.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\Enemy.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -218,8 +266,41 @@
     <ClInclude Include="traps.h">
       <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyA.h">
-      <Filter>Header Files\Game\enemy</Filter>
+    <ClInclude Include="..\Extern\imgui\include\imconfig.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imgui.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imgui_internal.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_rectpack.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_textedit.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_win32.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3_loader.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Editor.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\EditorUtils.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\ImGuiHelper.h">
+      <Filter>Header Files\Editor</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
       <Filter>Header Files\Game\enemy</Filter>
@@ -241,6 +322,15 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Scene\LevelIO.h">
       <Filter>Source Files\Editor</Filter>
+      </ClInclude>
+    <ClInclude Include="Source\Game\BuffCards.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\Enemy.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyManager.h">
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

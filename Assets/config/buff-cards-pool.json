@@ -1,0 +1,173 @@
+{
+  "cards": [
+    {
+      "type": "HERMES_FAVOR",
+      "rarity": "UNCOMMON",
+      "name": "Hermes Favor",
+      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
+      "effect": "Gain 5% Move Speed.",
+      "effect_value_1": 5
+    },
+    {
+      "type": "HERMES_FAVOR",
+      "rarity": "RARE",
+      "name": "Hermes Favor",
+      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
+      "effect": "Gain 7% Move Speed.",
+      "effect_value_1": 7
+    },
+    {
+      "type": "HERMES_FAVOR",
+      "rarity": "EPIC",
+      "name": "Hermes Favor",
+      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
+      "effect": "Gain 9% Move Speed.",
+      "effect_value_1": 9
+    },
+    {
+      "type": "HERMES_FAVOR",
+      "rarity": "LEGENDARY",
+      "name": "Hermes Favor",
+      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
+      "effect": "Gain 11% Move Speed.",
+      "effect_value_1": 11
+    },
+
+    {
+      "type": "IRON_DEFENCE",
+      "rarity": "UNCOMMON",
+      "name": "Iron Defence",
+      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "effect": "Gain 5% Damage Reduction.",
+      "effect_value_1": 5
+    },
+    {
+      "type": "IRON_DEFENCE",
+      "rarity": "RARE",
+      "name": "Iron Defence",
+      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "effect": "Gain 10% Damage Reduction.",
+      "effect_value_1": 10
+    },
+    {
+      "type": "IRON_DEFENCE",
+      "rarity": "EPIC",
+      "name": "Iron Defence",
+      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "effect": "Gain 15% Damage Reduction.",
+      "effect_value_1": 15
+    },
+    {
+      "type": "IRON_DEFENCE",
+      "rarity": "LEGENDARY",
+      "name": "Iron Defence",
+      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "effect": "Gain 20% Damage Reduction.",
+      "effect_value_1": 20
+    },
+    {
+      "type": "SWITCH_IT_UP",
+      "rarity": "EPIC",
+      "name": "Switch It Up",
+      "description": "No fate is fixed. The deck reshuffles at your command.",
+      "effect": "Reshuffle the buff cards."
+    },
+    {
+      "type": "REVITALIZE",
+      "rarity": "LEGENDARY",
+      "name": "Revitalize",
+      "description": "Death loosens its grip. Your vitality is completely restored.",
+      "effect": "Fully restore all HP.",
+      "effect_value_1": 100
+    },
+    {
+      "type": "SHARPEN",
+      "rarity": "UNCOMMON",
+      "name": "Sharpen",
+      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
+      "effect": "Increase Damage by 5% and Critical Chance by 5%.",
+      "effect_value_1": 5,
+      "effect_value_2": 5
+    },
+    {
+      "type": "SHARPEN",
+      "rarity": "RARE",
+      "name": "Sharpen",
+      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
+      "effect": "Increase Damage by 8% and Critical Chance by 10%.",
+      "effect_value_1": 8,
+      "effect_value_2": 10
+    },
+    {
+      "type": "SHARPEN",
+      "rarity": "EPIC",
+      "name": "Sharpen",
+      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
+      "effect": "Increase Damage by 12% and Critical Chance by 15%.",
+      "effect_value_1": 12,
+      "effect_value_2": 15
+    },
+    {
+      "type": "SHARPEN",
+      "rarity": "LEGENDARY",
+      "name": "Sharpen",
+      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
+      "effect": "Increase Damage by 15% and Critical Chance by 25%.",
+      "effect_value_1": 15,
+      "effect_value_2": 25
+    },
+    {
+      "type": "BERSERKER",
+      "rarity": "UNCOMMON",
+      "name": "Berserker",
+      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
+      "effect": "Gain 5% bonus attack damage when at 25 HP or below.",
+      "effect_value_1": 5
+    },
+    {
+      "type": "BERSERKER",
+      "rarity": "RARE",
+      "name": "Berserker",
+      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
+      "effect": "Gain 8% bonus attack damage when at 25 HP or below.",
+      "effect_value_1": 8
+    },
+    {
+      "type": "BERSERKER",
+      "rarity": "LEGENDARY",
+      "name": "Berserker",
+      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
+      "effect": "Gain 15% bonus attack damage when at 25 HP or below.",
+      "effect_value_1": 15
+    },
+    {
+      "type": "FEATHERWEIGHT",
+      "rarity": "UNCOMMON",
+      "name": "Featherweight",
+      "description": "Lighter than a falling leaf. The abyss below must wait.",
+      "effect": "Reduce gravity and maximum fall speed by 5%.",
+      "effect_value_1": 5,
+      "effect_value_2": 5
+    },
+    {
+      "type": "FEATHERWEIGHT",
+      "rarity": "RARE",
+      "name": "Featherweight",
+      "description": "Lighter than a falling leaf. The abyss below must wait.",
+      "effect": "Reduce gravity and maximum fall speed by 5%.",
+      "effect_value_1": 10,
+      "effect_value_2": 10
+    },
+    {
+      "type": "FEATHERWEIGHT",
+      "rarity": "EPIC",
+      "name": "Featherweight",
+      "description": "Lighter than a falling leaf. The abyss below must wait.",
+      "effect": "Reduce gravity and maximum fall speed by 5%.",
+      "effect_value_1": 15,
+      "effect_value_2": 15
+    }
+
+
+  ]
+}
