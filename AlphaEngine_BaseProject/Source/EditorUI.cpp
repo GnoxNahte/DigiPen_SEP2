@@ -1,3 +1,4 @@
+// EditorUI.cpp
 #include "EditorUI.hpp"
 
 static s8  gUiFontId = 0;
@@ -123,12 +124,12 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     if (!ui.playMode)
     {
         if (Button("play", x, y, w, h, mx, my, mouseLPressed))
-            ui.playMode = true;
+            ui.requestTogglePlay = true;
     }
     else
     {
         if (Button("stop", x, y, w, h, mx, my, mouseLPressed))
-            ui.playMode = false;
+            ui.requestTogglePlay = true;
     }
     y -= (h + ui.gap);
     Sep(x, y + h + 2.f, w);

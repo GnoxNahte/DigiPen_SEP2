@@ -67,6 +67,9 @@ static TrapManager* gPlayTraps = nullptr;
 static EnemyManager* gPlayEnemies = nullptr;
 static Camera* gPlayCamera = nullptr;
 
+// authoritative runtime mode flag (ui.playMode is just presentation)
+static bool gInPlayMode = false;
+
 /*========================================================
     helpers
 ========================================================*/
@@ -185,6 +188,22 @@ static void DrawWorldRect(float worldX, float worldY, float worldW, float worldH
     AEGfxMeshDraw(gOverlayQuad, AE_GFX_MDM_TRIANGLES);
 }
 
+// play mode lifecycle (forward declarations)
+static void PlayMode_Enter();
+static void PlayMode_Exit();
+
+static void SetPlayMode(bool enabled)
+{
+    if (enabled == gInPlayMode)
+        return;
+
+    gInPlayMode = enabled;
+    gUI.playMode = enabled; // keep ui in sync
+
+    if (gInPlayMode) PlayMode_Enter();
+    else             PlayMode_Exit();
+}
+
 /*========================================================
     play mode – lifecycle
 ========================================================*/
@@ -254,6 +273,18 @@ static void PlayMode_Exit()
 static void PlayMode_Update(float dt)
 {
     if (!gPlayPlayer || !gPlayCamera) return;
+
+    // quick controls
+    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    {
+        SetPlayMode(false);
+        return;
+    }
+    if (AEInputCheckTriggered(AEVK_R))
+    {
+        gPlayPlayer->Reset(gSpawn);
+        gPlayCamera->position = gSpawn;
+    }
 
     gPlayPlayer->Update();
     // manually follow player — avoids any SetFollow/Update internals
@@ -438,6 +469,9 @@ void GameState_LevelEditor_Init()
     gUI = EditorUIState{};
     gUIIO = EditorUIIO{};
 
+    gInPlayMode = false;
+    gUI.playMode = false;
+
     gTrapDefs.clear();
     gEnemyDefs.clear();
     gSpawn = { 5.f, 5.f };
@@ -449,8 +483,23 @@ void GameState_LevelEditor_Update()
 
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
-    // ── file requests ─────────────────────────────────────────────────────────
-    if (gUI.requestSave)
+    // ── play mode toggle requests ───────────────────────────────────────────
+    if (AEInputCheckTriggered(AEVK_TAB))
+        SetPlayMode(!gInPlayMode);
+
+    // ui button requests play/stop; consume here (ui should not run enter/exit)
+    if (gUI.requestTogglePlay)
+    {
+        SetPlayMode(!gInPlayMode);
+        gUI.requestTogglePlay = false;
+    }
+
+    // if something else changed ui.playMode (safety), honor it
+    if (gUI.playMode != gInPlayMode)
+        SetPlayMode(gUI.playMode);
+
+    // ── file requests (editor-only) ─────────────────────────────────────────
+    if (!gInPlayMode && gUI.requestSave)
     {
         LevelData lvl;
         BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS, gTrapDefs, gSpawn, lvl);
@@ -460,7 +509,7 @@ void GameState_LevelEditor_Update()
         OutputDebugStringA(gSaveSuccess ? "SAVE OK\n" : "SAVE FAILED\n");
     }
 
-    if (gUI.requestLoad)
+    if (!gInPlayMode && gUI.requestLoad)
     {
         LevelData lvl;
         if (LoadLevelFromFile(LEVEL_PATH, lvl))
@@ -468,33 +517,22 @@ void GameState_LevelEditor_Update()
         gUI.requestLoad = false;
     }
 
-    if (gUI.requestClearMap)
+    if (!gInPlayMode && gUI.requestClearMap)
     {
         for (int row = 0; row < GRID_ROWS; ++row)
             for (int col = 0; col < GRID_COLS; ++col)
                 gMap->SetTile(col, row, MapTile::Type::NONE);
         gTrapDefs.clear();
         gEnemyDefs.clear();
+        gSpawn = { 5.f, 5.f };
         gUI.requestClearMap = false;
     }
 
     if (gSaveMessageTimer > 0.f)
         gSaveMessageTimer -= dt;
 
-    // ── play mode toggle ──────────────────────────────────────────────────────
-    bool prevPlayMode = gUI.playMode;
-
-    if (AEInputCheckTriggered(AEVK_TAB))
-        gUI.playMode = !gUI.playMode;
-
-    if (gUI.playMode != prevPlayMode)
-    {
-        if (gUI.playMode) PlayMode_Enter();
-        else              PlayMode_Exit();
-    }
-
     // ── tick ─────────────────────────────────────────────────────────────────
-    if (gUI.playMode)
+    if (gInPlayMode)
         PlayMode_Update(dt);
     else
         UpdateEditor(dt);
@@ -510,7 +548,7 @@ void GameState_LevelEditor_Draw()
     AEMtx33Identity(&identity);
     AEGfxSetTransform(identity.m);
 
-    if (gUI.playMode)
+    if (gInPlayMode)
     {
         PlayMode_Render();
     }
@@ -585,7 +623,7 @@ void GameState_LevelEditor_Draw()
 void GameState_LevelEditor_Free()
 {
     // ensure play mode is torn down cleanly
-    if (gUI.playMode) PlayMode_Exit();
+    if (gInPlayMode) SetPlayMode(false);
 
     OverlayShutdown();
     delete gMap;    gMap = nullptr;

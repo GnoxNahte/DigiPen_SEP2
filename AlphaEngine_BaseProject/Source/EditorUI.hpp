@@ -1,3 +1,4 @@
+// EditorUI.hpp
 #pragma once
 #include "AEEngine.h"
 
@@ -32,6 +33,8 @@ struct EditorUIState
     float gap = 6.0f;
 
     bool playMode = false;
+    // one-frame request (ui should not directly enter/exit play mode)
+    bool requestTogglePlay = false;
     bool showGrid = true;
     bool dragPaint = true;
 
