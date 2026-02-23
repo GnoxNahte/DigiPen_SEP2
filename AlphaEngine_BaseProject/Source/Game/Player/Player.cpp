@@ -401,8 +401,14 @@ void Player::UpdateAttacks()
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
 
     enemyManager->ForEachEnemy([&](Enemy& enemy) {
-        if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()))
             enemy.ApplyDamage(1);
+        // If hit enemy && current enemy isn't in attackedEnemies
+        if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
+            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
+        {
+            enemy.ApplyDamage(attack->damage);
+            attackedEnemies.push_back(&enemy);
+        }
     });
 
     if (Editor::GetShowColliders())
@@ -428,6 +434,8 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
             [this](int index) { OnAttackAnimEnd(index); }
         );
     }
+
+    attackedEnemies.clear();
 
     // If transitioning to last attack
     if (spriteState == AnimState::ATTACK_END - 1)

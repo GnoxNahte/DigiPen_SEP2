@@ -91,6 +91,9 @@ private:
     bool isLeftWallCollided = false;
     bool isRightWallCollided = false;
 
+    // Keeps track of enemies that the current attack has hit
+    std::vector<Enemy*> attackedEnemies;
+
     // === Combat ===
     int health;
 
