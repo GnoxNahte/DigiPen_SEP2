@@ -561,6 +561,7 @@ int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerS
 }
 
 
+
 void EnemyBoss::UpdateAnimation()
 {
     if (teleportActive)

@@ -32,8 +32,11 @@ public:
     bool IsDead() const override { return isDead; }
     //for gamescene to use to apply damage later
     bool PollAttackHit() { return !isDead && attack.PollHit(); }
+
     // returns number of special projectiles that hit the player this frame
     int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+ 
+
     // Single hurtbox for now (same as your debug rect in Render()).
     AEVec2 GetHurtboxPos() const { return position; }
     AEVec2 GetHurtboxSize() const { return size; }
@@ -55,12 +58,7 @@ public:
         int dmg, int attackInstanceId = -1);
 
 
-
   
-
-
-
-
 
 
 private:

@@ -137,7 +137,7 @@ void GameScene::Update()
 	if (spellHits > 0)
 	{
 		const int spellDmg = 1;                 // tune
-		player.TakeDamage(spellHits * spellDmg, {});
+		player.TakeDamage(spellHits * spellDmg, enemyBoss.position);
 		std::cout << "[Boss] spell hit x" << spellHits << "\n";
 	}
 
