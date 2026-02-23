@@ -1,15 +1,18 @@
 #pragma once
+#include <string>
 
 // Following game implementation techniques enum
 enum SceneState
 {
+	GS_QUIT = -2,
+	GS_RESTART = -1,
+
+	GS_LEVEL_EDITOR,
 	GS_SPLASH_SCREEN,
 	GS_MAIN_MENU,
 	GS_GAME,
 
-	GS_QUIT,
-	GS_RESTART,
-	GS_LEVEL_EDITOR
+	GS_SCENE_COUNT,
 };
 
 // NOTE: 
@@ -38,6 +41,7 @@ public:
 
 	static void ChangeScene(SceneState state);
 	static SceneState GetState();
+	static std::string GetStateName(SceneState state);
 private: 
 	static void LoadState(SceneState state);
 

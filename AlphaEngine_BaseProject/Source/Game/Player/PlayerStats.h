@@ -27,6 +27,7 @@ struct PlayerStats
     float turnTime;
     float inAirTurnTime;
 
+    float dashSpeed;
     float dashCooldown;
     float dashTime;
 
@@ -72,14 +73,14 @@ struct PlayerStats
     float jumpVelocity;
     float minJumpTime;
 
-    const std::string file;
-
 	// === Combat stats ===
 	int maxHealth;
     float attackBuffer;
 
     std::array<AttackStats, 3> groundAttacks;
     std::array<AttackStats, 3> airAttacks;
+
+    const std::string file;
 
     /**
      * @brief       Loads the player stats from a file
@@ -88,8 +89,12 @@ struct PlayerStats
     PlayerStats(std::string file);
 
     void LoadFileData();
+    void SaveFileData();
+    void OnDataChanged();
+
+    // Player will call this instead of editor
+    void DrawInspector();
 private:
-    // @todo: Ethan - File watcher
-    void WatchFile();
+    void CalculateDerivedVariables();
 };
 

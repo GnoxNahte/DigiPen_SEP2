@@ -34,6 +34,11 @@ f64 Time::GetDeltaTime() const {
     return deltaTime;
 }
 
+f64 Time::GetScaledDeltaTime() const
+{
+    return deltaTime * timeScale;
+}
+
 void Time::SetTimeScale(f32 scale) {
     // Clamp to reasonable values
     if (scale < 0.0f) scale = 0.0f;

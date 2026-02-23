@@ -4,6 +4,10 @@
 #include <limits>
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
+#include <imgui.h>
+#include "../../Editor/Editor.h"
+#include "../../Game/Time.h"
+#include "../UI.h"
 
 Player::Player(MapGrid* map) :
     stats("Assets/config/player-stats.json"), 
@@ -42,7 +46,7 @@ void Player::Update()
 
     // Update position based on velocity
     AEVec2 displacement, nextPosition;
-    AEVec2Scale(&displacement, &velocity, (f32)AEFrameRateControllerGetFrameTime());
+    AEVec2Scale(&displacement, &velocity, static_cast<float>(Time::GetInstance().GetScaledDeltaTime()));
     AEVec2Add(&nextPosition, &position, &displacement);
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
 
@@ -59,7 +63,7 @@ void Player::Render()
     particleSystem.Render();
 
     // Local scale. For flipping sprite's facing direction
-    bool ifFaceRight = (velocity.x != 0.f) ? (velocity.x > 0) : (facingDirection.x > 0);
+    bool ifFaceRight = (velocity.x != 0.f && !IsAttacking()) ? (velocity.x > 0) : (facingDirection.x > 0);
     // Multiply height by 0.74f because sprite aspect ratio isn't a square
     AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f * 0.74f);
     AEMtx33TransApply(
@@ -74,7 +78,7 @@ void Player::Render()
 
     sprite.Render();
 
-    if (AEInputCheckCurr(AEVK_LCTRL))
+    if (Editor::GetShowColliders())
     {
         RenderDebugCollider(stats.groundChecker);
         RenderDebugCollider(stats.ceilingChecker);
@@ -105,20 +109,31 @@ void Player::Reset(const AEVec2& initialPos)
     isRightWallCollided = false;
 }
 
-void Player::TakeDamage(int dmg)
+void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
 {
     if (dmg <= 0) 
         return;
 
     health = max(health - dmg, 0);
 
+    AEVec2 hitOriginCpy = hitOrigin;
+    AEVec2 hitDirection;
+    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
+    AEVec2Normalize(&hitDirection, &hitDirection);
+
+    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
+    hitDirection.y = max(hitDirection.y, 0.4f);
+    AEVec2Scale(&hitDirection, &hitDirection, 30);
+    std::cout << hitDirection.y << "\n";
+    velocity = hitDirection;
+
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
 #if _DEBUG
     std::cout << "[Player] Damage: " << dmg
         << " HP=" << health << "/" << stats.maxHealth << "\n";
 #endif
 
-    // if animiation and sound is needed for getting hurt
-    // sprite.SetState(AnimState::HURT);
+     sprite.SetState(AnimState::HURT);
 }
 
 const AEVec2& Player::GetPosition() const
@@ -136,23 +151,36 @@ const PlayerStats& Player::GetStats() const
     return stats;
 }
 
+bool Player::IsFacingRight() const
+{
+    // match your Render() logic
+    if (velocity.x != 0.f) return velocity.x > 0.f;
+    return facingDirection.x > 0.f;
+}
+
+
 void Player::UpdateInput()
 {
+    float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+
     // Consider shift all keybinds to another file. Then maybe can allow custom keybinding 
     inputDirection.x = (f32)((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
                      - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
     inputDirection.y = (f32)((AEInputCheckCurr(AEVK_UP) || AEInputCheckCurr(AEVK_W))
                      - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
 
-    isJumpHeld = AEInputCheckCurr(AEVK_SPACE);
-    if (AEInputCheckTriggered(AEVK_SPACE))
-        AEGetTime(&lastJumpPressed);
+    isJumpHeld = AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C);
+    if (AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_C))
+        lastJumpPressed = currTime;
 
-    if (inputDirection.x != 0 || inputDirection.y != 0)
+    if ((inputDirection.x != 0 || inputDirection.y != 0) && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
         facingDirection = inputDirection;
 
     if (AEInputCheckCurr(AEVK_X))
-        AEGetTime(&lastAttackHeld);
+        lastAttackHeld = currTime;
+
+    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown + stats.dashTime)
+        dashStartTime = currTime;
 }
 
 void Player::UpdateTriggerColliders()
@@ -174,10 +202,26 @@ void Player::UpdateTriggerColliders()
 
 void Player::HorizontalMovement()
 {
-    float dt = (float)AEFrameRateControllerGetFrameTime();
+    float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
 
+    float dashPercentage = static_cast<float>((currTime - dashStartTime) / stats.dashTime);
+
+    if (dashPercentage < 1.f)
+    {
+        float speed = stats.dashSpeed;
+        // If moving in the same direction
+        if (inputDirection.x * velocity.x >= 0)
+            speed *= 1.5f;
+        if (facingDirection.x < 0.f)
+            speed = -speed;
+        velocity.x = speed;
+
+        /*float value = 1 - dashPercentage * dashPercentage;
+        velocity.x = AEExtras::RemapClamp(value, { 0.f, 1.f }, { stats.dashSpeed, stats.maxSpeed });*/
+    }
     // Slow player down when not pressing any buttons
-    if (inputDirection.x == 0)
+    else if (inputDirection.x == 0)
     {
         float velocityChange = stats.stopAcceleration * dt;
         // -velocityChange because stats.stopAcceleration < 0, so negate that
@@ -186,6 +230,7 @@ void Player::HorizontalMovement()
         // If velocity.x < -velocityChange, set to 0 to make sure it won't overshoot
         else
             velocity.x = 0.f;
+        velocity.x = AEClamp(velocity.x, -stats.maxSpeed, stats.maxSpeed);
     }
     else
     {
@@ -232,13 +277,13 @@ void Player::HandleLanding()
         if (!isGroundCollided)
             lastJumpTime = std::numeric_limits<f64>::lowest();
         
-        AEGetTime(&lastGroundedTime);
+        lastGroundedTime = (f32)Time::GetInstance().GetScaledElapsedTime();
     }
 }
 
 void Player::HandleGravity()
 {
-    float dt = (float)AEFrameRateControllerGetFrameTime();
+    float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
     // If moving up
     if (velocity.y > 0.f)
@@ -248,7 +293,7 @@ void Player::HandleGravity()
         else
         {
             float velocityChange = stats.gravity * dt;
-            if (!isJumpHeld && (AEGetTime(nullptr) - lastJumpTime) > stats.minJumpTime)
+            if (!isJumpHeld && (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastJumpTime) > stats.minJumpTime)
                 velocityChange *= stats.gravityMultiplierWhenRelease;
 
             velocity.y += velocityChange;
@@ -285,7 +330,7 @@ void Player::HandleGravity()
 
 void Player::HandleJump()
 {
-    f64 currTime = AEGetTime(nullptr);
+    f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());;
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
     bool isCoyoteTimeActive = (currTime - lastGroundedTime) < stats.coyoteTime;
@@ -315,7 +360,7 @@ void Player::PerformJump()
     velocity.y = stats.jumpVelocity;
     lastJumpPressed = lowestFloat; // Prevent jump buffer from triggering again
     lastGroundedTime = lowestFloat;
-    AEGetTime(&lastJumpTime);
+    lastJumpTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
     ifReleaseJumpAfterJumping = false;
 
     //sprite.SetState(JUMP_START, true);
@@ -353,7 +398,7 @@ void Player::UpdateAttacks()
 
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
-    if (AEInputCheckCurr(AEVK_LCTRL))
+    if (Editor::GetShowColliders())
         QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFFFF0000);
 }
 
@@ -361,7 +406,7 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 {
     AnimState spriteState = static_cast<AnimState>(spriteStateIndex);
 
-    bool inAttackInputBuffer = AEGetTime(nullptr) - lastAttackHeld < stats.attackBuffer;
+    bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
     bool isLastAttack = spriteState == AnimState::ATTACK_END || spriteState == AnimState::AIR_ATTACK_END;
     
     // If not in attack input buffer OR is last attack in combo, 
@@ -419,7 +464,7 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    bool inAttackInputBuffer = AEGetTime(nullptr) - lastAttackHeld < stats.attackBuffer;
+    bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
     bool isAnimAttack = IsAnimGroundAttack() || IsAnimAirAttack();
 
     // If player is trying to attack (including input buffer)
@@ -460,5 +505,37 @@ void Player::RenderDebugCollider(Box& box)
 {
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
-    QuickGraphics::DrawRect(boxPos, box.size);
+    QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
+}
+
+void Player::DrawInspector()
+{
+    ImGui::Begin("Player"); 
+    
+    // === Runtime ===
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::SeparatorText("Physics");
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+        ImGui::DragFloat2("Facing direction", &facingDirection.x, 0.1f);
+
+        ImGui::SeparatorText("Stats");
+        ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
+        ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
+    }
+
+    // === Stats ===
+    if (ImGui::CollapsingHeader("Stats"))
+    {
+        stats.DrawInspector();
+    }
+
+    ImGui::End();
+}
+
+bool Player::CheckIfClicked(const AEVec2& mousePos)
+{
+    return  fabsf(position.x - mousePos.x) < stats.playerSize.x &&
+            fabsf(position.y - mousePos.y) < stats.playerSize.y;
 }
