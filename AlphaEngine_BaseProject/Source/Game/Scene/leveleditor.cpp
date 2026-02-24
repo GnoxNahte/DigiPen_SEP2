@@ -223,7 +223,7 @@ static void PlayMode_Enter()
         CAMERA_SCALE
     );
 
-    gPlayPlayer = new Player(gMap);
+    gPlayPlayer = new Player(gMap, nullptr);
     gPlayPlayer->Reset(gSpawn);
     gPlayCamera->position = gSpawn;
 

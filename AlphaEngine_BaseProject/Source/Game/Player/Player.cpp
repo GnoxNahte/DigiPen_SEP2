@@ -415,15 +415,18 @@ void Player::UpdateAttacks()
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
 
-    enemyManager->ForEachEnemy([&](Enemy& enemy) {
-        // If hit enemy && current enemy isn't in attackedEnemies
-        if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
-            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
-        {
-            enemy.ApplyDamage(attack->damage);
-            attackedEnemies.push_back(&enemy);
-        }
-    });
+    if (enemyManager)
+    {
+        enemyManager->ForEachEnemy([&](Enemy& enemy) {
+            // If hit enemy && current enemy isn't in attackedEnemies
+            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
+                std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
+            {
+                enemy.TryTakeDamage(attack->damage);
+                attackedEnemies.push_back(&enemy);
+            }
+        });
+    }
 
     if (Editor::GetShowColliders())
         QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF0000FF, AE_GFX_MDM_LINES_STRIP);
