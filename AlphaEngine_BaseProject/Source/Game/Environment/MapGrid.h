@@ -19,6 +19,9 @@ public:
 
 	inline const MapTile* GetTile(int x, int y);
 
+	//for level editor
+	void SetTile(int x, int y, MapTile::Type type);
+
 	/**
 	 * @brief	Check if that world position is occupied by a tile
 	 * @param x World x position
