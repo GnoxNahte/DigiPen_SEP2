@@ -7,6 +7,7 @@
 #include "../../Utils/ParticleSystem.h"
 #include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
+#include "../enemy/EnemyManager.h"
 
 /**
  * @brief Controllable player class
@@ -43,7 +44,7 @@ public:
         ANIM_COUNT
     };
 
-    Player(MapGrid* map);
+    Player(MapGrid* map, EnemyManager* enemyManager);
     ~Player();
     void Update();
     void Render();
@@ -60,6 +61,7 @@ public:
     const PlayerStats& GetStats() const;
  
    bool IsFacingRight() const;
+   AnimState GetAnimState() const;
 
 
 private:
@@ -90,11 +92,15 @@ private:
     bool isLeftWallCollided = false;
     bool isRightWallCollided = false;
 
+    // Keeps track of enemies that the current attack has hit
+    std::vector<Enemy*> attackedEnemies;
+
     // === Combat ===
     int health;
 
     // === References to other systems ===
     MapGrid* map;
+    EnemyManager* enemyManager;
 
     // ===== Helper Functions =====
     void UpdateInput();
@@ -111,6 +117,7 @@ private:
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();
+    void Attack(AnimState toState);
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
 

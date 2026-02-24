@@ -53,6 +53,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
 
+	// Todo - Not sure why not working? - ImGui disable keybord navigation as conflict with game
+	io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
+	io.ConfigNavCaptureKeyboard = false;
+
 	//ImGui::StyleColorsDark();
 
 	// Setup scaling

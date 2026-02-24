@@ -4,6 +4,7 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
 #include <imgui.h>
+#include "../UI.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -301,6 +302,8 @@ bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
 
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
+
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_NORMAL, position);
 
     if (hp <= 0)
     {

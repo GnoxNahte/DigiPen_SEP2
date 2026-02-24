@@ -29,7 +29,7 @@ namespace
 
 GameScene::GameScene() : 
 	map(50, 50),
-	player(&map),
+	player(&map, &enemyMgr),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
 		20, 
@@ -88,31 +88,8 @@ void GameScene::Update()
 	AEVec2 p = player.GetPosition();
 	enemyBoss.Update(p, player.IsFacingRight());
 
-	
-
-
-	// --REMOVE LATER, basic attack mechanics for TESTING PURPOSES ONLY--
-	if (AEInputCheckTriggered(AEVK_X))
-	{
-		const float attackRange = 1.6f; // tweak to taste
-
-		/*enemyMgr.ForEachEnemy([&](Enemy& e)
-			{
-				if (!e.IsDead() && IsNear(p, e.GetPosition(), attackRange))
-					e.ApplyDamage(1);
-			});
-
-		if (IsNear(p, enemyBoss.GetHurtboxPos(), attackRange))
-			enemyBoss.TryTakeDamage(1);*/
-
-		enemyMgr.ForEachDamageable([&](IDamageable& target)
-			{
-				if (target.IsDead()) return;
-				if (!target.IsDead() && IsNear(p, target.GetHurtboxPos(), attackRange))
-				target.TryTakeDamage(1);
-			});
-	}
-
+	const AEVec2 pPos = player.GetPosition();
+	const AEVec2 pSize = player.GetStats().playerSize;
 
 	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
 

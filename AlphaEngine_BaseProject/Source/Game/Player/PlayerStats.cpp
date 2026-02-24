@@ -15,7 +15,7 @@ namespace
 		auto positionObj = obj["position"].GetObj();
 		box.position.x = positionObj["x"].GetFloat();
 		box.position.y = positionObj["y"].GetFloat();
-
+        
 		auto sizeObj = obj["size"].GetObj();
 		box.size.x = sizeObj["x"].GetFloat();
 		box.size.y = sizeObj["y"].GetFloat();
@@ -24,6 +24,7 @@ namespace
 	void LoadAttack(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AttackStats& attack)
 	{
 		attack.damage = obj["damage"].GetInt();
+		attack.recoilSpeed = obj["recoilSpeed"].GetFloat();
 		attack.knockbackForce = obj["knockbackForce"].GetFloat();
 		
 		LoadBox(obj["collider"].GetObj(), attack.collider);
@@ -49,10 +50,43 @@ namespace
         obj.SetObject();
         obj.AddMember("damage", attack.damage, allocator);
         obj.AddMember("knockbackForce", attack.knockbackForce, allocator);
+        obj.AddMember("recoilSpeed", attack.recoilSpeed, allocator);
 
         rapidjson::Value collider(rapidjson::kObjectType);
         SaveBox(collider, attack.collider, allocator);
         obj.AddMember("collider", collider, allocator);
+    }
+
+    bool DrawInspectorBox(std::string str, Box& attack)
+    {
+        bool ifChanged = false;
+        
+        ImGui::Text(str.c_str());
+
+        ImGui::Indent();
+        {
+            ifChanged = ImGui::DragFloat2(("Position##" + str).c_str(), &attack.position.x, 0.01f) || ifChanged;
+            ifChanged = ImGui::DragFloat2(("Size##" + str).c_str(), &attack.size.x, 0.01f) || ifChanged;
+        }
+        ImGui::Unindent();
+
+        return ifChanged;
+    }
+
+    bool DrawInspectorAttack(std::string str, AttackStats& attack)
+    {
+        bool ifChanged = false;
+        ImGui::Text(str.c_str());
+
+        ImGui::Indent();
+        {
+            ifChanged = ImGui::DragFloat(("Knockback Force##" + str).c_str(), &attack.knockbackForce, 0.01f) || ifChanged;
+            ifChanged = ImGui::DragFloat(("Recoil Speed##" + str).c_str(), &attack.recoilSpeed, 0.01f) || ifChanged;
+            ifChanged = DrawInspectorBox(("Collider##" + str).c_str(), attack.collider) || ifChanged; // causing double ID... not fixing for now. Need to make another function that doesnt add id?
+        }
+        ImGui::Unindent();
+
+        return ifChanged;
     }
 }
 
@@ -299,21 +333,9 @@ void PlayerStats::DrawInspector()
     {
         ImGui::PushItemWidth(200);
 
-        ImGui::Text("Ground Checker");
-        ifChanged = ImGui::DragFloat2("GroundPos", &groundChecker.position.x, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat2("GroundSize", &groundChecker.size.x, 0.01f) || ifChanged;
-
-        ImGui::Text("Ceiling Checker");
-        ifChanged = ImGui::DragFloat2("CeilingPos", &ceilingChecker.position.x, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat2("CeilingSize", &ceilingChecker.size.x, 0.01f) || ifChanged;
-
-        ImGui::Text("Left Wall Checker");
-        ifChanged = ImGui::DragFloat2("LeftWallPos", &leftWallChecker.position.x, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat2("LeftWallSize", &leftWallChecker.size.x, 0.01f) || ifChanged;
-
-        ImGui::Text("Right Wall Checker");
-        ifChanged = ImGui::DragFloat2("RightWallPos", &rightWallChecker.position.x, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat2("RightWallSize", &rightWallChecker.size.x, 0.01f) || ifChanged;
+        ifChanged = DrawInspectorBox("Ceiling Checker",    ceilingChecker)  || ifChanged;
+        ifChanged = DrawInspectorBox("Left Wall Checker",  leftWallChecker) || ifChanged;
+        ifChanged = DrawInspectorBox("Right Wall Checker", rightWallChecker) || ifChanged;
 
         ImGui::PopItemWidth();
         ImGui::TreePop();
@@ -324,6 +346,12 @@ void PlayerStats::DrawInspector()
     {
         ifChanged = ImGui::DragInt("Max Health", &maxHealth, 1.0f, 1, 1000) || ifChanged;
         ifChanged = ImGui::DragFloat("Attack Buffer", &attackBuffer, 0.01f) || ifChanged;
+
+        for (size_t i = 0; i < groundAttacks.size(); i++)
+            DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);
+
+        for (size_t i = 0; i < airAttacks.size(); i++)
+            DrawInspectorAttack(("Air attack " + std::to_string(i)).c_str(), airAttacks[i]);
 
         ImGui::TreePop();
     }
