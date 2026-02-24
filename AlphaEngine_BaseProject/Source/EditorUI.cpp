@@ -103,11 +103,11 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     float my = UIY(windowH, myTL);
 
     // panel background
-    DrawRect(ui.panelW * 0.5f, windowH * 0.5f, ui.panelW, (float)windowH,
-        0.13f, 0.13f, 0.13f, 0.96f);
+   // DrawRect(ui.panelW * 0.5f, windowH * 0.5f, ui.panelW, (float)windowH,
+     //   0.13f, 0.13f, 0.13f, 0.96f);
 
-    if (PointInRect(mx, my, 0, 0, ui.panelW, (float)windowH))
-        io.mouseCaptured = true;
+   // if (PointInRect(mx, my, 0, 0, ui.panelW, (float)windowH))
+   //     io.mouseCaptured = true;
 
     const float x = ui.pad;
     const float w = ui.panelW - ui.pad * 2.f;
