@@ -113,9 +113,13 @@ void GameScene::Update()
 			});
 	}
 
-	const AEVec2 pPos = player.GetPosition();
-	const AEVec2 pSize = player.GetStats().playerSize;
 
+	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
+
+	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------
+	//const AEVec2 pPos = player.GetPosition();
+	//const AEVec2 pSize = player.GetStats().playerSize;
+	/*
 	// Boss normal melee attack (ATTACK state via EnemyAttack)
 	if (enemyBoss.PollAttackHit())
 	{
@@ -160,7 +164,7 @@ void GameScene::Update()
 				std::cout << "Enemy HIT player!\n";
 			}
 		});
-
+	*/
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);

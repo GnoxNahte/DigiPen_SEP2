@@ -9,6 +9,7 @@
 #include "../enemy/EnemyBoss.h"
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyManager.h"
+#include "../enemy/AttackSystem.h"
 
 
 
@@ -36,5 +37,6 @@ private:
 	Enemy enemyB;
 
 	EnemyManager enemyMgr;
+	AttackSystem attackSystem;
 };
 
