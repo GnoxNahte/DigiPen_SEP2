@@ -28,14 +28,17 @@ void MainMenuScene::Update()
     std::string path;
     if (MainMenu::ConsumeStartRequest(path))
     {
-        gPendingLevelPath = path;
-        GSM::ChangeScene(SceneState::GS_GAME);
-        return;
-    }
-
-    if (MainMenu::ConsumeQuitRequest())
-    {
-        AEGfxExit();
+        // "level editor" button sets path = "editor"
+        if (path == "editor")
+        {
+            GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
+        }
+        else
+        {
+            // if later you add "play levelXX", you can pass path here
+            gPendingLevelPath = path;
+            GSM::ChangeScene(SceneState::GS_GAME);
+        }
         return;
     }
 }

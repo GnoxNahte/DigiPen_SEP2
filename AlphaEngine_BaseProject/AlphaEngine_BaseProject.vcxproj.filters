@@ -317,9 +317,6 @@
     <ClInclude Include="Source\Game\Scene\LevelEditorScene.h">
       <Filter>Header Files\Game\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Source\EditorUI.hpp">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Scene\leveleditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>

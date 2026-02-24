@@ -1,24 +1,21 @@
-// EditorUI.hpp
+// EditorUI.h
 #pragma once
 #include "AEEngine.h"
 
-// tools
 enum class EditorTool
 {
     Paint = 0,
     Erase
 };
 
-// palette
 enum class EditorTile
 {
     Ground = 0,
     Spike,
     PressurePlate,
-    Enemy           // places an enemy spawn marker
+    Enemy
 };
 
-// which enemy preset to place
 enum class EditorEnemyPreset
 {
     Druid = 0,
@@ -33,7 +30,6 @@ struct EditorUIState
     float gap = 6.0f;
 
     bool playMode = false;
-    // one-frame request (ui should not directly enter/exit play mode)
     bool requestTogglePlay = false;
     bool showGrid = true;
     bool dragPaint = true;

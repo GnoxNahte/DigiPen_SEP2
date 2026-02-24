@@ -2,7 +2,7 @@
 
 #include "../Environment/MapGrid.h"
 #include "../Environment/MapTile.h"
-#include "../Environment/traps.h" // for Trap::Type names
+#include "../Environment/traps.h" // Trap::Type
 
 #include <fstream>
 #include <sstream>
@@ -44,10 +44,10 @@ namespace
         return StringToTrapTypeInt(token, outTypeAsInt);
     }
 
+    // match your Enemy::Preset order:
+    // 0 = druid, 1 = skeleton
     const char* EnemyPresetToString(int presetAsInt)
     {
-        // match your Enemy::Preset order:
-        // 0 = Druid, 1 = Skeleton
         switch (presetAsInt)
         {
         case 0: return "druid";
@@ -84,7 +84,7 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
     if (lvl.rows <= 0 || lvl.cols <= 0) return false;
     if ((int)lvl.tiles.size() != lvl.rows * lvl.cols) return false;
 
-    // ensure parent directory exists
+    // ensure parent directory exists (if using folders)
     {
         std::error_code ec;
         std::filesystem::path p(filename);
@@ -194,6 +194,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         }
     }
 
+    // traps block
     in >> word;
     if (!in || word != "traps") return false;
 
@@ -205,7 +206,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     outLvl.traps.reserve((size_t)trapCount);
 
     std::string line;
-    std::getline(in, line);
+    std::getline(in, line); // consume rest of line
 
     for (int i = 0; i < trapCount; ++i)
     {
@@ -238,6 +239,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
             if (!ss) break;
 
             const Trap::Type tt = static_cast<Trap::Type>(t.type);
+
             if (tt == Trap::Type::SpikePlate)
             {
                 if (key == "up") ss >> t.upTime;
@@ -248,11 +250,22 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                     int v = 0; ss >> v;
                     t.startDisabled = (v != 0);
                 }
+                else
+                {
+                    // unknown key, ignore token
+                    std::string junk;
+                    ss >> junk;
+                }
             }
             else if (tt == Trap::Type::LavaPool)
             {
                 if (key == "dpt") ss >> t.damagePerTick;
                 else if (key == "tick") ss >> t.tickInterval;
+                else
+                {
+                    std::string junk;
+                    ss >> junk;
+                }
             }
             else if (tt == Trap::Type::PressurePlate)
             {
@@ -269,25 +282,42 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                         t.links.push_back(id);
                     }
                 }
+                else
+                {
+                    std::string junk;
+                    ss >> junk;
+                }
+            }
+            else
+            {
+                // unknown trap type: ignore any remaining tokens
+                break;
             }
         }
 
         outLvl.traps.push_back(t);
     }
 
-    // enemies block (required for version 1 files we write)
-    in >> word;
-    if (!in || word != "enemies") return false;
+    // enemies block (optional for backward compatibility)
+    outLvl.enemies.clear();
+
+    // try to read next section; if file ends here, it's valid.
+    if (!(in >> word))
+        return true;
+
+    if (word != "enemies")
+    {
+        // unknown section: ignore, but keep file load successful
+        return true;
+    }
 
     int enemyCount = 0;
     in >> enemyCount;
     if (!in || enemyCount < 0) return false;
 
-    outLvl.enemies.clear();
     outLvl.enemies.reserve((size_t)enemyCount);
 
-    std::getline(in, line);
-
+    std::getline(in, line); // consume rest of line
     for (int i = 0; i < enemyCount; ++i)
     {
         std::getline(in, line);
@@ -318,7 +348,8 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
     return true;
 }
 
-void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
+void BuildLevelDataFromEditor(
+    MapGrid& grid, int rows, int cols,
     const std::vector<TrapDefSimple>& traps,
     const std::vector<EnemyDefSimple>& enemies,
     const AEVec2& spawn,
@@ -344,7 +375,8 @@ void BuildLevelDataFromEditor(MapGrid& grid, int rows, int cols,
     }
 }
 
-bool ApplyLevelDataToEditor(const LevelData& lvl,
+bool ApplyLevelDataToEditor(
+    const LevelData& lvl,
     MapGrid*& ioGrid,
     std::vector<TrapDefSimple>& ioTraps,
     std::vector<EnemyDefSimple>& ioEnemies,
