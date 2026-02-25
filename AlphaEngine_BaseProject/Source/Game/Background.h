@@ -5,6 +5,7 @@ class Background
 public:
 	static void Init();
 	static void Render();
+	static void Exit();
 
 private:
 	static const int UNIQUE_BG_TEXTURES = 3;
@@ -16,6 +17,6 @@ private:
 	static const int MIDGROUND_WIDTH = 1817;
 	static const int FOREGROUND_WIDTH = 1929;
 	static const int BACKGROUND_HEIGHT = 400;
-	inline static float parallaxFactors[3] = { 0.1f, 0.4f, 0.8f };
+	inline static float parallaxFactors[3] = { 0.1f, 0.2f, 0.3f };
 };
 

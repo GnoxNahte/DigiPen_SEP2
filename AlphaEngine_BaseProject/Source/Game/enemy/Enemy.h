@@ -88,15 +88,15 @@ public:
     int  GetHP() const { return hp; }
 
     // Returns true if damage was actually applied.
-    bool TryTakeDamage(int dmg) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 
  
     //void ApplyDamage(int dmg);
 
 
     // Useful getters for combat / debugging
-    AEVec2 GetPosition() const { return position; }
-    AEVec2 GetSize() const { return size; }
+    const AEVec2& GetPosition() const { return position; }
+    const AEVec2& GetSize() const { return size; }
     bool   IsChasing() const { return chasing; }
     bool   IsReturningHome() const { return returningHome; }
 

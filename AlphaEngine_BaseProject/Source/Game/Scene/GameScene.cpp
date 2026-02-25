@@ -2,6 +2,9 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 #include "../Time.h"
+#include "../../Game/UI.h"
+#include "../../Game/Background.h"
+#include "../BuffCards.h"
 
 
 //AABB collision helper
@@ -75,7 +78,8 @@ void GameScene::Init()
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
-
+	UI::Init();
+	Background::Init();
 }
 
 void GameScene::Update()
@@ -155,17 +159,41 @@ void GameScene::Update()
 	if (AEInputCheckTriggered(AEVK_G))
 		testParticleSystem.SpawnParticleBurst( 300);
 	testParticleSystem.Update();
+
+	// For checking current buffs vector
+	if (AEInputCheckTriggered(AEVK_P)) {
+		std::cout << "Current buffs :\n";
+		for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
+			std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
+				<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
+				<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
+		}
+	}
+	// === For Damage Text Testing ===
+	//if AEInputCheckCurr/Triggered
+	//if (AEInputCheckTriggered(AEVK_K))
+	//{
+	//	AEVec2 pos{};
+	//	pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
+	//	pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
+	//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,6 }));
+	//	int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
+	//	UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
+	//}
+	UI::GetDamageTextSpawner().Update();
+	UI::Update();
 }
 
 void GameScene::Render()
 {
+	Background::Render();
 	map.Render();
 	//trapMgr.Render();   // for debug
 	testParticleSystem.Render();
 	player.Render();
 	enemyBoss.Render();
 	enemyMgr.RenderAll();
-
+	UI::Render();
 
 	// === Code below is for DEBUG ONLY ===
 
@@ -213,4 +241,6 @@ void GameScene::Render()
 
 void GameScene::Exit()
 {
+	UI::Exit();
+	Background::Exit();
 }

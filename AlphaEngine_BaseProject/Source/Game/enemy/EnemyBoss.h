@@ -38,8 +38,8 @@ public:
  
 
     // Single hurtbox for now (same as your debug rect in Render()).
-    AEVec2 GetHurtboxPos() const { return position; }
-    AEVec2 GetHurtboxSize() const { return size; }
+    const AEVec2& GetHurtboxPos() const { return position; }
+    const AEVec2& GetHurtboxSize() const { return size; }
     int GetHP() const { return hp; }
     int GetMaxHP() const { return maxHP; }
 
@@ -52,10 +52,10 @@ public:
 
     int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
-    bool TryTakeDamage(int dmg) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
-        int dmg, int attackInstanceId = -1);
+        int dmg);
 
 
   
@@ -124,9 +124,6 @@ private:
 
     float invulnTimer{ 0.0f };
     float invulnDuration{ 0.20f };
-
-    // Used only if you pass attackInstanceId >= 0 (optional)
-    int   lastHitAttackId{ -1 };
 
     float deathTimeLeft{ 0.0f };
 

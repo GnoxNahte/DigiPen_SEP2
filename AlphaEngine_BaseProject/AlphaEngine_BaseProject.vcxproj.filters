@@ -194,9 +194,12 @@
     </ClCompile>
     <ClCompile Include="MainMenu.cpp">
       <Filter>Source Files</Filter>
-       </ClCompile>
+    </ClCompile>
     <ClCompile Include="Source\Game\enemy\AttackSystem.cpp">
       <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\PhysicsUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -349,9 +352,12 @@
     </ClInclude>
     <ClInclude Include="MainMenu.h">
       <Filter>Header Files</Filter>
-       </ClInclude>
+    </ClInclude>
     <ClInclude Include="Source\Game\enemy\AttackSystem.h">
       <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\PhysicsUtils.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -324,18 +324,11 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     sprite.Update();
 }
 
-bool Enemy::TryTakeDamage(int dmg)
+bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
 {
     if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
 
-    // : prevent repeated hits from the SAME attack swing
-    /*if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
-        return false;
-
-    if (attackInstanceId >= 0)
-        lastHitAttackId = attackInstanceId;*/
-
-    // --- The rest is in existing ApplyDamage logic ---
+    // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_NORMAL, position);

@@ -103,16 +103,10 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg)
+bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& )
 {
     if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;
-
- /*  if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
-        return false;
-
-    if (attackInstanceId >= 0)
-        lastHitAttackId = attackInstanceId;*/
 
     hp -= dmg;
 
@@ -154,8 +148,8 @@ bool EnemyBoss::TryTakeDamage(int dmg)
 }
 
 
-/*bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
-    int dmg, int attackInstanceId)
+bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
+    int dmg)
 {
     if (isDead) return false;
 
@@ -164,8 +158,8 @@ bool EnemyBoss::TryTakeDamage(int dmg)
     if (!AABB_Overlap2(hitPos, hitSize, position, size))
         return false;
 
-    return TryTakeDamage(dmg);
-}*/
+    return TryTakeDamage(dmg, {});
+}
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
@@ -213,7 +207,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     if (hpChipDelay <= 0.f)
         hpBarChip += (hpBarFront - hpBarChip) * (1.0f - expf(-3.5f * dt));
 
-    // Keep chip >= front (chip is the “old?HP)
+    // Keep chip >= front (chip is the ï¿½old?HP)
     if (hpBarChip < hpBarFront)
         hpBarChip = hpBarFront;
 
@@ -665,7 +659,7 @@ void EnemyBoss::Render()
     }
     RenderHealthbar();
 
-    // make sure we’re not stuck in additive mode from VFX
+    // make sure weï¿½re not stuck in additive mode from VFX
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 }
 

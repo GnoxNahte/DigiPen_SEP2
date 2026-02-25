@@ -8,9 +8,7 @@
 #include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
-#include "../../Game/UI.h"
 #include "LevelEditorScene.h"
-#include "../../Game/Background.h"
 #include "../../Editor/Editor.h"
 
 #include <imgui.h>
@@ -18,7 +16,6 @@
 #include <imgui_impl_win32.h>
 
 #include "../../Utils/AEExtras.h" // temp
-#include "../BuffCards.h"
 
 BaseScene* GSM::currentScene = nullptr;
 
@@ -36,8 +33,6 @@ void GSM::Init(SceneState type)
 	SaveSystem::Init();
 	Time::GetInstance();
 	TimerSystem::GetInstance();
-	UI::Init();
-	Background::Init();
 	// === Timer Testing ===
 	//timerSystem.AddTimer("Test Timer 1", 3.0f);
 
@@ -78,7 +73,7 @@ void GSM::Update()
 			// Allows to dock window anywhere
 			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-			AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
+			AEGfxSetBackgroundColor(0.129f, 0.114f, 0.18f);
 			//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
 
 			AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -88,8 +83,6 @@ void GSM::Update()
 			if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
 				nextState = GS_QUIT;
 
-			Background::Render();
-
 			currentScene->Update();
 			Editor::Update();
 
@@ -97,32 +90,6 @@ void GSM::Update()
 
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
-			UI::GetDamageTextSpawner().Update();
-			UI::Update();
-			UI::Render();
-			// For checking current buffs vector
-			if (AEInputCheckTriggered(AEVK_P)) {
-				std::cout << "Current buffs :\n";
-				for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
-					std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
-						<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
-						<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
-				}
-			}
-			// === For Damage Text Testing ===
-			//if AEInputCheckCurr/Triggered
-			//if (AEInputCheckTriggered(AEVK_K))
-			//{
-			//	AEVec2 pos{};
-			//	pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
-			//	pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
-			//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,6 }));
-			//	int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
-			//	UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
-			//}
-			AEVec2 pos{};
-			AEVec2 size{};
-			Button::CheckMouseInRectButton(pos,size);
 			
 			Editor::DrawInspectors();
 
@@ -144,7 +111,6 @@ void GSM::Update()
 void GSM::Exit()
 {
 	QuickGraphics::Free();
-	UI::Exit();
 }
 
 void GSM::ChangeScene(SceneState state)

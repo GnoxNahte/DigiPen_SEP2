@@ -93,7 +93,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//}
 
 	//GSM::Init(SceneState::GS_SPLASH_SCREEN);
-	GSM::Init(SceneState::GS_MAIN_MENU);
+	GSM::Init(SceneState::GS_GAME);
 	GSM::Update();
 	GSM::Exit();
 

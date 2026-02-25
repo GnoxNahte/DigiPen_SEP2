@@ -34,7 +34,7 @@ void Background::Render()
     f32 scaleFactor = targetHeight / (f32)BACKGROUND_HEIGHT;
 
     // Adjust this to move the background down
-    float globalYOffset = -100.0f;
+    float globalYOffset = -250.0f;
 
     for (int i = 0; i < UNIQUE_BG_TEXTURES; ++i)
     {
@@ -76,4 +76,17 @@ void Background::Render()
         }
     }
     AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
+}
+void Background::Exit() {
+    if (rectMesh) {
+        AEGfxMeshFree(rectMesh);
+    }
+    for (auto& tex : backgroundLayers)
+    {
+        if (tex)
+        {
+            AEGfxTextureUnload(tex);
+            tex = nullptr;
+        }
+    }
 }
