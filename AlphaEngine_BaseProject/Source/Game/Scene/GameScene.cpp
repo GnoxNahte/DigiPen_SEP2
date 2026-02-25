@@ -70,8 +70,8 @@ void GameScene::Init()
 {
 	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
-	spawns.push_back({ Enemy::Preset::Druid, {30.f, 3.f} });
-	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 3.f} });
+	spawns.push_back({ Enemy::Preset::Druid, {30.f, 2.0f} });
+	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 2.0f} });
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
@@ -83,7 +83,7 @@ void GameScene::Update()
 	player.Update();
 	camera.Update();
 
-	enemyMgr.UpdateAll(player.GetPosition());
+	enemyMgr.UpdateAll(player.GetPosition(), map);
 
 	AEVec2 p = player.GetPosition();
 	enemyBoss.Update(p, player.IsFacingRight());

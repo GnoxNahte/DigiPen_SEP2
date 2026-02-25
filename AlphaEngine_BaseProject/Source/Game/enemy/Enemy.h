@@ -5,7 +5,10 @@
 #include <AEVec2.h>
 #include "IDamageable.h"
 #include "../../Editor/EditorUtils.h"
+#include "../Environment/MapGrid.h"
+#include "../Environment/MapTile.h"
 
+class MapGrid; // forward declaration to avoid circular dependency
 
 class Enemy : public IDamageable, Inspectable
 {
@@ -68,7 +71,8 @@ public:
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
 
-    void Update(const AEVec2& playerPos);
+    void Update(const AEVec2& playerPos, MapGrid& map);
+    
     void Render();
 
     // For GameScene to apply damage later
@@ -80,7 +84,7 @@ public:
     int  GetHP() const { return hp; }
 
     // Returns true if damage was actually applied.
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
+    bool TryTakeDamage(int dmg) override;
 
  
     //void ApplyDamage(int dmg);
@@ -98,7 +102,7 @@ public:
 
     // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
-    AEVec2 hurtboxOffset{ 0.f, -0.25f }; // negative = lower
+    AEVec2 hurtboxOffset{ 0.f, 0.f }; // negative = lower
 
 private:
     void UpdateAnimation();
@@ -129,6 +133,8 @@ private:
     float deathTimeLeft{ 0.5f };
     bool hidden = false;
     int lastHitAttackId{ -1 };
+  // NEW internal helper
+    bool HasGroundAhead(MapGrid& map, float dirX) const;
   
 
 

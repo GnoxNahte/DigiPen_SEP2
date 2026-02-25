@@ -9,6 +9,9 @@
 #include "Enemy.h"   
 #include "IDamageable.h"
 
+
+
+
 class EnemyManager 
 {
 public:
@@ -70,10 +73,10 @@ public:
     }
 
     // --- Update/Render ---
-    void UpdateAll(const AEVec2& playerPos)
+    void UpdateAll(const AEVec2& playerPos, MapGrid& map)
     {
         for (auto& e : enemies)
-            e->Update(playerPos);
+            e->Update(playerPos, map);
     }
 
     void RenderAll()

@@ -103,16 +103,16 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId)
+bool EnemyBoss::TryTakeDamage(int dmg)
 {
     if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;
 
-    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
+ /*  if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
         return false;
 
     if (attackInstanceId >= 0)
-        lastHitAttackId = attackInstanceId;
+        lastHitAttackId = attackInstanceId;*/
 
     hp -= dmg;
 
@@ -154,7 +154,7 @@ bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId)
 }
 
 
-bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
+/*bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
     int dmg, int attackInstanceId)
 {
     if (isDead) return false;
@@ -164,8 +164,8 @@ bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitS
     if (!AABB_Overlap2(hitPos, hitSize, position, size))
         return false;
 
-    return TryTakeDamage(dmg, attackInstanceId);
-}
+    return TryTakeDamage(dmg);
+}*/
 
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")

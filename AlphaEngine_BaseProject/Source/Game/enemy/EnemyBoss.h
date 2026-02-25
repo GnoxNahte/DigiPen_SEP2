@@ -52,7 +52,7 @@ public:
 
     int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
+    bool TryTakeDamage(int dmg) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg, int attackInstanceId = -1);

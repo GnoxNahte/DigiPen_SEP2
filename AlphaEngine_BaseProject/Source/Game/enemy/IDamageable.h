@@ -12,5 +12,5 @@ public:
     virtual bool   IsDead() const = 0;
 
     // Return true if damage was applied (not invuln, not already hit, etc.)
-    virtual bool   TryTakeDamage(int dmg, int attackInstanceId = -1) = 0;
+    virtual bool  TryTakeDamage(int dmg) = 0;
 };

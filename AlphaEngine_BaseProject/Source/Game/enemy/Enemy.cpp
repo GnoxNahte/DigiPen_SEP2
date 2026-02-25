@@ -16,6 +16,22 @@ float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
     return (float)s.frameCount * (float)s.timePerFrame;
 }
 
+
+bool Enemy::HasGroundAhead(MapGrid& map, float dirX) const
+{
+    const AEVec2 hbPos = GetHurtboxPos();   // center
+    const AEVec2 hbSize = GetHurtboxSize();  // full size
+
+    const float eps = 0.05f;
+
+    // Probe a point just in front of the feet
+    const float probeX = hbPos.x + dirX * (hbSize.x * 0.5f + eps);
+    const float probeY = hbPos.y - hbSize.y * 0.5f - eps;
+
+    // MapGrid already treats "not NONE" as solid
+    return map.CheckPointCollision(probeX, probeY);
+}
+
 Enemy::Config Enemy::MakePreset(Preset preset)
 {
     Config c{};
@@ -92,7 +108,7 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
 }
 
 // ---- Update ----
-void Enemy::Update(const AEVec2& playerPos)
+void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
     if (dead)
@@ -215,6 +231,11 @@ void Enemy::Update(const AEVec2& playerPos)
             if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
             if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
 
+            if (!HasGroundAhead(map, dirX))
+            {
+                nextPos.x = position.x;
+                velocity.x = 0.f;
+            }
             position = nextPos;
         }
 
@@ -263,6 +284,12 @@ void Enemy::Update(const AEVec2& playerPos)
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
+                if (!HasGroundAhead(map, dirX))
+                {
+                    nextPos.x = position.x;
+                    velocity.x = 0.f;
+                    chasing = false;
+                }
                 const float targetX = playerPos.x - dirX * desiredStopDist;
 
                 if (dirX > 0.f && nextPos.x > targetX) { nextPos.x = targetX; velocity.x = 0.f; }
@@ -289,18 +316,18 @@ void Enemy::Update(const AEVec2& playerPos)
     sprite.Update();
 }
 
-bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
+bool Enemy::TryTakeDamage(int dmg)
 {
     if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
 
     // : prevent repeated hits from the SAME attack swing
-    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
+    /*if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
         return false;
 
     if (attackInstanceId >= 0)
-        lastHitAttackId = attackInstanceId;
+        lastHitAttackId = attackInstanceId;*/
 
-    // --- The rest is your existing ApplyDamage logic ---
+    // --- The rest is in existing ApplyDamage logic ---
     hp -= dmg;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_NORMAL, position);
@@ -429,7 +456,7 @@ void Enemy::Render()
         &transform,
         &transform,
         position.x - (0.5f - sprite.metadata.pivot.x),
-        position.y - (0.75f - sprite.metadata.pivot.y)
+        position.y - (0 - sprite.metadata.pivot.y)
     );
 
     // Camera scale
