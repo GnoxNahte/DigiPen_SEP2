@@ -64,13 +64,11 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
-    AEVec2 GetHurtboxPos()  const override 
+  virtual const  AEVec2& GetHurtboxPos()  const override 
     {
-        AEVec2 p = position;
-        p.y += hurtboxOffset.y;
-        return p;
+      return GetPosition();
     }
-    AEVec2 GetHurtboxSize() const override { return GetSize(); }
+   virtual const AEVec2& GetHurtboxSize() const override { return GetSize(); }
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
