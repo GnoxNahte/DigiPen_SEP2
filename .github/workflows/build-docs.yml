@@ -29,22 +29,23 @@ jobs:
         with:
           submodules: recursive 
           fetch-depth: 0
-      - name: Install Doxygen
+      - name: Install Doxygen and Graphviz
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen
-      - name: Install Graphviz
-        run: sudo apt-get install -y graphviz
+          sudo apt-get install -y doxygen graphviz
       - name: Create docs directory
         run: mkdir -p ./docs/html
       - name: Run Doxygen to generate documentation
         run: doxygen
       - name: Setup Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
       - name: Upload artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs/html'
       - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
