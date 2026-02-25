@@ -289,16 +289,9 @@ void Enemy::Update(const AEVec2& playerPos)
     sprite.Update();
 }
 
-bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
+bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
 {
     if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
-
-    // : prevent repeated hits from the SAME attack swing
-    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
-        return false;
-
-    if (attackInstanceId >= 0)
-        lastHitAttackId = attackInstanceId;
 
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;

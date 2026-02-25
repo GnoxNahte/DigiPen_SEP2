@@ -428,13 +428,13 @@ void Player::UpdateAttacks()
                 int damage = attack->damage;
                 // todo - Change to precalculate? make percentage into another variable too
                 if (health < 0.2f * stats.maxHealth)
-                    damage *= buff_DmgMultiLowHP;
+                    damage = static_cast<int>(damage * buff_DmgMultiLowHP);
 
                 // Crit
                 if (AERandFloat() < buff_critChance)
-                    damage *= buff_critDmgMulti;
+                    damage = static_cast<int>(damage * buff_critDmgMulti);
 
-                enemy.TryTakeDamage(damage);
+                enemy.TryTakeDamage(damage, colliderPos);
                 attackedEnemies.push_back(&enemy);
             }
         });
@@ -545,33 +545,38 @@ void Player::RenderDebugCollider(Box& box)
 AEVec2 Player::GetHurtboxPos()  const { return position; }
 AEVec2 Player::GetHurtboxSize() const { return stats.playerSize; }
 bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH; }
-bool Player::TryTakeDamage(int, int) { return false; }
-//bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
-//{
-//    if (dmg <= 0)
-//        return;
-//
-//    health = max(health - dmg, 0);
-//
-//    AEVec2 hitOriginCpy = hitOrigin;
-//    AEVec2 hitDirection;
-//    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
-//    AEVec2Normalize(&hitDirection, &hitDirection);
-//
-//    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
-//    hitDirection.y = max(hitDirection.y, 0.4f);
-//    AEVec2Scale(&hitDirection, &hitDirection, 30);
-//    std::cout << hitDirection.y << "\n";
-//    velocity = hitDirection;
-//
-//    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-//#if _DEBUG
-//    std::cout << "[Player] Damage: " << dmg
-//        << " HP=" << health << "/" << stats.maxHealth << "\n";
-//#endif
-//
-//    sprite.SetState(AnimState::HURT);
-//}
+
+bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
+{
+    if (health < dmg)
+    {
+        health = 0;
+        return false;
+    }
+
+    health -= dmg;
+
+    AEVec2 hitOriginCpy = hitOrigin;
+    AEVec2 hitDirection;
+    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
+    AEVec2Normalize(&hitDirection, &hitDirection);
+
+    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
+    hitDirection.y = max(hitDirection.y, 0.4f);
+    AEVec2Scale(&hitDirection, &hitDirection, 30);
+    std::cout << hitDirection.y << "\n";
+    velocity = hitDirection;
+
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
+#if _DEBUG
+    std::cout << "[Player] Damage: " << dmg
+        << " HP=" << health << "/" << stats.maxHealth << "\n";
+#endif
+
+    sprite.SetState(AnimState::HURT);
+
+    return true;
+}
 
 void Player::DrawInspector()
 {

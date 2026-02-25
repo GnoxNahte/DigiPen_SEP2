@@ -138,6 +138,6 @@ private:
     AEVec2 GetHurtboxPos() const override;
     AEVec2 GetHurtboxSize() const override;
     bool IsDead() const override;
-    bool TryTakeDamage(int dmg, int attackInstanceId) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
