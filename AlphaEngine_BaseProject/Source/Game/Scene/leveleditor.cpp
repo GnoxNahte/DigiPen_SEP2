@@ -178,8 +178,8 @@ static void PlaceEnemyAtCell(int tx, int ty, Enemy::Preset preset)
 {
     RemoveEnemyAtCell(tx, ty);
     EnemyDefSimple e{};
-    e.preset = (int)preset; // ✅ stored as int for IO friendliness
-    e.pos = AEVec2{ tx + 0.5f, ty + 0.f};
+    e.preset = (int)preset;
+    e.pos = AEVec2{ tx + 0.5f, ty + 0.f };
     gEnemyDefs.push_back(e);
 }
 
@@ -475,32 +475,6 @@ static void PlayMode_Enter()
     gPlayEnemies = new EnemyManager();
     std::vector<EnemyManager::SpawnInfo> spawns;
     for (const auto& ed : gEnemyDefs)
-    {
-       /* AEVec2 pos = ed.pos;
-
-        const int tx = (int)floorf(pos.x);
-        int ty = (int)floorf(pos.y);
-
-        //enemy collider size is 0.8, so half height is 0.4
-        constexpr float enemyHalfH = 0.8f * 0.5f;
-
-        // Find the first GROUND tile at-or-below the placed cell
-        int groundY = -1;
-        for (int y = ty; y >= 0; --y)
-        {
-            // Check tile at (tx, y) using world point at its center
-            if (gMap->CheckPointCollision((float)tx + 0.5f, (float)y + 0.5f))
-            {
-                groundY = y;
-                break;
-            }
-        }
-
-        if (groundY >= 0)
-        {
-            // Put enemy on TOP of that ground tile
-            pos.y = (float)groundY + 1.0f + enemyHalfH; // y + 1.4
-        }*/
         spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
@@ -526,6 +500,8 @@ static void PlayMode_Update(float dt)
     gPlayCamera->position = gPlayPlayer->GetPosition();
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
+    const AEVec2 pSize = gPlayPlayer->GetStats().playerSize;
+
     gPlayEnemies->UpdateAll(pPos, *gMap);
 
     gPlayEnemies->ForEachEnemy([&](Enemy& e)
@@ -861,3 +837,4 @@ void GameState_LevelEditor_Unload()
         gUIFont = -1;
     }
 }
+
