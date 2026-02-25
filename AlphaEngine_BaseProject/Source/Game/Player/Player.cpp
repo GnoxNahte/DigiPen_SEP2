@@ -542,8 +542,8 @@ void Player::RenderDebugCollider(Box& box)
     QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
 }
 
-AEVec2 Player::GetHurtboxPos()  const { return position; }
-AEVec2 Player::GetHurtboxSize() const { return stats.playerSize; }
+const AEVec2& Player::GetHurtboxPos()  const { return position; }
+const AEVec2& Player::GetHurtboxSize() const { return stats.playerSize; }
 bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH; }
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)

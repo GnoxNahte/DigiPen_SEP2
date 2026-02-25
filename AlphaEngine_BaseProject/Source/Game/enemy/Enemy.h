@@ -57,8 +57,8 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
-    AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
-    AEVec2 GetHurtboxSize() const override { return GetSize(); }
+    const AEVec2& GetHurtboxPos()  const override { return GetPosition(); }
+    const AEVec2& GetHurtboxSize() const override { return GetSize(); }
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
@@ -82,8 +82,8 @@ public:
 
 
     // Useful getters for combat / debugging
-    AEVec2 GetPosition() const { return position; }
-    AEVec2 GetSize() const { return size; }
+    const AEVec2& GetPosition() const { return position; }
+    const AEVec2& GetSize() const { return size; }
     bool   IsChasing() const { return chasing; }
     bool   IsReturningHome() const { return returningHome; }
 
