@@ -215,7 +215,7 @@ void Player::HorizontalMovement()
 
     if (dashPercentage < 1.f)
     {
-        float speed = stats.dashSpeed;
+        float speed = stats.dashSpeed * buff_MoveSpeedMulti;
         // If moving in the same direction
         if (inputDirection.x * velocity.x >= 0)
             speed *= 1.5f;
@@ -229,23 +229,25 @@ void Player::HorizontalMovement()
     // Slow player down when not pressing any buttons
     else if (inputDirection.x == 0)
     {
-        float velocityChange = stats.stopAcceleration * dt;
+        float velocityChange = stats.stopAcceleration * dt * buff_MoveSpeedMulti;
         // -velocityChange because stats.stopAcceleration < 0, so negate that
         if (fabsf(velocity.x) > -velocityChange)
             velocity.x += velocityChange * (velocity.x > 0.f ? 1.f : -1.f);
         // If velocity.x < -velocityChange, set to 0 to make sure it won't overshoot
         else
             velocity.x = 0.f;
-        velocity.x = AEClamp(velocity.x, -stats.maxSpeed, stats.maxSpeed);
+
+        float maxSpeed = stats.maxSpeed * buff_MoveSpeedMulti;
+        velocity.x = AEClamp(velocity.x, -maxSpeed, maxSpeed);
     }
     else
     {
         // If moving in the same direction
         if (inputDirection.x * velocity.x >= 0)
         {
-            velocity.x += stats.moveAcceleration * inputDirection.x * dt;
+            velocity.x += stats.moveAcceleration * inputDirection.x * dt * buff_MoveSpeedMulti;
 
-            float maxSpeed = isGroundCollided ? stats.maxSpeed : stats.airStrafeMaxSpeed;
+            float maxSpeed = (isGroundCollided ? stats.maxSpeed : stats.airStrafeMaxSpeed) * buff_MoveSpeedMulti;
             if (IsAttacking())
                 maxSpeed *= stats.attackMaxSpeedMultiplier;
             velocity.x = AEClamp(velocity.x, -maxSpeed, maxSpeed);
@@ -253,7 +255,7 @@ void Player::HorizontalMovement()
         // Moving in opposite direction
         else
         {
-            float acceleration = isGroundCollided ? stats.turnAcceleration : stats.inAirTurnAcceleration;
+            float acceleration = (isGroundCollided ? stats.turnAcceleration : stats.inAirTurnAcceleration) * buff_MoveSpeedMulti;
             velocity.x -= acceleration * inputDirection.x * dt;
         }
     }
@@ -415,6 +417,7 @@ void Player::UpdateAttacks()
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
 
+    // Check if attack hit enemy
     if (enemyManager)
     {
         enemyManager->ForEachEnemy([&](Enemy& enemy) {
@@ -422,7 +425,16 @@ void Player::UpdateAttacks()
             if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
                 std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
             {
-                enemy.TryTakeDamage(attack->damage);
+                int damage = attack->damage;
+                // todo - Change to precalculate? make percentage into another variable too
+                if (health < 0.2f * stats.maxHealth)
+                    damage *= buff_DmgMultiLowHP;
+
+                // Crit
+                if (AERandFloat() < buff_critChance)
+                    damage *= buff_critDmgMulti;
+
+                enemy.TryTakeDamage(damage);
                 attackedEnemies.push_back(&enemy);
             }
         });
@@ -530,6 +542,37 @@ void Player::RenderDebugCollider(Box& box)
     QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
 }
 
+AEVec2 Player::GetHurtboxPos()  const { return position; }
+AEVec2 Player::GetHurtboxSize() const { return stats.playerSize; }
+bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH; }
+bool Player::TryTakeDamage(int, int) { return false; }
+//bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
+//{
+//    if (dmg <= 0)
+//        return;
+//
+//    health = max(health - dmg, 0);
+//
+//    AEVec2 hitOriginCpy = hitOrigin;
+//    AEVec2 hitDirection;
+//    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
+//    AEVec2Normalize(&hitDirection, &hitDirection);
+//
+//    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
+//    hitDirection.y = max(hitDirection.y, 0.4f);
+//    AEVec2Scale(&hitDirection, &hitDirection, 30);
+//    std::cout << hitDirection.y << "\n";
+//    velocity = hitDirection;
+//
+//    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
+//#if _DEBUG
+//    std::cout << "[Player] Damage: " << dmg
+//        << " HP=" << health << "/" << stats.maxHealth << "\n";
+//#endif
+//
+//    sprite.SetState(AnimState::HURT);
+//}
+
 void Player::DrawInspector()
 {
     ImGui::Begin("Player"); 
@@ -545,6 +588,13 @@ void Player::DrawInspector()
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
         ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
+        
+        ImGui::SeparatorText("Buffs");
+        ImGui::DragFloat("Move Speed", &buff_MoveSpeedMulti, 0.1f);
+        ImGui::DragFloat("Damage Reduction", &buff_DmgReduction, 0.1f);
+        ImGui::DragFloat("Crit Chance", &buff_critChance, 0.1f);
+        ImGui::DragFloat("Crit Dmg", &buff_critDmgMulti, 0.1f);
+        ImGui::DragFloat("Damage Low HP", &buff_DmgMultiLowHP, 0.1f);
     }
 
     // === Stats ===
