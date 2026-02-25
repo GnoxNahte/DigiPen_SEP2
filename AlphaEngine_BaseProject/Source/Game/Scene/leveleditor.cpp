@@ -15,6 +15,7 @@
 #include "../enemy/EnemyManager.h"
 #include "../Time.h"
 
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <cstdio>
@@ -144,7 +145,10 @@ static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
     t.upTime = 1.0f;
     t.downTime = 1.0f;
     t.damageOnHit = 10;
-    t.startDisabled = false;
+    if (trapType == Trap::Type::SpikePlate)
+        t.startDisabled = true;
+    else
+        t.startDisabled = false;
 
     for (auto& e : gTrapDefs)
     {
@@ -404,6 +408,7 @@ static void Prompt_Draw()
 
 static void PlayMode_Enter()
 {
+    // --- camera ---
     gPlayCamera = new Camera(
         { 0.f, 0.f },
         { (float)GRID_COLS, (float)GRID_ROWS },
@@ -411,21 +416,62 @@ static void PlayMode_Enter()
     );
     gPlayCamera->position = gSpawn;
 
+    // --- player ---
     gPlayPlayer = new Player(gMap, nullptr);
     gPlayPlayer->Reset(gSpawn);
 
+    // --- traps ---
     gPlayTraps = new TrapManager();
+
+    // Collect pointers so we can link pressure plates after all traps are spawned
+    std::vector<PressurePlate*> spawnedPlates;
+    std::vector<Trap*>          spawnedLinkTargets; // currently: all spike plates
+
     for (const auto& td : gTrapDefs)
     {
-        Box box{ td.pos, td.size };
+        // traps.cpp currently treats Box.position as min corner (left/bottom)
+        // editor stores td.pos as center, so convert center -> min corner
+        Box box{};
+        box.size = td.size;
+        box.position = AEVec2{
+            td.pos.x - td.size.x * 0.5f,
+            td.pos.y - td.size.y * 0.5f
+        };
+
         if (td.type == (int)Trap::Type::SpikePlate)
-            gPlayTraps->Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+        {
+            SpikePlate& spikeRef = gPlayTraps->Spawn<SpikePlate>(
+                box,
+                td.upTime,
+                td.downTime,
+                td.damageOnHit,
+                td.startDisabled
+            );
+
+            spawnedLinkTargets.push_back(&spikeRef);
+        }
         else if (td.type == (int)Trap::Type::PressurePlate)
-            gPlayTraps->Spawn<PressurePlate>(box);
+        {
+            PressurePlate& plateRef = gPlayTraps->Spawn<PressurePlate>(box);
+            spawnedPlates.push_back(&plateRef);
+        }
         else if (td.type == (int)Trap::Type::LavaPool)
+        {
+            // If your TrapDefSimple doesn't have these fields, replace with defaults.
             gPlayTraps->Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+        }
     }
 
+    // Temporary linking rule: every pressure plate controls every spike plate
+    for (PressurePlate* plate : spawnedPlates)
+    {
+        for (Trap* target : spawnedLinkTargets)
+        {
+            plate->AddLinkedTrap(target);
+        }
+    }
+
+    // --- enemies ---
     gPlayEnemies = new EnemyManager();
     std::vector<EnemyManager::SpawnInfo> spawns;
     for (const auto& ed : gEnemyDefs)
@@ -433,6 +479,8 @@ static void PlayMode_Enter()
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
 }
+
+
 
 static void PlayMode_Exit()
 {
@@ -691,7 +739,7 @@ void GameState_LevelEditor_Draw()
 {
     if (!gMap || !gCamera) return;
 
-    AEGfxSetBackgroundColor(0.10f, 0.10f, 0.10f);
+    AEGfxSetBackgroundColor(0.129f, 0.114f, 0.18f);
 
     AEMtx33 identity;
     AEMtx33Identity(&identity);
