@@ -439,8 +439,11 @@ void Enemy::Render()
     sprite.Render();
 
     if (debugDraw)
+
     {
+        //const float boxYOffset = -0.25f; // negative = draw LOWER (
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
-        QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+        const AEVec2 hb = GetHurtboxPos();
+        QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
     }
 }

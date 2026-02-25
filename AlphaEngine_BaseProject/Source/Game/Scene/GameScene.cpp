@@ -91,6 +91,7 @@ void GameScene::Update()
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
+
 	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
 
 	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------

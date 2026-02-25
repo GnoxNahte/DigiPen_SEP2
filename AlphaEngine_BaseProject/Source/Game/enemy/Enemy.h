@@ -57,7 +57,12 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
-    AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
+    AEVec2 GetHurtboxPos()  const override 
+    {
+        AEVec2 p = position;
+        p.y += hurtboxOffset.y;
+        return p;
+    }
     AEVec2 GetHurtboxSize() const override { return GetSize(); }
 
     void DrawInspector() override;
@@ -93,6 +98,7 @@ public:
 
     // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
+    AEVec2 hurtboxOffset{ 0.f, -0.25f }; // negative = lower
 
 private:
     void UpdateAnimation();
