@@ -8,19 +8,20 @@
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
 #include "../UI.h"
+#include "../../Utils/PhysicsUtils.h"
 
-Player::Player(MapGrid* map) :
+Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
     facingDirection{},
     inputDirection{},
     transform{},
     velocity{},
-    particleSystem{ 50, {} }
+    particleSystem{ 50, {} },
+    map(map),
+    enemyManager(enemyManager)
 {
     Reset(AEVec2{ 2, 4 });
-
-    this->map = map;
 
     health = stats.maxHealth;
 
@@ -156,6 +157,11 @@ bool Player::IsFacingRight() const
     // match your Render() logic
     if (velocity.x != 0.f) return velocity.x > 0.f;
     return facingDirection.x > 0.f;
+}
+
+Player::AnimState Player::GetAnimState() const
+{
+    return static_cast<AnimState>(sprite.GetState());
 }
 
 
@@ -368,13 +374,13 @@ void Player::PerformJump()
 
 bool Player::IsAnimGroundAttack()
 {
-    AnimState state = static_cast<AnimState>(sprite.GetState());
+    AnimState state = GetAnimState();
     return  state >= ATTACK_1 && state <= ATTACK_END;
 }
 
 bool Player::IsAnimAirAttack()
 {
-    AnimState state = static_cast<AnimState>(sprite.GetState());
+    AnimState state = GetAnimState();
     return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_3;
 }
 
@@ -383,23 +389,47 @@ bool Player::IsAttacking()
     return IsAnimAirAttack() || IsAnimGroundAttack();
 }
 
+void Player::Attack(AnimState toState)
+{
+    sprite.SetState(toState, false,
+        [this](int index) { OnAttackAnimEnd(index); }
+    );
+
+    float recoil = IsAnimGroundAttack() ? stats.groundAttacks[toState - ATTACK_1].recoilSpeed : stats.airAttacks[toState - AIR_ATTACK_1].recoilSpeed;
+    velocity.x = facingDirection.x > 0 ? -recoil : recoil;
+}
+
 void Player::UpdateAttacks()
 {
     AttackStats* attack = nullptr;
-    AnimState animState = static_cast<AnimState>(sprite.GetState());
+    AnimState animState = GetAnimState();
 
     if (IsAnimGroundAttack())
         attack = &stats.groundAttacks[animState - AnimState::ATTACK_1];
     else if (IsAnimAirAttack())
-        attack = &stats.groundAttacks[animState - AnimState::AIR_ATTACK_1];
+        attack = &stats.airAttacks[animState - AnimState::AIR_ATTACK_1];
     // Else, not attacking
     else
         return;
 
     AEVec2 colliderPos;
     AEVec2Add(&colliderPos, &position, &attack->collider.position);
+
+    if (enemyManager)
+    {
+        enemyManager->ForEachEnemy([&](Enemy& enemy) {
+            // If hit enemy && current enemy isn't in attackedEnemies
+            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
+                std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
+            {
+                enemy.TryTakeDamage(attack->damage);
+                attackedEnemies.push_back(&enemy);
+            }
+        });
+    }
+
     if (Editor::GetShowColliders())
-        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFFFF0000);
+        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF0000FF, AE_GFX_MDM_LINES_STRIP);
 }
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)
@@ -412,15 +442,11 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
     // If not in attack input buffer OR is last attack in combo, 
     // Reset - Set to idle
     if (!inAttackInputBuffer || isLastAttack)
-    {
         sprite.SetState(AnimState::IDLE_W_SWORD);
-    }
     else
-    {
-        sprite.SetState(spriteStateIndex + 1, false, 
-            [this](int index) { OnAttackAnimEnd(index); }
-        );
-    }
+        Attack(static_cast<AnimState>(spriteStateIndex + 1));
+
+    attackedEnemies.clear();
 
     // If transitioning to last attack
     if (spriteState == AnimState::ATTACK_END - 1)
@@ -465,17 +491,13 @@ void Player::UpdateTrails()
 void Player::UpdateAnimation()
 {
     bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
-    bool isAnimAttack = IsAnimGroundAttack() || IsAnimAirAttack();
+    bool isAnimAttack = IsAttacking();
 
     // If player is trying to attack (including input buffer)
     if (inAttackInputBuffer || isAnimAttack)
     {
         if (!isAnimAttack)
-        {
-            sprite.SetState(AnimState::ATTACK_1, false,
-                [this](int index) { OnAttackAnimEnd(index); }
-            );
-        }
+            Attack(ATTACK_1);
     }
     else
     {

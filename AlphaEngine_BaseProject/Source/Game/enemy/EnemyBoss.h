@@ -2,10 +2,12 @@
 #include "../../Utils/Sprite.h" 
 #include "EnemyAttack.h"
 #include <AEVec2.h>
+#include "IDamageable.h"
+#include "../../Editor/EditorUtils.h"
 
 
 
-class EnemyBoss
+class EnemyBoss : public IDamageable, Inspectable
 {
 public:
     EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
@@ -14,7 +16,7 @@ public:
     void Update(const AEVec2& playerPos, bool playerFacingRight);
 
     void Render();
-
+    
     AEVec2 position{ 0.f, 0.f };
 
 
@@ -22,34 +24,41 @@ public:
     bool isAttacking = false;
     bool isGrounded = true;
     bool chasing = false;
+    int attackDamage = 10;
 
     //raise to start chasing player
     float aggroRange = 10.0f;
 
-
+    bool IsDead() const override { return isDead; }
     //for gamescene to use to apply damage later
     bool PollAttackHit() { return !isDead && attack.PollHit(); }
+
     // returns number of special projectiles that hit the player this frame
     int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
+ 
+
     // Single hurtbox for now (same as your debug rect in Render()).
     AEVec2 GetHurtboxPos() const { return position; }
     AEVec2 GetHurtboxSize() const { return size; }
     int GetHP() const { return hp; }
     int GetMaxHP() const { return maxHP; }
 
+	//IMGUI inspector
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
+
+    
+
+
+    int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1);
+    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg, int attackInstanceId = -1);
 
 
-
   
-
-
-
-
 
 
 private:
@@ -106,13 +115,32 @@ private:
     bool debugDraw{ true };
 
     // --- Health / damage ---
-    int   maxHP{ 40 };
-    int   hp{ 40 };
+    int   maxHP{ 10 };
+    int   hp{ 10 };
+
+    // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
+    float hurtTimeLeft{ 0.0f };
+    float minHurtDuration{ 0.30f };
 
     float invulnTimer{ 0.0f };
     float invulnDuration{ 0.20f };
 
     // Used only if you pass attackInstanceId >= 0 (optional)
     int   lastHitAttackId{ -1 };
+
+    float deathTimeLeft{ 0.0f };
+
+	bool hideAfterDeath{ false };
+
+    // --- Boss UI (screen-space healthbar) ---
+    float hpBarShown{ 1.0f };          // 0..1 smoothed display
+    float hpBarDrainPerSec{ 0.60f };   // smaller = slower drain (tune)
+    bool  showHealthbar{ true };       // optional toggle
+    void RenderHealthbar() const;
+    bool bossEngaged{ false }; // becomes true once player enters aggro range
+    float hpBarFront = 1.0f;   // fast bar (actual HP)
+    float hpBarChip = 1.0f;   // delayed bar (chip trail)
+    float hpChipDelay = 0.0f; // delay before chip starts shrinking
+    float prevHpTarget = 1.0f;
 };
-#pragma once
+

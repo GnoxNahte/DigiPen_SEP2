@@ -411,7 +411,7 @@ static void PlayMode_Enter()
     );
     gPlayCamera->position = gSpawn;
 
-    gPlayPlayer = new Player(gMap);
+    gPlayPlayer = new Player(gMap, nullptr);
     gPlayPlayer->Reset(gSpawn);
 
     gPlayTraps = new TrapManager();

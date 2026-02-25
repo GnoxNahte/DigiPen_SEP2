@@ -194,6 +194,9 @@
     </ClCompile>
     <ClCompile Include="MainMenu.cpp">
       <Filter>Source Files</Filter>
+       </ClCompile>
+    <ClCompile Include="Source\Game\enemy\AttackSystem.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -332,6 +335,12 @@
     <ClInclude Include="Source\Game\enemy\EnemyManager.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Game\enemy\IDamageable.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyAttackSystem.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Game\Background.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
@@ -340,6 +349,9 @@
     </ClInclude>
     <ClInclude Include="MainMenu.h">
       <Filter>Header Files</Filter>
+       </ClInclude>
+    <ClInclude Include="Source\Game\enemy\AttackSystem.h">
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

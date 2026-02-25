@@ -2,11 +2,13 @@
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
-
 #include <AEVec2.h>
 #include <Windows.h>
 #include <vector>
 #include <algorithm>
+#include <imgui.h>
+#include "../../Utils/AEExtras.h"
+
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
 {
@@ -101,27 +103,51 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId  /* = -1 */)
+bool EnemyBoss::TryTakeDamage(int dmg, int attackInstanceId)
 {
-    if (!isDead || dmg <= 0 || invulnTimer > 0) return false;
+    if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
+        return false;
 
-    // Optional: prevent multi-hit from the same swing
-    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId) return false;
+    if (attackInstanceId >= 0 && attackInstanceId == lastHitAttackId)
+        return false;
 
-    // Apply
     if (attackInstanceId >= 0)
         lastHitAttackId = attackInstanceId;
 
     hp -= dmg;
+
     if (hp <= 0)
     {
         hp = 0;
         isDead = true;
-
-        // stop boss from dealing damage after death
+        sprite.SetState(DEATH, false, nullptr);
+        deathTimeLeft = GetAnimDurationSec(sprite, DEATH);
+        if (deathTimeLeft <= 0.f)
+            deathTimeLeft = 0.5f; // fallback
         attack.Reset();
-        // you can also clear specials here later if you want
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+        teleportActive = false;
+        specialBurstActive = false;
+        specialSpawnsRemaining = 0;
+        specialSpawnTimer = 0.f;
+        g_spellcastUntil5thSpawn = false;
+        g_specialAttacks.clear();
+        // (optional: stop specials/teleport etc)
+        return true;
     }
+
+    // start hurt lock
+    hurtTimeLeft = GetAnimDurationSec(sprite, HURT);
+    if (hurtTimeLeft < minHurtDuration) hurtTimeLeft = minHurtDuration;
+
+    attack.Reset();
+    velocity = AEVec2{ 0.f, 0.f };
+    chasing = false;
+
+    sprite.SetState(HURT);
 
     invulnTimer = invulnDuration;
     return true;
@@ -157,7 +183,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     attack.hitRange = 1.8f;
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 1.5f;
-    attack.breakRange = attack.startRange;
+    attack.breakRange = 99999.0f;
 }
 
 EnemyBoss::~EnemyBoss()
@@ -166,13 +192,96 @@ EnemyBoss::~EnemyBoss()
 
 void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
-    const float dt = (float)AEFrameRateControllerGetFrameTime();
+
+	float dt = (float)AEFrameRateControllerGetFrameTime();
+    float hpTarget = (maxHP > 0) ? (float)hp / (float)maxHP : 0.f;
+    hpTarget = max(0.f, min(1.f, hpTarget));
+
+    // Trigger chip delay ONLY when HP drops this frame
+    if (hpTarget < prevHpTarget)
+        hpChipDelay = 0.15f;
+
+    prevHpTarget = hpTarget;
+
+    // Front follows fast
+    hpBarFront += (hpTarget - hpBarFront) * (1.0f - expf(-18.0f * dt));
+
+    // Delay countdown
+    hpChipDelay = max(0.f, hpChipDelay - dt);
+
+    // Chip follows slow AFTER delay
+    if (hpChipDelay <= 0.f)
+        hpBarChip += (hpBarFront - hpBarChip) * (1.0f - expf(-3.5f * dt));
+
+    // Keep chip >= front (chip is the “old” HP)
+    if (hpBarChip < hpBarFront)
+        hpBarChip = hpBarFront;
+
+    //clamp just in case
+	if (hpBarShown < 0.f) hpBarShown = 0.f;
+	if (hpBarShown > 1.5) hpBarShown = 1.5f;
+
+
+    
+
+    if (isDead)
+    {
+        // Ensure we are in DEATH state (safe to call; SetState ignores same-state)
+        sprite.SetState(DEATH);
+
+        // Same logic as regular Enemy: update until the last frame starts, then stop updating.
+        if (deathTimeLeft > 0.f)
+        {
+            float tpf = GetAnimTimePerFrame(sprite, DEATH);
+            if (tpf <= 0.f) tpf = 0.1f;
+
+            if (deathTimeLeft > tpf)
+                sprite.Update();
+
+            deathTimeLeft -= dt;
+            if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
+
+			if (deathTimeLeft <= 0.f) hideAfterDeath = true;
+        }
+
+
+        return;
+    }
 
     // Tick invulnerability
     if (invulnTimer > 0.f)
     {
         invulnTimer -= dt;
         if (invulnTimer < 0.f) invulnTimer = 0.f;
+    }
+
+    if (hurtTimeLeft > 0.f)
+    {
+        hurtTimeLeft -= dt;
+        if (hurtTimeLeft < 0.f) hurtTimeLeft = 0.f;
+
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+    
+        sprite.Update();
+        specialAttackVfx.Update();
+
+        if (specialBurstActive)
+        {
+			sprite.SetState(SPELLCAST);
+        }
+
+        // keep specials updating 
+        for (auto& s : g_specialAttacks) s.Update(dt);
+        g_specialAttacks.erase(
+            std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
+                [](const SpecialAttack& s) { return !s.alive(); }),
+            g_specialAttacks.end()
+        );
+
+        return;
     }
 
     const float desiredStopDist = (attack.startRange > 0.05f) ? (attack.startRange - 0.05f)
@@ -182,6 +291,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float absDx = std::fabs(dx);
 
     const bool inAggroRange = (absDx <= aggroRange);
+	if (inAggroRange) bossEngaged = inAggroRange;
 
     // --- TELEPORT trigger (only when not in special/attack/etc.) ---
     const bool teleportBlockedBySpecial = g_spellcastUntil5thSpawn;
@@ -465,6 +575,7 @@ int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerS
 }
 
 
+
 void EnemyBoss::UpdateAnimation()
 {
     if (teleportActive)
@@ -487,6 +598,9 @@ void EnemyBoss::UpdateAnimation()
 
 void EnemyBoss::Render()
 {
+
+    if (hideAfterDeath) return;
+
     AEMtx33 m;
 
     const bool faceRight =
@@ -549,4 +663,132 @@ void EnemyBoss::Render()
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
     }
+    RenderHealthbar();
+
+    // make sure we’re not stuck in additive mode from VFX
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+}
+
+void EnemyBoss::DrawInspector()
+{
+    ImGui::Begin("EnemyBoss");
+
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+
+        ImGui::Checkbox("Dead", &isDead);
+        ImGui::Checkbox("Attacking", &isAttacking);
+        ImGui::Checkbox("Grounded", &isGrounded);
+        ImGui::Checkbox("Chasing", &chasing);
+    }
+
+    if (ImGui::CollapsingHeader("HP"))
+    {
+        ImGui::SliderInt("MaxHP", &hp, 0, maxHP);
+        ImGui::Text("MaxHP: %d", maxHP);
+    }
+
+	if (ImGui::CollapsingHeader("Attack"))
+    {
+        ImGui::SliderInt("AttackDamage", &attackDamage, 0, 20);
+        ImGui::DragFloat("StartRange", &attack.startRange, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("HitRange", &attack.hitRange, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("Cooldown", &attack.cooldown, 0.05f, 0.f, 10.f);
+        ImGui::DragFloat("HitTimeNorm", &attack.hitTimeNormalized, 0.05f, 0.1f, 3.f);
+        ImGui::DragFloat("BreakRange", &attack.breakRange, 0.05f, 0.f, 20.f);
+    }
+
+    if (ImGui::CollapsingHeader("Tuning"))
+    {
+        ImGui::DragFloat("AggroRange", &aggroRange, 0.05f, 0.f, 100.f);
+        ImGui::DragFloat("MoveSpeed", &moveSpeed, 0.05f, 0.f, 20.f);
+
+        ImGui::SeparatorText("Teleport");
+        ImGui::DragFloat("TeleportInterval", &teleportInterval, 0.05f, 0.1f, 10.f);
+        ImGui::DragFloat("BehindOffset", &teleportBehindOffset, 0.05f, 0.f, 5.f);
+
+        ImGui::SeparatorText("Debug");
+        ImGui::Checkbox("DebugDraw", &debugDraw);
+        ImGui::Checkbox("ShowHealthbar", &showHealthbar);
+    }
+
+    ImGui::End();
+}
+
+bool EnemyBoss::CheckIfClicked(const AEVec2& mousePos)
+{
+    return fabsf(position.x - mousePos.x) < size.x &&
+        fabsf(position.y - mousePos.y) < size.y;
+}
+
+void EnemyBoss::RenderHealthbar() const
+{
+	if (!showHealthbar) return;
+    if (hideAfterDeath) return;
+    if (!bossEngaged) return;
+      
+    AEMtx33 ui;
+    AEMtx33Scale(&ui, 1.f, 1.f);
+    AEGfxSetTransform(ui.m);
+
+    // --- HUD anchor in screen pixels ---
+    const float screenW = (float)AEGfxGetWindowWidth();
+
+    const float topMarginPx = 30.f;   // distance from top of screen
+    const float barPxW = 520.f;  // pixel width
+    const float barPxH = 18.f;   // pixel height
+
+    AEVec2 barCenterWorld;
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx + barPxH * 0.5f }, barCenterWorld);
+
+    AEVec2 leftWorld, rightWorld, topWorld, bottomWorld;
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f - barPxW * 0.5f, topMarginPx + barPxH * 0.5f }, leftWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f + barPxW * 0.5f, topMarginPx + barPxH * 0.5f }, rightWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx }, topWorld);
+    AEExtras::ScreenToWorldPosition({ screenW * 0.5f, topMarginPx + barPxH }, bottomWorld);
+
+    const float barW = fabsf(rightWorld.x - leftWorld.x);
+    const float barH = fabsf(bottomWorld.y - topWorld.y);
+
+    const float barCenterX = barCenterWorld.x;
+    const float barY = barCenterWorld.y;
+
+    const float barLeftX = barCenterX - barW * 0.5f;
+    //const float fillW = barW * hpBarShown;
+    //const float fillCenterX = barLeftX + fillW * 0.5f;
+
+    float chipW = barW * hpBarChip;
+    float frontW = barW * hpBarFront;
+
+    float chipCenterX = barLeftX + chipW * 0.5f;
+    float frontCenterX = barLeftX + frontW * 0.5f;
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND); // safety
+
+    // Background
+    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_TRIANGLES);
+
+    // Border 
+   QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_LINES_STRIP);
+
+    
+
+    if (frontW > 0.001f)
+    {
+        // Chip (delayed)
+        QuickGraphics::DrawRect(chipCenterX, barY, chipW, barH, 0xFF7A0000, AE_GFX_MDM_TRIANGLES);
+
+        QuickGraphics::DrawRect(frontCenterX, barY, frontW, barH, 0xFFFF0000, AE_GFX_MDM_TRIANGLES);
+    }
+   
+
+    // Text (optional)
+   // (Top-left label + HP numbers)
+    std::string label = "Bringer of Death";
+    QuickGraphics::PrintText(label.c_str(), -0.95f, 0.88f, 0.35f, 1, 1, 1, 1);
+    /*
+    std::string hpStr = std::to_string(hp) + " / " + std::to_string(maxHP);
+    QuickGraphics::PrintText(hpStr.c_str(), 0.55f, 0.88f, 0.35f, 1, 1, 1, 1);
+    */
 }

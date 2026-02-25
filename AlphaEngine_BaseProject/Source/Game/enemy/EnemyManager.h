@@ -7,8 +7,9 @@
 
 #include "AEEngine.h"    
 #include "Enemy.h"   
+#include "IDamageable.h"
 
-class EnemyManager
+class EnemyManager 
 {
 public:
     struct SpawnInfo
@@ -18,6 +19,11 @@ public:
     };
 
 public:
+
+
+    void SetBoss(IDamageable* b) { bossDamageable = b; }
+
+
     EnemyManager() = default;
 
     // --- Data-driven spawning (use this for editor / level load) ---
@@ -84,9 +90,17 @@ public:
             fn(*e);
     }
 
+    template<typename Fn>
+    void ForEachDamageable(Fn&& fn)
+    {
+        for (auto& e : enemies) fn(static_cast<IDamageable&>(*e));
+        if (bossDamageable) fn(*bossDamageable);
+    }
+
     int Count() const { return (int)enemies.size(); }
 
 private:
     std::vector<SpawnInfo> spawns;                     // editor/level data
     std::vector<std::unique_ptr<Enemy>> enemies;       // runtime instances
+    IDamageable* bossDamageable = nullptr;
 };

@@ -29,7 +29,7 @@ namespace
 
 GameScene::GameScene() : 
 	map(50, 50),
-	player(&map),
+	player(&map, &enemyMgr),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
 		20, 
@@ -72,6 +72,7 @@ void GameScene::Init()
 	std::vector<EnemyManager::SpawnInfo> spawns;
 	spawns.push_back({ Enemy::Preset::Druid, {30.f, 3.f} });
 	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 3.f} });
+	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
 
@@ -87,24 +88,15 @@ void GameScene::Update()
 	AEVec2 p = player.GetPosition();
 	enemyBoss.Update(p, player.IsFacingRight());
 
-	
-
-
-	// --REMOVE LATER, basic attack mechanics for TESTING PURPOSES ONLY--
-	if (AEInputCheckTriggered(AEVK_X))
-	{
-		const float attackRange = 1.6f; // tweak to taste
-
-		enemyMgr.ForEachEnemy([&](Enemy& e)
-			{
-				if (!e.IsDead() && IsNear(p, e.GetPosition(), attackRange))
-					e.ApplyDamage(1);
-			});
-	}
-
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
+	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
+
+	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------
+	//const AEVec2 pPos = player.GetPosition();
+	//const AEVec2 pSize = player.GetStats().playerSize;
+	/*
 	// Boss normal melee attack (ATTACK state via EnemyAttack)
 	if (enemyBoss.PollAttackHit())
 	{
@@ -115,7 +107,7 @@ void GameScene::Update()
 
 		if (dy <= yTol)
 		{
-			player.TakeDamage(2, enemyBoss.position); // choose your boss damage
+			player.TakeDamage(enemyBoss.attackDamage, enemyBoss.position); // choose your boss damage
 			std::cout << "[Boss] HIT player (melee)\n";
 		}
 	}
@@ -126,7 +118,7 @@ void GameScene::Update()
 	if (spellHits > 0)
 	{
 		const int spellDmg = 1;                 // tune
-		player.TakeDamage(spellHits * spellDmg, {});
+		player.TakeDamage(spellHits * spellDmg, enemyBoss.position);
 		std::cout << "[Boss] spell hit x" << spellHits << "\n";
 	}
 
@@ -149,7 +141,7 @@ void GameScene::Update()
 				std::cout << "Enemy HIT player!\n";
 			}
 		});
-
+	*/
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);

@@ -3,6 +3,8 @@
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
+#include <imgui.h>
+#include "../UI.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -301,6 +303,8 @@ bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
 
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_NORMAL, position);
+
     if (hp <= 0)
     {
         hp = 0;
@@ -330,10 +334,10 @@ bool Enemy::TryTakeDamage(int dmg, int attackInstanceId)
     return true;
 }
 
-void Enemy::ApplyDamage(int dmg)
+/*void Enemy::ApplyDamage(int dmg)
 {
 	(void)TryTakeDamage(dmg, -1);
-}
+}*/
 
 
 // ---- Animation selection ----
@@ -361,6 +365,50 @@ void Enemy::UpdateAnimation()
         sprite.SetState(cfg.animRun);
     else
         sprite.SetState(cfg.animIdle);
+}
+
+
+
+void Enemy::DrawInspector()
+{
+    ImGui::Begin("Enemy");
+
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+        ImGui::Checkbox("Chasing", &chasing);
+        ImGui::Checkbox("ReturningHome", &returningHome);
+        ImGui::Checkbox("Dead", &dead);
+
+        ImGui::SeparatorText("HP");
+        ImGui::SliderInt("HP", &hp, 0, cfg.maxHp);
+        ImGui::Text("MaxHP: %d", cfg.maxHp);
+    }
+
+    if (ImGui::CollapsingHeader("Config"))
+    {
+        ImGui::DragFloat("MoveSpeed", &cfg.moveSpeed, 0.05f, 0.f, 20.f);
+        ImGui::DragFloat("AggroRange", &cfg.aggroRange, 0.05f, 0.f, 50.f);
+        ImGui::DragFloat("LeashRange", &cfg.leashRange, 0.05f, 0.f, 50.f);
+
+        ImGui::SeparatorText("Combat");
+        ImGui::SliderInt("AttackDamage", &cfg.attackDamage, 0, 10);
+        ImGui::DragFloat("AttackCooldown", &cfg.attackCooldown, 0.01f, 0.f, 5.f);
+
+        ImGui::SeparatorText("Debug");
+        ImGui::Checkbox("DebugDraw", &debugDraw);
+    }
+
+    ImGui::End();
+}
+
+
+bool Enemy::CheckIfClicked(const AEVec2& mousePos)
+{
+    return fabsf(position.x - mousePos.x) < size.x &&
+    fabsf(position.y - mousePos.y) < size.y;
+
 }
 
 // ---- Render ----
