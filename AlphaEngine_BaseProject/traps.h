@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <utility>
 
 #include "AEEngine.h"
 #include "Source/Utils/Box.h" 
@@ -76,7 +77,9 @@ class SpikePlate final : public Trap
 public:
     SpikePlate(const Box& box, float upTime, float downTime, int damageOnHit, bool startDisabled);
 
-    void Update(float dt, Player& player) override;
+    void Update(float dt, Player& player) override; 
+    void ActivateFromPlate();
+    void OnPlayerEnter(Player& player) override;
 
 protected:
     void OnPlayerStay(float dt, Player& player) override;
@@ -91,6 +94,7 @@ private:
 
     float m_hitCooldown = 0.25f;
     float m_hitTimer = 0.f;
+    bool m_lockedOn = false;
 };
 
 class TrapManager
@@ -111,3 +115,5 @@ public:
 private:
     std::vector<std::unique_ptr<Trap>> m_traps;
 };
+
+

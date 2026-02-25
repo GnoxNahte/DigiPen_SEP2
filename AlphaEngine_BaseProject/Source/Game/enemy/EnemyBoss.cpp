@@ -207,7 +207,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     if (hpChipDelay <= 0.f)
         hpBarChip += (hpBarFront - hpBarChip) * (1.0f - expf(-3.5f * dt));
 
-    // Keep chip >= front (chip is the “old” HP)
+    // Keep chip >= front (chip is the “old?HP)
     if (hpBarChip < hpBarFront)
         hpBarChip = hpBarFront;
 
