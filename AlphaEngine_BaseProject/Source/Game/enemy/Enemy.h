@@ -37,6 +37,10 @@ public:
         float aggroRange = 5.0f;
         float leashRange = 8.0f;
 
+        // Vertical gating (in world/tile units)
+        float aggroYRange = 1.0f; // start chasing only if player within this Y diff
+        float attackYRange = 1.0f; // allow attacking only if within this Y diff
+
         // Animation selection
         float runVelThreshold = 0.1f; // when to play RUN instead of IDLE
 
@@ -45,7 +49,7 @@ public:
         float attackHitRange = 1.5f;
         float attackCooldown = 0.8f;
         float attackHitTimeNormalized = 0.5f; // 0..1
-        float attackBreakRange = 1.2f;
+        float attackBreakRange = 100.0f;
 
         // Row indices in the sprite meta (IMPORTANT if your meta order differs)
         int animAttack = 0;

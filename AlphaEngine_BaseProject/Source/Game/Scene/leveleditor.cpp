@@ -257,12 +257,12 @@ static void PlayMode_Enter()
     spawns.reserve(gEnemyDefs.size());
     for (const auto& ed : gEnemyDefs)
     {
-        AEVec2 pos = ed.pos;
+       /* AEVec2 pos = ed.pos;
 
         const int tx = (int)floorf(pos.x);
         int ty = (int)floorf(pos.y);
 
-        // enemy collider size is 0.8, so half height is 0.4
+        //enemy collider size is 0.8, so half height is 0.4
         constexpr float enemyHalfH = 0.8f * 0.5f;
 
         // Find the first GROUND tile at-or-below the placed cell
@@ -281,7 +281,7 @@ static void PlayMode_Enter()
         {
             // Put enemy on TOP of that ground tile
             pos.y = (float)groundY + 1.0f + enemyHalfH; // y + 1.4
-        }
+        }*/
         spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
     }
        

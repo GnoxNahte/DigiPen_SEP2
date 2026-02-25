@@ -156,16 +156,20 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
 
+    const float dy = std::fabs(playerPos.y - position.y);
+    const bool yAggroOk = (dy <= cfg.aggroYRange);
+    const bool yAttackOk = (dy <= cfg.attackYRange);
+
     // --- Guard/leash ---
     const float playerFromHome = std::fabs(playerPos.x - homePos.x);
     const float enemyFromHome = std::fabs(position.x - homePos.x);
 
-    const bool inAggroRange = (absDx <= cfg.aggroRange);
+    const bool inAggroRange = (absDx <= cfg.aggroRange) && yAggroOk;
 
     // Hysteresis so we don't spam switch at the boundary
     const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
     const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED
-
+     
     // ENTER return-home mode if player OR enemy goes beyond leash
     if (!returningHome)
     {
@@ -178,6 +182,10 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             returningHome = false;
     }
 
+    //verical checck
+    const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
+    const float effectiveDist = yAttackOk ? absDx : 9999.0f;
+  
     if (returningHome)
     {
         // Allow attacks while returning home (no chasing)
@@ -186,8 +194,9 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
-            const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
-            attack.Update(dt, absDx, attackDur);
+           
+           
+            attack.Update(dt, effectiveDist, attackDur);
 
             if (attack.IsAttacking())
             {
@@ -245,8 +254,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     }
 
     // Update attack component (needs attack anim duration)
-    const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
-    attack.Update(dt, absDx, attackDur);
+    attack.Update(dt, effectiveDist, attackDur);
 
     // If attacking, stop movement
     if (attack.IsAttacking())

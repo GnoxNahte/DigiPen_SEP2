@@ -86,7 +86,7 @@ void GameScene::Update()
 	enemyMgr.UpdateAll(player.GetPosition(), map);
 
 	AEVec2 p = player.GetPosition();
-	enemyBoss.Update(p, player.IsFacingRight());
+	//enemyBoss.Update(p, player.IsFacingRight());
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;

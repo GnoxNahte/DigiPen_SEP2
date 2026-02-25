@@ -44,7 +44,11 @@ public:
             return;
         }
 
-        if (distanceToTarget > breakRange)
+        // Hysteresis: ensure breakRange can't be smaller than startRange
+        const float br = (breakRange > startRange) ? breakRange : (startRange + 0.25f);
+
+        // Cancel only BEFORE the hit moment; after hit, finish the animation
+        if (!hitFired && distanceToTarget > br)
         {
             isAttacking = false;
             return;
