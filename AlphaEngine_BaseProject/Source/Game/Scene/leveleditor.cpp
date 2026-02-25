@@ -145,7 +145,7 @@ static void PlaceEnemyAtCell(int tx, int ty, Enemy::Preset preset)
 
     EnemyDefSimple e{};
     e.preset = (int)preset; // ✅ stored as int for IO friendliness
-    e.pos = AEVec2{ tx + 0.5f, ty + 0.9f};
+    e.pos = AEVec2{ tx + 0.5f, ty + 0.f};
     gEnemyDefs.push_back(e);
 }
 
