@@ -57,8 +57,8 @@ public:
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
     ~Enemy() = default;
 
-    AEVec2 GetHurtboxPos()  const override { return GetPosition(); }
-    AEVec2 GetHurtboxSize() const override { return GetSize(); }
+    const AEVec2& GetHurtboxPos()  const override { return GetPosition(); }
+    const AEVec2& GetHurtboxSize() const override { return GetSize(); }
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
@@ -75,15 +75,15 @@ public:
     int  GetHP() const { return hp; }
 
     // Returns true if damage was actually applied.
-    bool TryTakeDamage(int dmg, int attackInstanceId = -1) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 
  
     //void ApplyDamage(int dmg);
 
 
     // Useful getters for combat / debugging
-    AEVec2 GetPosition() const { return position; }
-    AEVec2 GetSize() const { return size; }
+    const AEVec2& GetPosition() const { return position; }
+    const AEVec2& GetSize() const { return size; }
     bool   IsChasing() const { return chasing; }
     bool   IsReturningHome() const { return returningHome; }
 
@@ -122,7 +122,6 @@ private:
     float hurtTimeLeft{ 1.0f };
     float deathTimeLeft{ 0.5f };
     bool hidden = false;
-    int lastHitAttackId{ -1 };
   
 
 

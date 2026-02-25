@@ -8,11 +8,11 @@
 #include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
 #include "../enemy/EnemyManager.h"
-
+#include "../enemy/IDamageable.h"
 /**
  * @brief Controllable player class
  */
-class Player : Inspectable
+class Player : public Inspectable, IDamageable
 {
 public:
     enum AnimState
@@ -52,6 +52,7 @@ public:
 
     void TakeDamage(int dmg, const AEVec2& hitOrigin);
 
+    // === Inspectable ===
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
     
@@ -98,6 +99,13 @@ private:
     // === Combat ===
     int health;
 
+    // === Buffs ===
+    float buff_MoveSpeedMulti = 1.f;
+    float buff_DmgReduction = 0.f;
+    float buff_critChance = 1.f;
+    float buff_critDmgMulti = 1.f;
+    float buff_DmgMultiLowHP = 1.f;
+
     // === References to other systems ===
     MapGrid* map;
     EnemyManager* enemyManager;
@@ -125,5 +133,11 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
+
+    // === IDamageable ===
+    const AEVec2& GetHurtboxPos() const override;
+    const AEVec2& GetHurtboxSize() const override;
+    bool IsDead() const override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
