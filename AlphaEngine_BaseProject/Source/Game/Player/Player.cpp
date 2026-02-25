@@ -1,10 +1,11 @@
-#include "Player.h"
-#include "../Camera.h"
 #include <iostream>
 #include <limits>
+#include <imgui.h>
+
+#include "Player.h"
+#include "../Camera.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
-#include <imgui.h>
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
 #include "../UI.h"
@@ -273,20 +274,11 @@ void Player::HandleLanding()
     if (!isGroundCollided || velocity.y > 0.f)
         return;
 
-    // @todo: (Ethan) - One way platform?
-    if (inputDirection.y < 0)
-    {
-
-    }
-    // Land on ground
-    else
-    {
-        // @todo: (Ethan) - Play sound
-        if (!isGroundCollided)
-            lastJumpTime = std::numeric_limits<f64>::lowest();
+    // @todo: (Ethan) - Play sound
+    if (!isGroundCollided)
+        lastJumpTime = std::numeric_limits<f64>::lowest();
         
-        lastGroundedTime = (f32)Time::GetInstance().GetScaledElapsedTime();
-    }
+    lastGroundedTime = (f32)Time::GetInstance().GetScaledElapsedTime();
 }
 
 void Player::HandleGravity()
