@@ -16,5 +16,6 @@ private:
 	static const int MIDGROUND_WIDTH = 1817;
 	static const int FOREGROUND_WIDTH = 1929;
 	static const int BACKGROUND_HEIGHT = 400;
+	inline static float parallaxFactors[3] = { 0.1f, 0.4f, 0.8f };
 };
 

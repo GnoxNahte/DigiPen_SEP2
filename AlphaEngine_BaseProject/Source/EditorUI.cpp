@@ -1,5 +1,6 @@
 // EditorUI.cpp
 #include "EditorUI.h"
+#include <cstdio>
 
 static s8  gUiFontId = 0;
 static int gCachedWindowW = 1280;
@@ -9,7 +10,7 @@ static constexpr float UI_TEXT_SCALE = 1.0f;
 
 void EditorUI_SetFont(s8 fontId) { gUiFontId = fontId; }
 
-// ── quad mesh ─────────────────────────────────────────────────────────────────
+// ── quad mesh ────────────────────────────────────────────────────────────────
 static AEGfxVertexList* gUiQuad = nullptr;
 
 static AEGfxVertexList* CreateUnitQuad()
@@ -34,7 +35,6 @@ static bool PointInRect(float px, float py, float x, float y, float w, float h)
 static void DrawRect(float cx, float cy, float w, float h,
     float r, float g, float b, float a)
 {
-    // Always enforce UI pixel-space camera
     AEGfxSetCamPosition(gCachedWindowW * 0.5f, gCachedWindowH * 0.5f);
 
     AEMtx33 sc, ro, tr, m;
@@ -52,7 +52,7 @@ static void DrawRect(float cx, float cy, float w, float h,
 }
 
 static void PrintText(const char* text, float x, float y,
-    float r, float g, float b, float a)
+    float r, float g, float b, float a = 1.f)
 {
     float ndcX = (x / (float)gCachedWindowW) * 2.f - 1.f;
     float ndcY = (y / (float)gCachedWindowH) * 2.f - 1.f;
@@ -102,12 +102,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     float mx = (float)mxTL;
     float my = UIY(windowH, myTL);
 
-    // panel background
-    DrawRect(ui.panelW * 0.5f, windowH * 0.5f, ui.panelW, (float)windowH,
-        0.13f, 0.13f, 0.13f, 0.96f);
 
-    if (PointInRect(mx, my, 0, 0, ui.panelW, (float)windowH))
-        io.mouseCaptured = true;
 
     const float x = ui.pad;
     const float w = ui.panelW - ui.pad * 2.f;
@@ -115,27 +110,20 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     float y = (float)windowH - ui.pad - h;
 
     // ── title ────────────────────────────────────────────────────────────────
-    PrintText("LEVEL EDITOR", x, y + 10.f, 0.9f, 0.9f, 0.9f, 1);
+    PrintText("LEVEL EDITOR", x, y + 10.f, 0.9f, 0.9f, 0.9f);
     y -= (h + ui.gap);
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
     // ── play / stop ──────────────────────────────────────────────────────────
-    if (!ui.playMode)
-    {
-        if (Button("play", x, y, w, h, mx, my, mouseLPressed))
-            ui.requestTogglePlay = true;
-    }
-    else
-    {
-        if (Button("stop", x, y, w, h, mx, my, mouseLPressed))
-            ui.requestTogglePlay = true;
-    }
+    const char* playLabel = ui.playMode ? "stop" : "play";
+    if (Button(playLabel, x, y, w, h, mx, my, mouseLPressed))
+        ui.requestTogglePlay = true;
     y -= (h + ui.gap);
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // in play mode, hide editing tools
+    // hide editing tools in play mode
     if (ui.playMode)
     {
         AEGfxSetRenderMode(AE_GFX_RM_COLOR);
@@ -146,7 +134,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     }
 
     // ── tool ─────────────────────────────────────────────────────────────────
-    PrintText("tool", x, y + 10.f, 0.7f, 0.7f, 0.7f, 1);
+    PrintText("tool", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
     float hw = (w - ui.gap) * 0.5f;
@@ -159,7 +147,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     y -= ui.gap;
 
     // ── palette ──────────────────────────────────────────────────────────────
-    PrintText("tile", x, y + 10.f, 0.7f, 0.7f, 0.7f, 1);
+    PrintText("tile", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
     if (Button("ground", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Ground))
@@ -178,7 +166,6 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         ui.brush = EditorTile::Enemy;
     y -= (h + ui.gap);
 
-    // enemy sub-palette (only shown when enemy brush selected)
     if (ui.brush == EditorTile::Enemy)
     {
         float sw = (w - ui.gap) * 0.5f;
@@ -208,11 +195,19 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     y -= ui.gap;
 
     // ── file ─────────────────────────────────────────────────────────────────
-    if (Button("save", x, y, w, h, mx, my, mouseLPressed)) ui.requestSave = true;
+    PrintText("file", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
-    if (Button("load", x, y, w, h, mx, my, mouseLPressed)) ui.requestLoad = true;
+
+    if (Button("save", x, y, w, h, mx, my, mouseLPressed))
+        ui.requestSave = true;
     y -= (h + ui.gap);
-    if (Button("clear map", x, y, w, h, mx, my, mouseLPressed)) ui.requestClearMap = true;
+
+    if (Button("load", x, y, w, h, mx, my, mouseLPressed))
+        ui.requestLoad = true;
+    y -= (h + ui.gap);
+
+    if (Button("clear map", x, y, w, h, mx, my, mouseLPressed))
+        ui.requestClearMap = true;
 
     // restore state
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);

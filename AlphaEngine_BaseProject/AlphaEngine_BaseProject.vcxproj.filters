@@ -188,10 +188,13 @@
     </ClCompile>
     <ClCompile Include="Source\EditorUI.cpp">
       <Filter>Source Files</Filter>
-       </ClCompile>
+    </ClCompile>
     <ClCompile Include="Source\Game\Background.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
+    <ClCompile Include="MainMenu.cpp">
+      <Filter>Source Files</Filter>
+       </ClCompile>
     <ClCompile Include="Source\Game\enemy\AttackSystem.cpp">
       <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
@@ -317,9 +320,6 @@
     <ClInclude Include="Source\Game\Scene\LevelEditorScene.h">
       <Filter>Header Files\Game\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Source\EditorUI.hpp">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Scene\leveleditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -344,6 +344,12 @@
     <ClInclude Include="Source\Game\Background.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
+    <ClInclude Include="Source\EditorUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainMenu.h">
+      <Filter>Header Files</Filter>
+       </ClInclude>
     <ClInclude Include="Source\Game\enemy\AttackSystem.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>

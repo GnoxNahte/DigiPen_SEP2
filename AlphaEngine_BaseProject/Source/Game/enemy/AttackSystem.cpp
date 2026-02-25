@@ -46,7 +46,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
             const int spellDmg = 1;
             // Choose ONE of these policies:
 
-            // Policy A (common): treat “any projectile hit this frame” as 1 damage event
+            // Policy A (common): treat projectile hit this frame?as 1 damage event
             player.TakeDamage(spellHits * spellDmg, boss->GetHurtboxPos());
             std::cout << "[Boss] spell hit x" << spellHits << "\n";
 

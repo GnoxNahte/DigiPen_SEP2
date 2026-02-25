@@ -1,35 +1,54 @@
-#include <iostream>
 #include "MainMenuScene.h"
 #include "AEEngine.h"
+#include "../../MainMenu.h"
 
-MainMenuScene::MainMenuScene()
-{
-	std::cout << "Main menu load\n";
-}
+#include <string>
 
-MainMenuScene::~MainMenuScene()
-{
-	std::cout << "Main menu unload\n";
-}
+// shared selected level path (game scene should read this when entering GS_GAME)
+std::string gPendingLevelPath;
+
+MainMenuScene::MainMenuScene() {}
+MainMenuScene::~MainMenuScene() {}
 
 void MainMenuScene::Init()
 {
-	std::cout << "Main menu Init\n";
+    MainMenu::Init();
 }
 
 void MainMenuScene::Update()
 {
-	std::cout << "Main menu update\n";
-	if (AEInputCheckTriggered(AEVK_R))
-		GSM::ChangeScene(SceneState::GS_GAME);
+    const int w = (int)AEGfxGetWindowWidth();
+    const int h = (int)AEGfxGetWindowHeight();
+
+    s32 mx, my;
+    AEInputGetCursorPosition(&mx, &my);
+
+    MainMenu::Update(w, h, mx, my, AEInputCheckTriggered(AEVK_LBUTTON));
+
+    std::string path;
+    if (MainMenu::ConsumeStartRequest(path))
+    {
+        // "level editor" button sets path = "editor"
+        if (path == "editor")
+        {
+            GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
+        }
+        else
+        {
+            // if later you add "play levelXX", you can pass path here
+            gPendingLevelPath = path;
+            GSM::ChangeScene(SceneState::GS_GAME);
+        }
+        return;
+    }
 }
 
 void MainMenuScene::Render()
 {
-	std::cout << "Main menu render\n";
+    MainMenu::Render((int)AEGfxGetWindowWidth(), (int)AEGfxGetWindowHeight());
 }
 
 void MainMenuScene::Exit()
 {
-	std::cout << "Main menu Exit\n";
+    MainMenu::Shutdown();
 }
