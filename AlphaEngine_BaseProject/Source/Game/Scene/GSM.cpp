@@ -114,6 +114,24 @@ void GSM::Update()
 			// Draw pause menu overlay (ImGui)
 			if (gPauseMenuOpen && currentState == GS_GAME)
 			{
+				// ===== Full-screen dim overlay =====
+				{
+					ImGuiViewport* vp = ImGui::GetMainViewport();
+					ImGui::SetNextWindowPos(vp->Pos, ImGuiCond_Always);
+					ImGui::SetNextWindowSize(vp->Size, ImGuiCond_Always);
+
+					// 0.0 ~ 1.0 larger is darker. 
+					ImGui::SetNextWindowBgAlpha(0.85f);
+
+					ImGui::Begin("##PauseDimOverlay", nullptr,
+						ImGuiWindowFlags_NoDecoration |
+						ImGuiWindowFlags_NoMove |
+						ImGuiWindowFlags_NoSavedSettings |
+						ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+
+					ImGui::End();
+				}
 				ImGui::SetNextWindowBgAlpha(0.70f);
 
 				// (Optional) center-ish position
