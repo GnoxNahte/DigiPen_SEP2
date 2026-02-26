@@ -5,6 +5,8 @@
 #include "../Camera.h"
 #include <imgui.h>
 #include "../UI.h"
+#include "../Environment/MapGrid.h"
+#include "../Environment/MapTile.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -101,6 +103,14 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     attack.hitTimeNormalized = cfg.attackHitTimeNormalized;
     attack.breakRange = cfg.attackBreakRange;
 
+	//enemy particle system setup
+    particleSystem.Init();
+    particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
+
+    // Optional: default “dust/blood-ish” lifetime for bursts
+    particleSystem.emitter.lifetimeRange.x = 0.10f;
+    particleSystem.emitter.lifetimeRange.y = 0.25f;
+
     //enemy life system
     hp = cfg.maxHp;
     dead = false;
@@ -110,7 +120,39 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
 // ---- Update ----
 void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 {
+
+
+
     const float dt = (float)AEFrameRateControllerGetFrameTime();
+    auto UpdateEnemyParticles = [&]()
+        {
+            // Trail only when moving; still updates existing particles either way
+            const float speed = std::fabs(velocity.x);
+
+            // If your system treats 0 as "no spawn", this is fine
+            particleSystem.SetSpawnRate(speed > 0.1f ? 30.f : 0.f);
+
+            const float trailLen = 0.5f;     // how far behind to spawn
+            const float x = position.x + 0.5f;
+
+            // decide facing: if moving use velocity, else use facingDirection
+            const bool faceRight =
+                (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+            if (faceRight)
+            {
+                // moving right 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x - trailLen);
+            }
+            else
+            {
+                // moving left 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x + trailLen);
+            }
+            AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.2f, position.y + 0.8f);
+
+            particleSystem.Update();
+        };
     if (dead)
     {
         // Advance animation until the final frame starts, then stop updating so it doesn't loop.
@@ -250,6 +292,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
         UpdateAnimation();
         sprite.Update();
+        UpdateEnemyParticles();
         return;
     }
 
@@ -311,6 +354,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             if (nextPos.x > maxX) { nextPos.x = maxX; velocity.x = 0.f; }
 
             position = nextPos;
+
         }
         else
         {
@@ -319,9 +363,10 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             velocity.y = 0.f;
         }
     }
-
+  
     UpdateAnimation();
     sprite.Update();
+    UpdateEnemyParticles();
 }
 
 bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
@@ -444,6 +489,8 @@ void Enemy::Render()
 {
     if (hidden) return;
 
+    particleSystem.Render();
+
     AEMtx33 transform;
 
     const bool faceRight =
@@ -466,12 +513,14 @@ void Enemy::Render()
 
     sprite.Render();
 
+  
+
     if (debugDraw)
 
     {
         //const float boxYOffset = -0.25f; // negative = draw LOWER (
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         const AEVec2 hb = GetHurtboxPos();
-        QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+        QuickGraphics::DrawRect(hb.x + 0.5f, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
     }
 }
