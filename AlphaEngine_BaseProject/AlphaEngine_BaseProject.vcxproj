@@ -110,7 +110,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="..\Extern\imgui\include\imgui_draw.cpp" />
     <ClCompile Include="..\Extern\imgui\include\imgui_tables.cpp" />
     <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp" />
-    <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="Saves\SaveData.cpp" />
     <ClCompile Include="Saves\SaveSystem.cpp" />
     <ClCompile Include="Source\EditorUI.cpp" />
@@ -159,7 +158,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="..\Extern\imgui\include\imstb_rectpack.h" />
     <ClInclude Include="..\Extern\imgui\include\imstb_textedit.h" />
     <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h" />
-    <ClInclude Include="MainMenu.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
     <ClInclude Include="Source\EditorUI.h" />

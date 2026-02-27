@@ -5,6 +5,9 @@
 #include "../../Game/UI.h"
 #include "../../Game/Background.h"
 #include "../BuffCards.h"
+#include "LevelIO.h"
+
+extern std::string gPendingLevelPath;
 
 
 //AABB collision helper
@@ -30,18 +33,18 @@ namespace
 }
 
 
-GameScene::GameScene() : 
+GameScene::GameScene() :
 	map(50, 50),
 	player(&map, &enemyMgr),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
-		20, 
-		ParticleSystem::EmitterSettings{ 
+		20,
+		ParticleSystem::EmitterSettings{
 			.angleRange{ PI / 3, PI / 4 },
 			.speedRange{ 30.f, 50.f },
 			.lifetimeRange{1.f, 2.f},
-		} 
-	),
+		}
+		),
 	enemyBoss(35, 2.90f)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
@@ -62,7 +65,7 @@ GameScene::GameScene() :
 	//	2, 0.2f
 	//);
 
-	
+
 }
 
 GameScene::~GameScene()
@@ -71,6 +74,55 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+	// Load level from file if one was passed in from the menu
+	if (!gPendingLevelPath.empty())
+	{
+		LevelData lvl;
+		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
+		{
+			// apply tiles to existing map member
+			for (int y = 0; y < lvl.rows && y < 50; ++y)
+				for (int x = 0; x < lvl.cols && x < 50; ++x)
+				{
+					int v = lvl.tiles[(size_t)y * lvl.cols + x];
+					if (v < 0 || v >= MapTile::typeCount) v = 0;
+					map.SetTile(x, y, (MapTile::Type)v);
+				}
+
+			// apply traps
+			for (const auto& td : lvl.traps)
+			{
+				Box box{ td.pos, td.size };
+				const Trap::Type tt = static_cast<Trap::Type>(td.type);
+				if (tt == Trap::Type::SpikePlate)
+					trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+				else if (tt == Trap::Type::PressurePlate)
+					trapMgr.Spawn<PressurePlate>(box);
+				else if (tt == Trap::Type::LavaPool)
+					trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+			}
+
+			// spawn point from level file
+			player.Reset(lvl.spawn);
+			camera.SetFollow(&player.GetPosition(), 0, (float)lvl.cols, true);
+
+			// enemy spawns from level file
+			std::vector<EnemyManager::SpawnInfo> spawns;
+			for (const auto& ed : lvl.enemies)
+				spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+			enemyMgr.SetBoss(&enemyBoss);
+			enemyMgr.SetSpawns(spawns);
+			enemyMgr.SpawnAll();
+
+			gPendingLevelPath.clear();
+			UI::Init();
+			Background::Init();
+			return;
+		}
+		gPendingLevelPath.clear();
+	}
+
+	// fallback: hardcoded setup
 	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
 	spawns.push_back({ Enemy::Preset::Druid, {30.f, 2.0f} });
@@ -116,7 +168,7 @@ void GameScene::Update()
 			std::cout << "[Boss] HIT player (melee)\n";
 		}
 	}
-	
+
 	// Boss special spell damage
 	const int spellHits = enemyBoss.ConsumeSpecialHits(player.GetPosition(),
 	player.GetStats().playerSize);
@@ -157,7 +209,7 @@ void GameScene::Update()
 	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
 	//testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 5000000.f : 0.f);
 	if (AEInputCheckTriggered(AEVK_G))
-		testParticleSystem.SpawnParticleBurst( 300);
+		testParticleSystem.SpawnParticleBurst(300);
 	testParticleSystem.Update();
 
 	// For checking current buffs vector
@@ -214,7 +266,7 @@ void GameScene::Render()
 	//	+ " Lava=" + std::to_string(onLava);
 	//QuickGraphics::PrintText(ov.c_str(), -1, 0.60f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	
+
 
 
 	AEVec2 worldMousePos;
@@ -232,9 +284,9 @@ void GameScene::Render()
 	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R))
-		GSM::ChangeScene(SceneState::GS_GAME);
-	else if (AEInputCheckTriggered(AEVK_T))
 		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
+	else if (AEInputCheckTriggered(AEVK_T))
+		GSM::ChangeScene(SceneState::GS_GAME);
 	else if (AEInputCheckTriggered(AEVK_Y))
 		GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
 }
