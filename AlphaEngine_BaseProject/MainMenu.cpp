@@ -9,7 +9,7 @@ namespace
 {
     // change this to your actual menu background asset
     // if it fails to load, menu still works (just solid color)
-    static const char* MENU_BG_PATH = "Assets/menu_background.png";
+    static const char* MENU_BG_PATH = "Assets/foreground.png";
 
     static bool gRequestStart = false;
     static bool gRequestQuit = false;
@@ -216,7 +216,7 @@ namespace MainMenu
         DrawRect(0.f, 0.f, (float)w, (float)h, 0.f, 0.f, 0.f, 0.35f, w, h);
 
         // title
-        DrawText("GAME TITLE", 80.f, h - 120.f, 1.0f, 1, 1, 1, 1, w, h);
+        DrawText("AETHERFALL", 80.f, h - 120.f, 3.0f, 1, 1, 1, 1, w, h);
     }
 
     bool ConsumeStartRequest(std::string& outPath)

@@ -340,7 +340,7 @@ static void Prompt_Update()
     }
 
     // Cancel
-    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    if (AEInputCheckTriggered(AEVK_Z))
         gPromptActive = false;
 }
 
@@ -398,7 +398,7 @@ static void Prompt_Draw()
     }
 
     // hint
-    DrawScreenText("Enter to confirm  |  Esc to cancel",
+    DrawScreenText("Enter to confirm  |  Press Z to cancel",
         cx - bw * 0.5f + 18.f, cy - 66.f, 0.5f, 0.5f, 0.55f);
 }
 
