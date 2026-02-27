@@ -23,9 +23,6 @@ BaseScene* GSM::currentScene = nullptr;
 SceneState GSM::previousState = GS_QUIT;
 SceneState GSM::currentState = GS_QUIT;
 SceneState GSM::nextState = GS_QUIT;
-static bool gPauseMenuOpen = false;
-static bool gPauseShowSettings = false;
-
 
 void GSM::Init(SceneState type)
 {
@@ -62,10 +59,6 @@ void GSM::Update()
 			LoadState(currentState);
 		}
 
-		gPauseMenuOpen = false;
-		gPauseShowSettings = false;
-		Time::GetInstance().SetPaused(false);
-
 		currentScene->Init();
 
 		while (currentState == nextState)
@@ -85,90 +78,19 @@ void GSM::Update()
 
 			AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 
-			// Window closed => quit no matter what
-			if (0 == AESysDoesWindowExist())
+			// Basic way to trigger exiting the application
+			// when ESCAPE is hit or when the window is closed
+			if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
 				nextState = GS_QUIT;
 
-			// ESC => open/close pause menu ONLY in game
-			if (currentState == GS_GAME && AEInputCheckTriggered(AEVK_ESCAPE))
-			{
-				gPauseMenuOpen = !gPauseMenuOpen;
-				gPauseShowSettings = false; // reset to main pause page
-				Time::GetInstance().SetPaused(gPauseMenuOpen);
-			}
-			else if (currentState != GS_GAME && AEInputCheckTriggered(AEVK_ESCAPE))
-			{
-				// optional: outside gameplay, ESC quits
-				nextState = GS_QUIT;
-			}
-
-			// Freeze gameplay updates when pause menu is open
-			if (!gPauseMenuOpen)
-			{
-				currentScene->Update();
-			}
-
+			currentScene->Update();
 			Editor::Update();
+
 			currentScene->Render();
-
-			// Draw pause menu overlay (ImGui)
-			if (gPauseMenuOpen && currentState == GS_GAME)
-			{
-				ImGui::SetNextWindowBgAlpha(0.70f);
-
-				// (Optional) center-ish position
-				ImGuiViewport* vp = ImGui::GetMainViewport();
-				ImVec2 center = vp->GetCenter();
-				ImGui::SetNextWindowPos(ImVec2(center.x, center.y), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-
-				ImGui::Begin("Pause Menu", nullptr,
-					ImGuiWindowFlags_NoDecoration |
-					ImGuiWindowFlags_AlwaysAutoResize |
-					ImGuiWindowFlags_NoMove);
-
-				if (!gPauseShowSettings)
-				{
-					ImGui::Text("PAUSED");
-					ImGui::Separator();
-
-					if (ImGui::Button("Resume", ImVec2(220, 0)))
-					{
-						gPauseMenuOpen = false;
-						Time::GetInstance().SetPaused(false);
-					}
-
-					if (ImGui::Button("Settings", ImVec2(220, 0)))
-					{
-						gPauseShowSettings = true;
-					}
-
-					if (ImGui::Button("Exit", ImVec2(220, 0)))
-					{
-						// actually quit only when clicking Exit
-						nextState = GS_QUIT;
-					}
-				}
-				else
-				{
-					ImGui::Text("SETTINGS");
-					ImGui::Separator();
-
-					// TODO: put settings here
-					static float masterVolume = 1.0f;
-					ImGui::SliderFloat("Master Volume", &masterVolume, 0.0f, 1.0f);
-
-					if (ImGui::Button("Back", ImVec2(220, 0)))
-					{
-						gPauseShowSettings = false;
-					}
-				}
-
-				ImGui::End();
-			}
 
 			Time::GetInstance().Update();
 			TimerSystem::GetInstance().Update();
-
+			
 			Editor::DrawInspectors();
 
 			// Informing the system about the loop's end
