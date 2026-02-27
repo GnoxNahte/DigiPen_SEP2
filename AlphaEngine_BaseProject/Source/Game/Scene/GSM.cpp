@@ -1,3 +1,4 @@
+
 #include "GSM.h"
 #include "AEEngine.h"
 #include "GameScene.h"
@@ -13,7 +14,6 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
-#include "../../Game/BuffCards.h"
 
 #include "../../Utils/AEExtras.h" // temp
 
@@ -114,91 +114,30 @@ void GSM::Update()
 			// Draw pause menu overlay (ImGui)
 			if (gPauseMenuOpen && currentState == GS_GAME)
 			{
-				ImGuiViewport* mainVp = ImGui::GetMainViewport();
-
 				// ===== Full-screen dim overlay =====
-				ImGui::SetNextWindowPos(mainVp->Pos, ImGuiCond_Always);
-				ImGui::SetNextWindowSize(mainVp->Size, ImGuiCond_Always);
-				ImGui::SetNextWindowBgAlpha(0.85f);
-				ImGui::Begin("##PauseDimOverlay", nullptr,
-					ImGuiWindowFlags_NoDecoration |
-					ImGuiWindowFlags_NoMove |
-					ImGuiWindowFlags_NoSavedSettings |
-					ImGuiWindowFlags_NoBringToFrontOnFocus);
-				ImGui::End();
-
-				// ===== Buff bar (bottom-right) =====
 				{
-					const auto& buffs = BuffCardManager::GetCurrentBuffs();
-					if (!buffs.empty())
-					{
-						const float CARD_W = 78.0f;
-						const float CARD_H = 110.0f;
-						const float PAD = 16.0f;
-						const float MARGIN = 70.0f;
+					ImGuiViewport* vp = ImGui::GetMainViewport();
+					ImGui::SetNextWindowPos(vp->Pos, ImGuiCond_Always);
+					ImGui::SetNextWindowSize(vp->Size, ImGuiCond_Always);
 
-						const int count = (int)buffs.size();
+					// 0.0 ~ 1.0 larger is darker. 
+					ImGui::SetNextWindowBgAlpha(0.85f);
 
-						const float winWf = count * CARD_W + (count - 1) * PAD;
-						const float winHf = CARD_H;
+					ImGui::Begin("##PauseDimOverlay", nullptr,
+						ImGuiWindowFlags_NoDecoration |
+						ImGuiWindowFlags_NoMove |
+						ImGuiWindowFlags_NoSavedSettings |
+						ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-						const float posXf = mainVp->Pos.x + mainVp->Size.x - winWf - MARGIN;
-						const float posYf = mainVp->Pos.y + mainVp->Size.y - winHf - MARGIN;
 
-						const float winW = (float)(int)(winWf + 0.5f);
-						const float winH = (float)(int)(winHf + 0.5f);
-						const float posX = (float)(int)(posXf + 0.5f);
-						const float posY = (float)(int)(posYf + 0.5f);
-
-						ImGui::SetNextWindowPos(ImVec2(posX, posY), ImGuiCond_Always);
-						ImGui::SetNextWindowSize(ImVec2(winW, winH), ImGuiCond_Always);
-						ImGui::SetNextWindowBgAlpha(0.25f);
-
-						ImGui::Begin("##PauseBuffBar", nullptr,
-							ImGuiWindowFlags_NoDecoration |
-							ImGuiWindowFlags_NoMove |
-							ImGuiWindowFlags_NoSavedSettings |
-							ImGuiWindowFlags_NoFocusOnAppearing |
-							ImGuiWindowFlags_NoNav);
-
-						// 关键：Push/Pop 必须成对
-						ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-						ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(PAD, 0.0f));
-
-						for (int i = 0; i < count; ++i)
-						{
-							if (i > 0) ImGui::SameLine();
-
-							const BuffCard& b = buffs[i];
-							std::string id = "##buff_" + std::to_string(i);
-
-							ImGui::Button(id.c_str(), ImVec2(CARD_W, CARD_H));
-
-							if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
-							{
-								ImGui::BeginTooltip();
-								ImGui::Text("%s", b.cardName.c_str());
-								ImGui::Separator();
-								ImGui::Text("Type: %s", BuffCardManager::CardTypeToString(b.type).c_str());
-								ImGui::Text("Rarity: %s", BuffCardManager::CardRarityToString(b.rarity).c_str());
-								ImGui::Separator();
-								ImGui::TextWrapped("%s", b.cardDesc.c_str());
-								ImGui::TextWrapped("Effect: %s", b.cardEffect.c_str());
-								ImGui::Text("Value1: %d", b.effectValue1);
-								ImGui::Text("Value2: %d", b.effectValue2);
-								ImGui::EndTooltip();
-							}
-						}
-
-						ImGui::PopStyleVar(2);
-						ImGui::End();
-					}
+					ImGui::End();
 				}
-
-				// ===== Pause menu window (center) =====
 				ImGui::SetNextWindowBgAlpha(0.70f);
-				ImVec2 center(mainVp->Pos.x + mainVp->Size.x * 0.5f, mainVp->Pos.y + mainVp->Size.y * 0.5f);
-				ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+				// (Optional) center-ish position
+				ImGuiViewport* vp = ImGui::GetMainViewport();
+				ImVec2 center = vp->GetCenter();
+				ImGui::SetNextWindowPos(ImVec2(center.x, center.y), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
 				ImGui::Begin("Pause Menu", nullptr,
 					ImGuiWindowFlags_NoDecoration |
@@ -215,12 +154,15 @@ void GSM::Update()
 						gPauseMenuOpen = false;
 						Time::GetInstance().SetPaused(false);
 					}
+
 					if (ImGui::Button("Settings", ImVec2(220, 0)))
 					{
 						gPauseShowSettings = true;
 					}
+
 					if (ImGui::Button("Exit", ImVec2(220, 0)))
 					{
+						// actually quit only when clicking Exit
 						nextState = GS_QUIT;
 					}
 				}
@@ -229,6 +171,7 @@ void GSM::Update()
 					ImGui::Text("SETTINGS");
 					ImGui::Separator();
 
+					// TODO: put settings here
 					static float masterVolume = 1.0f;
 					ImGui::SliderFloat("Master Volume", &masterVolume, 0.0f, 1.0f);
 
