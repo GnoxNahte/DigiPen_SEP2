@@ -10,7 +10,8 @@
 #include "../../Editor/EditorUtils.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/IDamageable.h"
-#include "../../Utils/Event/Events.h"
+#include "../BuffCards.h"
+
 /**
  * @brief Controllable player class
  */
@@ -138,7 +139,7 @@ private:
 
     void RenderDebugCollider(Box& box);
 
-    void OnBuffSelectedEvent(const BaseEventData&);
+    void OnBuffSelected(const BuffSelectedEvent& ev);
     static float PercentToScale(int percentage); // Helper to calcualte buffs
 
     // === IDamageable ===

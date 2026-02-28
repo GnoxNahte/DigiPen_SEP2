@@ -30,13 +30,14 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
 
-    buffEventId = EventSystem::Subscribe(EventType::OnBuffSelected, [this](const BaseEventData& ev) {
-        OnBuffSelectedEvent(ev);
+    buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
+        OnBuffSelected(ev);
     });
 }
 
 Player::~Player()
 {
+    EventSystem::Unsubscribe<BuffSelectedEvent>(buffEventId);
 }
 
 void Player::Update()
@@ -534,16 +535,9 @@ void Player::RenderDebugCollider(Box& box)
     QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
 }
 
-void Player::OnBuffSelectedEvent(const BaseEventData& ev)
+void Player::OnBuffSelected(const BuffSelectedEvent& ev)
 {
-    if (ev.type != EventType::OnBuffSelected)
-    {
-        std::cout << "Unknown event - " << ev.type << "!\n";
-        return;
-    }
-
-    auto buffEv = dynamic_cast<const BuffSelectedEventData&>(ev);
-    const BuffCard& card = buffEv.card;
+    const BuffCard& card = ev.card;
 
     std::cout << "Player applying buff - " << BuffCardManager::CardTypeToString(card.type) << "(" << card.effectValue1 << "," << card.effectValue2 << ")" << "\n";
 

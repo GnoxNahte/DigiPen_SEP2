@@ -61,6 +61,11 @@ struct BuffCard {
 			 AEVec2 pos = { 0,0 });
 
 };
+
+struct BuffSelectedEvent {
+	const BuffCard& card;
+};
+
 /*----------------------------------------------------------------------------
 The BuffCardManager is responsible for setting up cards to save to JSON,
 including the names and descriptions. The BuffCardScreen handles the actual

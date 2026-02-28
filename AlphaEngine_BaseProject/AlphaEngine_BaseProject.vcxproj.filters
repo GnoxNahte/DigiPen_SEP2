@@ -67,9 +67,6 @@
     <Filter Include="Header Files\Utils\Event">
       <UniqueIdentifier>{cffcf4df-4c71-4f5a-babf-27cf5d409130}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Utils\Event">
-      <UniqueIdentifier>{0d0e03b3-95d7-4347-9f14-148ff7d8d525}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -206,9 +203,6 @@
     </ClCompile>
     <ClCompile Include="Source\Utils\PhysicsUtils.cpp">
       <Filter>Source Files\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Utils\Event\EventSystem.cpp">
-      <Filter>Source Files\Utils\Event</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -367,9 +361,6 @@
     </ClInclude>
     <ClInclude Include="Source\Utils\PhysicsUtils.h">
       <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Utils\Event\Events.h">
-      <Filter>Header Files\Utils\Event</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Event\EventSystem.h">
       <Filter>Header Files\Utils\Event</Filter>

@@ -2,25 +2,49 @@
 
 #include <array>
 #include <functional>
-#include "Events.h"
 
 using EventId = unsigned long;
-using EventCallback = std::function<void(const BaseEventData&)>;
 
 class EventSystem
 {
 public:
-	static EventId Subscribe(EventType type, EventCallback callback);
-	static void Unsubscribe(EventType type, EventId id);
-	static void Trigger(const BaseEventData&);
-	static void Trigger(EventType type);
+	template<typename T>
+	static EventId Subscribe(std::function<void(const T&)> callback)
+	{
+		EventId id = nextId++;
+		auto& listeners = GetListeners<T>();
+		listeners.emplace(id, callback);
+		return id;
+	}
 
-	static void Clear();
+	template<typename T>
+	static void Unsubscribe(EventId id)
+	{
+		GetListeners<T>().erase(id);
+	}
+
+	template<typename T>
+	static void Trigger(const T& data)
+	{
+		auto& listeners = GetListeners<T>();
+
+		for (auto& [id, callback] : listeners)
+			callback(data);
+	}
+
+	template<typename T>
+	static void Clear()
+	{
+		GetListeners<T>().clear();
+	}
 
 private:
-	using EventMap = std::unordered_map<EventId, EventCallback>;
+	template<typename T>
+	static std::unordered_map<EventId, std::function<void(const T&)>>& GetListeners()
+	{
+		static std::unordered_map<EventId, std::function<void(const T&)>> listeners;
+		return listeners;
+	}
 
-	static EventId nextId;
-	static std::array<EventMap, EventType::EVENT_COUNT> events;
+	inline static EventId nextId = 0;
 };
-

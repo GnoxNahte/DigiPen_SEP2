@@ -131,7 +131,7 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 		break;
 	}
 
-	EventSystem::Trigger(BuffSelectedEventData{ card });
+	EventSystem::Trigger<BuffSelectedEvent>({ card });
 
 	BuffCardScreen::GetTextLoadingStatus() = false;
 

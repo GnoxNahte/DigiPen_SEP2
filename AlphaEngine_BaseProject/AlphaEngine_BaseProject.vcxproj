@@ -138,7 +138,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Game\UI.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Utils\AEExtras.cpp" />
-    <ClCompile Include="Source\Utils\Event\EventSystem.cpp" />
     <ClCompile Include="Source\Utils\FileHelper.cpp" />
     <ClCompile Include="Source\Utils\MeshGenerator.cpp" />
     <ClCompile Include="Source\Utils\ObjectPool.cpp" />
@@ -193,7 +192,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Utils\AEExtras.h" />
     <ClInclude Include="Source\Utils\Box.h" />
     <ClInclude Include="Source\Utils\Easing.h" />
-    <ClInclude Include="Source\Utils\Event\Events.h" />
     <ClInclude Include="Source\Utils\Event\EventSystem.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
