@@ -29,6 +29,10 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
+
+    buffEventId = EventSystem::Subscribe(EventType::OnBuffSelected, [this](const BaseEventData& ev) {
+        OnBuffSelectedEvent(ev);
+    });
 }
 
 Player::~Player()
@@ -54,10 +58,6 @@ void Player::Update()
 
     UpdateAnimation();
     UpdateTrails();
-
-    // @todo - Delete, for debug only
-    if (AEInputCheckCurr(AEVK_R))
-        stats.LoadFileData();
 }
 
 void Player::Render()
@@ -532,6 +532,46 @@ void Player::RenderDebugCollider(Box& box)
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
     QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
+}
+
+void Player::OnBuffSelectedEvent(const BaseEventData& ev)
+{
+    if (ev.type != EventType::OnBuffSelected)
+    {
+        std::cout << "Unknown event - " << ev.type << "!\n";
+        return;
+    }
+
+    auto buffEv = dynamic_cast<const BuffSelectedEventData&>(ev);
+    const BuffCard& card = buffEv.card;
+
+    std::cout << "Player applying buff - " << BuffCardManager::CardTypeToString(card.type) << "(" << card.effectValue1 << "," << card.effectValue2 << ")" << "\n";
+
+    switch (card.type)
+    {
+    case CARD_TYPE::HERMES_FAVOR:   buff_MoveSpeedMulti     *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::REVITALIZE:     health = stats.maxHealth; break;
+    case CARD_TYPE::SHARPEN:        
+        buff_critDmgMulti *= PercentToScale(card.effectValue1);
+        buff_critChance *= PercentToScale(card.effectValue2); 
+        break;
+    case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
+    //case CARD_TYPE::FEATHERWEIGHT: break;
+    
+    // Not handling
+    case CARD_TYPE::SWITCH_IT_UP: 
+        break;
+
+    default:
+        std::cout << "Player.OnBuffSelectedEvent - Unknown card type\n";
+        break;
+    }
+}
+
+float Player::PercentToScale(int percentage)
+{
+    return 1.f + percentage / 100.f;
 }
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }

@@ -5,10 +5,12 @@
 #include "../../Utils/Sprite.h"
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
+#include "../../Utils/Event/EventSystem.h"
 #include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/IDamageable.h"
+#include "../../Utils/Event/Events.h"
 /**
  * @brief Controllable player class
  */
@@ -105,6 +107,8 @@ private:
     float buff_critChance = 1.f;
     float buff_critDmgMulti = 1.f;
     float buff_DmgMultiLowHP = 1.f;
+    
+    EventId buffEventId;
 
     // === References to other systems ===
     MapGrid* map;
@@ -133,6 +137,9 @@ private:
     void UpdateAnimation();
 
     void RenderDebugCollider(Box& box);
+
+    void OnBuffSelectedEvent(const BaseEventData&);
+    static float PercentToScale(int percentage); // Helper to calcualte buffs
 
     // === IDamageable ===
     const AEVec2& GetHurtboxPos() const override;
