@@ -6,6 +6,7 @@
 #include "../Camera.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
+#include "../../Utils/Event/EventSystem.h"
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
 #include "../UI.h"
@@ -29,10 +30,15 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
+
+    buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
+        OnBuffSelected(ev);
+    });
 }
 
 Player::~Player()
 {
+    EventSystem::Unsubscribe<BuffSelectedEvent>(buffEventId);
 }
 
 void Player::Update()
@@ -54,10 +60,6 @@ void Player::Update()
 
     UpdateAnimation();
     UpdateTrails();
-
-    // @todo - Delete, for debug only
-    if (AEInputCheckCurr(AEVK_R))
-        stats.LoadFileData();
 }
 
 void Player::Render()
@@ -116,7 +118,12 @@ void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
     if (dmg <= 0) 
         return;
 
-    health = max(health - dmg, 0);
+    health -= dmg;
+    if (health <= 0)
+    {
+        health = 0;
+        EventSystem::Trigger(PlayerDeathEvent{*this});
+    }
 
     AEVec2 hitOriginCpy = hitOrigin;
     AEVec2 hitDirection;
@@ -126,16 +133,11 @@ void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
     //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
     hitDirection.y = max(hitDirection.y, 0.4f);
     AEVec2Scale(&hitDirection, &hitDirection, 30);
-    std::cout << hitDirection.y << "\n";
     velocity = hitDirection;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-#if _DEBUG
-    std::cout << "[Player] Damage: " << dmg
-        << " HP=" << health << "/" << stats.maxHealth << "\n";
-#endif
 
-     sprite.SetState(AnimState::HURT);
+    sprite.SetState(AnimState::HURT);
 }
 
 const AEVec2& Player::GetPosition() const
@@ -532,6 +534,39 @@ void Player::RenderDebugCollider(Box& box)
     AEVec2 boxPos = position;
     AEVec2Add(&boxPos, &boxPos, &box.position);
     QuickGraphics::DrawRect(boxPos, box.size, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
+}
+
+void Player::OnBuffSelected(const BuffSelectedEvent& ev)
+{
+    const BuffCard& card = ev.card;
+
+    std::cout << "Player applying buff - " << BuffCardManager::CardTypeToString(card.type) << "(" << card.effectValue1 << "," << card.effectValue2 << ")" << "\n";
+
+    switch (card.type)
+    {
+    case CARD_TYPE::HERMES_FAVOR:   buff_MoveSpeedMulti     *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::REVITALIZE:     health = stats.maxHealth; break;
+    case CARD_TYPE::SHARPEN:        
+        buff_critDmgMulti *= PercentToScale(card.effectValue1);
+        buff_critChance *= PercentToScale(card.effectValue2); 
+        break;
+    case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
+    //case CARD_TYPE::FEATHERWEIGHT: break;
+    
+    // Not handling
+    case CARD_TYPE::SWITCH_IT_UP: 
+        break;
+
+    default:
+        std::cout << "Player.OnBuffSelectedEvent - Unknown card type\n";
+        break;
+    }
+}
+
+float Player::PercentToScale(int percentage)
+{
+    return 1.f + percentage / 100.f;
 }
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }
