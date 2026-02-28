@@ -44,7 +44,7 @@ void Editor::Update()
 		}
 	}
 
-	if (AEInputCheckCurr(AEVK_LCTRL))
+	if (AEInputCheckTriggered(AEVK_LCTRL))
 		instance.showColliders = !instance.showColliders;
 }
 

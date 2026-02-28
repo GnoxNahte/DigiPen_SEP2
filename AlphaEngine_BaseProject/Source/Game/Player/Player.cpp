@@ -6,6 +6,7 @@
 #include "../Camera.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
+#include "../../Utils/Event/EventSystem.h"
 #include "../../Editor/Editor.h"
 #include "../../Game/Time.h"
 #include "../UI.h"
@@ -117,7 +118,12 @@ void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
     if (dmg <= 0) 
         return;
 
-    health = max(health - dmg, 0);
+    health -= dmg;
+    if (health <= 0)
+    {
+        health = 0;
+        EventSystem::Trigger(PlayerDeathEvent{*this});
+    }
 
     AEVec2 hitOriginCpy = hitOrigin;
     AEVec2 hitDirection;
@@ -127,16 +133,11 @@ void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
     //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
     hitDirection.y = max(hitDirection.y, 0.4f);
     AEVec2Scale(&hitDirection, &hitDirection, 30);
-    std::cout << hitDirection.y << "\n";
     velocity = hitDirection;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-#if _DEBUG
-    std::cout << "[Player] Damage: " << dmg
-        << " HP=" << health << "/" << stats.maxHealth << "\n";
-#endif
 
-     sprite.SetState(AnimState::HURT);
+    sprite.SetState(AnimState::HURT);
 }
 
 const AEVec2& Player::GetPosition() const

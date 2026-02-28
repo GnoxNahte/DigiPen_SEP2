@@ -63,10 +63,8 @@ public:
     const AEVec2& GetPosition() const;
     int GetHealth() const;
     const PlayerStats& GetStats() const;
- 
-   bool IsFacingRight() const;
-   AnimState GetAnimState() const;
-
+    bool IsFacingRight() const;
+    AnimState GetAnimState() const;
 
 private:
     PlayerStats stats;
@@ -149,3 +147,7 @@ private:
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
+struct PlayerDeathEvent
+{
+    const Player& player;
+};
