@@ -103,6 +103,16 @@ void GameScene::Init()
 	// Fonts for pause overlay
 	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 40);
 	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 22);
+
+	// Glow / emission textures (same as BuffCardScreen)
+	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
+	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
+	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
+	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
+	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+
+	// Pixellari for description (match BuffCardScreen)
+	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 18); // 字号你可调 16~22
 }
 
 void GameScene::Update()
@@ -323,6 +333,21 @@ void GameScene::Exit()
 			pauseBuffTex[i] = nullptr;
 		}
 	}
+
+	// Free rarity glow textures for pause overlay
+	for (int i = 0; i < kPauseRarityTexCount; ++i)
+	{
+		if (pauseRarityTex[i])
+		{
+			AEGfxTextureUnload(pauseRarityTex[i]);
+			pauseRarityTex[i] = nullptr;
+		}
+	}
+	if (pauseFontDesc >= 0)
+	{
+		AEGfxDestroyFont(pauseFontDesc);
+		pauseFontDesc = -1;
+	}
 }
 
 bool GameScene::IsPaused() const
@@ -460,17 +485,17 @@ bool GameScene::IsClicked(const UIRect& r) const
 
 std::string GameScene::FormatRunTime() const
 {
-	// Use scaled elapsed time as "run time"
-	double t = Time::GetInstance().GetScaledElapsedTime();
-	int total = (int)t;
-	int hh = total / 3600;
-	int mm = (total % 3600) / 60;
-	int ss = total % 60;
+	double t = Time::GetInstance().GetScaledElapsedTime(); // seconds
+	int totalMs = (int)(t * 1000.0);
+
+	int mm = (totalMs / 60000) % 100;      // minutes
+	int ss = (totalMs / 1000) % 60;        // seconds
+	int cs = (totalMs / 10) % 100;         // centiseconds (00-99)
 
 	std::ostringstream oss;
-	oss << std::setfill('0') << std::setw(2) << hh << ":"
-		<< std::setfill('0') << std::setw(2) << mm << ":"
-		<< std::setfill('0') << std::setw(2) << ss;
+	oss << std::setfill('0') << std::setw(2) << mm << ":"
+		<< std::setfill('0') << std::setw(2) << ss << ":"
+		<< std::setfill('0') << std::setw(2) << cs;
 	return oss.str();
 }
 
@@ -627,14 +652,43 @@ void GameScene::RenderPauseOverlay()
 
 			DrawTexturePanel(tex, card, 1.0f);
 
+			// --- draw glow (rarity emission) ---
+			AEGfxTexture* glow = nullptr;
+			int r = (int)b.rarity;
+			if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
+
+			if (glow)
+			{
+				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen 一样
+				UIRect glowRect = card;
+				glowRect.size.x *= EMISSION_SCALE;
+				glowRect.size.y *= EMISSION_SCALE;
+				// pos same as card center, so glow is centered on card
+				DrawTexturePanel(glow, glowRect, 1.0f);
+			}
+
 			// Hover tooltip (text only)
 			if (IsMouseOver(card))
 			{
-				DrawSolidPanel(UIRect{ { w * 0.5f, h - 80.0f }, { w * 0.85f, 70.0f } }, 0.55f);
+				// tooltip panel
+				DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
+
+				// Title (m04)
 				DrawTextPx(
 					pauseFontSmall,
-					b.cardName + "  v1:" + std::to_string(b.effectValue1) + "  v2:" + std::to_string(b.effectValue2),
-					120.0f, h - 95.0f, 1.0f, 1, 1, 1, 1
+					b.cardName,
+					120.0f, h - 125.0f, 1.0f,
+					1, 1, 1, 1
+				);
+
+				// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
+				const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
+
+				DrawTextPx(
+					pauseFontDesc,
+					desc,
+					120.0f, h - 95.0f, 1.0f,   
+					0.9f, 0.9f, 0.9f, 1.0f
 				);
 			}
 		}

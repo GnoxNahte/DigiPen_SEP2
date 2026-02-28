@@ -82,5 +82,10 @@ private:
 	// ---- Pause overlay textures (buff icons) ----
 	static constexpr int kPauseBuffTexCount = 8; // enough for your CARD_TYPE values
 	AEGfxTexture* pauseBuffTex[kPauseBuffTexCount] = { nullptr };
+
+	// glowing rarity overlay textures for cards (same as BuffCardScreen)
+	static constexpr int kPauseRarityTexCount = 4; // UNCOMMON/RARE/EPIC/LEGENDARY
+	AEGfxTexture* pauseRarityTex[kPauseRarityTexCount] = { nullptr };
+	s8 pauseFontDesc = -1; // Pixellari
 };
 
