@@ -136,9 +136,10 @@ void GameScene::Update()
 	player.Update();
 	camera.Update();
 
-	enemyMgr.UpdateAll(player.GetPosition(), map);
+
 
 	AEVec2 p = player.GetPosition();
+	enemyMgr.UpdateAll(p, player.IsFacingRight(), map);
 	//enemyBoss.Update(p, player.IsFacingRight());
 
 	const AEVec2 pPos = player.GetPosition();
