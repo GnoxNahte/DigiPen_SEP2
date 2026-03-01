@@ -5,6 +5,7 @@
 #include "../Utils/MeshGenerator.h"
 #include "../Utils/AEExtras.h"
 #include "../Utils/FileHelper.h"
+#include "../Utils/Event/EventSystem.h"
 #include "../Game/UI.h"
 #include "Time.h"
 #include "BuffCards.h"
@@ -129,6 +130,9 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 		}
 		break;
 	}
+
+	EventSystem::Trigger<BuffSelectedEvent>({ card });
+
 	BuffCardScreen::GetTextLoadingStatus() = false;
 
 }

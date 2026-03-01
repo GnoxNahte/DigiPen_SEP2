@@ -192,6 +192,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Utils\AEExtras.h" />
     <ClInclude Include="Source\Utils\Box.h" />
     <ClInclude Include="Source\Utils\Easing.h" />
+    <ClInclude Include="Source\Utils\Event\EventSystem.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
     <ClInclude Include="Source\Utils\ObjectPool.h" />
