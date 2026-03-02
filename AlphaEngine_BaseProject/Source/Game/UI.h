@@ -2,6 +2,7 @@
 #include <AEEngine.h>
 #include <string>
 #include "../Utils/ObjectPool.h"
+#include "Player/Player.h"
 // Enumeration types for the incoming damage type.
 enum DAMAGE_TYPE {
 	DAMAGE_TYPE_NORMAL,
@@ -42,7 +43,7 @@ private:
 class UI
 {
 public:
-	static void Init();
+	static void Init(Player* player);
 	static void Update();
 	static void Render();
 	static void Exit();
@@ -56,6 +57,7 @@ private:
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
 	inline static s8 damageTextFont;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
+	inline static Player* player = nullptr;
 };
 // Enums for button states, to determine how the button should react to player interaction and what visuals to show.
 enum BUTTON_STATE {

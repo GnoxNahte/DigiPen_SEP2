@@ -7,10 +7,11 @@
 /*--------------------------------------------
 			 General UI Functions
 ---------------------------------------------*/
-void UI::Init() {
+void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
+	UI::player = _player;
 }
 void UI::Update() {
 	BuffCardManager::Update();
@@ -23,6 +24,7 @@ void UI::Render() {
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
 	BuffCardScreen::Exit();
+	UI::player = nullptr;
 }
 /*--------------------------------------
 		  Damage Text Functions
