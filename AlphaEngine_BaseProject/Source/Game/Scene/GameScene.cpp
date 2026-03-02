@@ -82,7 +82,7 @@ void GameScene::Init()
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
-	UI::Init();
+	UI::Init(&player);
 	Background::Init();
 	// Init pause overlay resources 
 	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);

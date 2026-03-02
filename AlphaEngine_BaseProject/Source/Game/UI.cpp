@@ -3,26 +3,85 @@
 #include <string>
 #include "BuffCards.h"
 #include "../Utils/AEExtras.h"
+#include "Player/Player.h"
+#include "../Utils/MeshGenerator.h"
+#include "../Game/Time.h"
 
 /*--------------------------------------------
 			 General UI Functions
 ---------------------------------------------*/
-void UI::Init() {
+void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
+	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
+	UI::player = _player;
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
 }
 void UI::Render() {
+	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
+	AEGfxMeshFree(healthVignetteMesh);
+	AEGfxTextureUnload(healthVignette);
 	BuffCardScreen::Exit();
+	UI::player = nullptr;
+}
+void UI::DrawHealthVignette() {
+	// --- Rotation (none) ---
+	AEMtx33 rotate{ 0 };
+	AEMtx33Identity(&rotate);
+
+	// --- Scale (full screen slightly bigger for vignette effect) ---
+	AEMtx33 scale;
+	AEMtx33Scale(&scale,
+		static_cast<f32>(AEGfxGetWindowWidth() * 1.05f),
+		static_cast<f32>(AEGfxGetWindowHeight() * 1.05f));
+
+	// --- Translate (center on camera) ---
+	AEMtx33 translate;
+	AEMtx33Trans(&translate,
+		Camera::position.x * Camera::scale,
+		Camera::position.y * Camera::scale);
+
+	// --- Combine transforms ---
+	AEMtx33 transform;
+	AEMtx33Concat(&transform, &rotate, &scale);
+	AEMtx33Concat(&transform, &translate, &transform);
+
+	// --- Pulsing effect based on health ---
+	int playerHealth = player->GetHealth();     // int
+	int maxHealth = player->GetStats().maxHealth;   // int
+	float healthFraction = static_cast<float>(playerHealth) / static_cast<float>(maxHealth);
+
+	f32 alpha = 1.0f;
+	if (healthFraction < 0.5f) {
+		static f32 totalTime = 0.0f;
+		totalTime += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+		f32 sine = sinf(totalTime * 0.85f);
+		// Map sine [-1,1] to alpha range [0.3, 0.6] for heartbeat effect
+		alpha = 0.3f + (sine + 1.0f) * 0.55f;
+	}
+	else {
+		alpha = 0.0f; // weak constant overlay when above 50% health
+	}
+
+	// --- Set blend & transparency ---
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(1-healthFraction);
+
+	// --- Draw vignette ---
+	AEGfxTextureSet(healthVignette, 0, 0);
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxSetTransform(transform.m);
+	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
 /*--------------------------------------
 		  Damage Text Functions
