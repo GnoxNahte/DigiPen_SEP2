@@ -140,6 +140,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 	if (cards.empty()) {
 		return;
 	}
+	if (!BuffCardScreen::GetCardsFlipStatus()) {
+		return;
+	}
+
+	if (IsCardSelectedThisUpdate()) {
+		return;
+	}
 
 	const float INTERACTION_THRESHOLD = 0.1f;
 
