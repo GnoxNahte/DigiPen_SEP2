@@ -1,14 +1,16 @@
 #include "MainMenuScene.h"
 #include "AEEngine.h"
 #include "LevelIO.h"
+#include "GSM.h"
 #include "../Environment/MapTile.h"
 #include "../Time.h"
 
+#include <Windows.h>
+#include <new>
 #include <string>
-#include <new> // placement new (reconstruct map in-place)
+#include <iostream>
 
-// defined here, extern'd in GameScene.cpp
-std::string gPendingLevelPath;
+extern std::string gPendingLevelPath;
 
 std::string MainMenuScene::ExeDir()
 {
@@ -22,33 +24,30 @@ std::string MainMenuScene::ExeDir()
 MainMenuScene::MainMenuScene()
     : map(20, 40)
     , player(&map, &enemyMgr)
-    // bounds don't matter anymore since we won't call camera.Update()
-    , camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64)
 {
-    // IMPORTANT: no SetFollow here (SetFollow + Update = room stepping + clamp)
 }
 
 MainMenuScene::~MainMenuScene() {}
 
 void MainMenuScene::Init()
 {
-    std::string path = ExeDir() + "Assets\\Levels\\menu.lvl";
+    // Set working directory and camera scale FIRST — before ANY asset loads
+    SetCurrentDirectoryA(ExeDir().c_str());
+    Camera::scale = 64.f;
+    Camera::position = { 3.f, 3.f };
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
 
+    std::string path = "Assets\\Levels\\menu.lvl";
     LevelData lvl;
+
     if (LoadLevelFromFile(path.c_str(), lvl))
     {
         mapCols = lvl.cols;
 
-        // IMPORTANT:
-        // MapGrid owns engine resources (mesh/texture) via raw pointers.
-        // Doing `map = MapGrid(...)` shallow-copies those pointers, then the temporary
-        // frees them in its destructor -> dangling pointers -> crash.
-        // Reconstruct in-place so the address (&map) stays stable for Player.
+        // reconstruct map so it reloads texture with correct working dir
         map.~MapGrid();
         new (&map) MapGrid(lvl.rows, lvl.cols);
-
-        // reset camera scale (constructor sets Camera::scale)
-        camera = Camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64);
 
         for (int y = 0; y < lvl.rows; ++y)
             for (int x = 0; x < lvl.cols; ++x)
@@ -58,58 +57,44 @@ void MainMenuScene::Init()
                 map.SetTile(x, y, (MapTile::Type)v);
             }
 
-        for (const auto& td : lvl.traps)
-        {
-            Box box{ td.pos, td.size };
-            const Trap::Type tt = static_cast<Trap::Type>(td.type);
-            if (tt == Trap::Type::SpikePlate)
-                trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
-            else if (tt == Trap::Type::PressurePlate)
-                trapMgr.Spawn<PressurePlate>(box);
-            else if (tt == Trap::Type::LavaPool)
-                trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
-        }
-
-        std::vector<EnemyManager::SpawnInfo> spawns;
-        for (const auto& ed : lvl.enemies)
-            spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
-        enemyMgr.SetSpawns(spawns);
-        enemyMgr.SpawnAll();
-
         player.Reset(lvl.spawn);
+        std::cout << "[Menu] Loaded menu.lvl, spawn=" << lvl.spawn.x << "," << lvl.spawn.y << "\n";
     }
     else
     {
-        // menu.lvl not built yet — flat ground fallback
         mapCols = 40;
+        // reconstruct map cleanly even in fallback
+        map.~MapGrid();
+        new (&map) MapGrid(20, 40);
+
         for (int x = 0; x < 40; ++x)
             map.SetTile(x, 1, MapTile::Type::GROUND);
 
         player.Reset({ 3.f, 3.f });
-
-        camera = Camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64);
+        std::cout << "[Menu] menu.lvl not found, using fallback\n";
     }
 
-    // snap camera to player at start
-    camera.position = player.GetPosition();
-    Camera::position = camera.position;
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale, Camera::position.y * Camera::scale);
+    // snap camera to spawn
+    Camera::position = player.GetPosition();
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+
+    std::cout << "[Menu] Camera::scale=" << Camera::scale
+        << " pos=" << Camera::position.x << "," << Camera::position.y << "\n";
 }
 
 void MainMenuScene::Update()
 {
     player.Update();
 
-    // SIMPLE FOLLOW (no clamp / no room stepping):
-    camera.position = player.GetPosition();
-    Camera::position = camera.position;
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale, Camera::position.y * Camera::scale);
-
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
 
-    // player walks off the right edge → go to level01
+    Camera::position = player.GetPosition();
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+
     if (player.GetPosition().x > (float)mapCols)
     {
         gPendingLevelPath = ExeDir() + "Assets\\Levels\\level01.lvl";
@@ -119,12 +104,22 @@ void MainMenuScene::Update()
 
 void MainMenuScene::Render()
 {
+    AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
+
+    // re-apply camera and scale every frame before drawing
+    Camera::scale = 64.f;
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetTransparency(1.f);
+    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+
     map.Render();
     player.Render();
     enemyMgr.RenderAll();
 }
 
-void MainMenuScene::Exit()
-{
-    // nothing
-}
+void MainMenuScene::Exit() {}
