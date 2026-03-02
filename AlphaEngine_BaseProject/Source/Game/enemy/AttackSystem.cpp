@@ -4,6 +4,7 @@
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyBoss.h"
 #include "../Player/Player.h"
+#include "../../Utils/PhysicsUtils.h"
 
 
 
@@ -35,8 +36,13 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
     {
         if (boss->PollAttackHit())
         {
-            player.TakeDamage(boss->GetAttackDamage(), boss->GetHurtboxPos());
-            std::cout << "[Boss] HIT player (melee)\n";
+            const auto& hb = boss->GetMeleeHitbox();
+            if (PhysicsUtils::AABB(hb.position, hb.size, pPos, pSize))
+            {
+                player.TakeDamage(boss->GetAttackDamage(), boss->GetHurtboxPos());
+                std::cout << "[Boss] HIT player (melee)\n";
+            }
+        
         }
 
         // ---- Boss spell/projectile hits ----

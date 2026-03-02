@@ -5,6 +5,7 @@
 #include "IDamageable.h"
 #include "../../Editor/EditorUtils.h"
 #include "../../Utils/ParticleSystem.h"
+#include "../../Utils/Box.h"
 
 
 
@@ -62,15 +63,17 @@ public:
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
 
-    
-
-
     int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg);
+
+    const Box& GetMeleeHitbox() const { return meleeHitbox; }
+    void UpdateMeleeHitbox(const AEVec2& playerPos); // call each frame (or during attack
+
+  
 
 
   
@@ -155,5 +158,7 @@ private:
     float hpBarChip = 1.0f;   // delayed bar (chip trail)
     float hpChipDelay = 0.0f; // delay before chip starts shrinking
     float prevHpTarget = 1.0f;
+
+    Box meleeHitbox{ AEVec2{0,0}, AEVec2{1.4f, 0.9f} }; // size tuned later
 };
 

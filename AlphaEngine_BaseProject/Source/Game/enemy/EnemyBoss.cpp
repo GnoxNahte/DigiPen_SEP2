@@ -103,6 +103,20 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
+// EnemyBoss.cpp
+void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
+{
+    const AEVec2 bPos = GetHurtboxPos();
+    const AEVec2 bSize = GetHurtboxSize();
+
+    // decide side by player (more reliable than facing when boss teleports)
+    const float dirX = (playerPos.x >= bPos.x) ? 1.f : -1.f;
+
+    meleeHitbox.size = AEVec2{ 1.4f, 0.9f }; // tweak
+    meleeHitbox.position.x = bPos.x + dirX * (bSize.x * 0.5f + meleeHitbox.size.x * 0.5f - 0.10f);
+    meleeHitbox.position.y = bPos.y + 0.10f;
+}
+
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& )
 {
     if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
@@ -585,21 +599,23 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }),
         g_specialAttacks.end()
     );
+
+    UpdateMeleeHitbox(playerPos);
 }
 
 void EnemyBoss::SpawnImpactBurst()
 {
-    // Use the SAME visual X offset you already use in UpdateBossParticles()
+    // Use the SAME visual X offset already use in UpdateBossParticles()
     const float visualX = position.x + 0.5f;
 
-    // "Feet" approx (your hurtbox is 0.8 tall, tune if needed)
+    // "Feet" approx (hurtbox is 0.8 tall, tune if needed)
     const float feetY = position.y - (size.y * 0.5f);
 
     // In front of boss depending on facing
     const float dirX = (facingDirection.x >= 0.f) ? 1.f : -1.f;
     const float hitX = visualX + dirX * (size.x * 0.55f);
 
-    // We'll use CUSTOM emitters so we DON'T mess up your trail emitter settings
+    // use CUSTOM emitters
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
 
 
@@ -744,6 +760,8 @@ void EnemyBoss::Render()
                 0xFFFF0000,
                 AE_GFX_MDM_LINES_STRIP
             );
+
+          
         }
     }
 
@@ -753,6 +771,14 @@ void EnemyBoss::Render()
     {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+
+        if (attack.IsAttacking())
+        {
+            const auto& hb = meleeHitbox;
+            QuickGraphics::DrawRect(hb.position.x, hb.position.y, hb.size.x, hb.size.y,
+                0xFF00FFFF, AE_GFX_MDM_LINES_STRIP);
+        }
+      
     }
     RenderHealthbar();
 
