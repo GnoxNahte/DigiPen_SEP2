@@ -5,6 +5,7 @@
 #include "../Utils/MeshGenerator.h"
 #include "../Utils/AEExtras.h"
 #include "../Utils/FileHelper.h"
+#include "../Utils/Event/EventSystem.h"
 #include "../Game/UI.h"
 #include "Time.h"
 #include "BuffCards.h"
@@ -129,11 +130,16 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 		}
 		break;
 	}
+
+	EventSystem::Trigger<BuffSelectedEvent>({ card });
+
 	BuffCardScreen::GetTextLoadingStatus() = false;
 
 }
 void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
-	if (cards.empty()) {
+	if (cards.empty() || 
+		IsCardSelectedThisUpdate() || 
+		!BuffCardScreen::GetCardsFlipStatus()) {
 		return;
 	}
 
@@ -639,7 +645,8 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 
 	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
-		float t = static_cast<float>(AEGetTime(nullptr));
+		static float t = 0.f;
+		t += static_cast<float>(AEFrameRateControllerGetFrameTime()) * 0.5f;
 
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)

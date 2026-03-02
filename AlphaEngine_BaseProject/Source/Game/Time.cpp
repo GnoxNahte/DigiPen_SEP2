@@ -64,3 +64,12 @@ bool Time::IsPaused() const {
 void Time::TogglePause() {
     SetPaused(!isPaused);
 }
+
+void Time::ResetElapsedTime()
+{
+    elapsedTime = 0.0;
+    scaledElapsedTime = 0.0;
+    unpausedElapsedTime = 0.0;
+    deltaTime = 0.0;
+    isPaused = false;
+}

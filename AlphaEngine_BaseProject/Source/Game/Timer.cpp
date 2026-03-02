@@ -71,6 +71,7 @@ void TimerSystem::RemoveTimer(const std::string& name) {
 	}
 }
 
+
 const Timer* TimerSystem::GetTimerByName(const std::string& name) const {
 	auto it = timerMap.find(name);
 	if (it != timerMap.end()) {
@@ -235,3 +236,4 @@ void TimerSystem::CheckTimerCompletion() {
 		++it;
 	}
 }
+

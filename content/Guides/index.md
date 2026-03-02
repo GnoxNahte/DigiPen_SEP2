@@ -4,3 +4,4 @@
 - \subpage doxygen_usage "Doxygen Usage"
 - \subpage editor-with-imgui "Editor with ImGui"
 - \subpage particle_system "Particle System Usage"
+- \subpage event-system "Event System"

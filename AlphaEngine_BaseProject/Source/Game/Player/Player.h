@@ -5,10 +5,13 @@
 #include "../../Utils/Sprite.h"
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
+#include "../../Utils/Event/EventSystem.h"
 #include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/IDamageable.h"
+#include "../BuffCards.h"
+
 /**
  * @brief Controllable player class
  */
@@ -60,10 +63,8 @@ public:
     const AEVec2& GetPosition() const;
     int GetHealth() const;
     const PlayerStats& GetStats() const;
- 
-   bool IsFacingRight() const;
-   AnimState GetAnimState() const;
-
+    bool IsFacingRight() const;
+    AnimState GetAnimState() const;
 
 private:
     PlayerStats stats;
@@ -105,6 +106,8 @@ private:
     float buff_critChance = 1.f;
     float buff_critDmgMulti = 1.f;
     float buff_DmgMultiLowHP = 1.f;
+    
+    EventId buffEventId;
 
     // === References to other systems ===
     MapGrid* map;
@@ -134,6 +137,9 @@ private:
 
     void RenderDebugCollider(Box& box);
 
+    void OnBuffSelected(const BuffSelectedEvent& ev);
+    static float PercentToScale(int percentage); // Helper to calcualte buffs
+
     // === IDamageable ===
     const AEVec2& GetHurtboxPos() const override;
     const AEVec2& GetHurtboxSize() const override;
@@ -141,3 +147,7 @@ private:
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
+struct PlayerDeathEvent
+{
+    const Player& player;
+};

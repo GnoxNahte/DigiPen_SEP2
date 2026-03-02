@@ -29,6 +29,9 @@ public:
     bool IsPaused() const;
     void TogglePause();
 
+	// Reset all time values to zero (e.g. when starting a new game)
+    void ResetElapsedTime();
+
 private:
 
     Time() :
