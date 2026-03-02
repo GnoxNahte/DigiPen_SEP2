@@ -137,14 +137,9 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 
 }
 void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
-	if (cards.empty()) {
-		return;
-	}
-	if (!BuffCardScreen::GetCardsFlipStatus()) {
-		return;
-	}
-
-	if (IsCardSelectedThisUpdate()) {
+	if (cards.empty() || 
+		IsCardSelectedThisUpdate() || 
+		!BuffCardScreen::GetCardsFlipStatus()) {
 		return;
 	}
 
