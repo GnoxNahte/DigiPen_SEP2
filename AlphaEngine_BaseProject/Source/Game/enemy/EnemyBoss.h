@@ -4,6 +4,7 @@
 #include <AEVec2.h>
 #include "IDamageable.h"
 #include "../../Editor/EditorUtils.h"
+#include "../../Utils/ParticleSystem.h"
 
 
 
@@ -29,9 +30,23 @@ public:
     //raise to start chasing player
     float aggroRange = 10.0f;
 
+    //particle systemmmmm
+    ParticleSystem particleSystem{ 30, {} };
+    void SpawnImpactBurst();
+
     bool IsDead() const override { return isDead; }
     //for gamescene to use to apply damage later
-    bool PollAttackHit() { return !isDead && attack.PollHit(); }
+    bool PollAttackHit() 
+    { 
+        if (isDead) return false;
+
+        if (attack.PollHit())   // PollHit() is the "consume once" moment
+        {
+            SpawnImpactBurst();
+            return true;
+        }
+        return false;
+    }
 
     // returns number of special projectiles that hit the player this frame
     int ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize);
@@ -75,6 +90,7 @@ private:
         DEATH = 7
     };
     void UpdateAnimation();
+
     AEVec2 velocity{ 0.f, 0.f };
     Sprite sprite;
     Sprite specialAttackVfx;   // extra sprite used only for special attack VFX
