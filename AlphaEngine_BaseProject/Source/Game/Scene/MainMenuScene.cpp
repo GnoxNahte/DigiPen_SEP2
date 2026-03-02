@@ -5,7 +5,7 @@
 #include "../Time.h"
 
 #include <string>
-#include <new> // placement new
+#include <new> // placement new (reconstruct map in-place)
 
 // defined here, extern'd in GameScene.cpp
 std::string gPendingLevelPath;
@@ -22,9 +22,10 @@ std::string MainMenuScene::ExeDir()
 MainMenuScene::MainMenuScene()
     : map(20, 40)
     , player(&map, &enemyMgr)
-    , camera({ 1,1 }, { 39, 19 }, 64)
+    // bounds don't matter anymore since we won't call camera.Update()
+    , camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64)
 {
-    camera.SetFollow(&player.GetPosition(), 0, 40, true);
+    // IMPORTANT: no SetFollow here (SetFollow + Update = room stepping + clamp)
 }
 
 MainMenuScene::~MainMenuScene() {}
@@ -40,14 +41,14 @@ void MainMenuScene::Init()
 
         // IMPORTANT:
         // MapGrid owns engine resources (mesh/texture) via raw pointers.
-        // Doing `map = MapGrid(...)` performs a shallow copy assignment, then the temporary
-        // frees those resources in its destructor -> `map` holds dangling pointers -> crash.
-        // Reconstruct the object in-place so the address (&map) stays stable for Player.
+        // Doing `map = MapGrid(...)` shallow-copies those pointers, then the temporary
+        // frees them in its destructor -> dangling pointers -> crash.
+        // Reconstruct in-place so the address (&map) stays stable for Player.
         map.~MapGrid();
         new (&map) MapGrid(lvl.rows, lvl.cols);
 
-        camera = Camera({ 1,1 }, { (float)lvl.cols - 1, (float)lvl.rows - 1 }, 64);
-        camera.SetFollow(&player.GetPosition(), 0, (float)lvl.cols, true);
+        // reset camera scale (constructor sets Camera::scale)
+        camera = Camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64);
 
         for (int y = 0; y < lvl.rows; ++y)
             for (int x = 0; x < lvl.cols; ++x)
@@ -83,14 +84,26 @@ void MainMenuScene::Init()
         mapCols = 40;
         for (int x = 0; x < 40; ++x)
             map.SetTile(x, 1, MapTile::Type::GROUND);
+
         player.Reset({ 3.f, 3.f });
+
+        camera = Camera({ -100000.f, -100000.f }, { 100000.f, 100000.f }, 64);
     }
+
+    // snap camera to player at start
+    camera.position = player.GetPosition();
+    Camera::position = camera.position;
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale, Camera::position.y * Camera::scale);
 }
 
 void MainMenuScene::Update()
 {
     player.Update();
-    camera.Update();
+
+    // SIMPLE FOLLOW (no clamp / no room stepping):
+    camera.position = player.GetPosition();
+    Camera::position = camera.position;
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale, Camera::position.y * Camera::scale);
 
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     trapMgr.Update(dt, player);
@@ -113,5 +126,5 @@ void MainMenuScene::Render()
 
 void MainMenuScene::Exit()
 {
-    // nothing to clean up — members destroy themselves
+    // nothing
 }
