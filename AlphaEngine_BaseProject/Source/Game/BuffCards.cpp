@@ -643,7 +643,8 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 
 	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
-		float t = static_cast<float>(AEGetTime(nullptr));
+		static float t = 0.f;
+		t += static_cast<float>(AEFrameRateControllerGetFrameTime()) * 0.5f;
 
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)
