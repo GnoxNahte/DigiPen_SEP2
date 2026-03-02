@@ -4,7 +4,8 @@
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 #include "../../Utils/MeshGenerator.h"
-#include "../Time.h"
+#include "../../Game/Time.h"
+#include "../../Game/Timer.h"
 #include "../../Game/UI.h"
 #include "../../Game/Background.h"
 #include "../BuffCards.h"
@@ -83,7 +84,7 @@ void GameScene::Init()
 	enemyMgr.SpawnAll();
 	UI::Init();
 	Background::Init();
-	// Init pause overlay resources (no ImGui)
+	// Init pause overlay resources 
 	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
 
@@ -101,8 +102,9 @@ void GameScene::Init()
 	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
 
 	// Fonts for pause overlay
-	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 40);
-	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 22);
+	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
+	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
+	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
 
 	// Glow / emission textures (same as BuffCardScreen)
 	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
@@ -112,7 +114,7 @@ void GameScene::Init()
 	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
 
 	// Pixellari for description (match BuffCardScreen)
-	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 18); // 字号你可调 16~22
+	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
 }
 
 void GameScene::Update()
@@ -501,11 +503,10 @@ std::string GameScene::FormatRunTime() const
 
 void GameScene::UpdatePauseInput()
 {
-	// Left panel buttons (pixel coords; pos is center)
-	UIRect btnResume{ {150, 220}, {180, 42} };
-	UIRect btnRestart{ {150, 275}, {180, 42} };
-	UIRect btnSettings{ {150, 330}, {180, 42} };
-	UIRect btnMenu{ {150, 385}, {180, 42} };
+	UIRect btnResume{ {150, 300}, {340, 60} };
+	UIRect btnRestart{ {150, 400}, {340, 60} };
+	UIRect btnSettings{ {150, 500}, {340, 60} };
+	UIRect btnMenu{ {150, 600}, {340, 60} };
 
 	if (pausePage == PausePage::Menu)
 	{
@@ -518,6 +519,10 @@ void GameScene::UpdatePauseInput()
 		{
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
+
+			Time::GetInstance().ResetElapsedTime();
+			TimerSystem::GetInstance().Clear();
+
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}
@@ -567,27 +572,41 @@ void GameScene::RenderPauseOverlay()
 	// Dim background
 	DrawDimBackground(0.65f);
 
-	// Background
-	DrawSolidPanel(UIRect{ {155, 250}, {260, 420} }, 0.35f);
 
 	// Titles
-	DrawTextPx(pauseFontLarge, "PAUSED", 40, 70, 1.0f, 1, 1, 1, 1);
-	DrawTextPx(pauseFontSmall, "Run Time : " + FormatRunTime(), 40, 110, 1.0f, 1, 1, 1, 1);
+	DrawTextPx(pauseFontLarge, "PAUSED", 40, 100, 1.0f, 1, 1, 1, 1);
+	DrawTextPx(pauseFontRuntime, "Run Time : " + FormatRunTime(), 40, 150, 1.0f, 1, 1, 1, 1);
 
 	// Buttons
 	auto drawBtn = [&](const char* label, const UIRect& r)
 		{
-			float a = IsMouseOver(r) ? 0.60f : 0.45f;
-			DrawSolidPanel(r, a);
+			const bool hover = IsMouseOver(r);
 
-			// Rough text placement (left aligned); can be improved later with text width
-			DrawTextPx(pauseFontSmall, label, r.pos.x - 55, r.pos.y + 6, 1.0f, 1, 1, 1, 1);
+			// 1) add a subtle scaling effect when hover (like it's "lifting up" towards the player)
+			const float textScale = hover ? 1.05f : 1.0f;
+
+			// 2) change text color when hover; also make non-hovered buttons slightly transparent to de-emphasize them (except the hovered one, which is fully opaque)
+			float cr = 1.f, cg = 1.f, cb = 1.f, ca = hover ? 1.f : 0.85f;
+			if (hover)
+			{
+				cr = 1.0f;  cg = 0.95f; cb = 0.35f; // bright yellow for hover
+			}
+
+			// 3) text only
+			DrawTextPx(
+				pauseFontSmall,
+				label,
+				r.pos.x - 55,
+				r.pos.y + 6,
+				textScale,
+				cr, cg, cb, ca
+			);
 		};
 
-	UIRect btnResume{ {150, 220}, {180, 42} };
-	UIRect btnRestart{ {150, 275}, {180, 42} };
-	UIRect btnSettings{ {150, 330}, {180, 42} };
-	UIRect btnMenu{ {150, 385}, {180, 42} };
+	UIRect btnResume{ {150, 300}, {340, 60} };
+	UIRect btnRestart{ {150, 400}, {340, 60} };
+	UIRect btnSettings{ {150, 500}, {340, 60} };
+	UIRect btnMenu{ {150, 600}, {340, 60} };
 
 	if (pausePage == PausePage::Menu)
 	{
@@ -607,24 +626,29 @@ void GameScene::RenderPauseOverlay()
 	const auto& buffs = BuffCardManager::GetCurrentBuffs();
 	if (!buffs.empty())
 	{
-		const int cols = 3;
 
-		// Bigger cards
-		const float cardW = 180.0f;
-		const float cardH = 255.0f;
-		const float gapX = 20.0f;   // horizontal gap 
-		const float gapY = 20.0f;   // vertical gap between rows 
+		const int cols = 3;
+		const int maxRows = 3;
+		const int maxCards = cols * maxRows; // 9
+
+		// Slightly smaller cards
+		const float cardW = 150.0f;   
+		const float cardH = 212.0f;   
+		const float gapX = 50.0f;    
+		const float gapY = 30.0f;    
+
+		const int count = (int)buffs.size();
+		const int drawCount = (count < maxCards) ? count : maxCards;
+
 
 		// Anchor: move this block to the right & top area (match your red mark)
 		// (0,0) is top-left in pixel coordinates
 		const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
-		const float anchorY = 110.0f;      // increase => move down, decrease => move up
+		const float anchorY = 150.0f;      // increase => move down, decrease => move up
 
 		// Title position (aligned with cards)
-		DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 70.0f, 0.95f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 100.0f, 0.95f, 1, 1, 1, 1);
 
-		const int count = (int)buffs.size();
-		const int drawCount = count;
 
 
 		for (int i = 0; i < drawCount; ++i)
@@ -659,7 +683,7 @@ void GameScene::RenderPauseOverlay()
 
 			if (glow)
 			{
-				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen 一样
+				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen 
 				UIRect glowRect = card;
 				glowRect.size.x *= EMISSION_SCALE;
 				glowRect.size.y *= EMISSION_SCALE;

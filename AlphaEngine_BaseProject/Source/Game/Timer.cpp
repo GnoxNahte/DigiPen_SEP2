@@ -71,6 +71,15 @@ void TimerSystem::RemoveTimer(const std::string& name) {
 	}
 }
 
+void Time::ResetElapsedTime()
+{
+	elapsedTime = 0.0;
+	scaledElapsedTime = 0.0;
+	unpausedElapsedTime = 0.0;
+	deltaTime = 0.0;
+	isPaused = false;
+}
+
 const Timer* TimerSystem::GetTimerByName(const std::string& name) const {
 	auto it = timerMap.find(name);
 	if (it != timerMap.end()) {
@@ -235,3 +244,4 @@ void TimerSystem::CheckTimerCompletion() {
 		++it;
 	}
 }
+
