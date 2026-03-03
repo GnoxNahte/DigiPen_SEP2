@@ -90,6 +90,7 @@ public:
 	// Get the current buffs the player has, for reference when applying new buffs and for displaying in the UI.
 	inline static const std::vector<BuffCard>& GetCurrentBuffs() { return currentBuffs; }
 	inline static void AddBuff(const BuffCard& card) { currentBuffs.push_back(card); }
+	inline static void ResetCurrentBuffs() { currentBuffs.clear(); }
 
 
 	static void SelectCards(std::vector<BuffCard>& cards); // Handle player input for selecting a card and applying its effect.

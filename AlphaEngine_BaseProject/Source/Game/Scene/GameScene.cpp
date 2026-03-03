@@ -522,6 +522,8 @@ void GameScene::UpdatePauseInput()
 
 			Time::GetInstance().ResetElapsedTime();
 			TimerSystem::GetInstance().Clear();
+			BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+			// TODO : Reset all buff effects
 
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
