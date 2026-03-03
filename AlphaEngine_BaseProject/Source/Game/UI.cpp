@@ -29,8 +29,12 @@ void UI::Render() {
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
-	AEGfxMeshFree(healthVignetteMesh);
-	AEGfxTextureUnload(healthVignette);
+	if (healthVignetteMesh) {
+		AEGfxMeshFree(healthVignetteMesh);
+	}
+	if (healthVignette) {
+		AEGfxTextureUnload(healthVignette);
+	}
 	BuffCardScreen::Exit();
 	UI::player = nullptr;
 }

@@ -187,7 +187,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		s32 mouseX{}, mouseY{};
 		AEInputGetCursorPosition(&mouseX, &mouseY);
 
-		std::cout << "Mouse: (" << mouseX << ", " << mouseY << ")\n";
+		//std::cout << "Mouse: (" << mouseX << ", " << mouseY << ")\n";
 		//for (int i = 0; i < (int)BuffCardScreen::cachedCardRects.size(); ++i) {
 		//	std::cout << "Card " << i << " rect pos: ("
 		//		<< BuffCardScreen::cachedCardRects[i].pos.x << ", "
