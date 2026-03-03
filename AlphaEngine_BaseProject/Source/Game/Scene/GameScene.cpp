@@ -526,7 +526,7 @@ void GameScene::UpdatePauseInput()
 				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
 			}
 			// TODO : Reset all buff effects
-
+			AEInputReset();
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}

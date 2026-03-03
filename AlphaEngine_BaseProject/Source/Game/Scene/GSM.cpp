@@ -115,10 +115,14 @@ void GSM::Exit()
 
 void GSM::ChangeScene(SceneState state)
 {
-	if (currentState == state)
+		if (currentState == state)
+		{			
+		AEInputReset();
 		nextState = GS_RESTART;
-	else
+	}
+	else{
 		nextState = state;
+	}
 }
 
 SceneState GSM::GetState()
