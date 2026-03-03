@@ -332,7 +332,7 @@ void Player::HandleGravity()
 
 void Player::HandleJump()
 {
-    f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());;
+    f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
     bool isCoyoteTimeActive = (currTime - lastGroundedTime) < stats.coyoteTime;
@@ -390,26 +390,32 @@ void Player::Attack(AnimState toState)
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
-
-    float recoil = IsAnimGroundAttack() ? stats.groundAttacks[toState - ATTACK_1].recoilSpeed : stats.airAttacks[toState - AIR_ATTACK_1].recoilSpeed;
-    velocity.x = facingDirection.x > 0 ? -recoil : recoil;
 }
 
 void Player::UpdateAttacks()
 {
     AttackStats* attack = nullptr;
     AnimState animState = GetAnimState();
+    bool isGroundAttack = false;
 
     if (IsAnimGroundAttack())
+    {
         attack = &stats.groundAttacks[animState - AnimState::ATTACK_1];
+        isGroundAttack = true;
+    }
     else if (IsAnimAirAttack())
+    {
         attack = &stats.airAttacks[animState - AnimState::AIR_ATTACK_1];
+        isGroundAttack = false;
+    }
     // Else, not attacking
     else
         return;
 
-    AEVec2 colliderPos;
-    AEVec2Add(&colliderPos, &position, &attack->collider.position);
+    AEVec2 colliderPos{ 
+        position.x + attack->collider.position.x * (facingDirection.x > 0 ? 1.f : -1.f),
+        position.y + attack->collider.position.y
+    };
 
     // Check if attack hit enemy
     if (enemyManager)
@@ -430,16 +436,29 @@ void Player::UpdateAttacks()
 
                 enemy.TryTakeDamage(damage, colliderPos);
                 attackedEnemies.push_back(&enemy);
+
+                if (!hasAppliedRecoil)
+                {
+                    if (isGroundAttack)
+                        velocity.x += facingDirection.x > 0 ? -attack->recoilSpeed : attack->recoilSpeed;
+                    else 
+                        velocity.y += attack->recoilSpeed;
+
+                    hasAppliedRecoil = true;
+                }
             }
         });
     }
 
     if (Editor::GetShowColliders())
-        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF0000FF, AE_GFX_MDM_LINES_STRIP);
+        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF8888FF);
 }
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)
 {
+    attackedEnemies.clear();
+    hasAppliedRecoil = false;
+
     AnimState spriteState = static_cast<AnimState>(spriteStateIndex);
 
     bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
@@ -448,13 +467,20 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
     // If not in attack input buffer OR is last attack in combo, 
     // Reset - Set to idle
     if (!inAttackInputBuffer || isLastAttack)
+    {
         sprite.SetState(AnimState::IDLE_W_SWORD);
-    else
-        Attack(static_cast<AnimState>(spriteStateIndex + 1));
+        return;
+    }
 
-    attackedEnemies.clear();
+    Attack(static_cast<AnimState>(spriteStateIndex + 1));
 
-    // If transitioning to last attack
+    // Shouldn't handle input here but not sure how else to do..
+    // If switch direction when chaining attacks
+    if ((AEInputCheckCurr(AEVK_LEFT) && facingDirection.x > 0) ||
+        (AEInputCheckCurr(AEVK_RIGHT) && facingDirection.x < 0))
+        facingDirection.x *= -1;
+
+    // Temp - If transitioning to last attack
     if (spriteState == AnimState::ATTACK_END - 1)
     {
         auto emitter = ParticleSystem::EmitterSettings{
@@ -522,8 +548,6 @@ void Player::UpdateAnimation()
             sprite.SetState(AnimState::RUN_W_SWORD);
         else
             sprite.SetState(AnimState::IDLE_W_SWORD);
-
-        //std::cout << "vel: " << velocity.y << "\n";
     }
 
     sprite.Update();

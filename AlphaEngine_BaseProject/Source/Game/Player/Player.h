@@ -99,6 +99,7 @@ private:
 
     // === Combat ===
     int health;
+    bool hasAppliedRecoil; // For current attack
 
     // === Buffs ===
     float buff_MoveSpeedMulti = 1.f;
