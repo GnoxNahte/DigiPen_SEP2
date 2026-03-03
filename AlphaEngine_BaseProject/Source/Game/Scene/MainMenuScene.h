@@ -25,6 +25,8 @@ private:
     Player       player;
     TrapManager  trapMgr;
     EnemyManager enemyMgr;
+    Camera       camera;
 
-    int mapCols = 40;
+    int mapCols = 100;
+    int uiFont = -1;
 };

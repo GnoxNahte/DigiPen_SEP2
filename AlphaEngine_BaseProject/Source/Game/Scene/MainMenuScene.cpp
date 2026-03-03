@@ -2,14 +2,16 @@
 #include "AEEngine.h"
 #include "LevelIO.h"
 #include "GSM.h"
+#include "GameScene.h"
 #include "../Environment/MapTile.h"
+#include "../enemy/Enemy.h"
 #include "../Time.h"
 
 #include <Windows.h>
 #include <new>
 #include <string>
-#include <iostream>
 
+// defined in GameScene.cpp
 extern std::string gPendingLevelPath;
 
 std::string MainMenuScene::ExeDir()
@@ -24,63 +26,105 @@ std::string MainMenuScene::ExeDir()
 MainMenuScene::MainMenuScene()
     : map(20, 40)
     , player(&map, &enemyMgr)
+    , camera({ 1, 1 }, { 50, 50 }, 64)
 {
 }
 
-MainMenuScene::~MainMenuScene() {}
+MainMenuScene::~MainMenuScene()
+{
+}
 
 void MainMenuScene::Init()
 {
-    // Set working directory and camera scale FIRST — before ANY asset loads
+    // ensure relative texture paths work
     SetCurrentDirectoryA(ExeDir().c_str());
-    Camera::scale = 64.f;
-    Camera::position = { 3.f, 3.f };
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
-        Camera::position.y * Camera::scale);
+
+    if (uiFont < 0)
+    {
+        uiFont = AEGfxCreateFont("Assets/buggy-font.ttf", 18);
+        if (uiFont < 0) uiFont = AEGfxCreateFont("../Assets/buggy-font.ttf", 18);
+        if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/buggy-font.ttf", 18);
+    }
 
     std::string path = "Assets\\Levels\\menu.lvl";
-    LevelData lvl;
 
+    LevelData lvl;
     if (LoadLevelFromFile(path.c_str(), lvl))
     {
         mapCols = lvl.cols;
 
-        // reconstruct map so it reloads texture with correct working dir
+        // reconstruct map safely (no shallow copy)
         map.~MapGrid();
         new (&map) MapGrid(lvl.rows, lvl.cols);
 
         for (int y = 0; y < lvl.rows; ++y)
+        {
             for (int x = 0; x < lvl.cols; ++x)
             {
                 int v = lvl.tiles[(size_t)y * lvl.cols + x];
-                if (v < 0 || v >= MapTile::typeCount) v = 0;
+                if (v < 0 || v >= MapTile::typeCount)
+                    v = 0;
+
                 map.SetTile(x, y, (MapTile::Type)v);
             }
+        }
 
         player.Reset(lvl.spawn);
-        std::cout << "[Menu] Loaded menu.lvl, spawn=" << lvl.spawn.x << "," << lvl.spawn.y << "\n";
+
+        // spawn traps and wire up pressure plate links
+        std::vector<SpikePlate*>    spawnedSpikes;
+        std::vector<PressurePlate*> spawnedPlates;
+
+        for (const auto& td : lvl.traps)
+        {
+            Box box{ td.pos, td.size };
+            const Trap::Type tt = static_cast<Trap::Type>(td.type);
+
+            if (tt == Trap::Type::SpikePlate)
+            {
+                SpikePlate& s = trapMgr.Spawn<SpikePlate>(
+                    box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+                spawnedSpikes.push_back(&s);
+            }
+            else if (tt == Trap::Type::PressurePlate)
+            {
+                PressurePlate& p = trapMgr.Spawn<PressurePlate>(box);
+                spawnedPlates.push_back(&p);
+            }
+            else if (tt == Trap::Type::LavaPool)
+            {
+                trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+            }
+        }
+
+        // every pressure plate triggers every spike plate (same rule as editor)
+        for (PressurePlate* plate : spawnedPlates)
+            for (SpikePlate* spike : spawnedSpikes)
+                plate->AddLinkedTrap(spike);
+
+        // spawn enemies
+        std::vector<EnemyManager::SpawnInfo> spawns;
+        for (const auto& ed : lvl.enemies)
+            spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+
+        if (!spawns.empty())
+        {
+            enemyMgr.SetSpawns(spawns);
+            enemyMgr.SpawnAll();
+        }
     }
     else
     {
         mapCols = 40;
-        // reconstruct map cleanly even in fallback
-        map.~MapGrid();
-        new (&map) MapGrid(20, 40);
 
         for (int x = 0; x < 40; ++x)
             map.SetTile(x, 1, MapTile::Type::GROUND);
 
         player.Reset({ 3.f, 3.f });
-        std::cout << "[Menu] menu.lvl not found, using fallback\n";
     }
 
-    // snap camera to spawn
-    Camera::position = player.GetPosition();
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
-        Camera::position.y * Camera::scale);
-
-    std::cout << "[Menu] Camera::scale=" << Camera::scale
-        << " pos=" << Camera::position.x << "," << Camera::position.y << "\n";
+    camera.SetFollow(&player.GetPosition(), 0, 0, true);
+    camera.smoothTime = 0.4f;
 }
 
 void MainMenuScene::Update()
@@ -91,13 +135,13 @@ void MainMenuScene::Update()
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
 
-    Camera::position = player.GetPosition();
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
-        Camera::position.y * Camera::scale);
+    
+    camera.Update();
 
+    // transition to game when walking past right edge
     if (player.GetPosition().x > (float)mapCols)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\level01.lvl";
+        gPendingLevelPath = ExeDir() + "Assets\\Levels\\menu.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
 }
@@ -106,20 +150,46 @@ void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
 
-    // re-apply camera and scale every frame before drawing
-    Camera::scale = 64.f;
-    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
-        Camera::position.y * Camera::scale);
-
+    // reset render state — UI::DrawHealthVignette leaves transparency=0 at full health
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);
     AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
     AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
 
+    AEGfxSetCamPosition(Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+
     map.Render();
+    trapMgr.Render();
     player.Render();
     enemyMgr.RenderAll();
+
+    // always-visible menu text overlay
+    if (uiFont >= 0)
+    {
+        AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetTransparency(1.f);
+        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+
+        // title
+        AEGfxPrint((s8)uiFont, "GAME TITLE", -0.93f, 0.90f, 2.2f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        // controls block
+        AEGfxPrint((s8)uiFont, "CONTROLS", -0.93f, 0.74f, 1.0f, 1.0f, 0.82f, 0.35f, 1.0f);
+        AEGfxPrint((s8)uiFont, "A / D  - Move", -0.93f, 0.64f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+        AEGfxPrint((s8)uiFont, "SPACE - Jump", -0.93f, 0.56f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+        AEGfxPrint((s8)uiFont, "Run right to begin", -0.93f, 0.46f, 1.0f, 1.0f, 0.95f, 0.85f, 0.25f);
+    }
 }
 
-void MainMenuScene::Exit() {}
+void MainMenuScene::Exit()
+{
+    if (uiFont >= 0)
+    {
+        AEGfxDestroyFont((s8)uiFont);
+        uiFont = -1;
+    }
+}

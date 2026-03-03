@@ -108,7 +108,7 @@ static Camera* gPlayCamera = nullptr;
 
 static bool InBounds(int x, int y)
 {
-    return x >= 0 && x < GRID_COLS && y >= 0 && y < GRID_ROWS;
+    return x >= 0 && x < GRID_ROWS && y >= 0 && y < GRID_COLS;
 }
 
 static void ApplyWorldCamera()
@@ -414,11 +414,13 @@ static void PlayMode_Enter()
         { (float)GRID_COLS, (float)GRID_ROWS },
         CAMERA_SCALE
     );
-    gPlayCamera->position = gSpawn;
 
     // --- player ---
     gPlayPlayer = new Player(gMap, nullptr);
     gPlayPlayer->Reset(gSpawn);
+
+    // wire up room-based camera to follow player
+    gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
 
     // --- traps ---
     gPlayTraps = new TrapManager();
@@ -457,19 +459,14 @@ static void PlayMode_Enter()
         }
         else if (td.type == (int)Trap::Type::LavaPool)
         {
-            // If your TrapDefSimple doesn't have these fields, replace with defaults.
             gPlayTraps->Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
         }
     }
 
     // Temporary linking rule: every pressure plate controls every spike plate
     for (PressurePlate* plate : spawnedPlates)
-    {
         for (Trap* target : spawnedLinkTargets)
-        {
             plate->AddLinkedTrap(target);
-        }
-    }
 
     // --- enemies ---
     gPlayEnemies = new EnemyManager();
@@ -479,8 +476,6 @@ static void PlayMode_Enter()
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
 }
-
-
 
 static void PlayMode_Exit()
 {
@@ -496,8 +491,7 @@ static void PlayMode_Update(float dt)
     if (!gPlayPlayer || !gPlayCamera) return;
 
     gPlayPlayer->Update();
-    // manually track player — no SetFollow needed
-    gPlayCamera->position = gPlayPlayer->GetPosition();
+    gPlayCamera->Update();
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
     const AEVec2 pSize = gPlayPlayer->GetStats().playerSize;
@@ -519,13 +513,6 @@ static void PlayMode_Update(float dt)
 static void PlayMode_Render()
 {
     if (!gPlayPlayer || !gPlayCamera) return;
-
-    // apply play camera
-    AEGfxSetCamPosition(
-        gPlayCamera->position.x * Camera::scale,
-        gPlayCamera->position.y * Camera::scale
-    );
-    Camera::position = gPlayCamera->position;
 
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     gMap->Render();
@@ -837,4 +824,3 @@ void GameState_LevelEditor_Unload()
         gUIFont = -1;
     }
 }
-
