@@ -476,8 +476,8 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
     // Shouldn't handle input here but not sure how else to do..
     // If switch direction when chaining attacks
-    if ((AEInputCheckCurr(AEVK_LEFT) && facingDirection.x > 0) ||
-        (AEInputCheckCurr(AEVK_RIGHT) && facingDirection.x < 0))
+    if (((AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)) && facingDirection.x > 0) ||
+        ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && facingDirection.x < 0))
         facingDirection.x *= -1;
 
     // Temp - If transitioning to last attack
@@ -522,14 +522,18 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
-    bool isAnimAttack = IsAttacking();
-
-    // If player is trying to attack (including input buffer)
-    if (inAttackInputBuffer || isAnimAttack)
+    if (IsAttacking())
     {
-        if (!isAnimAttack)
-            Attack(ATTACK_1);
+        // Do nothing, go to sprite.Update()
+    }
+    // If player is trying to attack (including input buffer)
+    else if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
+    {
+        Attack(AIR_ATTACK_1);
+        //if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
+        //    Attack(AIR_ATTACK_1);
+        //else
+        //    Attack(ATTACK_1);
     }
     else
     {
