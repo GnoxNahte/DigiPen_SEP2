@@ -13,7 +13,8 @@ enum class EditorTile
     Ground = 0,
     Spike,
     PressurePlate,
-    Enemy
+    Enemy,
+    Spawn
 };
 
 enum class EditorEnemyPreset
