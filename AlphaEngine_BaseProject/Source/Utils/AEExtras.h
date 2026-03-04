@@ -1,42 +1,99 @@
 #pragma once
 #include "AEEngine.h"
+#include <iostream>
 
-class AEExtras
+namespace AEExtras
 {
-public:
 	/**
 	 * @brief				 Gets the cursor's world position
 	 * @param outPosition	 Outputs position here
 	 */
-	static void GetCursorWorldPosition(AEVec2& outPosition);
+	void GetCursorWorldPosition(AEVec2& outPosition);
 
 	/**
 	 * @brief					Converts a position from screen coordinates to world coordinates.
 	 * @param screenPosition	Input screen position
 	 * @param outWorldPosition	Output world coordinates
 	 */
-	static void ScreenToWorldPosition(const AEVec2& screenPosition, AEVec2& outWorldPosition);
+	void ScreenToWorldPosition(const AEVec2& screenPosition, AEVec2& outWorldPosition);
 
 	/**
 	 * @brief					Converts a position from world coordinates to screen coordinates.
 	 * @param worldPosition		Input world position
 	 * @param outScreenPosition	Output screen coordinates
 	 */
-	static void WorldToScreenPosition(const AEVec2& worldPosition, AEVec2& outScreenPosition);
+	void WorldToScreenPosition(const AEVec2& worldPosition, AEVec2& outScreenPosition);
 
 	/**
 	 * @brief						Converts a position from world coordinates to viewport coordinates.
 	 * @param worldPosition			Input screen position
 	 * @param outViewportPosition	Output world coordinates
 	 */
-	static void WorldToViewportPosition(const AEVec2& worldPosition, AEVec2& outViewportPosition);
+	void WorldToViewportPosition(const AEVec2& worldPosition, AEVec2& outViewportPosition);
 
 	/**
 	 * @brief		Returns a float between the range
 	 */
-	static float RandomRange(const AEVec2& range);
+	float RandomRange(const AEVec2& range);
 
-	static float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
-	static float RemapClamp(float value, const AEVec2& inRange, const AEVec2& outRange);
-};
+	float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
+	float RemapClamp(float value, const AEVec2& inRange, const AEVec2& outRange);
+}
 
+// === AEVec2 operator overloads ===
+// NOTE: the operators that return a temp value (+, -, *) take in lvalue instead of rvalue
+//		 For return value optimisation/copy elision - prevents copies. But not sure since haven't learn... Maybe use rvalue reference instead?
+// Src:
+// - https://stackoverflow.com/questions/21605579/how-true-is-want-speed-pass-by-value
+// - https://web.archive.org/web/20140205194657/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/
+
+inline AEVec2& operator+=(AEVec2& lhs, const AEVec2& rhs)
+{
+	lhs.x += rhs.x;
+	lhs.y += rhs.y;
+	return lhs;
+}
+
+inline AEVec2& operator-=(AEVec2& lhs, const AEVec2& rhs)
+{
+	lhs.x -= rhs.x;
+	lhs.y -= rhs.y;
+	return lhs;
+}
+
+inline AEVec2& operator*=(AEVec2& lhs, float rhs)
+{
+	lhs.x *= rhs;
+	lhs.y *= rhs;
+	return lhs;
+}
+
+inline AEVec2 operator+(AEVec2 lhs, const AEVec2& rhs)
+{
+	lhs += rhs;
+	return lhs;
+}
+
+inline AEVec2 operator-(AEVec2 lhs, const AEVec2& rhs)
+{
+	lhs -= rhs;
+	return lhs;
+}
+
+inline AEVec2 operator*(AEVec2 lhs, float rhs)
+{
+	lhs *= rhs;
+	return lhs;
+}
+
+inline AEVec2 operator*(float lhs, AEVec2 rhs)
+{
+	rhs *= lhs;
+	return rhs;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const AEVec2& v)
+{
+	os << "(" << v.x << "," << v.y << ")";
+	return os;
+}

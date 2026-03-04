@@ -105,6 +105,8 @@ void GSM::Update()
 
 		previousState = currentState;
 		currentState = nextState;
+
+		AESysReset();
 	}
 }
 
@@ -117,8 +119,9 @@ void GSM::ChangeScene(SceneState state)
 {
 	if (currentState == state)
 		nextState = GS_RESTART;
-	else
+	else{
 		nextState = state;
+	}
 }
 
 SceneState GSM::GetState()

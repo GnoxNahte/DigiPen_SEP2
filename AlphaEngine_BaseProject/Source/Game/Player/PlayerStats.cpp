@@ -80,6 +80,7 @@ namespace
 
         ImGui::Indent();
         {
+            ifChanged = ImGui::DragInt(("Damage##" + str).c_str(), &attack.damage, 0.1f) || ifChanged;
             ifChanged = ImGui::DragFloat(("Knockback Force##" + str).c_str(), &attack.knockbackForce, 0.01f) || ifChanged;
             ifChanged = ImGui::DragFloat(("Recoil Speed##" + str).c_str(), &attack.recoilSpeed, 0.01f) || ifChanged;
             ifChanged = DrawInspectorBox(("Collider##" + str).c_str(), attack.collider) || ifChanged; // causing double ID... not fixing for now. Need to make another function that doesnt add id?
