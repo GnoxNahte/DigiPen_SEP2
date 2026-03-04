@@ -97,8 +97,10 @@ public:
     bool   IsChasing() const { return chasing; }
     bool   IsReturningHome() const { return returningHome; }
 
+
     float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
-    int   GetAttackDamage() const { return cfg.attackDamage; }                  
+    int   GetAttackDamage() const { return cfg.attackDamage; }  
+
 
 
     // Optional knobs
@@ -127,7 +129,12 @@ private:
 
     bool chasing{ false };
     bool returningHome{ false };
+    bool hadAggro = false;
     bool debugDraw{ true };
+
+    float idleWalkLeft = 0.f;     // seconds left to keep walking
+    float idlePauseLeft = 0.f;    // seconds left to pause
+    float idleDirX = 1.f;         // +1 or -1
 
     int  hp{ 1 };
     bool dead{ false };
