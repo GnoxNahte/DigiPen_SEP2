@@ -4,6 +4,9 @@
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyBoss.h"
 #include "../Player/Player.h"
+#include "../../Utils/PhysicsUtils.h"
+
+
 
 void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemies, EnemyBoss* boss)
 {
@@ -23,7 +26,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
             // mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
             if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
             {
-                player.TakeDamage(e.GetAttackDamage(), e.GetPosition());
+                player.TryTakeDamage(e.GetAttackDamage(), e.GetPosition());
                 std::cout << "Enemy HIT player!\n";
             }
         });
@@ -33,8 +36,13 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
     {
         if (boss->PollAttackHit())
         {
-            player.TakeDamage(boss->GetAttackDamage(), boss->GetHurtboxPos());
-            std::cout << "[Boss] HIT player (melee)\n";
+            const auto& hb = boss->GetMeleeHitbox();
+            if (PhysicsUtils::AABB(hb.position, hb.size, pPos, pSize))
+            {
+                player.TryTakeDamage(boss->GetAttackDamage(), boss->GetHurtboxPos());
+                std::cout << "[Boss] HIT player (melee)\n";
+            }
+        
         }
 
         // ---- Boss spell/projectile hits ----
@@ -47,7 +55,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
             // Choose ONE of these policies:
 
             // Policy A (common): treat projectile hit this frame?as 1 damage event
-            player.TakeDamage(spellHits * spellDmg, boss->GetHurtboxPos());
+            player.TryTakeDamage(spellHits * spellDmg, boss->GetHurtboxPos());
             std::cout << "[Boss] spell hit x" << spellHits << "\n";
 
             // Policy B (harsher): each projectile counts

@@ -5,8 +5,7 @@
 #include <AEVec2.h>
 #include "IDamageable.h"
 #include "../../Editor/EditorUtils.h"
-#include "../Environment/MapGrid.h"
-#include "../Environment/MapTile.h"
+#include "../../Utils/ParticleSystem.h"
 
 class MapGrid; // forward declaration to avoid circular dependency
 
@@ -105,6 +104,9 @@ public:
     // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
     AEVec2 hurtboxOffset{ 0.f, 0.f }; // negative = lower
+
+
+    ParticleSystem particleSystem{ 30, {} }; // pool size 30 is enough for small bursts
 
 private:
     void UpdateAnimation();

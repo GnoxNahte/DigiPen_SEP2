@@ -42,7 +42,7 @@ public:
 	void Init();
 	void Update();
 	void Render();
-	void Free();
+	void ReleaseAll();
 
 	Particle& SpawnParticle();
 	Particle& SpawnParticle(const EmitterSettings& _emitter);

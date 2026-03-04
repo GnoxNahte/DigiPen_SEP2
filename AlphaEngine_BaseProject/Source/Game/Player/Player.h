@@ -53,17 +53,21 @@ public:
     void Render();
     void Reset(const AEVec2& initialPos);
 
-    void TakeDamage(int dmg, const AEVec2& hitOrigin);
-
     // === Inspectable ===
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
-    
+
+    // === IDamageable ===
+    const AEVec2& GetHurtboxPos() const override;
+    const AEVec2& GetHurtboxSize() const override;
+    bool IsDead() const override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+
     // === Getters ===
-    const AEVec2& GetPosition() const;
-    int GetHealth() const;
-    const PlayerStats& GetStats() const;
-    bool IsFacingRight() const;
+    const AEVec2&       GetPosition() const;
+    const PlayerStats&  GetStats()    const;
+    int     GetHealth()     const;
+    bool    IsFacingRight() const;
     AnimState GetAnimState() const;
 
 private:
@@ -99,13 +103,14 @@ private:
 
     // === Combat ===
     int health;
+    bool hasAppliedRecoil; // For current attack
 
     // === Buffs ===
-    float buff_MoveSpeedMulti = 1.f;
-    float buff_DmgReduction = 0.f;
-    float buff_critChance = 1.f;
-    float buff_critDmgMulti = 1.f;
-    float buff_DmgMultiLowHP = 1.f;
+    float buff_MoveSpeedMulti;
+    float buff_DmgReduction;
+    float buff_critChance;
+    float buff_critDmgMulti;
+    float buff_DmgMultiLowHP;
     
     EventId buffEventId;
 
@@ -140,13 +145,9 @@ private:
     void OnBuffSelected(const BuffSelectedEvent& ev);
     static float PercentToScale(int percentage); // Helper to calcualte buffs
 
-    // === IDamageable ===
-    const AEVec2& GetHurtboxPos() const override;
-    const AEVec2& GetHurtboxSize() const override;
-    bool IsDead() const override;
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
+// ===== Events =====
 struct PlayerDeathEvent
 {
     const Player& player;

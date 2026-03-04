@@ -15,7 +15,7 @@ public:
     //  - attackAnimDurationSec: duration of ATTACK animation in seconds (frameCount * timePerFrame)
 
     //if target goes beyond this while attacking, cancel attack
-     float breakRange = 1.0f;   // set > startRange (hysteresis
+     float breakRange = 900.0f;   // set > startRange (hysteresis
 
 
     void Update(float dt, float distanceToTarget, float attackAnimDurationSec)

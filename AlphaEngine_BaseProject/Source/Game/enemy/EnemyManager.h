@@ -4,14 +4,14 @@
 #include <memory>
 #include <functional>
 #include <algorithm>
-
-#include "AEEngine.h"    
-#include "Enemy.h"   
+#include "AEEngine.h" 
+#include "Enemy.h"     
+#include "Enemyboss.h"
 #include "IDamageable.h"
 
 
 
-
+class EnemyBoss; 
 class EnemyManager 
 {
 public:
@@ -24,7 +24,12 @@ public:
 public:
 
 
-    void SetBoss(IDamageable* b) { bossDamageable = b; }
+    void SetBoss(EnemyBoss* b) {
+      
+        bossDamageable = b;
+        boss = b;
+       
+    }
 
 
     EnemyManager() = default;
@@ -73,12 +78,23 @@ public:
     }
 
     // --- Update/Render ---
+    void UpdateAll(const AEVec2& playerpos, bool playerFacingRight, MapGrid& map)
+    {
+        // update regular enemies
+        UpdateAll(playerpos, map);
+
+        // update boss (if present)
+        if (boss && !boss->IsDead())
+            boss->Update(playerpos, playerFacingRight); // or whatever your Player exposes
+    }
+
     void UpdateAll(const AEVec2& playerPos, MapGrid& map)
     {
         for (auto& e : enemies)
             e->Update(playerPos, map);
     }
 
+  
     void RenderAll()
     {
         for (auto& e : enemies)
@@ -106,4 +122,5 @@ private:
     std::vector<SpawnInfo> spawns;                     // editor/level data
     std::vector<std::unique_ptr<Enemy>> enemies;       // runtime instances
     IDamageable* bossDamageable = nullptr;
+	EnemyBoss* boss = nullptr; // optional direct pointer if you need boss-specific logic
 };

@@ -103,6 +103,20 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
 
+// EnemyBoss.cpp
+void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
+{
+    const AEVec2 bPos = GetHurtboxPos();
+    const AEVec2 bSize = GetHurtboxSize();
+
+    // decide side by player (more reliable than facing when boss teleports)
+    const float dirX = (playerPos.x >= bPos.x) ? 1.f : -1.f;
+
+    meleeHitbox.size = AEVec2{ 1.4f, 0.9f }; // tweak
+    meleeHitbox.position.x = bPos.x + dirX * (bSize.x * 0.5f + meleeHitbox.size.x * 0.5f - 0.10f);
+    meleeHitbox.position.y = bPos.y + 0.10f;
+}
+
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& )
 {
     if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
@@ -178,16 +192,58 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     attack.cooldown = 0.8f;
     attack.hitTimeNormalized = 1.5f;
     attack.breakRange = 99999.0f;
+
+    //particle systemmmm setup
+    particleSystem.Init();
+    particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
+
+    // Optional: default “dust/blood-ish” lifetime for bursts
+    particleSystem.emitter.lifetimeRange.x = 0.10f;
+    particleSystem.emitter.lifetimeRange.y = 0.25f;
 }
 
 EnemyBoss::~EnemyBoss()
 {
 }
 
+
+
 void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 {
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
+
+    auto UpdateBossParticles = [&]()
+        {
+            // Trail only when moving; still updates existing particles either way
+            const float speed = std::fabs(velocity.x);
+
+            // If your system treats 0 as "no spawn", this is fine
+            particleSystem.SetSpawnRate(speed > 0.1f ? 30.f : 0.f);
+
+            const float trailLen = 0.5f;     // how far behind to spawn
+            const float x = position.x + 0.5f;
+
+            // decide facing: if moving use velocity, else use facingDirection
+            const bool faceRight =
+                (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+            if (faceRight)
+            {
+                // moving right 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x - trailLen);
+            }
+            else
+            {
+                // moving left 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x + trailLen);
+            }
+            AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.2f, position.y + 0.8f);
+
+            particleSystem.Update();
+        };
+
+
     float hpTarget = (maxHP > 0) ? (float)hp / (float)maxHP : 0.f;
     hpTarget = max(0.f, min(1.f, hpTarget));
 
@@ -382,6 +438,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     attack.Update(dt, absDx, attackDur);
 
+
     // Unlock special sequence after boss performs its first normal attack
     if (attack.JustStarted() && !specialUnlocked)
     {
@@ -516,6 +573,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             }
 
             position = nextPos;
+            UpdateBossParticles();
         }
         else
         {
@@ -541,7 +599,62 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }),
         g_specialAttacks.end()
     );
+
+    UpdateMeleeHitbox(playerPos);
 }
+
+void EnemyBoss::SpawnImpactBurst()
+{
+    // Use the SAME visual X offset already use in UpdateBossParticles()
+    const float visualX = position.x + 0.5f;
+
+    // "Feet" approx (hurtbox is 0.8 tall, tune if needed)
+    const float feetY = position.y - (size.y * 0.5f);
+
+    // In front of boss depending on facing
+    const float dirX = (facingDirection.x >= 0.f) ? 1.f : -1.f;
+    const float hitX = visualX + dirX * (size.x * 0.55f);
+
+    // use CUSTOM emitters
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+
+    // Layer 1: Ground shock (left + right spray)
+   
+    e.spawnPosRangeX = { hitX - 0.05f, hitX + 0.05f };
+    e.spawnPosRangeY = { feetY - 0.05f, feetY + 0.10f };
+    e.speedRange = { 14.f, 24.f };
+    e.lifetimeRange = { 0.08f, 0.14f };
+
+      //right spray
+    e.angleRange = { AEDegToRad(-20.f), AEDegToRad(20.f) };
+    particleSystem.SpawnParticleBurst(e, 18);
+
+    // left spray
+    e.angleRange = { AEDegToRad(160.f), AEDegToRad(200.f) };
+    particleSystem.SpawnParticleBurst(e, 18);
+
+  
+    // Layer 2: Debris cone upward
+    e.spawnPosRangeX = { hitX - 0.18f, hitX + 0.18f };
+    e.spawnPosRangeY = { feetY + 0.00f, feetY + 0.20f };
+    e.speedRange = { 18.f, 40.f };
+    e.lifetimeRange = { 0.20f, 0.55f };
+    e.angleRange = { AEDegToRad(70.f), AEDegToRad(110.f) };
+    particleSystem.SpawnParticleBurst(e, 22);
+
+    // =========================
+    // Layer 3: Puff / flash
+    // =========================
+    e.spawnPosRangeX = { hitX - 0.12f, hitX + 0.12f };
+    e.spawnPosRangeY = { feetY + 0.10f, feetY + 0.40f };
+    e.speedRange = { 6.f, 12.f };
+    e.lifetimeRange = { 0.05f, 0.12f };
+    e.angleRange = { AEDegToRad(0.f), AEDegToRad(360.f) };
+    particleSystem.SpawnParticleBurst(e, 12);
+}
+
+
 
 int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize)
 {
@@ -592,7 +705,7 @@ void EnemyBoss::UpdateAnimation()
 
 void EnemyBoss::Render()
 {
-
+    particleSystem.Render();
     if (hideAfterDeath) return;
 
     AEMtx33 m;
@@ -647,6 +760,8 @@ void EnemyBoss::Render()
                 0xFFFF0000,
                 AE_GFX_MDM_LINES_STRIP
             );
+
+          
         }
     }
 
@@ -656,6 +771,14 @@ void EnemyBoss::Render()
     {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+
+        if (attack.IsAttacking())
+        {
+            const auto& hb = meleeHitbox;
+            QuickGraphics::DrawRect(hb.position.x, hb.position.y, hb.size.x, hb.size.y,
+                0xFF00FFFF, AE_GFX_MDM_LINES_STRIP);
+        }
+      
     }
     RenderHealthbar();
 

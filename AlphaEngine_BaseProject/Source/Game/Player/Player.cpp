@@ -25,8 +25,6 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
 {
     Reset(AEVec2{ 2, 4 });
 
-    health = stats.maxHealth;
-
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
@@ -111,33 +109,22 @@ void Player::Reset(const AEVec2& initialPos)
     isCeilingCollided = false;
     isLeftWallCollided = false;
     isRightWallCollided = false;
-}
 
-void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
-{
-    if (dmg <= 0) 
-        return;
+	lastAttackHeld = std::numeric_limits<f64>::lowest(); 
+	dashStartTime = std::numeric_limits<f64>::lowest();
 
-    health -= dmg;
-    if (health <= 0)
-    {
-        health = 0;
-        EventSystem::Trigger(PlayerDeathEvent{*this});
-    }
+    health = stats.maxHealth;
+    hasAppliedRecoil = false;
 
-    AEVec2 hitOriginCpy = hitOrigin;
-    AEVec2 hitDirection;
-    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
-    AEVec2Normalize(&hitDirection, &hitDirection);
+    buff_MoveSpeedMulti = 1.f;
+    buff_DmgReduction = 0.f;
+    buff_critChance = 1.f;
+    buff_critDmgMulti = 1.f;
+    buff_DmgMultiLowHP = 1.f;
 
-    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
-    hitDirection.y = max(hitDirection.y, 0.4f);
-    AEVec2Scale(&hitDirection, &hitDirection, 30);
-    velocity = hitDirection;
-
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-
-    sprite.SetState(AnimState::HURT);
+    attackedEnemies.clear();
+    sprite.SetState(AnimState::IDLE_W_SWORD);
+    particleSystem.ReleaseAll();
 }
 
 const AEVec2& Player::GetPosition() const
@@ -332,7 +319,7 @@ void Player::HandleGravity()
 
 void Player::HandleJump()
 {
-    f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());;
+    f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
     bool isCoyoteTimeActive = (currTime - lastGroundedTime) < stats.coyoteTime;
@@ -390,26 +377,32 @@ void Player::Attack(AnimState toState)
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
-
-    float recoil = IsAnimGroundAttack() ? stats.groundAttacks[toState - ATTACK_1].recoilSpeed : stats.airAttacks[toState - AIR_ATTACK_1].recoilSpeed;
-    velocity.x = facingDirection.x > 0 ? -recoil : recoil;
 }
 
 void Player::UpdateAttacks()
 {
     AttackStats* attack = nullptr;
     AnimState animState = GetAnimState();
+    bool isGroundAttack = false;
 
     if (IsAnimGroundAttack())
+    {
         attack = &stats.groundAttacks[animState - AnimState::ATTACK_1];
+        isGroundAttack = true;
+    }
     else if (IsAnimAirAttack())
+    {
         attack = &stats.airAttacks[animState - AnimState::AIR_ATTACK_1];
+        isGroundAttack = false;
+    }
     // Else, not attacking
     else
         return;
 
-    AEVec2 colliderPos;
-    AEVec2Add(&colliderPos, &position, &attack->collider.position);
+    AEVec2 colliderPos{ 
+        position.x + attack->collider.position.x * (facingDirection.x > 0 ? 1.f : -1.f),
+        position.y + attack->collider.position.y
+    };
 
     // Check if attack hit enemy
     if (enemyManager)
@@ -430,16 +423,29 @@ void Player::UpdateAttacks()
 
                 enemy.TryTakeDamage(damage, colliderPos);
                 attackedEnemies.push_back(&enemy);
+
+                if (!hasAppliedRecoil)
+                {
+                    if (isGroundAttack)
+                        velocity.x += facingDirection.x > 0 ? -attack->recoilSpeed : attack->recoilSpeed;
+                    else 
+                        velocity.y += attack->recoilSpeed;
+
+                    hasAppliedRecoil = true;
+                }
             }
         });
     }
 
     if (Editor::GetShowColliders())
-        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF0000FF, AE_GFX_MDM_LINES_STRIP);
+        QuickGraphics::DrawRect(colliderPos, attack->collider.size, 0xFF8888FF);
 }
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)
 {
+    attackedEnemies.clear();
+    hasAppliedRecoil = false;
+
     AnimState spriteState = static_cast<AnimState>(spriteStateIndex);
 
     bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
@@ -448,13 +454,20 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
     // If not in attack input buffer OR is last attack in combo, 
     // Reset - Set to idle
     if (!inAttackInputBuffer || isLastAttack)
+    {
         sprite.SetState(AnimState::IDLE_W_SWORD);
-    else
-        Attack(static_cast<AnimState>(spriteStateIndex + 1));
+        return;
+    }
 
-    attackedEnemies.clear();
+    Attack(static_cast<AnimState>(spriteStateIndex + 1));
 
-    // If transitioning to last attack
+    // Shouldn't handle input here but not sure how else to do..
+    // If switch direction when chaining attacks
+    if (((AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)) && facingDirection.x > 0) ||
+        ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && facingDirection.x < 0))
+        facingDirection.x *= -1;
+
+    // Temp - If transitioning to last attack
     if (spriteState == AnimState::ATTACK_END - 1)
     {
         auto emitter = ParticleSystem::EmitterSettings{
@@ -496,13 +509,17 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
-    bool isAnimAttack = IsAttacking();
-
-    // If player is trying to attack (including input buffer)
-    if (inAttackInputBuffer || isAnimAttack)
+    if (IsAttacking())
     {
-        if (!isAnimAttack)
+        // Do nothing, go to sprite.Update()
+    }
+    // If player is trying to attack (including input buffer)
+    else if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
+    {
+        //Attack(AIR_ATTACK_1);
+        if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
+            Attack(AIR_ATTACK_1);
+        else
             Attack(ATTACK_1);
     }
     else
@@ -522,8 +539,6 @@ void Player::UpdateAnimation()
             sprite.SetState(AnimState::RUN_W_SWORD);
         else
             sprite.SetState(AnimState::IDLE_W_SWORD);
-
-        //std::cout << "vel: " << velocity.y << "\n";
     }
 
     sprite.Update();
@@ -578,6 +593,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     if (health < dmg)
     {
         health = 0;
+        EventSystem::Trigger<PlayerDeathEvent>({ *this });
         return false;
     }
 
@@ -588,17 +604,11 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
     AEVec2Normalize(&hitDirection, &hitDirection);
 
-    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
     hitDirection.y = max(hitDirection.y, 0.4f);
     AEVec2Scale(&hitDirection, &hitDirection, 30);
-    std::cout << hitDirection.y << "\n";
     velocity = hitDirection;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-#if _DEBUG
-    std::cout << "[Player] Damage: " << dmg
-        << " HP=" << health << "/" << stats.maxHealth << "\n";
-#endif
 
     sprite.SetState(AnimState::HURT);
 
