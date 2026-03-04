@@ -92,7 +92,7 @@ void LavaPool::OnPlayerStay(float dt, Player& player)
     if (m_tickTimer >= m_tickInterval)
     {
         m_tickTimer -= m_tickInterval;
-        player.TakeDamage(m_damagePerTick, {});
+        player.TryTakeDamage(m_damagePerTick, {});
     }
 }
 
@@ -193,7 +193,7 @@ void SpikePlate::OnPlayerEnter(Player& player)
     if (m_hitTimer > 0.f) return;
 
     std::cout << "[Spike] Enter Hit!\n";
-    player.TakeDamage(m_damageOnHit, {});
+    player.TryTakeDamage(m_damageOnHit, {});
     m_hitTimer = m_hitCooldown;
 }
 
@@ -202,7 +202,7 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     if (!m_spikesUp) return;
     if (m_hitTimer > 0.f) return;
     std::cout << "[Spike] Hit!\n";
-    player.TakeDamage(m_damageOnHit, {});
+    player.TryTakeDamage(m_damageOnHit, {});
     m_hitTimer = m_hitCooldown;
 }
 

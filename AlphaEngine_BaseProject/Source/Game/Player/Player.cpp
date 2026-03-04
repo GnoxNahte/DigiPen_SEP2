@@ -127,33 +127,6 @@ void Player::Reset(const AEVec2& initialPos)
     particleSystem.ReleaseAll();
 }
 
-void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
-{
-    if (dmg <= 0) 
-        return;
-
-    health -= dmg;
-    if (health <= 0)
-    {
-        health = 0;
-        EventSystem::Trigger(PlayerDeathEvent{*this});
-    }
-
-    AEVec2 hitOriginCpy = hitOrigin;
-    AEVec2 hitDirection;
-    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
-    AEVec2Normalize(&hitDirection, &hitDirection);
-
-    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
-    hitDirection.y = max(hitDirection.y, 0.4f);
-    AEVec2Scale(&hitDirection, &hitDirection, 30);
-    velocity = hitDirection;
-
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-
-    sprite.SetState(AnimState::HURT);
-}
-
 const AEVec2& Player::GetPosition() const
 {
     return position;

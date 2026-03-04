@@ -53,12 +53,16 @@ public:
     void Render();
     void Reset(const AEVec2& initialPos);
 
-    void TakeDamage(int dmg, const AEVec2& hitOrigin);
-
     // === Inspectable ===
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
-    
+
+    // === IDamageable ===
+    const AEVec2& GetHurtboxPos() const override;
+    const AEVec2& GetHurtboxSize() const override;
+    bool IsDead() const override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+
     // === Getters ===
     const AEVec2&       GetPosition() const;
     const PlayerStats&  GetStats()    const;
@@ -141,13 +145,9 @@ private:
     void OnBuffSelected(const BuffSelectedEvent& ev);
     static float PercentToScale(int percentage); // Helper to calcualte buffs
 
-    // === IDamageable ===
-    const AEVec2& GetHurtboxPos() const override;
-    const AEVec2& GetHurtboxSize() const override;
-    bool IsDead() const override;
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 };
 
+// ===== Events =====
 struct PlayerDeathEvent
 {
     const Player& player;
