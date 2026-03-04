@@ -574,7 +574,7 @@ void GameScene::RenderPauseOverlay()
 	float h = (float)AEGfxGetWindowHeight();
 
 	// Dim background
-	DrawDimBackground(0.65f);
+	DrawDimBackground(0.75f);
 
 
 	// Titles

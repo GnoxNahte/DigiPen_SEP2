@@ -80,8 +80,7 @@ void UI::DrawHealthVignette() {
 
 	if (healthFraction <= 0.5f)
 	{
-		static float totalTime = 0.0f;
-		totalTime += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+		float totalTime = static_cast<f32>(Time::GetInstance().GetScaledElapsedTime());
 
 		float beatSpeed = 0.9f;   // Increase for faster heartbeat
 		float beat = fmod(totalTime * beatSpeed, 1.0f);
