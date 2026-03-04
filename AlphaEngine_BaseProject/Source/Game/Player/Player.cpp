@@ -111,6 +111,12 @@ void Player::Reset(const AEVec2& initialPos)
     isCeilingCollided = false;
     isLeftWallCollided = false;
     isRightWallCollided = false;
+
+	lastAttackHeld = std::numeric_limits<f64>::lowest();  // smallest possible value to allow attacking immediately, instead of waiting for cooldown. Also avoids Player::Reset() -> Update() -> IsAttacking() -> lastAttackHeld uninitialized access
+	dashStartTime = std::numeric_limits<f64>::lowest();  // avoid Player::Reset(const AEVec2& initialPos)
+    attackedEnemies.clear();
+
+    sprite.SetState(AnimState::IDLE_W_SWORD);
 }
 
 void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)

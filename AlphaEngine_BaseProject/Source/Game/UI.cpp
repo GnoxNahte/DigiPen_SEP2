@@ -3,26 +3,115 @@
 #include <string>
 #include "BuffCards.h"
 #include "../Utils/AEExtras.h"
+#include "Player/Player.h"
+#include "../Utils/MeshGenerator.h"
+#include "../Game/Time.h"
 
 /*--------------------------------------------
 			 General UI Functions
 ---------------------------------------------*/
-void UI::Init() {
+void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
+	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
+	UI::player = _player;
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
 }
 void UI::Render() {
+	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
+	if (healthVignetteMesh) {
+		AEGfxMeshFree(healthVignetteMesh);
+	}
+	if (healthVignette) {
+		AEGfxTextureUnload(healthVignette);
+	}
 	BuffCardScreen::Exit();
+	UI::player = nullptr;
+}
+void UI::DrawHealthVignette() {
+	// --- Rotation ---
+	AEMtx33 rotate{ 0 };
+	AEMtx33Identity(&rotate);
+
+	// --- Scale ---
+	AEMtx33 scale;
+	AEMtx33Scale(&scale,
+		static_cast<f32>(AEGfxGetWindowWidth() * 1.05f),
+		static_cast<f32>(AEGfxGetWindowHeight() * 1.05f));
+
+	// --- Translate ---
+	AEMtx33 translate;
+	AEMtx33Trans(&translate,
+		Camera::position.x * Camera::scale,
+		Camera::position.y * Camera::scale);
+
+	// --- Combine ---
+	AEMtx33 transform;
+	AEMtx33Concat(&transform, &rotate, &scale);
+	AEMtx33Concat(&transform, &translate, &transform);
+
+	// --- Health values ---
+	int playerHealth = player->GetHealth();
+	int maxHealth = player->GetStats().maxHealth;
+	float healthFraction = static_cast<float>(playerHealth) / static_cast<float>(maxHealth);
+
+	float baseAlpha = 0.0f;
+
+	// Only activate below 50%
+	if (healthFraction < 0.5f)
+	{
+		float t = (0.5f - healthFraction) / 0.25f;
+		t = AEClamp(t, 0.0f, 1.0f);
+		baseAlpha = 0.75f * t; // Strength of transparency.
+	}
+
+	// --- Heartbeat pulse ---
+	float pulse = 0.0f;
+
+	if (healthFraction <= 0.5f)
+	{
+		static float totalTime = 0.0f;
+		totalTime += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+
+		float beatSpeed = 0.9f;   // Increase for faster heartbeat
+		float beat = fmod(totalTime * beatSpeed, 1.0f);
+
+		if (beat < 0.15f) // Rise duration
+		{
+			pulse = (beat / 0.15f);           // Fast rise
+		}
+		else if (beat < 0.35f) // Fall duration
+		{
+			pulse = 1.0f - ((beat - 0.15f) / 0.2f); // Slow fall
+		}
+		else
+		{
+			pulse = 0.0f; // Rest period
+		}
+
+		pulse *= 0.2f; // pulse strength
+	}
+
+	float finalAlpha = AEClamp(baseAlpha + pulse, 0.0f, 1.0f);
+
+	// --- Apply ---
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(finalAlpha);
+
+	AEGfxTextureSet(healthVignette, 0, 0);
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxSetTransform(transform.m);
+	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
 /*--------------------------------------
 		  Damage Text Functions

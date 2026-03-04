@@ -137,7 +137,9 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 
 }
 void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
-	if (cards.empty()) {
+	if (cards.empty() || 
+		IsCardSelectedThisUpdate() || 
+		!BuffCardScreen::GetCardsFlipStatus()) {
 		return;
 	}
 
@@ -181,10 +183,18 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			}
 			cards[cardSelected].selected = true;
 		}
-
 		// --- MOUSE INPUT ---
 		s32 mouseX{}, mouseY{};
 		AEInputGetCursorPosition(&mouseX, &mouseY);
+
+		//std::cout << "Mouse: (" << mouseX << ", " << mouseY << ")\n";
+		//for (int i = 0; i < (int)BuffCardScreen::cachedCardRects.size(); ++i) {
+		//	std::cout << "Card " << i << " rect pos: ("
+		//		<< BuffCardScreen::cachedCardRects[i].pos.x << ", "
+		//		<< BuffCardScreen::cachedCardRects[i].pos.y << ") size: ("
+		//		<< BuffCardScreen::cachedCardRects[i].size.x << ", "
+		//		<< BuffCardScreen::cachedCardRects[i].size.y << ")\n";
+		//}
 
 		// Only update selection via mouse IF the mouse has actually moved
 		// This prevents the "snap-back" when you use the keyboard while the mouse is sitting still
@@ -643,7 +653,8 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 
 	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
-		float t = static_cast<float>(AEGetTime(nullptr));
+		static float t = 0.f;
+		t += static_cast<float>(AEFrameRateControllerGetFrameTime()) * 0.5f;
 
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)
@@ -687,9 +698,9 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 			Camera::position.x * Camera::scale + offsetX,
 			Camera::position.y * Camera::scale + offsetY);
 
-		//std::cout << "Card position : (" << Camera::position.x * Camera::scale + offsetX << ", " << Camera::position.y * Camera::scale + offsetY << ")\n";
-		//std::cout << "Card scale : (" << scaleX << ", " << scaleY << ")\n";
-		AEVec2 rectPos = { Camera::position.x * Camera::scale + offsetX, Camera::position.y * Camera::scale + offsetY };
+		AEVec2 worldPos = { Camera::position.x * Camera::scale + offsetX, Camera::position.y * Camera::scale + offsetY };
+		AEVec2 rectPos = { offsetX + AEGfxGetWindowWidth() * 0.5f,
+						  -offsetY + AEGfxGetWindowHeight() * 0.5f };
 		AEVec2 rectSize = { scaleX, scaleY };
 		cachedCardRects.push_back({ rectPos, rectSize });
 		
@@ -720,10 +731,6 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 		}
 	}
 }
-// Draw the description of the card when flipped.
-//void BuffCardScreen::DrawCardDesc(const BuffCard& card) {
-//	
-//}
 void BuffCardScreen::Render() {
 	if (BuffCardManager::IsRoomCleared()) {
 		// Overlay fades independently - always draw it while room is cleared

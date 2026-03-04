@@ -133,6 +133,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Game\Scene\LevelEditorScene.cpp" />
     <ClCompile Include="Source\Game\Scene\LevelIO.cpp" />
     <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp" />
+    <ClCompile Include="Source\Game\SplashScreen.cpp" />
     <ClCompile Include="Source\Game\Time.cpp" />
     <ClCompile Include="Source\Game\Timer.cpp" />
     <ClCompile Include="Source\Game\UI.cpp" />
@@ -186,6 +187,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\Scene\LevelEditorScene.h" />
     <ClInclude Include="Source\Game\Scene\LevelIO.h" />
     <ClInclude Include="Source\Game\Scene\MainMenuScene.h" />
+    <ClInclude Include="Source\Game\SplashScreen.h" />
     <ClInclude Include="Source\Game\Time.h" />
     <ClInclude Include="Source\Game\Timer.h" />
     <ClInclude Include="Source\Game\UI.h" />
