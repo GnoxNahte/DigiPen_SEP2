@@ -1,14 +1,13 @@
-#include <sstream>
-#include <iomanip>
 #include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
-#include "../../Utils/MeshGenerator.h"
-#include "../../Game/Time.h"
-#include "../../Game/Timer.h"
+#include "../Time.h"
 #include "../../Game/UI.h"
 #include "../../Game/Background.h"
 #include "../BuffCards.h"
+#include "LevelIO.h"
+
+std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 
 
 //AABB collision helper
@@ -34,18 +33,18 @@ namespace
 }
 
 
-GameScene::GameScene() : 
+GameScene::GameScene() :
 	map(50, 50),
 	player(&map, &enemyMgr),
 	camera({ 1,1 }, { 49, 49 }, 64),
 	testParticleSystem(
-		20, 
-		ParticleSystem::EmitterSettings{ 
+		20,
+		ParticleSystem::EmitterSettings{
 			.angleRange{ PI / 3, PI / 4 },
 			.speedRange{ 30.f, 50.f },
 			.lifetimeRange{1.f, 2.f},
-		} 
-	),
+		}
+		),
 	enemyBoss(35, 2.90f)
 {
 	camera.SetFollow(&player.GetPosition(), 0, 50, true);
@@ -66,7 +65,7 @@ GameScene::GameScene() :
 	//	2, 0.2f
 	//);
 
-	
+
 }
 
 GameScene::~GameScene()
@@ -75,6 +74,55 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+	// Load level from file if one was passed in from the menu
+	if (!gPendingLevelPath.empty())
+	{
+		LevelData lvl;
+		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
+		{
+			// apply tiles to existing map member
+			for (int y = 0; y < lvl.rows && y < 50; ++y)
+				for (int x = 0; x < lvl.cols && x < 50; ++x)
+				{
+					int v = lvl.tiles[(size_t)y * lvl.cols + x];
+					if (v < 0 || v >= MapTile::typeCount) v = 0;
+					map.SetTile(x, y, (MapTile::Type)v);
+				}
+
+			// apply traps
+			for (const auto& td : lvl.traps)
+			{
+				Box box{ td.pos, td.size };
+				const Trap::Type tt = static_cast<Trap::Type>(td.type);
+				if (tt == Trap::Type::SpikePlate)
+					trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+				else if (tt == Trap::Type::PressurePlate)
+					trapMgr.Spawn<PressurePlate>(box);
+				else if (tt == Trap::Type::LavaPool)
+					trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+			}
+
+			// spawn point from level file
+			player.Reset(lvl.spawn);
+			camera.SetFollow(&player.GetPosition(), 0, (float)lvl.cols, true);
+
+			// enemy spawns from level file
+			std::vector<EnemyManager::SpawnInfo> spawns;
+			for (const auto& ed : lvl.enemies)
+				spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+			enemyMgr.SetBoss(&enemyBoss);
+			enemyMgr.SetSpawns(spawns);
+			enemyMgr.SpawnAll();
+
+			gPendingLevelPath.clear();
+			UI::Init(&player);
+			Background::Init();
+			return;
+		}
+		gPendingLevelPath.clear();
+	}
+
+	// fallback: hardcoded setup
 	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
 	spawns.push_back({ Enemy::Preset::Druid, {30.f, 2.0f} });
@@ -84,57 +132,10 @@ void GameScene::Init()
 	enemyMgr.SpawnAll();
 	UI::Init(&player);
 	Background::Init();
-	// Init pause overlay resources 
-	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
-
-	// Load buff icon textures for pause overlay (same assets as BuffCardScreen)
-	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
-
-	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
-	// If your enum order differs, adjust the mapping here.
-	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
-	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
-	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
-	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
-	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
-	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
-
-	// Fonts for pause overlay
-	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
-	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
-	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
-
-	// Glow / emission textures (same as BuffCardScreen)
-	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
-	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
-	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
-	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
-	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
-
-	// Pixellari for description (match BuffCardScreen)
-	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
 }
 
 void GameScene::Update()
 {
-	// Toggle pause with ESC (GameScene only)
-	if (AEInputCheckTriggered(AEVK_ESCAPE))
-	{
-		// If we are inside sub-pages, ESC returns to menu instead of unpausing
-		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit)
-			pausePage = PausePage::Menu;
-		else
-			TogglePause();
-	}
-
-	// When paused, skip gameplay update and only handle pause input
-	if (IsPaused())
-	{
-		UpdatePauseInput();
-		return;
-	}
 	player.Update();
 	camera.Update();
 
@@ -168,7 +169,7 @@ void GameScene::Update()
 			std::cout << "[Boss] HIT player (melee)\n";
 		}
 	}
-	
+
 	// Boss special spell damage
 	const int spellHits = enemyBoss.ConsumeSpecialHits(player.GetPosition(),
 	player.GetStats().playerSize);
@@ -209,7 +210,7 @@ void GameScene::Update()
 	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
 	//testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 5000000.f : 0.f);
 	if (AEInputCheckTriggered(AEVK_G))
-		testParticleSystem.SpawnParticleBurst( 300);
+		testParticleSystem.SpawnParticleBurst(300);
 	testParticleSystem.Update();
 
 	// For checking current buffs vector
@@ -246,12 +247,6 @@ void GameScene::Render()
 	enemyBoss.Render();
 	enemyMgr.RenderAll();
 	UI::Render();
-	// Draw pause overlay on top of game render
-	if (IsPaused())
-	{
-		RenderPauseOverlay();
-	}
-
 
 	// === Code below is for DEBUG ONLY ===
 
@@ -272,7 +267,7 @@ void GameScene::Render()
 	//	+ " Lava=" + std::to_string(onLava);
 	//QuickGraphics::PrintText(ov.c_str(), -1, 0.60f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	
+
 
 
 	AEVec2 worldMousePos;

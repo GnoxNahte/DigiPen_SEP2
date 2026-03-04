@@ -102,7 +102,8 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     float mx = (float)mxTL;
     float my = UIY(windowH, myTL);
 
-
+    if (mx >= 0.0f && mx <= ui.panelW)
+        io.mouseCaptured = true;
 
     const float x = ui.pad;
     const float w = ui.panelW - ui.pad * 2.f;
@@ -164,6 +165,10 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
 
     if (Button("enemy", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Enemy))
         ui.brush = EditorTile::Enemy;
+    y -= (h + ui.gap);
+
+    if (Button("spawn", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Spawn))
+        ui.brush = EditorTile::Spawn;
     y -= (h + ui.gap);
 
     if (ui.brush == EditorTile::Enemy)
