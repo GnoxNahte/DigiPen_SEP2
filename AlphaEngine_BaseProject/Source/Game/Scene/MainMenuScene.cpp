@@ -135,13 +135,13 @@ void MainMenuScene::Update()
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
 
-    
     camera.Update();
 
-    // transition to game when walking past right edge
-    if (player.GetPosition().x > (float)mapCols)
+    // transition to game when player reaches (3, 48)
+    if (player.GetPosition().x >= 3.f && player.GetPosition().x <= 4.f &&
+        player.GetPosition().y >= 48.f)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\menu.lvl";
+        gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
 }
@@ -165,7 +165,6 @@ void MainMenuScene::Render()
     player.Render();
     enemyMgr.RenderAll();
 
-    // always-visible menu text overlay
     if (uiFont >= 0)
     {
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -174,14 +173,39 @@ void MainMenuScene::Render()
         AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
         AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
 
-        // title
-        AEGfxPrint((s8)uiFont, "GAME TITLE", -0.93f, 0.90f, 2.2f, 1.0f, 1.0f, 1.0f, 1.0f);
+        auto WorldToNDC = [](float wx, float wy, float& ndcX, float& ndcY)
+            {
+                float screenX = (wx - Camera::position.x) * Camera::scale + AEGfxGetWindowWidth() * 0.5f;
+                float screenY = (wy - Camera::position.y) * Camera::scale + AEGfxGetWindowHeight() * 0.5f;
+                ndcX = (screenX / AEGfxGetWindowWidth()) * 2.f - 1.f;
+                ndcY = (screenY / AEGfxGetWindowHeight()) * 2.f - 1.f;
+            };
 
-        // controls block
-        AEGfxPrint((s8)uiFont, "CONTROLS", -0.93f, 0.74f, 1.0f, 1.0f, 0.82f, 0.35f, 1.0f);
-        AEGfxPrint((s8)uiFont, "A / D  - Move", -0.93f, 0.64f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-        AEGfxPrint((s8)uiFont, "SPACE - Jump", -0.93f, 0.56f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-        AEGfxPrint((s8)uiFont, "Run right to begin", -0.93f, 0.46f, 1.0f, 1.0f, 0.95f, 0.85f, 0.25f);
+        float nx, ny;
+
+        WorldToNDC(7.f, 12.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(7.f, 11.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "CONTROLS", nx, ny, 1.0f, 1.0f, 0.82f, 0.35f, 1.0f);
+
+        WorldToNDC(7.f, 10.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "A / D  - Move", nx, ny, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(7.f, 9.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "SPACE - Jump", nx, ny, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(30.f, 26.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "Press Z to dash", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(21.f, 10.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "Pressure plates activates the spikes", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(35.f, 8.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "Press Z to attack", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        WorldToNDC(9.f, 30.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "Good Job!", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 }
 

@@ -26,7 +26,7 @@
 ========================================================*/
 
 static constexpr int   GRID_ROWS = 50;
-static constexpr int   GRID_COLS = 100;
+static constexpr int   GRID_COLS = 50;
 static constexpr float CAMERA_SCALE = 64.0f;
 static constexpr float CAMERA_SPEED = 10.0f;
 static constexpr float ZOOM_SPEED = 0.05f;
@@ -50,6 +50,9 @@ static AEVec2                      gSpawn{ 5.0f, 5.0f };
 
 static float gSaveMessageTimer = 0.f;
 static bool  gSaveSuccess = false;
+static bool gHoverCellValid = false;
+static int  gHoverCellX = -1;
+static int  gHoverCellY = -1;
 
 /*========================================================
     save prompt state
@@ -259,7 +262,40 @@ static void DrawScreenText(const char* text, float px, float py,
     AEGfxSetTransparency(1.f);
     AEGfxPrint(gUIFont, text, ndcX, ndcY, 1.0f, r, g, b, 1.f);
 }
+static void DrawGridOverlay()
+{
+    if (!gMap) return;
 
+    const float thickness = 0.03f;
+
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetColorToAdd(0, 0, 0, 0);
+
+    // Vertical grid lines: x spans columns, height spans rows
+    for (int x = 0; x <= GRID_COLS; ++x)
+    {
+        DrawWorldRect(
+            (float)x - thickness * 0.5f,
+            0.0f,
+            thickness,
+            (float)GRID_ROWS,
+            1.0f, 1.0f, 1.0f, 0.18f
+        );
+    }
+
+    // Horizontal grid lines: y spans rows, width spans columns
+    for (int y = 0; y <= GRID_ROWS; ++y)
+    {
+        DrawWorldRect(
+            0.0f,
+            (float)y - thickness * 0.5f,
+            (float)GRID_COLS,
+            thickness,
+            1.0f, 1.0f, 1.0f, 0.18f
+        );
+    }
+}
 /*========================================================
     save / load prompt
 ========================================================*/
@@ -362,8 +398,8 @@ static void Prompt_Draw()
     DrawScreenRect(cx, cy, bw, bh, 0.15f, 0.15f, 0.18f, 0.97f);
 
     // border
-    DrawScreenRect(cx, cy, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
-    DrawScreenRect(cx, cy + bh * 0.5f - 1.f, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
+   // DrawScreenRect(cx, cy, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
+   // DrawScreenRect(cx, cy + bh * 0.5f - 1.f, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
 
     const char* title = gPromptIsSave ? "Save level as:" : "Load level:";
     DrawScreenText(title, cx - bw * 0.5f + 18.f, cy + 44.f, 0.9f, 0.9f, 1.f);
@@ -463,7 +499,7 @@ static void PlayMode_Enter()
         }
     }
 
-    // Temporary linking rule: every pressure plate controls every spike plate
+    //every pressure plate controls every spike plate
     for (PressurePlate* plate : spawnedPlates)
         for (Trap* target : spawnedLinkTargets)
             plate->AddLinkedTrap(target);
@@ -567,10 +603,18 @@ static void UpdateEditor(float dt)
     AEInputGetCursorPosition(&mx, &my);
     AEVec2 world{};
     AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, (f32)my }, world);
+  
+    
 
     int tx = (int)std::floor(world.x);
     int ty = (int)std::floor(world.y);
+    gHoverCellValid = InBounds(tx, ty);
+    gHoverCellX = tx;
+    gHoverCellY = ty;
+
     if (!InBounds(tx, ty)) return;
+
+
 
     bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON)
         : AEInputCheckTriggered(AEVK_LBUTTON);
@@ -613,6 +657,9 @@ static void UpdateEditor(float dt)
         PlaceEnemyAtCell(tx, ty, preset);
         break;
     }
+    case EditorTile::Spawn:
+        gSpawn = AEVec2{ (float)tx + 0.5f, (float)ty + 0.5f };
+        break;
     }
 }
 
@@ -743,6 +790,9 @@ void GameState_LevelEditor_Draw()
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
         gMap->Render();
 
+        if (gUI.showGrid)
+            DrawGridOverlay();
+
         AEGfxSetRenderMode(AE_GFX_RM_COLOR);
         AEGfxSetColorToAdd(0, 0, 0, 0);
         for (const auto& t : gTrapDefs)
@@ -780,8 +830,19 @@ void GameState_LevelEditor_Draw()
         (int)AEGfxGetWindowWidth(),
         (int)AEGfxGetWindowHeight(),
         mx, my,
-        AEInputCheckCurr(AEVK_LBUTTON)
+        AEInputCheckTriggered(AEVK_LBUTTON)
     );
+    if (gUIFont >= 0 && gHoverCellValid)
+    {
+        char buf[64];
+        sprintf_s(buf, "cell: (%d, %d)", gHoverCellX, gHoverCellY);
+
+        DrawScreenText(
+            buf,
+            260.0f, 16.0f,
+            1.0f, 1.0f, 1.0f
+        );
+    }
 
     // ── save prompt overlay (on top of everything) ────────────────────────
     Prompt_Draw();
