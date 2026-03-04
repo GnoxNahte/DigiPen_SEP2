@@ -25,8 +25,6 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
 {
     Reset(AEVec2{ 2, 4 });
 
-    health = stats.maxHealth;
-
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
@@ -112,11 +110,21 @@ void Player::Reset(const AEVec2& initialPos)
     isLeftWallCollided = false;
     isRightWallCollided = false;
 
-	lastAttackHeld = std::numeric_limits<f64>::lowest();  // smallest possible value to allow attacking immediately, instead of waiting for cooldown. Also avoids Player::Reset() -> Update() -> IsAttacking() -> lastAttackHeld uninitialized access
-	dashStartTime = std::numeric_limits<f64>::lowest();  // avoid Player::Reset(const AEVec2& initialPos)
-    attackedEnemies.clear();
+	lastAttackHeld = std::numeric_limits<f64>::lowest(); 
+	dashStartTime = std::numeric_limits<f64>::lowest();
 
+    health = stats.maxHealth;
+    hasAppliedRecoil = false;
+
+    buff_MoveSpeedMulti = 1.f;
+    buff_DmgReduction = 0.f;
+    buff_critChance = 1.f;
+    buff_critDmgMulti = 1.f;
+    buff_DmgMultiLowHP = 1.f;
+
+    attackedEnemies.clear();
     sprite.SetState(AnimState::IDLE_W_SWORD);
+    particleSystem.ReleaseAll();
 }
 
 void Player::TakeDamage(int dmg, const AEVec2& hitOrigin)
@@ -535,11 +543,11 @@ void Player::UpdateAnimation()
     // If player is trying to attack (including input buffer)
     else if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
     {
-        Attack(AIR_ATTACK_1);
-        //if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
-        //    Attack(AIR_ATTACK_1);
-        //else
-        //    Attack(ATTACK_1);
+        //Attack(AIR_ATTACK_1);
+        if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
+            Attack(AIR_ATTACK_1);
+        else
+            Attack(ATTACK_1);
     }
     else
     {
@@ -612,6 +620,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     if (health < dmg)
     {
         health = 0;
+        EventSystem::Trigger<PlayerDeathEvent>({ *this });
         return false;
     }
 
@@ -622,17 +631,11 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
     AEVec2Normalize(&hitDirection, &hitDirection);
 
-    //hitDirection.y = (hitDirection.y >= 0 && hitDirection.y < 0.5f) ? 0.5f : hitDirection.y;
     hitDirection.y = max(hitDirection.y, 0.4f);
     AEVec2Scale(&hitDirection, &hitDirection, 30);
-    std::cout << hitDirection.y << "\n";
     velocity = hitDirection;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
-#if _DEBUG
-    std::cout << "[Player] Damage: " << dmg
-        << " HP=" << health << "/" << stats.maxHealth << "\n";
-#endif
 
     sprite.SetState(AnimState::HURT);
 

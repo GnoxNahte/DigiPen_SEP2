@@ -42,7 +42,8 @@ void ParticleSystem::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	// todo - make custom iterator inside object pool instead?
-	for (int i = static_cast<int>(pool.GetSize()) - 1; i >= 0; --i)
+	// iterate from back. Use this weird syntax because size_t is unsigned
+	for (size_t i = pool.GetSize(); (i--) > 0;)
 	{
 		Particle& p = pool.pool[i];
 		p.Update(dt);
@@ -63,8 +64,11 @@ void ParticleSystem::Render()
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
 
-void ParticleSystem::Free()
+void ParticleSystem::ReleaseAll()
 {
+	// iterate from back. Use this weird syntax because size_t is unsigned
+	for (size_t i = pool.GetSize(); (i--) > 0;)
+		pool.Release(pool.pool[i]);
 }
 
 Particle& ParticleSystem::SpawnParticle()
