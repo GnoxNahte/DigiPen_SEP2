@@ -6,6 +6,9 @@
 #include "../../Game/Background.h"
 #include "../BuffCards.h"
 #include "LevelIO.h"
+#include "../../Game/Timer.h"
+#include <iomanip>
+#include <sstream>
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 
