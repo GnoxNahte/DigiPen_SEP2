@@ -6,6 +6,7 @@
 #include "Player/Player.h"
 #include "../Utils/MeshGenerator.h"
 #include "../Game/Time.h"
+#include "../Game/Timer.h"
 
 /*--------------------------------------------
 			 General UI Functions
@@ -14,9 +15,12 @@ void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
 	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	//cooldownTimerMesh = MeshGenerator::GetCircleMesh(3);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
 	UI::player = _player;
+	cooldownMesh = nullptr;
+	lastCooldownPercent = -1.0f;
 }
 void UI::Update() {
 	BuffCardManager::Update();
@@ -24,6 +28,7 @@ void UI::Update() {
 }
 void UI::Render() {
 	DrawHealthVignette();
+	DrawPlayerCooldownMeter();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 }
@@ -34,6 +39,10 @@ void UI::Exit() {
 	}
 	if (healthVignette) {
 		AEGfxTextureUnload(healthVignette);
+	}
+	if (cooldownMesh) {
+		AEGfxMeshFree(cooldownMesh);
+		cooldownMesh = nullptr;
 	}
 	BuffCardScreen::Exit();
 	UI::player = nullptr;
@@ -112,6 +121,56 @@ void UI::DrawHealthVignette() {
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
+void UI::DrawPlayerCooldownMeter() {
+	static f32 lastPercent = -1.0f;
+	f32 currCooldown = player->GetStats().dashCooldown;
+	auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
+	static bool timerBegun = false;
+	if (!timerBegun && AEInputCheckTriggered(AEVK_Z) && !timer){
+		TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", currCooldown);
+		timerBegun = true;
+	}
+	if (!timer) return; // No cooldown active
+
+	f32 percent = AEClamp(1.0f - static_cast<f32>(timer->percentage), 0.0f, 1.0f);
+
+	// Only rebuild mesh if percent changed significantly (avoid every frame rebuild)
+	if (!cooldownMesh || fabs(percent - lastCooldownPercent) > 0.001f) {
+		if (cooldownMesh) AEGfxMeshFree(cooldownMesh); // Free old mesh
+		timerBegun = false;
+
+		cooldownMesh = MeshGenerator::GetCooldownMesh(
+			20.0f,       // radius
+			0xFFFFFFFF,  // white
+			60,          // smoothness
+			percent      // fill amount
+		);
+		lastCooldownPercent = percent;
+	}
+
+	// Calculate screen position
+	f32 screenX = player->GetPosition().x * Camera::scale + Camera::position.x;
+	f32 screenY = player->GetPosition().y * Camera::scale + Camera::position.y;
+
+	// Optional offset above player
+	f32 yOffset = 1.f, xOffset = -0.1f;
+	screenY += yOffset * Camera::scale;
+	screenX += xOffset * Camera::scale;
+
+	// Apply transform
+	AEMtx33 transform;
+	AEMtx33Identity(&transform);
+	AEMtx33Trans(&transform, screenX, screenY);
+
+	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransform(transform.m);
+
+	// Draw the persistent mesh
+	if (cooldownMesh)
+		AEGfxMeshDraw(cooldownMesh, AE_GFX_MDM_TRIANGLES);
+}
+
 /*--------------------------------------
 		  Damage Text Functions
 ---------------------------------------*/

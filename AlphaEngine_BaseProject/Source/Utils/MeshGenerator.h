@@ -52,4 +52,6 @@ namespace MeshGenerator
 	 * @return				Mesh pointer
 	 */
 	AEGfxVertexList* GetCircleMesh(float radius, u32 color = 0xFFFFFFFF, int vertexCount = 32);
+
+	AEGfxVertexList* GetCooldownMesh(float radius, u32 color, int totalSegments, float percent);
 };

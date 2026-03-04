@@ -72,3 +72,41 @@ AEGfxVertexList* MeshGenerator::GetCircleMesh(float radius, u32 color, int verte
 
 	return AEGfxMeshEnd();
 }
+AEGfxVertexList* MeshGenerator::GetCooldownMesh(
+	float radius,
+	u32 color,
+	int totalSegments,
+	float percent)
+{
+	percent = AEClamp(percent, 0.0f, 1.0f);
+
+	float maxAngle = percent * 2.0f * PI;
+	float angleStep = (2.0f * PI) / totalSegments;
+
+	AEGfxMeshStart();
+
+	float prevX = 0.f;
+	float prevY = 1.f;
+
+	for (int i = 0; i < totalSegments; ++i)
+	{
+		float currAngle = (i + 1) * angleStep;
+
+		if (currAngle > maxAngle)
+			break;
+
+		float nextX = sinf(currAngle);
+		float nextY = cosf(currAngle);
+
+		AEGfxTriAdd(
+			0.f, 0.f, color, 0.5f, 0.5f,
+			prevX * radius, prevY * radius, color, 0, 0,
+			nextX * radius, nextY * radius, color, 0, 0
+		);
+
+		prevX = nextX;
+		prevY = nextY;
+	}
+
+	return AEGfxMeshEnd();
+}
