@@ -52,6 +52,7 @@ public:
 	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
 	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE; }
 	static void DrawHealthVignette();
+	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
 
 private:
@@ -62,9 +63,8 @@ private:
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;
 	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
-	// Cooldown mesh
-	inline static AEGfxVertexList* cooldownMesh = nullptr;
-	inline static f32 lastCooldownPercent;
+	// Cooldown meshes
+	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
 	// Black overlay attributes.
 	inline static f32 overlayAlpha = 0.75f;
 	inline static f32 fadeSpeed = 3.5f;

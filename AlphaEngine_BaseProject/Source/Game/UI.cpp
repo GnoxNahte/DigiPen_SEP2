@@ -19,16 +19,15 @@ void UI::Init(Player* _player) {
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
 	UI::player = _player;
-	cooldownMesh = nullptr;
-	lastCooldownPercent = -1.0f;
+	InitCooldownMeshes();
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
 }
 void UI::Render() {
-	DrawHealthVignette();
 	DrawPlayerCooldownMeter();
+	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 }
@@ -40,9 +39,9 @@ void UI::Exit() {
 	if (healthVignette) {
 		AEGfxTextureUnload(healthVignette);
 	}
-	if (cooldownMesh) {
-		AEGfxMeshFree(cooldownMesh);
-		cooldownMesh = nullptr;
+	for (AEGfxVertexList*& mesh : cooldownMeshes) {
+		AEGfxMeshFree(mesh);
+		mesh = nullptr;
 	}
 	BuffCardScreen::Exit();
 	UI::player = nullptr;
@@ -115,60 +114,62 @@ void UI::DrawHealthVignette() {
 	// --- Apply ---
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(finalAlpha);
-
-	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
-void UI::DrawPlayerCooldownMeter() {
-	static f32 lastPercent = -1.0f;
-	f32 currCooldown = player->GetStats().dashCooldown;
-	auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
-	static bool timerBegun = false;
-	if (!timerBegun && AEInputCheckTriggered(AEVK_Z) && !timer){
-		TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", currCooldown);
-		timerBegun = true;
-	}
-	if (!timer) return; // No cooldown active
+void UI::InitCooldownMeshes() {
+	const int numViews = 20; // 20 discrete steps
+	cooldownMeshes.resize(numViews + 1); // 0% -> 100%
 
-	f32 percent = AEClamp(1.0f - static_cast<f32>(timer->percentage), 0.0f, 1.0f);
-
-	// Only rebuild mesh if percent changed significantly (avoid every frame rebuild)
-	if (!cooldownMesh || fabs(percent - lastCooldownPercent) > 0.001f) {
-		if (cooldownMesh) AEGfxMeshFree(cooldownMesh); // Free old mesh
-		timerBegun = false;
-
-		cooldownMesh = MeshGenerator::GetCooldownMesh(
+	for (int i = 0; i <= numViews; ++i)
+	{
+		float percent = i / static_cast<float>(numViews); // 0.0 -> 1.0
+		cooldownMeshes[i] = MeshGenerator::GetCooldownMesh(
 			20.0f,       // radius
 			0xFFFFFFFF,  // white
 			60,          // smoothness
 			percent      // fill amount
 		);
-		lastCooldownPercent = percent;
 	}
+}
+void UI::DrawPlayerCooldownMeter() {
+	{
+		if (AEInputCheckCurr(AEVK_Z)) {
+			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", player->GetStats().dashCooldown);
+		}
+		auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
+		if (!timer) return;
 
-	// Calculate screen position
-	f32 screenX = player->GetPosition().x * Camera::scale + Camera::position.x;
-	f32 screenY = player->GetPosition().y * Camera::scale + Camera::position.y;
+		float percent = AEClamp(1.0f - static_cast<float>(timer->percentage), 0.0f, 1.0f);
 
-	// Optional offset above player
-	f32 yOffset = 1.f, xOffset = -0.1f;
-	screenY += yOffset * Camera::scale;
-	screenX += xOffset * Camera::scale;
+		// Pick the closest precomputed mesh
+		int numViews = static_cast<int>(cooldownMeshes.size()) - 1;
+		int meshIndex = static_cast<int>(percent * numViews + 0.5f); // round to nearest
+		meshIndex = std::clamp(meshIndex, 0, numViews);
 
-	// Apply transform
-	AEMtx33 transform;
-	AEMtx33Identity(&transform);
-	AEMtx33Trans(&transform, screenX, screenY);
+		AEGfxVertexList* meshToDraw = cooldownMeshes[meshIndex];
+		if (!meshToDraw) return;
 
-	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransform(transform.m);
+		// Calculate screen position
+		float Xoffset = -0.1f * Camera::scale, Yoffset = 1.f * Camera::scale;
+		float screenX = player->GetPosition().x * Camera::scale + Camera::position.x + Xoffset;
+		float screenY = player->GetPosition().y * Camera::scale + Camera::position.y + Yoffset;
 
-	// Draw the persistent mesh
-	if (cooldownMesh)
-		AEGfxMeshDraw(cooldownMesh, AE_GFX_MDM_TRIANGLES);
+		// Apply transform
+		AEMtx33 transform;
+		AEMtx33Identity(&transform);
+		AEMtx33Trans(&transform, screenX, screenY);
+
+		AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+		AEGfxSetTransform(transform.m);
+
+		// Draw the precomputed mesh
+		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	}
 }
 
 /*--------------------------------------
