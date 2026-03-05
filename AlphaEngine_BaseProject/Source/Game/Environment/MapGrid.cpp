@@ -9,8 +9,11 @@ MapGrid::MapGrid(int rows, int cols)
 	:	size(rows, cols), 
 		tiles(rows* cols)
 {
-	mesh = MeshGenerator::GetSquareMesh(1.f, 1.f / MapTile::typeCount, 1.f);
-	tilemapTexture = AEGfxTextureLoad("Assets/Tmp/tmp-tilemap.png");
+	static constexpr float TILE_U_SIZE = 32.0f / 320.0f;  // 0.125
+	static constexpr float TILE_V_SIZE = 16.0f / 544.0f;  // 0.0735294
+
+	mesh = MeshGenerator::GetSquareMesh(1.f, TILE_U_SIZE, TILE_V_SIZE);
+	tilemapTexture = AEGfxTextureLoad("Assets/Terrain_and_Props.png");
 
 	tileCount = size.x * size.y;
 	 
@@ -104,7 +107,14 @@ void MapGrid::Render()
 			AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 			AEGfxSetTransform(transform.m);
 
-			AEGfxTextureSet(tilemapTexture, (int)tile->type * (1.f / MapTile::typeCount), 1.f);
+			if (tile->type == MapTile::Type::NONE)
+				continue;
+
+			// your selected crop in Terrain_and_Props.png
+			static constexpr float TILE_U0 = 231.0f / 320.0f;             // 0.721875
+			static constexpr float TILE_VTOP = (20.0f / 544.0f);     // 0.9632353
+
+			AEGfxTextureSet(tilemapTexture, TILE_U0, TILE_VTOP);
 			AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
 		}
 	}
