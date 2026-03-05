@@ -11,7 +11,7 @@
 #include <sstream>
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
-
+std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
 
 //AABB collision helper
 /*static bool AABB_Overlap(const AEVec2& aPos, const AEVec2& aSize,
@@ -83,6 +83,7 @@ void GameScene::Init()
 		LevelData lvl;
 		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
 		{
+			gLastLoadedLevelPath = gPendingLevelPath; // remember last loaded level for restart
 			// apply tiles to existing map member
 			for (int y = 0; y < lvl.rows && y < 50; ++y)
 				for (int x = 0; x < lvl.cols && x < 50; ++x)
@@ -372,6 +373,14 @@ void GameScene::Exit()
 		AEGfxDestroyFont(pauseFontSmall);
 		pauseFontSmall = -1;
 	}
+	if (pauseFontRuntime) {
+		AEGfxDestroyFont(pauseFontRuntime);
+	}
+	if (pauseRectMesh)
+	{
+		AEGfxMeshFree(pauseRectMesh);
+		pauseRectMesh = nullptr;
+	}
 
 	pausePage = PausePage::None;
 	Time::GetInstance().SetPaused(false);
@@ -574,6 +583,11 @@ void GameScene::UpdatePauseInput()
 			TimerSystem::GetInstance().Clear();
 			if (!BuffCardManager::GetCurrentBuffs().empty()) {
 				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+			}
+			// Reload the last successfully loaded level (if any)
+			if (!gLastLoadedLevelPath.empty())
+			{
+				gPendingLevelPath = gLastLoadedLevelPath;
 			}
 			// TODO : Reset all buff effects
 			GSM::ChangeScene(SceneState::GS_GAME);
