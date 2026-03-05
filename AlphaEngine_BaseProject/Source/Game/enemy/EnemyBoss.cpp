@@ -197,7 +197,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     particleSystem.Init();
     particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
 
-    // Optional: default “dust/blood-ish” lifetime for bursts
+    // Optional: default "dust/blood-ish" lifetime for bursts
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 }
