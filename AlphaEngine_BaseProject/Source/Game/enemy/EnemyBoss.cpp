@@ -84,6 +84,8 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
     return (float)s.frameCount * (float)s.timePerFrame;
 }
 
+
+
 // NEW (tiny helper): time-per-frame for a state (used to start spawning on last frame)
 static float GetAnimTimePerFrame(const Sprite& sprite, int stateIndex)
 {
@@ -102,6 +104,8 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
     return dx <= (aSize.x + bSize.x) * 0.5f
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
+
+
 
 // EnemyBoss.cpp
 void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
@@ -197,13 +201,75 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     particleSystem.Init();
     particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
 
-    // Optional: default “dust/blood-ish” lifetime for bursts
+    // Optional: default "dust/blood-ish" lifetime for bursts
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
+
+    
 }
 
 EnemyBoss::~EnemyBoss()
 {
+}
+
+// Spawns "charge" particles around the boss that drift inward.
+// Call every frame during SPELLCAST wind-up.
+void EnemyBoss::SpawnSpellChargeVfx(float dt)
+{
+    // control density consistently across FPS
+    static float acc = 0.f;
+    const float spawnPerSec = 70.f;     // tune: 40..120
+    acc += dt * spawnPerSec;
+
+    int n = (int)acc;
+    if (n <= 0) return;
+    acc -= (float)n;
+
+    // Use a COPY so you don't mess up your normal trail emitter
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+    // Tune for "slow drift"
+    e.speedRange = { 1.2f, 2.6f };
+    e.lifetimeRange = { 0.35f, 0.75f };
+    e.tint = { 0.63f, 0.13f, 0.94f, 1.0f };
+	e.behavior = ParticleBehavior::Inward;
+
+    // Boss "visual center" (you already discovered you need +0.5f on X)
+    const float cx = position.x + 0.5f;
+    const float cy = position.y + 0.35f;
+
+    // How far from the boss the particles start
+    const float r = 0.5f;     // radius around boss (tune)
+    const float band = 1.f; // thickness of the spawn band
+
+    // split n into 4 directions
+    int perSide = (n / 4);
+    if (perSide < 1) perSide = 1;
+
+    // LEFT side -> move RIGHT (angle ~ 0 deg)
+    e.spawnPosRangeX = { cx - r - band, cx - r + band };
+    e.spawnPosRangeY = { cy - r,        cy + r };
+    e.angleRange = { AEDegToRad(-15.f), AEDegToRad(15.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // RIGHT side -> move LEFT (angle ~ 180 deg)
+    e.spawnPosRangeX = { cx + r - band, cx + r + band };
+    e.spawnPosRangeY = { cy - r,        cy + r };
+    e.angleRange = { AEDegToRad(165.f), AEDegToRad(195.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // TOP side -> move DOWN (angle ~ 270 deg)
+    e.spawnPosRangeX = { cx - r,        cx + r };
+    e.spawnPosRangeY = { cy + r - band, cy + r + band };
+    e.angleRange = { AEDegToRad(255.f), AEDegToRad(285.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // BOTTOM side -> move UP (angle ~ 90 deg)
+    e.spawnPosRangeX = { cx - r,        cx + r };
+    e.spawnPosRangeY = { cy - r - band, cy - r + band };
+    e.angleRange = { AEDegToRad(75.f), AEDegToRad(105.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
 }
 
 
@@ -215,32 +281,44 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 
     auto UpdateBossParticles = [&]()
         {
-            // Trail only when moving; still updates existing particles either way
-            const float speed = std::fabs(velocity.x);
+            // Visual center (keep your known +0.5f X offset)
+            const float cx = position.x + 0.5f;
+            const float cy = position.y + 0.45f;   // roughly chest height, tune
 
-            // If your system treats 0 as "no spawn", this is fine
-            particleSystem.SetSpawnRate(speed > 0.1f ? 30.f : 0.f);
+            // --- AURA EMITTER (spawns around boss, not behind velocity) ---
+            particleSystem.emitter.behavior = ParticleBehavior::normal;
+      
+            // Center slightly ABOVE boss so it "spirals upward"
+            particleSystem.emitter.behaviorParams.center = { cx, cy + 0.8f };
 
-            const float trailLen = 0.5f;     // how far behind to spawn
-            const float x = position.x + 0.5f;
+            // Start values
+            particleSystem.emitter.behaviorParams.swirl = 20.f;  
+            particleSystem.emitter.behaviorParams.pull = 15.f;   
 
-            // decide facing: if moving use velocity, else use facingDirection
-            const bool faceRight =
-                (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+            // Spawn volume around the boss body
+            AEVec2Set(&particleSystem.emitter.spawnPosRangeX, cx - 0.65f, cx + 0.65f);
+            AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.05f, position.y + 1.25f);
 
-            if (faceRight)
-            {
-                // moving right 
-                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x - trailLen);
-            }
-            else
-            {
-                // moving left 
-                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x + trailLen);
-            }
-            AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.2f, position.y + 0.8f);
+            // Give a gentle UP drift (so it looks like energy rising)
+            particleSystem.emitter.angleRange.x = AEDegToRad(70.f);
+            particleSystem.emitter.angleRange.y = AEDegToRad(110.f);
 
-            particleSystem.Update();
+            // Keep initial speed low so behavior is visible
+            particleSystem.emitter.speedRange.x = 0.5f;
+            particleSystem.emitter.speedRange.y = 0.8f;
+
+            particleSystem.emitter.lifetimeRange.x = 0.7f;
+            particleSystem.emitter.lifetimeRange.y = 1.3f;
+
+            // Intimidating color (purple aura).
+            particleSystem.emitter.tint = { 0.65f, 0.15f, 0.95f, 0.75f };
+            //particleSystem.emitter.tint = { 0.18f, 0.09f, 0.20f, 0.8f };
+
+            // Spawn even when idle; optionally increase when moving
+            const float speed = AEVec2Length(&velocity);
+            particleSystem.SetSpawnRate(20.f + speed * 12.f); // tune: 100..220 base
+
+            particleSystem.Update(); // keep if you want UpdateBossParticles to own the update
         };
 
 
@@ -317,9 +395,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     
         sprite.Update();
         specialAttackVfx.Update();
-
+       
+       
         if (specialBurstActive)
         {
+            SpawnSpellChargeVfx(dt);
 			sprite.SetState(SPELLCAST);
         }
 
@@ -458,11 +538,20 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     {
         if (specialBurstActive)
         {
+            SpawnSpellChargeVfx(dt);
             // Face player during special
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
+            // >>> ADD THIS BLOCK HERE <<<
+            /*if (specialSpawnsRemaining == kSpecialSpawnCount && specialSpawnTimer > 0.f)
+            {
+                SpawnSpellChargeVfx(dt);
+            }*/
+
+
             // Timer handles: initial cast delay + spawn gaps
+       
             specialSpawnTimer -= dt;
 
             while (specialSpawnTimer <= 0.0f && specialSpawnsRemaining > 0)
@@ -502,7 +591,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
                 SpecialElapsed = 0.0f;
                 g_spellcastUntil5thSpawn = true;
 
-
+                static constexpr float kChargeUpExtra = 1.0f;
                 // Start SPELLCAST now
                 sprite.SetState(SPELLCAST);
 
@@ -510,7 +599,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
                 // Start spawning on the *last frame start* of SPELLCAST so there's no visible "dead gap"
                 const float castDur = GetAnimDurationSec(sprite, SPELLCAST);
                 const float tpf = GetAnimTimePerFrame(sprite, SPELLCAST);
-                specialSpawnTimer = (castDur > 0.f) ? max(0.0f, castDur - tpf) : 0.0f;
+                specialSpawnTimer = ((castDur > 0.f) ? max(0.0f, castDur - tpf) : 0.0f) + kChargeUpExtra;
             }
         }
     }
@@ -579,6 +668,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
         {
             chasing = false;
         }
+       
     }
 
     // Animation selection:
@@ -600,7 +690,10 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
         g_specialAttacks.end()
     );
 
+
     UpdateMeleeHitbox(playerPos);
+
+    if (!isDead) UpdateBossParticles();
 }
 
 void EnemyBoss::SpawnImpactBurst()
@@ -617,6 +710,8 @@ void EnemyBoss::SpawnImpactBurst()
 
     // use CUSTOM emitters
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
+    e.behavior = ParticleBehavior::Gravity;
+    e.tint = { 0.8f, 0.4f, 0.2f, 1.0f }; // fiery orange; tune as needed
 
 
     // Layer 1: Ground shock (left + right spray)

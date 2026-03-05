@@ -150,7 +150,7 @@ void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
 
-    // reset render state — UI::DrawHealthVignette leaves transparency=0 at full health
+    // reset render state: UI::DrawHealthVignette leaves transparency=0 at full health
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);

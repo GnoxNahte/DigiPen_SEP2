@@ -1,11 +1,12 @@
 #include "UI.h"
 #include "../Utils/ObjectPool.h"
 #include <string>
-#include "BuffCards.h"
+#include "../Game/BuffCards.h"
 #include "../Utils/AEExtras.h"
 #include "Player/Player.h"
 #include "../Utils/MeshGenerator.h"
 #include "../Game/Time.h"
+#include "../Game/Timer.h"
 
 /*--------------------------------------------
 			 General UI Functions
@@ -17,12 +18,14 @@ void UI::Init(Player* _player) {
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
 	UI::player = _player;
+	InitCooldownMeshes();
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
 }
 void UI::Render() {
+	DrawPlayerCooldownMeter();
 	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
@@ -34,6 +37,10 @@ void UI::Exit() {
 	}
 	if (healthVignette) {
 		AEGfxTextureUnload(healthVignette);
+	}
+	for (AEGfxVertexList*& mesh : cooldownMeshes) {
+		AEGfxMeshFree(mesh);
+		mesh = nullptr;
 	}
 	BuffCardScreen::Exit();
 	UI::player = nullptr;
@@ -106,12 +113,64 @@ void UI::DrawHealthVignette() {
 	// --- Apply ---
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(finalAlpha);
-
-	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
+void UI::InitCooldownMeshes() {
+	const int numViews = 20; // 20 discrete steps
+	cooldownMeshes.resize(numViews + 1); // 0% -> 100%
+
+	for (int i = 0; i <= numViews; ++i)
+	{
+		float percent = i / static_cast<float>(numViews); // 0.0 -> 1.0
+		cooldownMeshes[i] = MeshGenerator::GetCooldownMesh(
+			20.0f,       // radius
+			0xFFFFFFFF,  // white
+			60,          // smoothness
+			percent      // fill amount
+		);
+	}
+}
+void UI::DrawPlayerCooldownMeter() {
+	{
+		if (AEInputCheckCurr(AEVK_Z)) {
+			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", player->GetStats().dashCooldown);
+		}
+		auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
+		if (!timer) return;
+
+		float percent = AEClamp(1.0f - static_cast<float>(timer->percentage), 0.0f, 1.0f);
+
+		// Pick the closest precomputed mesh
+		int numViews = static_cast<int>(cooldownMeshes.size()) - 1;
+		int meshIndex = static_cast<int>(percent * numViews + 0.5f); // round to nearest
+		meshIndex = std::clamp(meshIndex, 0, numViews);
+
+		AEGfxVertexList* meshToDraw = cooldownMeshes[meshIndex];
+		if (!meshToDraw) return;
+
+		// Calculate screen position
+		float Xoffset = -0.1f * Camera::scale, Yoffset = 1.f * Camera::scale;
+		float screenX = player->GetPosition().x * Camera::scale + Camera::position.x + Xoffset;
+		float screenY = player->GetPosition().y * Camera::scale + Camera::position.y + Yoffset;
+
+		// Apply transform
+		AEMtx33 transform;
+		AEMtx33Identity(&transform);
+		AEMtx33Trans(&transform, screenX, screenY);
+
+		AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+		AEGfxSetTransform(transform.m);
+
+		// Draw the precomputed mesh
+		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	}
+}
+
 /*--------------------------------------
 		  Damage Text Functions
 ---------------------------------------*/

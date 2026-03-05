@@ -14,7 +14,7 @@ enum DAMAGE_TYPE {
 };
 struct DamageText : public ObjectPoolItem {
 	std::string damageType{}; // Type of damage to be printed. Crit, resist, normal etc.
-	std::string damageNumber{}; // Numerical value of damage to be printed. Crit, resist, normal etc.
+	std::string damageNumber{}; // Numerical value of damage to be printed.
 	f32 r{}, g{}, b{}; // RGB values of text.
 	AEVec2 position{}; // Position of text.
 	f32 alpha{}, scale{}, initialScale{}; // Alpha and scale values of text.
@@ -52,6 +52,8 @@ public:
 	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
 	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE; }
 	static void DrawHealthVignette();
+	static void InitCooldownMeshes();
+	static void DrawPlayerCooldownMeter();
 
 private:
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
@@ -61,11 +63,11 @@ private:
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;
 	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
+	// Cooldown meshes
+	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
 	// Black overlay attributes.
 	inline static f32 overlayAlpha = 0.75f;
 	inline static f32 fadeSpeed = 3.5f;
-
-	//static const int HEALTH_VIGNETTE_WIDTH = 1608, HEALTH_VIGNETTE_HEIGHT = 903;
 };
 // Enums for button states, to determine how the button should react to player interaction and what visuals to show.
 enum BUTTON_STATE {

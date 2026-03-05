@@ -111,6 +111,10 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+
+
+    particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
+
     //enemy life system
     hp = cfg.maxHp;
     dead = false;
@@ -138,6 +142,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             // decide facing: if moving use velocity, else use facingDirection
             const bool faceRight =
                 (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+            
 
             if (faceRight)
             {
@@ -211,15 +217,29 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     // Hysteresis so we don't spam switch at the boundary
     const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
     const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED
+
+    if (inAggroRange)
+        hadAggro = true;
+
      
-    // ENTER return-home mode if player OR enemy goes beyond leash
     if (!returningHome)
     {
-        if (playerFromHome > leashEnter || enemyFromHome > leashEnter)
+        //  Always return home if walked out of leash
+        if (enemyFromHome > leashEnter)
+            returningHome = true;
+
+        // Only consider playerFromHome when we are actually engaged
+        // (prevents "player far away" from freezing idle wandering)
+        if (inAggroRange && playerFromHome > leashEnter)
+            returningHome = true;
+
+        // If we were engaged and now lost aggro , than enemy will go home first
+        if (!inAggroRange && hadAggro)
             returningHome = true;
     }
     else
     {
+        // Cancel returning only if player is back in range and both are within leash
         if (inAggroRange && playerFromHome <= cfg.leashRange && enemyFromHome <= leashExit)
             returningHome = false;
     }
@@ -266,6 +286,10 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             position.x = homePos.x;
             velocity.x = 0.f;
             returningHome = false;
+
+            hadAggro = false;    
+            idleWalkLeft = 0.f;
+            idlePauseLeft = 0.2f;
         }
         else
         {
@@ -359,8 +383,70 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         else
         {
             chasing = false;
-            velocity.x = 0.f;
             velocity.y = 0.f;
+
+            const float minX = homePos.x - cfg.leashRange;
+            const float maxX = homePos.x + cfg.leashRange;
+
+            // Pause phase
+            if (idlePauseLeft > 0.f)
+            {
+                idlePauseLeft -= dt;
+                velocity.x = 0.f;
+            }
+            else
+            {
+                // Choose / refresh a walk segment
+                if (idleWalkLeft <= 0.f)
+                {
+                    idleWalkLeft = 1.2f;           // how long to walk before pausing (tune)
+                    idlePauseLeft = 0.25f;         // pause after walk (tune)
+                    idleDirX = -idleDirX;          // simple back-and-forth
+                }
+
+                const float dirX = (idleDirX >= 0.f) ? 1.f : -1.f;
+                facingDirection = AEVec2{ dirX, 0.f };
+
+                // slower than chase looks more natural
+                velocity.x = dirX * cfg.moveSpeed * 0.35f;
+
+                AEVec2 displacement;
+                AEVec2Scale(&displacement, &velocity, dt);
+
+                AEVec2 nextPos = position;
+                AEVec2Add(&nextPos, &position, &displacement);
+
+                // Don’t walk off ledges
+                if (!HasGroundAhead(map, dirX))
+                {
+                    nextPos.x = position.x;
+                    velocity.x = 0.f;
+                    idleDirX = -idleDirX;
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+
+                // Clamp to leash range
+                if (nextPos.x < minX)
+                {
+                    nextPos.x = minX;
+                    velocity.x = 0.f;
+                    idleDirX = 1.f;
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+                else if (nextPos.x > maxX)
+                {
+                    nextPos.x = maxX;
+                    velocity.x = 0.f;
+                    idleDirX = -1.f;
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+
+                position = nextPos;
+                idleWalkLeft -= dt;
+            }
         }
     }
   
