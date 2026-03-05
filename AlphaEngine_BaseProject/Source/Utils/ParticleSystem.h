@@ -2,21 +2,28 @@
 #include "ObjectPool.h"
 #include "AEEngine.h"
 
+struct Color4
+{
+	float r = 1.f, g = 1.f, b = 1.f, a = 1.f;
+};
+
+
 struct Particle : public ObjectPoolItem
 {
 	AEVec2 position = { 0.f, 0.f };
 	AEVec2 velocity = { 0.f, 0.f };
 	float spawnTime = -1.f;
 	float lifetime = -1.f;
+	Color4 tint;
 
 	virtual void Update(float dt);
 	virtual void Render(AEGfxVertexList* mesh);
-
 	virtual void Init() override;
 	virtual void OnGet() override;
 	virtual void OnRelease() override;
 	virtual void Exit() override;
 };
+
 
 class ParticleSystem
 {
@@ -34,6 +41,8 @@ public:
 		AEVec2 speedRange;
 		// Range of lifetime.
 		AEVec2 lifetimeRange;
+
+		Color4 tint;
 	};
 
 	ParticleSystem(int initialSize, const EmitterSettings& emitter);

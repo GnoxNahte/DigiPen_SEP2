@@ -110,6 +110,7 @@ public:
 
     ParticleSystem particleSystem{ 30, {} }; // pool size 30 is enough for small bursts
 
+
 private:
     void UpdateAnimation();
     static Config MakePreset(Preset preset);

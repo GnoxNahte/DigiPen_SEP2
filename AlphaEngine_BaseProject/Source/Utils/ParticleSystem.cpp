@@ -87,6 +87,7 @@ Particle& ParticleSystem::SpawnParticle(const EmitterSettings& _emitter)
 	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
 	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
 
+	p.tint = _emitter.tint;
 	return p;
 }
 
@@ -137,8 +138,18 @@ void Particle::Render(AEGfxVertexList* mesh)
 	// Camera scale. Scales translation too.
 	AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
 	AEGfxSetTransform(transform.m);
-	AEGfxSetTransparency(1.f - (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - spawnTime) / lifetime);
+
+	const float age = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - spawnTime;
+	const float t = (lifetime > 0.f) ? (age / lifetime) : 1.f;
+	const float fade = 1.f - AEClamp(t, 0.f, 1.f);
+
+	AEGfxSetColorToMultiply(tint.r, tint.g, tint.b, 1.f);
+	AEGfxSetTransparency(tint.a * fade);
+
+	//AEGfxSetTransparency(1.f - (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - spawnTime) / lifetime);
 	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
+
+	AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
 }
 
 void Particle::Init()

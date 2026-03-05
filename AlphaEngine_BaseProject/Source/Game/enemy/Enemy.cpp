@@ -111,6 +111,8 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+    particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
+
     //enemy life system
     hp = cfg.maxHp;
     dead = false;
@@ -138,6 +140,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             // decide facing: if moving use velocity, else use facingDirection
             const bool faceRight =
                 (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+            
 
             if (faceRight)
             {
