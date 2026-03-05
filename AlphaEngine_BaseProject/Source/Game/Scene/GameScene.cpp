@@ -164,8 +164,7 @@ void GameScene::Init()
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
-	UI::Init(&player);
-	Background::Init();
+
 }
 
 void GameScene::Update()
