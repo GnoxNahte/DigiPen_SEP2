@@ -7,6 +7,23 @@ struct Color4
 	float r = 1.f, g = 1.f, b = 1.f, a = 1.f;
 };
 
+enum class ParticleBehavior : unsigned char
+{
+	normal,        // current behavior
+	Inward,
+	TornadoIn,
+	Gravity,
+};
+
+
+struct ParticleBehaviorParams
+{
+	AEVec2 center = { 0.f, 0.f };   // for inward / tornado
+	float pull = 0.f;             // inward strength
+	float swirl = 0.f;            // tornado angular strength
+	float drag = 0.f;             // optional damping
+};
+
 
 struct Particle : public ObjectPoolItem
 {
@@ -15,6 +32,8 @@ struct Particle : public ObjectPoolItem
 	float spawnTime = -1.f;
 	float lifetime = -1.f;
 	Color4 tint;
+	ParticleBehavior behavior = ParticleBehavior::normal;
+	ParticleBehaviorParams behaviorParams;
 
 	virtual void Update(float dt);
 	virtual void Render(AEGfxVertexList* mesh);
@@ -23,6 +42,9 @@ struct Particle : public ObjectPoolItem
 	virtual void OnRelease() override;
 	virtual void Exit() override;
 };
+
+
+
 
 
 class ParticleSystem
@@ -43,6 +65,10 @@ public:
 		AEVec2 lifetimeRange;
 
 		Color4 tint;
+
+		ParticleBehavior behavior = ParticleBehavior::normal;
+		ParticleBehaviorParams behaviorParams;
+
 	};
 
 	ParticleSystem(int initialSize, const EmitterSettings& emitter);

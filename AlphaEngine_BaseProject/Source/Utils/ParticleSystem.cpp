@@ -82,7 +82,9 @@ Particle& ParticleSystem::SpawnParticle(const EmitterSettings& _emitter)
 	p.spawnTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 	p.position.x = AEExtras::RandomRange(_emitter.spawnPosRangeX);
 	p.position.y = AEExtras::RandomRange(_emitter.spawnPosRangeY);
-	p.lifetime =  AEExtras::RandomRange(_emitter.lifetimeRange);
+	p.lifetime = AEExtras::RandomRange(_emitter.lifetimeRange);
+	p.behavior = _emitter.behavior;
+	p.behaviorParams = _emitter.behaviorParams;
 
 	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
 	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
@@ -117,11 +119,55 @@ void ParticleSystem::SetSpawnRate(float spawnRate)
 	if (lastSpawnTime - currTime > timeBetweenSpawn)
 		lastSpawnTime = currTime + timeBetweenSpawn;
 }
-
 void Particle::Update(float dt)
 {
-	position.x += velocity.x * dt;
-	position.y += velocity.y * dt;
+	switch (behavior)
+	{
+	case ParticleBehavior::normal:
+		position.x += velocity.x * dt;
+		position.y += velocity.y * dt;
+		break;
+
+	case ParticleBehavior::Inward:
+	{
+		AEVec2 dir{ behaviorParams.center.x - position.x,
+					behaviorParams.center.y - position.y };
+		float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
+		if (len > 0.0001f) { dir.x /= len; dir.y /= len; }
+
+		velocity.x += dir.x * behaviorParams.pull * dt;
+		velocity.y += dir.y * behaviorParams.pull * dt;
+
+		position.x += velocity.x * dt;
+		position.y += velocity.y * dt;
+		break;
+	}
+
+	case ParticleBehavior::TornadoIn:
+	{
+		// swirl tangent around center + inward pull
+		AEVec2 toC{ behaviorParams.center.x - position.x,
+					behaviorParams.center.y - position.y };
+		float len = sqrtf(toC.x * toC.x + toC.y * toC.y);
+		if (len > 0.0001f) { toC.x /= len; toC.y /= len; }
+
+		// tangent (perpendicular)
+		AEVec2 tan{ -toC.y, toC.x };
+
+		velocity.x += (toC.x * behaviorParams.pull + tan.x * behaviorParams.swirl) * dt;
+		velocity.y += (toC.y * behaviorParams.pull + tan.y * behaviorParams.swirl) * dt;
+
+		position.x += velocity.x * dt;
+		position.y += velocity.y * dt;
+		break;
+	}
+
+	case ParticleBehavior::Gravity:
+		velocity.y -= behaviorParams.pull * dt; // reuse pull as gravity
+		position.x += velocity.x * dt;
+		position.y += velocity.y * dt;
+		break;
+	}
 }
 
 void Particle::Render(AEGfxVertexList* mesh)

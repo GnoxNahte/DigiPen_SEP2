@@ -111,6 +111,8 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+
+
     particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
 
     //enemy life system
