@@ -69,10 +69,101 @@ GameScene::GameScene() :
 	//);
 
 
+	UI::Init(&player);
+	Background::Init();
+	// Init pause overlay resources 
+	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
+
+	// Load buff icon textures for pause overlay (same assets as BuffCardScreen)
+	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
+
+	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
+	// If your enum order differs, adjust the mapping here.
+	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
+	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
+	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
+	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
+	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
+	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
+	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
+
+	// Fonts for pause overlay
+	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
+	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
+	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
+
+	// Glow / emission textures (same as BuffCardScreen)
+	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
+	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
+	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
+	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
+	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+
+	// Pixellari for description (match BuffCardScreen)
+	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
 }
 
 GameScene::~GameScene()
 {
+	UI::Exit();
+	Background::Exit();
+
+	// Free pause overlay resources
+	if (pauseRectMesh)
+	{
+		AEGfxMeshFree(pauseRectMesh);
+		pauseRectMesh = nullptr;
+	}
+	if (pauseCardBackTex)
+	{
+		AEGfxTextureUnload(pauseCardBackTex);
+		pauseCardBackTex = nullptr;
+	}
+	if (pauseFontLarge >= 0)
+	{
+		AEGfxDestroyFont(pauseFontLarge);
+		pauseFontLarge = -1;
+	}
+	if (pauseFontSmall >= 0)
+	{
+		AEGfxDestroyFont(pauseFontSmall);
+		pauseFontSmall = -1;
+	}
+	if (pauseFontRuntime)
+	{
+		AEGfxDestroyFont(pauseFontRuntime);
+	}
+	if (pauseRectMesh)
+	{
+		AEGfxMeshFree(pauseRectMesh);
+		pauseRectMesh = nullptr;
+	}
+
+	// Free buff icon textures for pause overlay
+	for (int i = 0; i < kPauseBuffTexCount; ++i)
+	{
+		if (pauseBuffTex[i])
+		{
+			AEGfxTextureUnload(pauseBuffTex[i]);
+			pauseBuffTex[i] = nullptr;
+		}
+	}
+
+	// Free rarity glow textures for pause overlay
+	for (int i = 0; i < kPauseRarityTexCount; ++i)
+	{
+		if (pauseRarityTex[i])
+		{
+			AEGfxTextureUnload(pauseRarityTex[i]);
+			pauseRarityTex[i] = nullptr;
+		}
+	}
+	if (pauseFontDesc >= 0)
+	{
+		AEGfxDestroyFont(pauseFontDesc);
+		pauseFontDesc = -1;
+	}
 }
 
 void GameScene::Init()
@@ -123,40 +214,6 @@ void GameScene::Init()
 		gPendingLevelPath.clear();
 	}
 
-	UI::Init(&player);
-	Background::Init();
-	// Init pause overlay resources 
-	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
-
-	// Load buff icon textures for pause overlay (same assets as BuffCardScreen)
-	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
-
-	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
-	// If your enum order differs, adjust the mapping here.
-	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
-	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
-	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
-	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
-	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
-	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
-
-	// Fonts for pause overlay
-	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
-	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
-	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
-
-	// Glow / emission textures (same as BuffCardScreen)
-	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
-	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
-	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
-	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
-	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
-
-	// Pixellari for description (match BuffCardScreen)
-	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
-
 	// fallback: hardcoded setup
 	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
@@ -165,7 +222,6 @@ void GameScene::Init()
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
-
 }
 
 void GameScene::Update()
@@ -349,66 +405,8 @@ void GameScene::Render()
 
 void GameScene::Exit()
 {
-	UI::Exit();
-	Background::Exit();
-
-	// Free pause overlay resources
-	if (pauseRectMesh)
-	{
-		AEGfxMeshFree(pauseRectMesh);
-		pauseRectMesh = nullptr;
-	}
-	if (pauseCardBackTex)
-	{
-		AEGfxTextureUnload(pauseCardBackTex);
-		pauseCardBackTex = nullptr;
-	}
-	if (pauseFontLarge >= 0)
-	{
-		AEGfxDestroyFont(pauseFontLarge);
-		pauseFontLarge = -1;
-	}
-	if (pauseFontSmall >= 0)
-	{
-		AEGfxDestroyFont(pauseFontSmall);
-		pauseFontSmall = -1;
-	}
-	if (pauseFontRuntime) {
-		AEGfxDestroyFont(pauseFontRuntime);
-	}
-	if (pauseRectMesh)
-	{
-		AEGfxMeshFree(pauseRectMesh);
-		pauseRectMesh = nullptr;
-	}
-
 	pausePage = PausePage::None;
 	Time::GetInstance().SetPaused(false);
-
-	// Free buff icon textures for pause overlay
-	for (int i = 0; i < kPauseBuffTexCount; ++i)
-	{
-		if (pauseBuffTex[i])
-		{
-			AEGfxTextureUnload(pauseBuffTex[i]);
-			pauseBuffTex[i] = nullptr;
-		}
-	}
-
-	// Free rarity glow textures for pause overlay
-	for (int i = 0; i < kPauseRarityTexCount; ++i)
-	{
-		if (pauseRarityTex[i])
-		{
-			AEGfxTextureUnload(pauseRarityTex[i]);
-			pauseRarityTex[i] = nullptr;
-		}
-	}
-	if (pauseFontDesc >= 0)
-	{
-		AEGfxDestroyFont(pauseFontDesc);
-		pauseFontDesc = -1;
-	}
 }
 
 bool GameScene::IsPaused() const
