@@ -27,29 +27,38 @@ void ParticleSystem::Init()
 
 void ParticleSystem::Update()
 {
-	float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
-	while (currTime > lastSpawnTime)
-	{
-		lastSpawnTime += timeBetweenSpawn;
-		Particle& p = SpawnParticle();
-		p.Update(static_cast<float>(lastSpawnTime - currTime)); // Prebake
-	}
+
 	
-	if (pool.GetSize() == 0)
-		return;
+	    
+			float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+			while (currTime > lastSpawnTime)
+			{
+				lastSpawnTime += timeBetweenSpawn;
+				Particle& p = SpawnParticle();
+				p.Update(static_cast<float>(lastSpawnTime - currTime)); // Prebake
+			}
 
-	//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+			if (pool.GetSize() == 0)
+				return;
 
-	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-	// todo - make custom iterator inside object pool instead?
-	// iterate from back. Use this weird syntax because size_t is unsigned
-	for (size_t i = pool.GetSize(); (i--) > 0;)
-	{
-		Particle& p = pool.pool[i];
-		p.Update(dt);
-		if (currTime > p.spawnTime + p.lifetime)
-			pool.Release(p);
-	}
+			//std::cout << pool.GetSize() << " | " << timeBetweenSpawn << "\n";
+
+			float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+			// todo - make custom iterator inside object pool instead?
+			// iterate from back. Use this weird syntax because size_t is unsigned
+			for (size_t i = pool.GetSize(); (i--) > 0;)
+			{
+				Particle& p = pool.pool[i];
+				p.Update(dt);
+				if (currTime > p.spawnTime + p.lifetime)
+					pool.Release(p);
+			}
+			
+
+	    
+		
+	
+	
 }
 
 void ParticleSystem::Render()
