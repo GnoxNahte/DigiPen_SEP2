@@ -11,7 +11,7 @@
 #include <sstream>
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
-
+std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
 
 //AABB collision helper
 /*static bool AABB_Overlap(const AEVec2& aPos, const AEVec2& aSize,
@@ -69,10 +69,101 @@ GameScene::GameScene() :
 	//);
 
 
+	UI::Init(&player);
+	Background::Init();
+	// Init pause overlay resources 
+	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
+
+	// Load buff icon textures for pause overlay (same assets as BuffCardScreen)
+	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
+
+	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
+	// If your enum order differs, adjust the mapping here.
+	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
+	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
+	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
+	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
+	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
+	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
+	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
+
+	// Fonts for pause overlay
+	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
+	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
+	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
+
+	// Glow / emission textures (same as BuffCardScreen)
+	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
+	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
+	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
+	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
+	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+
+	// Pixellari for description (match BuffCardScreen)
+	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
 }
 
 GameScene::~GameScene()
 {
+	UI::Exit();
+	Background::Exit();
+
+	// Free pause overlay resources
+	if (pauseRectMesh)
+	{
+		AEGfxMeshFree(pauseRectMesh);
+		pauseRectMesh = nullptr;
+	}
+	if (pauseCardBackTex)
+	{
+		AEGfxTextureUnload(pauseCardBackTex);
+		pauseCardBackTex = nullptr;
+	}
+	if (pauseFontLarge >= 0)
+	{
+		AEGfxDestroyFont(pauseFontLarge);
+		pauseFontLarge = -1;
+	}
+	if (pauseFontSmall >= 0)
+	{
+		AEGfxDestroyFont(pauseFontSmall);
+		pauseFontSmall = -1;
+	}
+	if (pauseFontRuntime)
+	{
+		AEGfxDestroyFont(pauseFontRuntime);
+	}
+	if (pauseRectMesh)
+	{
+		AEGfxMeshFree(pauseRectMesh);
+		pauseRectMesh = nullptr;
+	}
+
+	// Free buff icon textures for pause overlay
+	for (int i = 0; i < kPauseBuffTexCount; ++i)
+	{
+		if (pauseBuffTex[i])
+		{
+			AEGfxTextureUnload(pauseBuffTex[i]);
+			pauseBuffTex[i] = nullptr;
+		}
+	}
+
+	// Free rarity glow textures for pause overlay
+	for (int i = 0; i < kPauseRarityTexCount; ++i)
+	{
+		if (pauseRarityTex[i])
+		{
+			AEGfxTextureUnload(pauseRarityTex[i]);
+			pauseRarityTex[i] = nullptr;
+		}
+	}
+	if (pauseFontDesc >= 0)
+	{
+		AEGfxDestroyFont(pauseFontDesc);
+		pauseFontDesc = -1;
+	}
 }
 
 void GameScene::Init()
@@ -83,6 +174,7 @@ void GameScene::Init()
 		LevelData lvl;
 		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
 		{
+			gLastLoadedLevelPath = gPendingLevelPath; // remember last loaded level for restart
 			// apply tiles to existing map member
 			for (int y = 0; y < lvl.rows && y < 50; ++y)
 				for (int x = 0; x < lvl.cols && x < 50; ++x)
@@ -118,9 +210,6 @@ void GameScene::Init()
 			enemyMgr.SpawnAll();
 
 			gPendingLevelPath.clear();
-			UI::Init(&player);
-			Background::Init();
-			return;
 		}
 		gPendingLevelPath.clear();
 	}
@@ -133,12 +222,26 @@ void GameScene::Init()
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
-	UI::Init(&player);
-	Background::Init();
 }
 
 void GameScene::Update()
 {
+	// Toggle pause with ESC (GameScene only)
+	if (AEInputCheckTriggered(AEVK_ESCAPE))
+	{
+		// If we are inside sub-pages, ESC returns to menu instead of unpausing
+		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit)
+			pausePage = PausePage::Menu;
+		else
+			TogglePause();
+	}
+
+	// When paused, skip gameplay update and only handle pause input
+	if (IsPaused())
+	{
+		UpdatePauseInput();
+		return;
+	}
 	player.Update();
 	camera.Update();
 
@@ -250,6 +353,11 @@ void GameScene::Render()
 	enemyBoss.Render();
 	enemyMgr.RenderAll();
 	UI::Render();
+	// Draw pause overlay on top of game render
+	if (IsPaused())
+	{
+		RenderPauseOverlay();
+	}
 
 	// === Code below is for DEBUG ONLY ===
 
@@ -297,58 +405,8 @@ void GameScene::Render()
 
 void GameScene::Exit()
 {
-	UI::Exit();
-	Background::Exit();
-
-	// Free pause overlay resources
-	if (pauseRectMesh)
-	{
-		AEGfxMeshFree(pauseRectMesh);
-		pauseRectMesh = nullptr;
-	}
-	if (pauseCardBackTex)
-	{
-		AEGfxTextureUnload(pauseCardBackTex);
-		pauseCardBackTex = nullptr;
-	}
-	if (pauseFontLarge >= 0)
-	{
-		AEGfxDestroyFont(pauseFontLarge);
-		pauseFontLarge = -1;
-	}
-	if (pauseFontSmall >= 0)
-	{
-		AEGfxDestroyFont(pauseFontSmall);
-		pauseFontSmall = -1;
-	}
-
 	pausePage = PausePage::None;
 	Time::GetInstance().SetPaused(false);
-
-	// Free buff icon textures for pause overlay
-	for (int i = 0; i < kPauseBuffTexCount; ++i)
-	{
-		if (pauseBuffTex[i])
-		{
-			AEGfxTextureUnload(pauseBuffTex[i]);
-			pauseBuffTex[i] = nullptr;
-		}
-	}
-
-	// Free rarity glow textures for pause overlay
-	for (int i = 0; i < kPauseRarityTexCount; ++i)
-	{
-		if (pauseRarityTex[i])
-		{
-			AEGfxTextureUnload(pauseRarityTex[i]);
-			pauseRarityTex[i] = nullptr;
-		}
-	}
-	if (pauseFontDesc >= 0)
-	{
-		AEGfxDestroyFont(pauseFontDesc);
-		pauseFontDesc = -1;
-	}
 }
 
 bool GameScene::IsPaused() const
@@ -524,7 +582,11 @@ void GameScene::UpdatePauseInput()
 			if (!BuffCardManager::GetCurrentBuffs().empty()) {
 				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
 			}
-			// TODO : Reset all buff effects
+			// Reload the last successfully loaded level (if any)
+			if (!gLastLoadedLevelPath.empty())
+			{
+				gPendingLevelPath = gLastLoadedLevelPath;
+			}
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}
