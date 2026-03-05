@@ -591,7 +591,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
                 SpecialElapsed = 0.0f;
                 g_spellcastUntil5thSpawn = true;
 
-
+                static constexpr float kChargeUpExtra = 1.0f;
                 // Start SPELLCAST now
                 sprite.SetState(SPELLCAST);
 
@@ -599,7 +599,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
                 // Start spawning on the *last frame start* of SPELLCAST so there's no visible "dead gap"
                 const float castDur = GetAnimDurationSec(sprite, SPELLCAST);
                 const float tpf = GetAnimTimePerFrame(sprite, SPELLCAST);
-                specialSpawnTimer = (castDur > 0.f) ? max(0.0f, castDur - tpf) : 0.0f;
+                specialSpawnTimer = ((castDur > 0.f) ? max(0.0f, castDur - tpf) : 0.0f) + kChargeUpExtra;
             }
         }
     }
