@@ -26,8 +26,8 @@ void UI::Update() {
 	BuffCardScreen::Update();
 }
 void UI::Render() {
-	DrawHealthVignette();
 	DrawPlayerCooldownMeter();
+	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 }
@@ -114,9 +114,8 @@ void UI::DrawHealthVignette() {
 	// --- Apply ---
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(finalAlpha);
-
-	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxTextureSet(healthVignette, 0, 0);
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
@@ -169,6 +168,7 @@ void UI::DrawPlayerCooldownMeter() {
 
 		// Draw the precomputed mesh
 		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	}
 }
 

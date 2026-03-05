@@ -562,6 +562,7 @@ void BuffCardScreen::DrawBlackOverlay()
 
 	AEGfxSetTransform(transform.m);
 	AEGfxMeshDraw(rectMesh, AE_GFX_MDM_TRIANGLES);
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
 void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int selectedIdx) {
 	if (!textLoading) {
