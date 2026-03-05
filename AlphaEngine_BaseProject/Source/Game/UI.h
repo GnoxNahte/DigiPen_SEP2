@@ -14,7 +14,7 @@ enum DAMAGE_TYPE {
 };
 struct DamageText : public ObjectPoolItem {
 	std::string damageType{}; // Type of damage to be printed. Crit, resist, normal etc.
-	std::string damageNumber{}; // Numerical value of damage to be printed. Crit, resist, normal etc.
+	std::string damageNumber{}; // Numerical value of damage to be printed.
 	f32 r{}, g{}, b{}; // RGB values of text.
 	AEVec2 position{}; // Position of text.
 	f32 alpha{}, scale{}, initialScale{}; // Alpha and scale values of text.

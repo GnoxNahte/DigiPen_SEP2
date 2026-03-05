@@ -1,7 +1,7 @@
 #include "UI.h"
 #include "../Utils/ObjectPool.h"
 #include <string>
-#include "BuffCards.h"
+#include "../Game/BuffCards.h"
 #include "../Utils/AEExtras.h"
 #include "Player/Player.h"
 #include "../Utils/MeshGenerator.h"
@@ -15,7 +15,6 @@ void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
 	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	//cooldownTimerMesh = MeshGenerator::GetCircleMesh(3);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
 	UI::player = _player;

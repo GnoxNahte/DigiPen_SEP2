@@ -587,7 +587,6 @@ void GameScene::UpdatePauseInput()
 			{
 				gPendingLevelPath = gLastLoadedLevelPath;
 			}
-			// TODO : Reset all buff effects
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}

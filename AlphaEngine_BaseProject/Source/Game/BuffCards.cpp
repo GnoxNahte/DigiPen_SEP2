@@ -107,12 +107,12 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 
 		// --- KEYBOARD INPUT ---
 		if (AEInputCheckTriggered(AEVK_RIGHT) || AEInputCheckTriggered(AEVK_D)) {
-			std::cout << "Hovered RIGHT once - play hover once sound\n";
+			//std::cout << "Hovered RIGHT once - play hover once sound\n";
 			cardSelected = static_cast<int>((cardSelected + 1) % cards.size());
 			keyboardInputDetected = true;
 		}
 		else if (AEInputCheckTriggered(AEVK_LEFT) || AEInputCheckTriggered(AEVK_A)) {
-			std::cout << "Hovered LEFT once - play hover once sound\n";
+			//std::cout << "Hovered LEFT once - play hover once sound\n";
 			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size());
 			keyboardInputDetected = true;
 		}
@@ -155,7 +155,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 						for (BuffCard& c : cards) c.selected = false;
 						cardSelected = i;
 						cards[cardSelected].selected = true;
-						std::cout << "Hovered MOUSE once - play hover once sound\n";
+						//std::cout << "Hovered MOUSE once - play hover once sound\n";
 					}
 					break;
 				}
