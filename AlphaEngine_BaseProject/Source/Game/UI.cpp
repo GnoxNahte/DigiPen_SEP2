@@ -136,7 +136,7 @@ void UI::InitCooldownMeshes() {
 }
 void UI::DrawPlayerCooldownMeter() {
 	{
-		if (AEInputCheckTriggered(AEVK_Z)) {
+		if (AEInputCheckCurr(AEVK_Z)) {
 			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", player->GetStats().dashCooldown);
 		}
 		auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");

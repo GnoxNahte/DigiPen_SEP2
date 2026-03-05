@@ -42,7 +42,6 @@ void BuffCardScreen::Init() {
 	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
 	cardFrontTex[BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	cardFrontTex[FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
 
 	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
 	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
@@ -65,69 +64,11 @@ void BuffCardManager::Update() {
 	SelectCards(randomizedCards);
 }
 void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
-	switch (card.type) {
-	case (HERMES_FAVOR):
-		switch (card.rarity) {
-		case (RARITY_UNCOMMON):
-			break;
-		case (RARITY_RARE):
-			break;
-		case (RARITY_EPIC):
-			break;
-		case (RARITY_LEGENDARY):
-			break;
-		}
-		break;
-	case (IRON_DEFENCE):
-		switch (card.rarity) {
-		case (RARITY_UNCOMMON):
-			break;
-		case (RARITY_RARE):
-			break;
-		case (RARITY_EPIC):
-			break;
-		case (RARITY_LEGENDARY):
-			break;
-		}
-		break;
+	switch (card.type) { // Handle non player buff related effects e.g. shuffle
 	case (SWITCH_IT_UP):
 		// If the card effect is "Switch It Up", trigger a shuffle by resetting the flip sequence and allowing new cards to be drawn.
 		BuffCardScreen::ResetFlipSequence();
 		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
-		break;
-	case (REVITALIZE):
-		break;
-	case (SHARPEN):
-		switch (card.rarity) {
-		case (RARITY_UNCOMMON):
-			break;
-		case (RARITY_RARE):
-			break;
-		case (RARITY_EPIC):
-			break;
-		case (RARITY_LEGENDARY):
-			break;
-		}
-		break;
-	case (BERSERKER):
-		switch (card.rarity) {
-		case (RARITY_UNCOMMON):
-			break;
-		case (RARITY_RARE):
-			break;
-		case (RARITY_LEGENDARY):
-			break;
-		}
-		break;
-	case (FEATHERWEIGHT):
-		switch (card.rarity) {
-		case (RARITY_UNCOMMON):
-			break;
-		case (RARITY_RARE):
-			break;
-		case (RARITY_EPIC):
-			break;
-		}
 		break;
 	}
 

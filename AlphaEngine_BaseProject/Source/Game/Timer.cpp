@@ -18,7 +18,7 @@ void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemov
 	bool ignoreTimeScale, bool ignorePause, bool loopable, u32 loopCount) {
 	Timer timer;
 	if ((TimerSystem::GetTimerByName(name)) != nullptr) {
-		std::cout << "Timer \"" << name << "\" already exists. Skipping addition." << std::endl;
+		//std::cout << "Timer \"" << name << "\" already exists. Skipping addition." << std::endl;
 		return;
 	}
 	timer.name = name;
@@ -44,9 +44,9 @@ void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemov
 	timerMap[name] = timers.size() - 1;
 	activeTimerCount++;
 
-	std::cout << "Initialized Timer \"" << timer.name << "\" for " << timer.duration
+	/*std::cout << "Initialized Timer \"" << timer.name << "\" for " << timer.duration
 		<< " seconds (ignoreScale=" << ignoreTimeScale
-		<< ", ignorePause=" << ignorePause << ")" << std::endl;
+		<< ", ignorePause=" << ignorePause << ")" << std::endl;*/
 }
 void TimerSystem::RemoveTimer(const std::string& name) {
 	auto it = timerMap.find(name);
@@ -67,7 +67,7 @@ void TimerSystem::RemoveTimer(const std::string& name) {
 		}
 
 		activeTimerCount--;
-		std::cout << "Removed Timer \"" << name << "\"." << std::endl;
+		//std::cout << "Removed Timer \"" << name << "\"." << std::endl;
 	}
 }
 
@@ -106,10 +106,10 @@ u32 TimerSystem::AddAnonymousTimer(f64 duration, bool autoRemove,
 	anonymousTimerMap[timer.id] = timers.size() - 1;
 	activeTimerCount++;
 
-	std::cout << "Initialized Anonymous Timer ID:" << timer.id
+	/*std::cout << "Initialized Anonymous Timer ID:" << timer.id
 		<< " for " << timer.duration << " seconds"
 		<< " (ignoreScale=" << ignoreTimeScale
-		<< ", ignorePause=" << ignorePause << ")" << std::endl;
+		<< ", ignorePause=" << ignorePause << ")" << std::endl;*/
 
 	return timer.id;
 }
@@ -135,7 +135,7 @@ void TimerSystem::RemoveAnonymousTimer(u32 timerId) {
 		}
 
 		activeTimerCount--;
-		std::cout << "Removed Anonymous Timer ID:" << timerId << std::endl;
+		//std::cout << "Removed Anonymous Timer ID:" << timerId << std::endl;
 	}
 }
 
@@ -187,14 +187,14 @@ void TimerSystem::CheckTimerCompletion() {
 		// Check completion
 		if (currentTime >= it->endTime) {
 			it->completed = true;
-			std::cout << "Timer ";
+			/*std::cout << "Timer ";
 			if (it->isAnonymous) {
 				std::cout << "ID:" << it->id;
 			}
 			else {
 				std::cout << "\"" << it->name << "\"";
 			}
-			std::cout << " completed!" << std::endl;
+			std::cout << " completed!" << std::endl;*/
 
 			if (it->autoRemove) {
 				activeTimerCount--;
@@ -204,7 +204,7 @@ void TimerSystem::CheckTimerCompletion() {
 					anonymousTimerMap.erase(it->id);
 				}
 				else {
-					std::cout << "Removed Timer \"" << it->name << "\"." << std::endl;
+					//std::cout << "Removed Timer \"" << it->name << "\"." << std::endl;
 					timerMap.erase(it->name);
 				}
 

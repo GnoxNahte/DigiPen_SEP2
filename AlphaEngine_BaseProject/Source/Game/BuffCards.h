@@ -113,7 +113,6 @@ public:
 		case REVITALIZE: return "REVITALIZE";
 		case SHARPEN: return "SHARPEN";
 		case BERSERKER: return "BERSERKER";
-		case FEATHERWEIGHT: return "FEATHERWEIGHT";
 		default: return "UNKNOWN_TYPE";
 		}
 	}
