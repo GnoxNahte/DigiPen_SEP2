@@ -34,6 +34,7 @@ public:
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
     void SpawnImpactBurst();
+    void SpawnSpellChargeVfx(float dt);
 
     bool IsDead() const override { return isDead; }
     //for gamescene to use to apply damage later

@@ -84,6 +84,8 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
     return (float)s.frameCount * (float)s.timePerFrame;
 }
 
+
+
 // NEW (tiny helper): time-per-frame for a state (used to start spawning on last frame)
 static float GetAnimTimePerFrame(const Sprite& sprite, int stateIndex)
 {
@@ -102,6 +104,8 @@ static bool AABB_Overlap2(const AEVec2& aPos, const AEVec2& aSize,
     return dx <= (aSize.x + bSize.x) * 0.5f
         && dy <= (aSize.y + bSize.y) * 0.5f;
 }
+
+
 
 // EnemyBoss.cpp
 void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
@@ -204,6 +208,64 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
 
 EnemyBoss::~EnemyBoss()
 {
+}
+
+// Spawns "charge" particles around the boss that drift inward.
+// Call every frame during SPELLCAST wind-up.
+void EnemyBoss::SpawnSpellChargeVfx(float dt)
+{
+    // control density consistently across FPS
+    static float acc = 0.f;
+    const float spawnPerSec = 70.f;     // tune: 40..120
+    acc += dt * spawnPerSec;
+
+    int n = (int)acc;
+    if (n <= 0) return;
+    acc -= (float)n;
+
+    // Use a COPY so you don't mess up your normal trail emitter
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+    // Tune for "slow drift"
+    e.speedRange = { 1.2f, 2.6f };
+    e.lifetimeRange = { 0.35f, 0.75f };
+    e.tint = { 0.63f, 0.13f, 0.94f, 1.0f };
+
+    // Boss "visual center" (you already discovered you need +0.5f on X)
+    const float cx = position.x + 0.5f;
+    const float cy = position.y + 0.35f;
+
+    // How far from the boss the particles start
+    const float r = 0.5f;     // radius around boss (tune)
+    const float band = 1.f; // thickness of the spawn band
+
+    // split n into 4 directions
+    int perSide = (n / 4);
+    if (perSide < 1) perSide = 1;
+
+    // LEFT side -> move RIGHT (angle ~ 0 deg)
+    e.spawnPosRangeX = { cx - r - band, cx - r + band };
+    e.spawnPosRangeY = { cy - r,        cy + r };
+    e.angleRange = { AEDegToRad(-15.f), AEDegToRad(15.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // RIGHT side -> move LEFT (angle ~ 180 deg)
+    e.spawnPosRangeX = { cx + r - band, cx + r + band };
+    e.spawnPosRangeY = { cy - r,        cy + r };
+    e.angleRange = { AEDegToRad(165.f), AEDegToRad(195.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // TOP side -> move DOWN (angle ~ 270 deg)
+    e.spawnPosRangeX = { cx - r,        cx + r };
+    e.spawnPosRangeY = { cy + r - band, cy + r + band };
+    e.angleRange = { AEDegToRad(255.f), AEDegToRad(285.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
+
+    // BOTTOM side -> move UP (angle ~ 90 deg)
+    e.spawnPosRangeX = { cx - r,        cx + r };
+    e.spawnPosRangeY = { cy - r - band, cy - r + band };
+    e.angleRange = { AEDegToRad(75.f), AEDegToRad(105.f) };
+    particleSystem.SpawnParticleBurst(e, perSide);
 }
 
 
@@ -317,9 +379,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     
         sprite.Update();
         specialAttackVfx.Update();
-
+       
+       
         if (specialBurstActive)
         {
+            SpawnSpellChargeVfx(dt);
 			sprite.SetState(SPELLCAST);
         }
 
@@ -461,6 +525,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             // Face player during special
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
+
+            // >>> ADD THIS BLOCK HERE <<<
+            if (specialSpawnsRemaining == kSpecialSpawnCount && specialSpawnTimer > 0.f)
+            {
+                SpawnSpellChargeVfx(dt);
+            }
+
 
             // Timer handles: initial cast delay + spawn gaps
             specialSpawnTimer -= dt;
