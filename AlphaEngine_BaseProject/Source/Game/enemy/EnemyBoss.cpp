@@ -291,11 +291,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             // Center slightly ABOVE boss so it "spirals upward"
             particleSystem.emitter.behaviorParams.center = { cx, cy + 0.8f };
 
-            // Start values (these WILL show a difference)
-            particleSystem.emitter.behaviorParams.swirl = 20.f;  // 80..160
-            particleSystem.emitter.behaviorParams.pull = 15.f;   // 10..30
+            // Start values
+            particleSystem.emitter.behaviorParams.swirl = 20.f;  
+            particleSystem.emitter.behaviorParams.pull = 15.f;   
 
-            // Spawn volume around the boss body (aura cloud)
+            // Spawn volume around the boss body
             AEVec2Set(&particleSystem.emitter.spawnPosRangeX, cx - 0.65f, cx + 0.65f);
             AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.05f, position.y + 1.25f);
 
@@ -304,13 +304,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             particleSystem.emitter.angleRange.y = AEDegToRad(110.f);
 
             // Keep initial speed low so behavior is visible
-            particleSystem.emitter.speedRange.x = 0.2f;
-            particleSystem.emitter.speedRange.y = 0.2f;
+            particleSystem.emitter.speedRange.x = 0.5f;
+            particleSystem.emitter.speedRange.y = 0.8f;
 
             particleSystem.emitter.lifetimeRange.x = 0.7f;
             particleSystem.emitter.lifetimeRange.y = 1.3f;
 
-            // Intimidating color (purple aura). Alpha matters.
+            // Intimidating color (purple aura).
             particleSystem.emitter.tint = { 0.65f, 0.15f, 0.95f, 0.75f };
             //particleSystem.emitter.tint = { 0.18f, 0.09f, 0.20f, 0.8f };
 
@@ -551,7 +551,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 
 
             // Timer handles: initial cast delay + spawn gaps
-            specialSpawnTimer = 2.0f;
+       
             specialSpawnTimer -= dt;
 
             while (specialSpawnTimer <= 0.0f && specialSpawnsRemaining > 0)
@@ -710,7 +710,7 @@ void EnemyBoss::SpawnImpactBurst()
 
     // use CUSTOM emitters
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
-    e.behavior = ParticleBehavior::Inward;
+    e.behavior = ParticleBehavior::Gravity;
     e.tint = { 0.8f, 0.4f, 0.2f, 1.0f }; // fiery orange; tune as needed
 
 
