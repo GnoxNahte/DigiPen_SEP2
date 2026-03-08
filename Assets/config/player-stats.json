@@ -67,6 +67,9 @@
     },
     "maxHealth": 100,
     "attackBuffer": 0.1,
+    "knockbackAmt": 20.0,
+    "maxKnockbackDmg": 20.0,
+    "downAirAttackFallSpeed": -100.0,
     "groundAttacks": [
         {
             "damage": 10,

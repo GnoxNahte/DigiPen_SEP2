@@ -130,14 +130,17 @@ private:
     void HandleGravity();
     void HandleJump();
     void PerformJump();
+    void UpdateCollisions(const AEVec2& nextPosition);
 
     bool IsDashing();
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();
-    void Attack(AnimState toState);
+    void SetAttack(AnimState toState);
+    void AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack);
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
+    IDamageable* IfCollideEnemy(const Box& collider);
 
     void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();
