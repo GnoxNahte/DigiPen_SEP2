@@ -10,6 +10,7 @@
 #include "../../Game/Time.h"
 #include "LevelEditorScene.h"
 #include "../../Editor/Editor.h"
+#include "../../Utils/Event/EventSystem.h"
 
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -58,6 +59,9 @@ void GSM::Update()
 			currentState = nextState;
 			LoadState(currentState);
 		}
+
+		if (currentScene == nullptr)
+			throw;
 
 		EventSystem::Trigger(SceneChangeEvent{
 			.previousState = previousState,
@@ -140,6 +144,7 @@ std::string GSM::GetStateName(SceneState state)
 	{
 		case GS_QUIT: return "QUIT";
 		case GS_RESTART: return "RESTART";
+		case GS_LEVEL_EDITOR: return "Level Editor";
 		case GS_SPLASH_SCREEN: return "Splash Screen";
 		case GS_MAIN_MENU: return "Main Menu";
 		case GS_GAME: return "Game";

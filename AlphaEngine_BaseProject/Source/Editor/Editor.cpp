@@ -4,7 +4,7 @@
 #include <AEEngine.h>
 
 #include "../Utils/AEExtras.h"
-#include "../Game/Scene/GSM.h"
+#include "../Utils/FileHelper.h"
 #include "../Game/Time.h"
 
 void Editor::Register(Inspectable& obj)
@@ -18,6 +18,11 @@ void Editor::Unregister(Inspectable& obj)
 	std::erase_if(menu, [&obj](const auto& ref) {
 		return &ref.get() == &obj;
 	});
+}
+
+const Editor::EditorPrefs& Editor::GetEditorPrefs()
+{
+	return Get().editorPrefs;
 }
 
 void Editor::Update()
@@ -80,6 +85,8 @@ Editor& Editor::Get()
 
 Editor::Editor() 
 {
+	LoadEditorPrefs();
+
 	gsmSceneChangeEventId = EventSystem::Subscribe<SceneChangeEvent>([&](const SceneChangeEvent& ev) {
 		OnSceneChange(ev);
 	});
@@ -135,8 +142,34 @@ void Editor::DrawMenus()
 	}
 }
 
+void Editor::LoadEditorPrefs()
+{
+	rapidjson::Document doc;
+	bool success = FileHelper::TryReadJsonFile(editorPrefsPath, doc);
+	if (!success)
+		return;
+
+	SceneState sceneState = static_cast<SceneState>(doc["lastOpenedScene"].GetInt());
+	// Prevent loading QUIT or RESTART states. Something went wrong but not don't read for now
+	if (sceneState >= 0)
+		editorPrefs.lastOpenedScene = sceneState;
+	else
+		std::cout << "Failed to load scene editor prefs\n";
+}
+
+void Editor::SaveEditorPrefs()
+{
+	rapidjson::Document doc;
+	doc.SetObject();
+	auto& allocator = doc.GetAllocator();
+	doc.AddMember("lastOpenedScene", editorPrefs.lastOpenedScene, allocator);
+
+	FileHelper::TryWriteJsonFile(editorPrefsPath, doc, true);
+}
 
 void Editor::OnSceneChange(const SceneChangeEvent& ev)
 {
 	editorPrefs.lastOpenedScene = ev.currentState;
+	
+	focusedObject = nullptr;
 }

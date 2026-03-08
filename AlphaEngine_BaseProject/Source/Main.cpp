@@ -5,6 +5,7 @@
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
+#include "Editor/Editor.h"
 
 #include <windows.h>
 #include <imgui.h>
@@ -92,8 +93,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//	platform_io.Platform_RenderWindow = Hook_Platform_RenderWindow;
 	//}
 
-	//GSM::Init(SceneState::GS_SPLASH_SCREEN);
-	GSM::Init(SceneState::GS_GAME);
+#if _DEBUG
+	GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
+#else
+	GSM::Init(SceneState::GS_SPLASH_SCREEN);
+#endif
+
 	GSM::Update();
 	GSM::Exit();
 
