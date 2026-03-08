@@ -73,7 +73,7 @@ void GSM::Update()
 			// Allows to dock window anywhere
 			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-			AEGfxSetBackgroundColor(0.129f, 0.114f, 0.18f);
+			AEGfxSetBackgroundColor(0.184f, 0.18f, 0.259f);
 			//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
 
 			AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
