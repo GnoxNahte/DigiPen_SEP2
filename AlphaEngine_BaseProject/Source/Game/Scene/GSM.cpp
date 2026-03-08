@@ -59,6 +59,11 @@ void GSM::Update()
 			LoadState(currentState);
 		}
 
+		EventSystem::Trigger(SceneChangeEvent{
+			.previousState = previousState,
+			.currentState = currentState
+		});
+		
 		currentScene->Init();
 
 		while (currentState == nextState)

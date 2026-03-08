@@ -3,8 +3,8 @@
 #include <imgui_impl_opengl3.h>
 #include <AEEngine.h>
 
-#include "../Game/Scene/GSM.h"
 #include "../Utils/AEExtras.h"
+#include "../Game/Scene/GSM.h"
 #include "../Game/Time.h"
 
 void Editor::Register(Inspectable& obj)
@@ -80,6 +80,15 @@ Editor& Editor::Get()
 
 Editor::Editor() 
 {
+	gsmSceneChangeEventId = EventSystem::Subscribe<SceneChangeEvent>([&](const SceneChangeEvent& ev) {
+		OnSceneChange(ev);
+	});
+}
+
+Editor::~Editor()
+{
+	SaveEditorPrefs();
+	EventSystem::Unsubscribe<SceneChangeEvent>(gsmSceneChangeEventId);
 }
 
 void Editor::DrawMenus()
@@ -124,5 +133,10 @@ void Editor::DrawMenus()
 
 		ImGui::EndMainMenuBar();
 	}
+}
 
+
+void Editor::OnSceneChange(const SceneChangeEvent& ev)
+{
+	editorPrefs.lastOpenedScene = ev.currentState;
 }

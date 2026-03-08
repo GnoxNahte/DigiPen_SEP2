@@ -22,13 +22,18 @@ private:
 
 	Inspectable* focusedObject = nullptr;
 
+	EventId gsmSceneChangeEventId;
+
 	// @todo - benchmark, change to map if got lots of unregisters
 	std::vector<std::reference_wrapper<Inspectable>> menuObjs;
 
 	// Singleton
 	static Editor& Get();
 	Editor();
+	~Editor();
 
 	void DrawMenus();
 };
 
+	void OnSceneChange(const SceneChangeEvent& ev);
+};
