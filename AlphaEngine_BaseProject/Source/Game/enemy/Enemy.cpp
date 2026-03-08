@@ -530,7 +530,7 @@ void Enemy::UpdateAnimation()
 
 void Enemy::DrawInspector()
 {
-    ImGui::Begin("Enemy");
+    ImGui::Begin("Enemy", &isInspectorOpen);
 
     if (ImGui::CollapsingHeader("Runtime"))
     {

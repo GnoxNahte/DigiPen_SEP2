@@ -64,9 +64,6 @@ void Player::Update()
 
     UpdateAnimation();
     UpdateTrails();
-
-    if (AEInputCheckCurr(AEVK_N))
-        TryTakeDamage(10000, { 0 });
 }
 
 void Player::Render()
@@ -647,7 +644,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 
 void Player::DrawInspector()
 {
-    ImGui::Begin("Player"); 
+    ImGui::Begin("Player", &isInspectorOpen); 
     
     // === Runtime ===
     if (ImGui::CollapsingHeader("Runtime"))

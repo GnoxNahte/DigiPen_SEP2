@@ -1,8 +1,8 @@
 #pragma once
 #include "AEEngine.h"
+#include "../Editor/EditorUtils.h"
 
-
-class Camera
+class Camera : Inspectable
 {
 public:
 	static float scale;
@@ -27,8 +27,12 @@ public:
 	float smoothTime;
 
 	Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale);
+	~Camera();
 
 	void SetFollow(const AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 
 	void Update();
+
+	// Inherited via Inspectable
+	void DrawInspector() override;
 };
