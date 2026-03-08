@@ -27,11 +27,19 @@ struct SpriteMetadata
 		 */
 		int sampleRate;
 
+		/**
+		 * @brief	If it loops the current animation after it's done. 
+		 *			If false, it'll stay on the last frame
+		 * @note	This is optional
+		 * @default true
+		 */
+		bool ifLoop;
+
 		// === NOT in JSON ===
 		// Derived from sample rate
 		float timePerFrame;
 
-		StateInfo(std::string name, int frameCount, int sampleRate);
+		StateInfo(std::string name, int frameCount, int sampleRate, bool ifLoop);
 	};
 
 	// === In JSON ===

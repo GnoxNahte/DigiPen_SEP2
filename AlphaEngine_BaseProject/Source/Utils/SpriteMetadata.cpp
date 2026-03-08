@@ -40,7 +40,8 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 		this->stateInfoRows.emplace_back(
 			stateInfoObj["name"].GetString(),
 			stateInfoObj["frameCount"].GetInt(),
-			stateInfoObj.HasMember("sampleRate") ? stateInfoObj["sampleRate"].GetInt() : defaultSampleRate
+			stateInfoObj.HasMember("sampleRate") ? stateInfoObj["sampleRate"].GetInt() : defaultSampleRate,
+			stateInfoObj.HasMember("ifLoop") ? stateInfoObj["ifLoop"].GetBool() : true
 		);
 	}
 
@@ -56,10 +57,11 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 	pivot.y = pivotObject["y"].GetFloat();
 }
 
-SpriteMetadata::StateInfo::StateInfo(std::string name, int frameCount, int sampleRate) :
+SpriteMetadata::StateInfo::StateInfo(std::string name, int frameCount, int sampleRate, bool ifLoop) :
 	name(name),
 	frameCount(frameCount),
 	sampleRate(sampleRate),
-	timePerFrame(1.f / sampleRate)
+	timePerFrame(1.f / sampleRate),
+	ifLoop(ifLoop)
 {
 }
