@@ -182,6 +182,7 @@ bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitS
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
+    , bossFont(AEGfxCreateFont("Assets/m04.ttf", 36))
 {
     position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
@@ -205,11 +206,13 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+
     
 }
 
 EnemyBoss::~EnemyBoss()
 {
+    AEGfxDestroyFont(bossFont);
 }
 
 // Spawns "charge" particles around the boss that drift inward.
@@ -421,7 +424,18 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float absDx = std::fabs(dx);
 
     const bool inAggroRange = (absDx <= aggroRange);
-	if (inAggroRange) bossEngaged = inAggroRange;
+
+    if (inAggroRange && !bossEngaged)
+    {
+        bossEngaged = true;
+        hudIntroStarted = true;
+        hudIntroTimer = 0.0f;
+    }
+
+    if (hudIntroStarted)
+    {
+        hudIntroTimer += dt;
+    }
 
     // --- TELEPORT trigger (only when not in special/attack/etc.) ---
     const bool teleportBlockedBySpecial = g_spellcastUntil5thSpawn;
@@ -940,6 +954,14 @@ void EnemyBoss::RenderHealthbar() const
 	if (!showHealthbar) return;
     if (hideAfterDeath) return;
     if (!bossEngaged) return;
+
+    float t = hudIntroStarted ? hudIntroTimer : 999.0f;
+
+    float nameAlpha = t / nameFadeDuration;
+    nameAlpha = max(0.0f, min(1.0f, nameAlpha));
+
+    float barReveal = (t - barStartDelay) / barFillDuration;
+    barReveal = max(0.0f, min(1.0f, barReveal));
       
     AEMtx33 ui;
     AEMtx33Scale(&ui, 1.f, 1.f);
@@ -948,7 +970,7 @@ void EnemyBoss::RenderHealthbar() const
     // --- HUD anchor in screen pixels ---
     const float screenW = (float)AEGfxGetWindowWidth();
 
-    const float topMarginPx = 30.f;   // distance from top of screen
+    const float topMarginPx = 70.f;   // distance from top of screen
     const float barPxW = 520.f;  // pixel width
     const float barPxH = 18.f;   // pixel height
 
@@ -971,34 +993,36 @@ void EnemyBoss::RenderHealthbar() const
     //const float fillW = barW * hpBarShown;
     //const float fillCenterX = barLeftX + fillW * 0.5f;
 
-    float chipW = barW * hpBarChip;
-    float frontW = barW * hpBarFront;
+    float chipW = barW * hpBarChip * barReveal;
+    float frontW = barW * hpBarFront * barReveal;
 
     float chipCenterX = barLeftX + chipW * 0.5f;
     float frontCenterX = barLeftX + frontW * 0.5f;
     AEGfxSetBlendMode(AE_GFX_BM_BLEND); // safety
 
-    // Background
-    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_TRIANGLES);
+    u32 bgColor = ScaleAlpha(0xFFFFFFFF, barReveal);
+    u32 borderColor = ScaleAlpha(0xFFFFFFFF, barReveal);
+    u32 chipColor = ScaleAlpha(0xFF7A0000, barReveal);
+    u32 frontColor = ScaleAlpha(0xFFFF0000, barReveal);
 
-    // Border 
-   QuickGraphics::DrawRect(barCenterX, barY, barW, barH, 0xFFFFFFFF, AE_GFX_MDM_LINES_STRIP);
 
-    
+    //background and border of health bar
+    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, bgColor, AE_GFX_MDM_TRIANGLES);
+    QuickGraphics::DrawRect(barCenterX, barY, barW, barH, borderColor, AE_GFX_MDM_LINES_STRIP);
 
     if (frontW > 0.001f)
     {
-        // Chip (delayed)
-        QuickGraphics::DrawRect(chipCenterX, barY, chipW, barH, 0xFF7A0000, AE_GFX_MDM_TRIANGLES);
-
-        QuickGraphics::DrawRect(frontCenterX, barY, frontW, barH, 0xFFFF0000, AE_GFX_MDM_TRIANGLES);
+        QuickGraphics::DrawRect(chipCenterX, barY, chipW, barH, chipColor, AE_GFX_MDM_TRIANGLES);
+        QuickGraphics::DrawRect(frontCenterX, barY, frontW, barH, frontColor, AE_GFX_MDM_TRIANGLES);
     }
    
 
     // Text (optional)
    // (Top-left label + HP numbers)
     std::string label = "Bringer of Death";
-    QuickGraphics::PrintText(label.c_str(), -0.95f, 0.88f, 0.35f, 1, 1, 1, 1);
+  
+    //QuickGraphics::PrintText(label.c_str(), -0.15f, 0.88f, 0.35f, 1, 1, 1, nameAlpha);
+    AEGfxPrint(bossFont, label.c_str(), -0.18f, 0.88f, 0.50f, 1.0f, 1.0f, 1.0f, nameAlpha);
     /*
     std::string hpStr = std::to_string(hp) + " / " + std::to_string(maxHP);
     QuickGraphics::PrintText(hpStr.c_str(), 0.55f, 0.88f, 0.35f, 1, 1, 1, 1);
