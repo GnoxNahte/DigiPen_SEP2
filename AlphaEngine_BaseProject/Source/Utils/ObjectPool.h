@@ -35,7 +35,7 @@ public:
  *			Need the object that is being pooled to inherit ObjectPoolItem
  * 
  * @warning	This will swap memory around when removing so shouldn't store pointers to the items. 
-			This also means it's not ordered
+			This also means insertation order isn't kept
  */
 template<typename T>
 requires std::derived_from<T, ObjectPoolItem>

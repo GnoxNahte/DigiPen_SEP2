@@ -15,9 +15,12 @@ public:
 		SceneState lastOpenedScene = SceneState::GS_GAME;
 	};
 
+	// Inspectable automatically registers and unregisters in constructor
 	static void Register(Inspectable* obj);
 	static void Unregister(Inspectable* obj);
 
+	// Each system needs to register by themselves because need the name. 
+	// @todo change inspectable to hold a name too then can combine Register and RegisterSystem
 	static void RegisterSystem(std::string name, Inspectable* obj);
 	static void UnregisterSystem(std::string name, Inspectable* obj);
 

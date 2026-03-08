@@ -5,7 +5,6 @@
 #include "MainMenuScene.h"
 #include "../../Utils/QuickGraphics.h" 
 #include "../../../Saves/SaveSystem.h"
-#include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
 #include "LevelEditorScene.h"
@@ -15,8 +14,6 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
-
-#include "../../Utils/AEExtras.h" // temp
 
 BaseScene* GSM::currentScene = nullptr;
 

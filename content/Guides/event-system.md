@@ -47,13 +47,13 @@ public:
 
 class SampleClass
 {
+	// ID used to Unsubscribe later
+	EventId playerDeathEventId;
+
 	void OnPlayerDied(const PlayerDeathEvent& ev)
 	{
 		std::cout << "Player died! - health:" << ev.player.health << "\n";
 	}
-
-	// ID used to Unsubscribe later
-	EventId playerDeathEventId;
 
 	SampleClass()
 	{

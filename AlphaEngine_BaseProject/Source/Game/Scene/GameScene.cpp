@@ -380,7 +380,7 @@ void GameScene::Render()
 
 
 
-
+#if _DEBUG
 	AEVec2 worldMousePos;
 	AEExtras::GetCursorWorldPosition(worldMousePos);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
@@ -397,10 +397,7 @@ void GameScene::Render()
 
 	if (AEInputCheckTriggered(AEVK_R))
 		GSM::ChangeScene(SceneState::GS_GAME);
-	else if (AEInputCheckTriggered(AEVK_T))
-		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
-	else if (AEInputCheckTriggered(AEVK_Y))
-		GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
+#endif
 }
 
 void GameScene::Exit()
