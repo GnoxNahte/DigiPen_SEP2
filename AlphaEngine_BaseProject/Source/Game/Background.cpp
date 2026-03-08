@@ -20,7 +20,7 @@ void Background::Render()
     float g = (0.278f * tintStrength) + (1.0f * (1.0f - tintStrength));
     float b = (0.549f * tintStrength) + (1.0f * (1.0f - tintStrength));
 
-    AEGfxSetColorToMultiply(r, g, b, 1.0f);
+    AEGfxSetColorToMultiply(r, g, b, 0.85f);
     AEGfxSetColorToAdd(0,0,0,0);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);

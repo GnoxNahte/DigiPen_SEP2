@@ -14,6 +14,20 @@
 // defined in GameScene.cpp
 extern std::string gPendingLevelPath;
 
+AEGfxVertexList* MainMenuScene::MakeSpikeMesh(int frame)
+{
+    const float uMin = frame * 0.25f;
+    const float uMax = (frame + 1) * 0.25f;
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    return AEGfxMeshEnd();
+}
+
 std::string MainMenuScene::ExeDir()
 {
     char buf[MAX_PATH] = {};
@@ -46,7 +60,23 @@ void MainMenuScene::Init()
         if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/buggy-font.ttf", 18);
     }
 
-    std::string path = "Assets\\Levels\\menu.lvl";
+    // load vine texture and mesh
+    vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, 0.f, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, 1.f, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+    vineMesh = AEGfxMeshEnd();
+
+    // load spike texture and per-frame meshes
+    spikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
+    for (int i = 0; i < 4; ++i)
+        spikeMeshes[i] = MakeSpikeMesh(i);
+
+    std::string path = "Assets\\Levels\\themenu.lvl";
 
     LevelData lvl;
     if (LoadLevelFromFile(path.c_str(), lvl))
@@ -71,8 +101,10 @@ void MainMenuScene::Init()
 
         player.Reset(lvl.spawn);
 
+        vinePositions = lvl.vines;
+
         // spawn traps and wire up pressure plate links
-        std::vector<SpikePlate*>    spawnedSpikes;
+        std::vector<SpikePlate*> spawnedSpikes;
         std::vector<PressurePlate*> spawnedPlates;
 
         for (const auto& td : lvl.traps)
@@ -85,6 +117,8 @@ void MainMenuScene::Init()
                 SpikePlate& s = trapMgr.Spawn<SpikePlate>(
                     box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
                 spawnedSpikes.push_back(&s);
+                spikeTraps.push_back(&s);
+                spikeAnims.emplace_back();
             }
             else if (tt == Trap::Type::PressurePlate)
             {
@@ -97,7 +131,7 @@ void MainMenuScene::Init()
             }
         }
 
-        // every pressure plate triggers every spike plate (same rule as editor)
+        // every pressure plate triggers every spike plate
         for (PressurePlate* plate : spawnedPlates)
             for (SpikePlate* spike : spawnedSpikes)
                 plate->AddLinkedTrap(spike);
@@ -117,8 +151,12 @@ void MainMenuScene::Init()
     {
         mapCols = 40;
 
+        // simple fallback terrain using new tile enums
         for (int x = 0; x < 40; ++x)
-            map.SetTile(x, 1, MapTile::Type::GROUND);
+        {
+            map.SetTile(x, 0, MapTile::Type::GROUND_BODY);
+            map.SetTile(x, 1, MapTile::Type::GROUND_SURFACE);
+        }
 
         player.Reset({ 3.f, 3.f });
     }
@@ -133,15 +171,34 @@ void MainMenuScene::Update()
 
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     trapMgr.Update(dt, player);
+
+    // tick spike animators
+    for (int i = 0; i < (int)spikeTraps.size(); ++i)
+    {
+        SpikeAnim& a = spikeAnims[i];
+
+        if (!a.triggered && spikeTraps[i]->IsEnabled())
+            a.triggered = true;
+
+        if (!a.triggered || a.done) continue;
+
+        a.timer += dt;
+        if (a.timer >= 0.08f)
+        {
+            a.timer -= 0.08f;
+            if (++a.frame >= 3) { a.frame = 3; a.done = true; }
+        }
+    }
+
     enemyMgr.UpdateAll(player.GetPosition(), map);
 
     camera.Update();
 
-    // transition to game when player reaches (3, 48)
+    // transition to game when player reaches the exit area
     if (player.GetPosition().x >= 3.f && player.GetPosition().x <= 4.f &&
         player.GetPosition().y >= 48.f)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
+        gPendingLevelPath = ExeDir() + "Assets\\Levels\\level01.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
 }
@@ -150,7 +207,7 @@ void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
 
-    // reset render state: UI::DrawHealthVignette leaves transparency=0 at full health
+    // reset render state
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);
@@ -161,7 +218,50 @@ void MainMenuScene::Render()
         Camera::position.y * Camera::scale);
 
     map.Render();
+
+    // vine decorations
+    if (vineTexture && vineMesh)
+    {
+        AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+        AEGfxSetTransparency(1.f);
+        AEGfxTextureSet(vineTexture, 0.f, 0.f);
+        for (const auto& v : vinePositions)
+        {
+            AEMtx33 m;
+            AEMtx33Trans(&m, v.x + 0.5f, v.y + 0.5f);
+            AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+            AEGfxSetTransform(m.m);
+            AEGfxMeshDraw(vineMesh, AE_GFX_MDM_TRIANGLES);
+        }
+    }
+
     trapMgr.Render();
+
+    // spike animated sprites
+    if (spikeTexture)
+    {
+        int idx = 0;
+        for (const auto& a : spikeAnims)
+        {
+            Trap* t = spikeTraps[idx++];
+            float wx = t->GetBox().position.x - t->GetBox().size.x * 0.5f;
+            float wy = t->GetBox().position.y - t->GetBox().size.y * 0.5f;
+            AEMtx33 m;
+            AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
+            AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+            AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+            AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+            AEGfxSetTransparency(1.f);
+            AEGfxTextureSet(spikeTexture, 0.f, 0.f);
+            AEGfxSetTransform(m.m);
+            AEGfxMeshDraw(spikeMeshes[a.frame], AE_GFX_MDM_TRIANGLES);
+        }
+    }
     player.Render();
     enemyMgr.RenderAll();
 
@@ -211,6 +311,16 @@ void MainMenuScene::Render()
 
 void MainMenuScene::Exit()
 {
+    if (vineTexture) { AEGfxTextureUnload(vineTexture); vineTexture = nullptr; }
+    if (vineMesh) { AEGfxMeshFree(vineMesh);         vineMesh = nullptr; }
+    vinePositions.clear();
+
+    if (spikeTexture) { AEGfxTextureUnload(spikeTexture); spikeTexture = nullptr; }
+    for (int i = 0; i < 4; ++i)
+        if (spikeMeshes[i]) { AEGfxMeshFree(spikeMeshes[i]); spikeMeshes[i] = nullptr; }
+    spikeTraps.clear();
+    spikeAnims.clear();
+
     if (uiFont >= 0)
     {
         AEGfxDestroyFont((s8)uiFont);
