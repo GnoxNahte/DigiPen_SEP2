@@ -6,6 +6,7 @@
 #include "../enemy/EnemyManager.h"
 #include "GSM.h"
 #include <string>
+#include <vector>
 
 class MainMenuScene : public BaseScene
 {
@@ -29,4 +30,18 @@ private:
 
     int mapCols = 100;
     int uiFont = -1;
+
+    // vine decoration
+    AEGfxTexture* vineTexture = nullptr;
+    AEGfxVertexList* vineMesh = nullptr;
+    std::vector<AEVec2> vinePositions;
+
+    // spike animation
+    struct SpikeAnim { bool triggered = false; bool done = false; int frame = 0; float timer = 0.f; };
+    AEGfxTexture* spikeTexture = nullptr;
+    AEGfxVertexList* spikeMeshes[4] = {};
+    std::vector<SpikeAnim> spikeAnims;
+    std::vector<Trap*>     spikeTraps;
+
+    static AEGfxVertexList* MakeSpikeMesh(int frame);
 };

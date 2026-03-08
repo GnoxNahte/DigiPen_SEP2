@@ -152,6 +152,10 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
             << e.pos.x << ' ' << e.pos.y << "\n";
     }
 
+    out << "vines " << (int)lvl.vines.size() << "\n";
+    for (const auto& v : lvl.vines)
+        out << "vine " << v.x << ' ' << v.y << "\n";
+
     out.flush();
     return out.good();
 }
@@ -345,6 +349,42 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
         outLvl.enemies.push_back(e);
     }
 
+    // vines block (optional)
+    outLvl.vines.clear();
+
+    if (!(in >> word))
+        return true;
+
+    if (word != "vines")
+        return true;
+
+    int vineCount = 0;
+    in >> vineCount;
+    if (!in || vineCount < 0) return false;
+
+    outLvl.vines.reserve((size_t)vineCount);
+
+    std::getline(in, line); // consume rest of line
+    for (int i = 0; i < vineCount; ++i)
+    {
+        std::getline(in, line);
+        if (!in) return false;
+
+        TrimLeft(line);
+        if (line.empty()) { --i; continue; }
+
+        std::istringstream ss(line);
+        std::string tag;
+        ss >> tag;
+        if (!ss || tag != "vine") return false;
+
+        AEVec2 v{ 0, 0 };
+        ss >> v.x >> v.y;
+        if (!ss) return false;
+
+        outLvl.vines.push_back(v);
+    }
+
     return true;
 }
 
@@ -352,6 +392,7 @@ void BuildLevelDataFromEditor(
     MapGrid& grid, int rows, int cols,
     const std::vector<TrapDefSimple>& traps,
     const std::vector<EnemyDefSimple>& enemies,
+    const std::vector<AEVec2>& vines,
     const AEVec2& spawn,
     LevelData& out)
 {
@@ -361,6 +402,7 @@ void BuildLevelDataFromEditor(
     out.spawn = spawn;
     out.traps = traps;
     out.enemies = enemies;
+    out.vines = vines;
 
     out.tiles.assign((size_t)rows * (size_t)cols, (int)MapTile::Type::NONE);
 
@@ -380,6 +422,7 @@ bool ApplyLevelDataToEditor(
     MapGrid*& ioGrid,
     std::vector<TrapDefSimple>& ioTraps,
     std::vector<EnemyDefSimple>& ioEnemies,
+    std::vector<AEVec2>& ioVines,
     AEVec2& ioSpawn)
 {
     if (lvl.rows <= 0 || lvl.cols <= 0) return false;
@@ -403,6 +446,7 @@ bool ApplyLevelDataToEditor(
 
     ioTraps = lvl.traps;
     ioEnemies = lvl.enemies;
+    ioVines = lvl.vines;
     ioSpawn = lvl.spawn;
     return true;
 }

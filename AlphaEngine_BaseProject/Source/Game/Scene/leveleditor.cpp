@@ -364,7 +364,7 @@ static void Prompt_Update()
         {
             LevelData lvl;
             BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS,
-                gTrapDefs, gEnemyDefs, gSpawn, lvl);
+                gTrapDefs, gEnemyDefs, gVinePositions, gSpawn, lvl);
             gSaveSuccess = SaveLevelToFile(path.c_str(), lvl);
             gSaveMessageTimer = 2.5f;
         }
@@ -373,7 +373,7 @@ static void Prompt_Update()
             LevelData lvl;
             if (LoadLevelFromFile(path.c_str(), lvl))
             {
-                ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gEnemyDefs, gSpawn);
+                ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gEnemyDefs, gVinePositions, gSpawn);
                 gSaveSuccess = true;
                 gSaveMessageTimer = 2.5f;
             }
@@ -576,7 +576,7 @@ static void PlayMode_Render()
         DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
     }
 
-    // spike animated sprites
+    // spike animated sprites — draw black rect first to cover any external red outline
     int spikeIdx = 0;
     for (const auto& td : gTrapDefs)
     {
@@ -586,10 +586,16 @@ static void PlayMode_Render()
         float wx = td.pos.x - td.size.x * 0.5f;
         float wy = td.pos.y - td.size.y * 0.5f;
 
+        // black rect to cover the red outline drawn externally
+        AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+        DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.f, 0.f, 0.f, 1.f);
+
+        // spike sprite on top
         AEMtx33 m;
         AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
         AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
-
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
         AEGfxSetBlendMode(AE_GFX_BM_BLEND);
         AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
