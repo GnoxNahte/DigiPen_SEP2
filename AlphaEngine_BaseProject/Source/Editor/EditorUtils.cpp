@@ -1,14 +1,21 @@
 #include "EditorUtils.h"
 #include "Editor.h"
 
-Inspectable::Inspectable()
+Inspectable::Inspectable(bool isSystem) : isSystem(isSystem)
 {
-	Editor::Register(*this);
+	// if is a system, register in parent class (since need name)
+	if (isSystem)
+		return;
+
+	Editor::Register(this);
 }
 
 Inspectable::~Inspectable()
 {
-	Editor::Unregister(*this);
+	if (isSystem)
+		return;
+
+	Editor::Unregister(this);
 }
 
 // Takes in mousePos

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include "EditorUtils.h"
 #include "../Game/Scene/GSM.h"
@@ -14,8 +15,11 @@ public:
 		SceneState lastOpenedScene = SceneState::GS_GAME;
 	};
 
-	static void Register(Inspectable& obj);
-	static void Unregister(Inspectable& obj);
+	static void Register(Inspectable* obj);
+	static void Unregister(Inspectable* obj);
+
+	static void RegisterSystem(std::string name, Inspectable* obj);
+	static void UnregisterSystem(std::string name, Inspectable* obj);
 
 	static const EditorPrefs& GetEditorPrefs();
 
@@ -24,6 +28,7 @@ public:
 
 	static bool GetShowColliders();
 private:
+
 	inline static std::string editorPrefsPath = "Assets/Editor/prefs.json";
 	EditorPrefs editorPrefs;
 
@@ -36,7 +41,8 @@ private:
 	EventId gsmSceneChangeEventId;
 
 	// @todo - benchmark, change to map if got lots of unregisters
-	std::vector<std::reference_wrapper<Inspectable>> menuObjs;
+	std::vector<Inspectable*> gameObjs;
+	std::map<std::string, Inspectable*> systemsObjs;
 
 	// Singleton
 	static Editor& Get();

@@ -7,17 +7,34 @@
 #include "../Utils/FileHelper.h"
 #include "../Game/Time.h"
 
-void Editor::Register(Inspectable& obj)
+void Editor::Register(Inspectable* obj)
 {
-	Get().menuObjs.emplace_back(std::ref(obj));
+	Get().gameObjs.emplace_back(obj);
 }
 
-void Editor::Unregister(Inspectable& obj)
+void Editor::Unregister(Inspectable* obj)
 {
-	auto& menu = Get().menuObjs;
-	std::erase_if(menu, [&obj](const auto& ref) {
-		return &ref.get() == &obj;
-	});
+	auto& objs = Get().gameObjs;
+	std::erase(objs, obj);
+}
+
+void Editor::RegisterSystem(std::string name, Inspectable* obj)
+{
+	Get().systemsObjs.try_emplace(name, obj);
+}
+
+void Editor::UnregisterSystem(std::string name, Inspectable* obj)
+{
+	auto& objs = Get().systemsObjs;
+	const auto& it = objs.find(name);
+
+	// Only removes if both 
+	// - key is found 
+	// - value is same as obj (to prevent accidentally removing other systems)
+	if (it != objs.end() && it->second == obj)
+		Get().systemsObjs.erase(name);
+	else
+		std::cout << "Failed to unregister system";
 }
 
 const Editor::EditorPrefs& Editor::GetEditorPrefs()
@@ -38,11 +55,12 @@ void Editor::Update()
 
 		AEVec2 mousePos;
 		AEExtras::GetCursorWorldPosition(mousePos);
-		for (Inspectable& obj : instance.menuObjs)
+		for (Inspectable* obj : instance.gameObjs)
 		{
-			if (obj.CheckIfClicked(mousePos))
+			if (obj->CheckIfClicked(mousePos))
 			{
-				instance.focusedObject = &obj;
+				obj->isInspectorOpen = true;
+				instance.focusedObject = obj;
 				instance.showInspectors = true;
 				break;
 			}
@@ -64,8 +82,14 @@ void Editor::DrawInspectors()
 
 		instance.DrawMenus();
 
-		if (instance.focusedObject)
+		if (instance.focusedObject && instance.focusedObject->isInspectorOpen)
 			instance.focusedObject->DrawInspector();
+
+		for (auto& [name, obj] : instance.systemsObjs)
+		{
+			if (obj->isInspectorOpen)
+				obj->DrawInspector();
+		}
 	}
 
 	ImGui::Render();
@@ -125,10 +149,16 @@ void Editor::DrawMenus()
 		if (ImGui::BeginMenu("Debug"))
 		{
 			ImGui::MenuItem("Show colliders", "Ctrl", &instance.showColliders);
+			ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow);
 
-			if (ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow))
-				ImGui::ShowDemoWindow();
-			
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Systems"))
+		{
+			for (auto& [name, obj] : instance.systemsObjs)
+				ImGui::MenuItem(name.c_str(), NULL, &obj->isInspectorOpen);
+
 			ImGui::EndMenu();
 		}
 
