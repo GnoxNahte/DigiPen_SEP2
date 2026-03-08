@@ -99,7 +99,7 @@ private:
     bool isRightWallCollided = false;
 
     // Keeps track of enemies that the current attack has hit
-    std::vector<Enemy*> attackedEnemies;
+    std::vector<IDamageable*> attackedEnemies;
 
     // === Combat ===
     int health;
@@ -144,7 +144,6 @@ private:
 
     void OnBuffSelected(const BuffSelectedEvent& ev);
     static float PercentToScale(int percentage); // Helper to calcualte buffs
-
 };
 
 // ===== Events =====

@@ -407,10 +407,10 @@ void Player::UpdateAttacks()
     // Check if attack hit enemy
     if (enemyManager)
     {
-        enemyManager->ForEachEnemy([&](Enemy& enemy) {
+        enemyManager->ForEachDamageable([&](IDamageable& obj) {
             // If hit enemy && current enemy isn't in attackedEnemies
-            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
-                std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
+            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) &&
+                std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend())
             {
                 int damage = attack->damage;
                 // todo - Change to precalculate? make percentage into another variable too
@@ -421,14 +421,14 @@ void Player::UpdateAttacks()
                 if (AERandFloat() < buff_critChance)
                     damage = static_cast<int>(damage * buff_critDmgMulti);
 
-                enemy.TryTakeDamage(damage, colliderPos);
-                attackedEnemies.push_back(&enemy);
+                obj.TryTakeDamage(damage, colliderPos);
+                attackedEnemies.push_back(&obj);
 
                 if (!hasAppliedRecoil)
                 {
                     if (isGroundAttack)
                         velocity.x += facingDirection.x > 0 ? -attack->recoilSpeed : attack->recoilSpeed;
-                    else 
+                    else
                         velocity.y += attack->recoilSpeed;
 
                     hasAppliedRecoil = true;
