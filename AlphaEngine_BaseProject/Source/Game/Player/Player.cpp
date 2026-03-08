@@ -41,6 +41,12 @@ Player::~Player()
 
 void Player::Update()
 {
+    if (IsDead())
+    {
+        UpdateAnimation();
+        return;
+    }
+
     UpdateInput();
     UpdateTriggerColliders();
 
@@ -58,6 +64,9 @@ void Player::Update()
 
     UpdateAnimation();
     UpdateTrails();
+
+    if (AEInputCheckCurr(AEVK_N))
+        TryTakeDamage(10000, { 0 });
 }
 
 void Player::Render()
@@ -509,12 +518,14 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    if (IsAttacking())
+    if (IsAttacking() || IsDead())
     {
-        // Do nothing, go to sprite.Update()
+        sprite.Update();
+        return;
     }
+
     // If player is trying to attack (including input buffer)
-    else if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
+    if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
     {
         //Attack(AIR_ATTACK_1);
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
@@ -586,7 +597,7 @@ float Player::PercentToScale(int percentage)
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }
 const AEVec2& Player::GetHurtboxSize() const { return stats.playerSize; }
-bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH; }
+bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAnimState() == AnimState::DEATH_LOOP; }
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 {
@@ -594,6 +605,9 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     {
         health = 0;
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
+        sprite.SetState(AnimState::DEATH, false, [&](int) {
+            sprite.SetState(AnimState::DEATH_LOOP); 
+        });
         return false;
     }
 
@@ -630,6 +644,7 @@ void Player::DrawInspector()
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
         ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
+        ImGui::TextDisabled("Sprite index: %s", std::to_string(sprite.GetState()).c_str());
         
         ImGui::SeparatorText("Buffs");
         ImGui::DragFloat("Move Speed", &buff_MoveSpeedMulti, 0.1f);

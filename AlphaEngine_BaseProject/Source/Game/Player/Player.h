@@ -33,6 +33,7 @@ public:
         ATTACK_END = ATTACK_3,
         HURT,        
         DEATH,       
+        DEATH_LOOP,       
         SWORD_DRAW,  
         SWORD_SHEATH,
         WALL_SLIDE,  
