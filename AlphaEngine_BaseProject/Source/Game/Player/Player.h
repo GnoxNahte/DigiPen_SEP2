@@ -131,6 +131,7 @@ private:
     void HandleJump();
     void PerformJump();
 
+    bool IsDashing();
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();

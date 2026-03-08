@@ -86,6 +86,10 @@ void Player::Render()
     // Camera scale. Scales translation too.
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
     AEGfxSetTransform(transform.m);
+    
+    // maybe remove, dash time is quite short player might not notice
+    if (IsDashing())
+        AEGfxSetTransparency(0.5f);
 
     sprite.Render();
 
@@ -97,6 +101,8 @@ void Player::Render()
         RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
+
+    AEGfxSetTransparency(1.f);
 }
 
 void Player::Reset(const AEVec2& initialPos)
@@ -364,6 +370,12 @@ void Player::PerformJump()
     //sprite.SetState(JUMP_START, true);
 }
 
+bool Player::IsDashing()
+{
+    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
+    return currTime - dashStartTime < stats.dashTime;
+}
+
 bool Player::IsAnimGroundAttack()
 {
     AnimState state = GetAnimState();
@@ -601,6 +613,10 @@ bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAn
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 {
+    // Invincible when dashing
+    if (IsDashing())
+        return health > 0;
+
     if (health < dmg)
     {
         health = 0;
