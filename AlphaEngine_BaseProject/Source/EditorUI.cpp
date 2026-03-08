@@ -183,6 +183,10 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         ui.brush = EditorTile::Spawn;
     y -= (h + ui.gap);
 
+    if (Button("vine", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Vine))
+        ui.brush = EditorTile::Vine;
+    y -= (h + ui.gap);
+
     if (ui.brush == EditorTile::Enemy)
     {
         float sw = (w - ui.gap) * 0.5f;

@@ -42,6 +42,7 @@ private:
 	AEGfxTexture* bottomTexture = nullptr;  // tile_bottom.png
 	AEGfxTexture* platformTexture = nullptr;
 
+
 	int WorldToIndex(const AEVec2& worldPosition);
 	int WorldToIndex(float x, float y);
 

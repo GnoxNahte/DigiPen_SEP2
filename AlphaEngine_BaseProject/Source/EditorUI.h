@@ -17,7 +17,8 @@ enum class EditorTile
     Spike,
     PressurePlate,
     Enemy,
-    Spawn
+    Spawn,
+    Vine
 };
 
 enum class EditorEnemyPreset

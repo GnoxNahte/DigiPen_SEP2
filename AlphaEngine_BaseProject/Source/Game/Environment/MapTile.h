@@ -10,6 +10,7 @@ public:
 		GROUND_BODY,   
 		GROUND_BOTTOM, 
 		PLATFORM,
+		
 
 		MAP_TILE_TYPE_COUNT,
 	};

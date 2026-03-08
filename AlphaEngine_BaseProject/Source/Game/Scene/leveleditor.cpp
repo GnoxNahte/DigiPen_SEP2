@@ -50,45 +50,55 @@ static AEVec2                      gSpawn{ 5.0f, 5.0f };
 
 static float gSaveMessageTimer = 0.f;
 static bool  gSaveSuccess = false;
-static bool gHoverCellValid = false;
-static int  gHoverCellX = -1;
-static int  gHoverCellY = -1;
+static bool  gHoverCellValid = false;
+static int   gHoverCellX = -1;
+static int   gHoverCellY = -1;
+
+// ── spike animation state ─────────────────────────────────────────────────
+static AEGfxTexture* gSpikeTexture = nullptr;
+static AEGfxVertexList* gSpikeMeshes[4] = {};
+
+struct SpikeAnim
+{
+    bool  triggered = false;
+    bool  done = false;
+    int   frame = 0;
+    float timer = 0.f;
+};
+static std::vector<SpikeAnim> gSpikeAnims;
+static std::vector<Trap*>     gSpikeTraps;
+
+// ── vine decoration state ─────────────────────────────────────────────────
+static AEGfxTexture* gVineTexture = nullptr;
+static AEGfxVertexList* gVineMesh = nullptr;
+static std::vector<AEVec2> gVinePositions;  // grid cell coords (x, y)  // raw ptrs into gPlayTraps, parallel to gSpikeAnims
 
 /*========================================================
     save prompt state
 ========================================================*/
 
 static bool        gPromptActive = false;
-static bool        gPromptIsSave = true;   // true=save, false=load
+static bool        gPromptIsSave = true;
 static std::string gPromptInput = "";
 static bool        gPromptJustOpened = false;
 
-
-
-// Returns absolute path: <exe_dir>/Assets/Levels/<name>.lvl
-// Also ensures the directory exists.
 static std::string NormaliseFilename(const std::string& name)
 {
-    // Get directory of the running executable
     char exePath[MAX_PATH] = {};
     GetModuleFileNameA(nullptr, exePath, MAX_PATH);
 
-    // Strip the exe filename to get the directory
     std::string dir(exePath);
     size_t slash = dir.find_last_of("\\/");
     if (slash != std::string::npos)
-        dir = dir.substr(0, slash + 1); // includes trailing slash
+        dir = dir.substr(0, slash + 1);
     else
         dir = ".\\";
 
-    // Append subfolder
     std::string folder = dir + "Assets\\Levels\\";
 
-    // Create directories if they don't exist
     CreateDirectoryA((dir + "Assets").c_str(), nullptr);
     CreateDirectoryA(folder.c_str(), nullptr);
 
-    // Append .lvl if needed
     std::string filename = name;
     if (filename.size() < 4 || filename.substr(filename.size() - 4) != ".lvl")
         filename += ".lvl";
@@ -186,6 +196,24 @@ static void PlaceEnemyAtCell(int tx, int ty, Enemy::Preset preset)
     gEnemyDefs.push_back(e);
 }
 
+// ── spike mesh builder ────────────────────────────────────────────────────────
+
+// Builds a unit quad with UVs baked for one horizontal frame of the sprite sheet.
+// Sheet is 64x16 => 4 frames of 16px => each frame = 0.25 UV width.
+static AEGfxVertexList* MakeSpikeMesh(int frame)
+{
+    const float uMin = frame * 0.25f;
+    const float uMax = (frame + 1) * 0.25f;
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    return AEGfxMeshEnd();
+}
+
 // ── overlay quad ─────────────────────────────────────────────────────────────
 
 static AEGfxVertexList* gOverlayQuad = nullptr;
@@ -223,11 +251,9 @@ static void DrawWorldRect(float worldX, float worldY, float worldW, float worldH
     AEGfxMeshDraw(gOverlayQuad, AE_GFX_MDM_TRIANGLES);
 }
 
-// Draw a screen-space rect (pixel coords, origin bottom-left, y-up)
 static void DrawScreenRect(float cx, float cy, float w, float h,
     float r, float g, float b, float a)
 {
-    // enforce UI camera
     AEGfxSetCamPosition(
         (float)AEGfxGetWindowWidth() * 0.5f,
         (float)AEGfxGetWindowHeight() * 0.5f
@@ -262,6 +288,7 @@ static void DrawScreenText(const char* text, float px, float py,
     AEGfxSetTransparency(1.f);
     AEGfxPrint(gUIFont, text, ndcX, ndcY, 1.0f, r, g, b, 1.f);
 }
+
 static void DrawGridOverlay()
 {
     if (!gMap) return;
@@ -272,30 +299,25 @@ static void DrawGridOverlay()
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetColorToAdd(0, 0, 0, 0);
 
-    // Vertical grid lines: x spans columns, height spans rows
     for (int x = 0; x <= GRID_COLS; ++x)
     {
         DrawWorldRect(
-            (float)x - thickness * 0.5f,
-            0.0f,
-            thickness,
-            (float)GRID_ROWS,
+            (float)x - thickness * 0.5f, 0.0f,
+            thickness, (float)GRID_ROWS,
             1.0f, 1.0f, 1.0f, 0.18f
         );
     }
 
-    // Horizontal grid lines: y spans rows, width spans columns
     for (int y = 0; y <= GRID_ROWS; ++y)
     {
         DrawWorldRect(
-            0.0f,
-            (float)y - thickness * 0.5f,
-            (float)GRID_COLS,
-            thickness,
+            0.0f, (float)y - thickness * 0.5f,
+            (float)GRID_COLS, thickness,
             1.0f, 1.0f, 1.0f, 0.18f
         );
     }
 }
+
 /*========================================================
     save / load prompt
 ========================================================*/
@@ -311,14 +333,10 @@ static void Prompt_Open(bool isSave)
 static void Prompt_Update()
 {
     if (!gPromptActive) return;
-
-    // Skip input on the frame we opened
     if (gPromptJustOpened) { gPromptJustOpened = false; return; }
 
-    // AEInputCheckTriggered = curr && !prev — exactly one fire per keypress
     bool shift = AEInputCheckCurr(AEVK_LSHIFT) || AEInputCheckCurr(AEVK_RSHIFT);
 
-    // Letters A-Z  (VK codes 0x41-0x5A match AEVK_A-AEVK_Z)
     for (u8 vk = AEVK_A; vk <= AEVK_Z; ++vk)
     {
         if (AEInputCheckTriggered(vk) && gPromptInput.size() < 32)
@@ -328,22 +346,16 @@ static void Prompt_Update()
         }
     }
 
-    // Digits 0-9  (VK codes 0x30-0x39 match AEVK_0-AEVK_9)
     for (u8 vk = AEVK_0; vk <= AEVK_9; ++vk)
-    {
         if (AEInputCheckTriggered(vk) && gPromptInput.size() < 32)
             gPromptInput += (char)vk;
-    }
 
-    // Hyphen / underscore
     if (AEInputCheckTriggered(AEVK_MINUS) && gPromptInput.size() < 32)
         gPromptInput += shift ? '_' : '-';
 
-    // Backspace
     if (AEInputCheckTriggered(AEVK_BACK) && !gPromptInput.empty())
         gPromptInput.pop_back();
 
-    // Confirm
     if (AEInputCheckTriggered(AEVK_RETURN) && !gPromptInput.empty())
     {
         std::string path = NormaliseFilename(gPromptInput);
@@ -375,7 +387,6 @@ static void Prompt_Update()
         gPromptActive = false;
     }
 
-    // Cancel
     if (AEInputCheckTriggered(AEVK_Z))
         gPromptActive = false;
 }
@@ -390,42 +401,31 @@ static void Prompt_Draw()
     float cx = winW * 0.5f;
     float cy = winH * 0.5f;
 
-    // dimmed backdrop
     DrawScreenRect(cx, cy, (float)winW, (float)winH, 0.f, 0.f, 0.f, 0.55f);
 
-    // dialog box
     float bw = 420.f, bh = 160.f;
     DrawScreenRect(cx, cy, bw, bh, 0.15f, 0.15f, 0.18f, 0.97f);
-
-    // border
-   // DrawScreenRect(cx, cy, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
-   // DrawScreenRect(cx, cy + bh * 0.5f - 1.f, bw, 2.f, 0.4f, 0.7f, 1.f, 1.f);
 
     const char* title = gPromptIsSave ? "Save level as:" : "Load level:";
     DrawScreenText(title, cx - bw * 0.5f + 18.f, cy + 44.f, 0.9f, 0.9f, 1.f);
 
-    // input box background
     float ibx = cx;
     float iby = cy + 4.f;
     DrawScreenRect(ibx, iby, bw - 36.f, 34.f, 0.08f, 0.08f, 0.10f, 1.f);
     DrawScreenRect(ibx, iby, bw - 36.f, 2.f, 0.4f, 0.7f, 1.f, 1.f);
 
-    // input text + cursor blink
     static float blinkT = 0.f;
     blinkT += (float)AEFrameRateControllerGetFrameTime();
     std::string display = gPromptInput;
     if ((int)(blinkT * 2.f) % 2 == 0) display += '|';
 
     DrawScreenText(display.c_str(),
-        ibx - (bw - 36.f) * 0.5f + 10.f,
-        iby - 8.f,
+        ibx - (bw - 36.f) * 0.5f + 10.f, iby - 8.f,
         1.f, 1.f, 1.f);
 
-    // show resolved path so user knows exactly where file will be saved
     if (!gPromptInput.empty())
     {
         std::string preview = NormaliseFilename(gPromptInput);
-        // truncate from left if too long to fit in dialog
         const size_t maxChars = 52;
         if (preview.size() > maxChars)
             preview = "..." + preview.substr(preview.size() - maxChars);
@@ -433,7 +433,6 @@ static void Prompt_Draw()
             cx - bw * 0.5f + 18.f, cy - 46.f, 0.45f, 0.85f, 0.45f);
     }
 
-    // hint
     DrawScreenText("Enter to confirm  |  Press Z to cancel",
         cx - bw * 0.5f + 18.f, cy - 66.f, 0.5f, 0.5f, 0.55f);
 }
@@ -444,31 +443,24 @@ static void Prompt_Draw()
 
 static void PlayMode_Enter()
 {
-    // --- camera ---
     gPlayCamera = new Camera(
         { 0.f, 0.f },
         { (float)GRID_COLS, (float)GRID_ROWS },
         CAMERA_SCALE
     );
 
-    // --- player ---
     gPlayPlayer = new Player(gMap, nullptr);
     gPlayPlayer->Reset(gSpawn);
 
-    // wire up room-based camera to follow player
     gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
 
-    // --- traps ---
     gPlayTraps = new TrapManager();
 
-    // Collect pointers so we can link pressure plates after all traps are spawned
     std::vector<PressurePlate*> spawnedPlates;
-    std::vector<Trap*>          spawnedLinkTargets; // currently: all spike plates
+    std::vector<Trap*>          spawnedLinkTargets;
 
     for (const auto& td : gTrapDefs)
     {
-        // traps.cpp currently treats Box.position as min corner (left/bottom)
-        // editor stores td.pos as center, so convert center -> min corner
         Box box{};
         box.size = td.size;
         box.position = AEVec2{
@@ -479,14 +471,13 @@ static void PlayMode_Enter()
         if (td.type == (int)Trap::Type::SpikePlate)
         {
             SpikePlate& spikeRef = gPlayTraps->Spawn<SpikePlate>(
-                box,
-                td.upTime,
-                td.downTime,
-                td.damageOnHit,
-                td.startDisabled
-            );
+                box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
 
             spawnedLinkTargets.push_back(&spikeRef);
+
+            // parallel spike animation entry
+            gSpikeTraps.push_back(&spikeRef);
+            gSpikeAnims.emplace_back();
         }
         else if (td.type == (int)Trap::Type::PressurePlate)
         {
@@ -499,12 +490,10 @@ static void PlayMode_Enter()
         }
     }
 
-    //every pressure plate controls every spike plate
     for (PressurePlate* plate : spawnedPlates)
         for (Trap* target : spawnedLinkTargets)
             plate->AddLinkedTrap(target);
 
-    // --- enemies ---
     gPlayEnemies = new EnemyManager();
     std::vector<EnemyManager::SpawnInfo> spawns;
     for (const auto& ed : gEnemyDefs)
@@ -519,6 +508,10 @@ static void PlayMode_Exit()
     delete gPlayTraps;   gPlayTraps = nullptr;
     delete gPlayEnemies; gPlayEnemies = nullptr;
     delete gPlayCamera;  gPlayCamera = nullptr;
+
+    gSpikeAnims.clear();
+    gSpikeTraps.clear();
+
     ApplyWorldCamera();
 }
 
@@ -544,6 +537,25 @@ static void PlayMode_Update(float dt)
         });
 
     gPlayTraps->Update(dt, *gPlayPlayer);
+
+    // tick spike animators
+    // spike starts disabled (startDisabled=true), plate calls SetEnabled(true) — that's our trigger
+    for (int i = 0; i < (int)gSpikeTraps.size(); ++i)
+    {
+        SpikeAnim& a = gSpikeAnims[i];
+
+        if (!a.triggered && gSpikeTraps[i]->IsEnabled())
+            a.triggered = true;
+
+        if (!a.triggered || a.done) continue;
+
+        a.timer += dt;
+        if (a.timer >= 0.08f)
+        {
+            a.timer -= 0.08f;
+            if (++a.frame >= 3) { a.frame = 3; a.done = true; }
+        }
+    }
 }
 
 static void PlayMode_Render()
@@ -553,21 +565,62 @@ static void PlayMode_Render()
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     gMap->Render();
 
+    // pressure plate green rects
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
     AEGfxSetColorToAdd(0, 0, 0, 0);
     for (const auto& td : gTrapDefs)
     {
+        if (td.type != (int)Trap::Type::PressurePlate) continue;
         float wx = td.pos.x - td.size.x * 0.5f;
         float wy = td.pos.y - td.size.y * 0.5f;
-        float r, g, b;
-        if (td.type == (int)Trap::Type::SpikePlate) { r = 0.85f; g = 0.20f; b = 0.20f; }
-        else if (td.type == (int)Trap::Type::PressurePlate) { r = 0.20f; g = 0.75f; b = 0.20f; }
-        else continue;
-        DrawWorldRect(wx, wy, td.size.x, td.size.y, r, g, b, 0.50f);
+        DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+    }
+
+    // spike animated sprites
+    int spikeIdx = 0;
+    for (const auto& td : gTrapDefs)
+    {
+        if (td.type != (int)Trap::Type::SpikePlate) continue;
+
+        const SpikeAnim& a = gSpikeAnims[spikeIdx++];
+        float wx = td.pos.x - td.size.x * 0.5f;
+        float wy = td.pos.y - td.size.y * 0.5f;
+
+        AEMtx33 m;
+        AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
+        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+
+        AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+        AEGfxSetTransparency(1.f);
+        AEGfxSetTransform(m.m);
+        AEGfxTextureSet(gSpikeTexture, 0.f, 0.f);
+        AEGfxMeshDraw(gSpikeMeshes[a.frame], AE_GFX_MDM_TRIANGLES);
     }
 
     gPlayPlayer->Render();
     gPlayEnemies->RenderAll();
+
+    // vine decorations (purely visual, same in both modes)
+    if (gVineTexture && gVineMesh)
+    {
+        AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+        AEGfxSetTransparency(1.f);
+        AEGfxTextureSet(gVineTexture, 0.f, 0.f);
+        for (const auto& v : gVinePositions)
+        {
+            AEMtx33 m;
+            AEMtx33Trans(&m, v.x + 0.5f, v.y + 0.5f);
+            AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+            AEGfxSetTransform(m.m);
+            AEGfxMeshDraw(gVineMesh, AE_GFX_MDM_TRIANGLES);
+        }
+    }
 }
 
 /*========================================================
@@ -604,8 +657,6 @@ static void UpdateEditor(float dt)
     AEVec2 world{};
     AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, (f32)my }, world);
 
-
-
     int tx = (int)std::floor(world.x);
     int ty = (int)std::floor(world.y);
     gHoverCellValid = InBounds(tx, ty);
@@ -613,8 +664,6 @@ static void UpdateEditor(float dt)
     gHoverCellY = ty;
 
     if (!InBounds(tx, ty)) return;
-
-
 
     bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON)
         : AEInputCheckTriggered(AEVK_LBUTTON);
@@ -625,6 +674,13 @@ static void UpdateEditor(float dt)
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
         RemoveTrapsAtCell(tx, ty);
         RemoveEnemyAtCell(tx, ty);
+        // remove vine at this cell if present
+        gVinePositions.erase(
+            std::remove_if(gVinePositions.begin(), gVinePositions.end(),
+                [tx, ty](const AEVec2& v) {
+                    return (int)v.x == tx && (int)v.y == ty;
+                }),
+            gVinePositions.end());
         return;
     }
     if (!lmb) return;
@@ -634,6 +690,12 @@ static void UpdateEditor(float dt)
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
         RemoveTrapsAtCell(tx, ty);
         RemoveEnemyAtCell(tx, ty);
+        gVinePositions.erase(
+            std::remove_if(gVinePositions.begin(), gVinePositions.end(),
+                [tx, ty](const AEVec2& v) {
+                    return (int)v.x == tx && (int)v.y == ty;
+                }),
+            gVinePositions.end());
         return;
     }
 
@@ -652,7 +714,7 @@ static void UpdateEditor(float dt)
         gMap->SetTile(tx, ty, MapTile::Type::PLATFORM);
         break;
     case EditorTile::Spike:
-        gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
+        gMap->SetTile(tx, ty, MapTile::Type::NONE);
         PlaceTrapAtCell(tx, ty, Trap::Type::SpikePlate);
         break;
     case EditorTile::PressurePlate:
@@ -669,9 +731,21 @@ static void UpdateEditor(float dt)
     case EditorTile::Spawn:
         gSpawn = AEVec2{ (float)tx + 0.5f, (float)ty + 0.5f };
         break;
-    
+    case EditorTile::Vine:
+    {
+        // only add if not already present at this cell
+        bool exists = false;
+        for (const auto& v : gVinePositions)
+            if ((int)v.x == tx && (int)v.y == ty) { exists = true; break; }
+        if (!exists)
+        {
+            gVinePositions.push_back(AEVec2{ (float)tx, (float)ty });
+            std::cout << "[Vine] placed at (" << tx << ", " << ty << ") total=" << gVinePositions.size() << "\n";
+        }
+        break;
     }
-}
+    }  // end switch
+}  // end UpdateEditor
 
 /*========================================================
     GameState lifecycle
@@ -704,6 +778,23 @@ void GameState_LevelEditor_Init()
     EditorUI_SetFont(gUIFont);
     OverlayInit();
 
+    // load spike spritesheet and build per-frame meshes
+    gSpikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
+    for (int i = 0; i < 4; ++i)
+        gSpikeMeshes[i] = MakeSpikeMesh(i);
+
+    // load vine texture and build simple unit quad
+    gVineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
+    std::cout << "[Vine] texture load: " << (gVineTexture ? "OK" : "FAILED - check Assets/Tmp/vines.png") << "\n";
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, 0.f, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, 1.f, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+    gVineMesh = AEGfxMeshEnd();
+
     gUI = EditorUIState{};
     gUIIO = EditorUIIO{};
 
@@ -722,7 +813,6 @@ void GameState_LevelEditor_Update()
 
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
-    // ── prompt takes priority over everything else ─────────────────────────
     if (gPromptActive)
     {
         Prompt_Update();
@@ -730,18 +820,8 @@ void GameState_LevelEditor_Update()
         return;
     }
 
-    // ── UI one-frame requests ─────────────────────────────────────────────
-    if (gUI.requestSave)
-    {
-        Prompt_Open(true);
-        gUI.requestSave = false;
-    }
-
-    if (gUI.requestLoad)
-    {
-        Prompt_Open(false);
-        gUI.requestLoad = false;
-    }
+    if (gUI.requestSave) { Prompt_Open(true);  gUI.requestSave = false; }
+    if (gUI.requestLoad) { Prompt_Open(false); gUI.requestLoad = false; }
 
     if (gUI.requestClearMap)
     {
@@ -750,12 +830,12 @@ void GameState_LevelEditor_Update()
                 gMap->SetTile(col, row, MapTile::Type::NONE);
         gTrapDefs.clear();
         gEnemyDefs.clear();
+        gVinePositions.clear();
         gUI.requestClearMap = false;
     }
 
     if (gSaveMessageTimer > 0.f) gSaveMessageTimer -= dt;
 
-    // ── play mode toggle ──────────────────────────────────────────────────
     bool prevPlayMode = gUI.playMode;
 
     if (gUI.requestTogglePlay)
@@ -772,7 +852,6 @@ void GameState_LevelEditor_Update()
         else              PlayMode_Exit();
     }
 
-    // ── tick ─────────────────────────────────────────────────────────────
     if (gUI.playMode)
         PlayMode_Update(dt);
     else
@@ -809,11 +888,26 @@ void GameState_LevelEditor_Draw()
         {
             float wx = t.pos.x - t.size.x * 0.5f;
             float wy = t.pos.y - t.size.y * 0.5f;
-            float r, g, b;
-            if (t.type == (int)Trap::Type::SpikePlate) { r = 0.85f; g = 0.20f; b = 0.20f; }
-            else if (t.type == (int)Trap::Type::PressurePlate) { r = 0.20f; g = 0.75f; b = 0.20f; }
-            else continue;
-            DrawWorldRect(wx, wy, t.size.x, t.size.y, r, g, b, 0.70f);
+
+            if (t.type == (int)Trap::Type::SpikePlate)
+            {
+                AEMtx33 m;
+                AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
+                AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+                AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+                AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+                AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+                AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+                AEGfxSetTransparency(1.f);
+                AEGfxSetTransform(m.m);
+                AEGfxTextureSet(gSpikeTexture, 0.f, 0.f);
+                AEGfxMeshDraw(gSpikeMeshes[3], AE_GFX_MDM_TRIANGLES);
+            }
+            else if (t.type == (int)Trap::Type::PressurePlate)
+            {
+                AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+                DrawWorldRect(wx, wy, t.size.x, t.size.y, 0.20f, 0.75f, 0.20f, 0.70f);
+            }
         }
 
         for (const auto& ed : gEnemyDefs)
@@ -827,11 +921,28 @@ void GameState_LevelEditor_Draw()
             DrawWorldRect(wx, wy, 1.f, 1.f, r, g, b, 0.70f);
         }
 
-        // spawn point
         DrawWorldRect(gSpawn.x - 0.15f, gSpawn.y - 0.15f, 0.3f, 0.3f, 1, 1, 1, 1);
+
+        // vine decorations
+        if (gVineTexture && gVineMesh)
+        {
+            AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+            AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+            AEGfxSetTransparency(1.f);
+            AEGfxTextureSet(gVineTexture, 0.f, 0.f);
+            for (const auto& v : gVinePositions)
+            {
+                AEMtx33 m;
+                AEMtx33Trans(&m, v.x + 0.5f, v.y + 0.5f);
+                AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+                AEGfxSetTransform(m.m);
+                AEGfxMeshDraw(gVineMesh, AE_GFX_MDM_TRIANGLES);
+            }
+        }
     }
 
-    // ── UI panel ─────────────────────────────────────────────────────────
     s32 mx, my;
     AEInputGetCursorPosition(&mx, &my);
 
@@ -842,22 +953,16 @@ void GameState_LevelEditor_Draw()
         mx, my,
         AEInputCheckTriggered(AEVK_LBUTTON)
     );
+
     if (gUIFont >= 0 && gHoverCellValid)
     {
         char buf[64];
         sprintf_s(buf, "cell: (%d, %d)", gHoverCellX, gHoverCellY);
-
-        DrawScreenText(
-            buf,
-            260.0f, 16.0f,
-            1.0f, 1.0f, 1.0f
-        );
+        DrawScreenText(buf, 260.0f, 16.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    // ── save prompt overlay (on top of everything) ────────────────────────
     Prompt_Draw();
 
-    // ── save feedback message ─────────────────────────────────────────────
     if (gSaveMessageTimer > 0.f)
     {
         const char* msg = gSaveSuccess ? "saved!" : "failed!";
@@ -879,7 +984,17 @@ void GameState_LevelEditor_Draw()
 void GameState_LevelEditor_Free()
 {
     if (gUI.playMode) PlayMode_Exit();
+
     OverlayShutdown();
+
+    if (gSpikeTexture) { AEGfxTextureUnload(gSpikeTexture); gSpikeTexture = nullptr; }
+    for (int i = 0; i < 4; ++i)
+        if (gSpikeMeshes[i]) { AEGfxMeshFree(gSpikeMeshes[i]); gSpikeMeshes[i] = nullptr; }
+
+    if (gVineTexture) { AEGfxTextureUnload(gVineTexture); gVineTexture = nullptr; }
+    if (gVineMesh) { AEGfxMeshFree(gVineMesh);         gVineMesh = nullptr; }
+    gVinePositions.clear();
+
     delete gMap;    gMap = nullptr;
     delete gCamera; gCamera = nullptr;
     gTrapDefs.clear();

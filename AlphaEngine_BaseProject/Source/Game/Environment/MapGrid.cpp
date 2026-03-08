@@ -13,9 +13,9 @@ namespace
 	static constexpr const char* PLATFORM_PATH = "Assets/Tmp/platform.png";
 
 	// platform behaves as a flat 5-cell-wide platform
-	static constexpr float PLATFORM_WIDTH_TILES = 5.0f;
+	static constexpr float PLATFORM_WIDTH_TILES = 1.0f;
 	static constexpr float PLATFORM_HEIGHT_TILES = 1.0f;
-	static constexpr int   PLATFORM_COLLISION_WIDTH = 5;
+	static constexpr int   PLATFORM_COLLISION_WIDTH = 1;
 }
 
 MapGrid::MapGrid(int rows, int cols)
