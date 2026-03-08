@@ -603,8 +603,8 @@ static void UpdateEditor(float dt)
     AEInputGetCursorPosition(&mx, &my);
     AEVec2 world{};
     AEExtras::ScreenToWorldPosition(AEVec2{ (f32)mx, (f32)my }, world);
-  
-    
+
+
 
     int tx = (int)std::floor(world.x);
     int ty = (int)std::floor(world.y);
@@ -639,15 +639,24 @@ static void UpdateEditor(float dt)
 
     switch (gUI.brush)
     {
-    case EditorTile::Ground:
-        gMap->SetTile(tx, ty, MapTile::Type::GROUND);
+    case EditorTile::GroundSurface:
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
+        break;
+    case EditorTile::GroundBody:
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_BODY);
+        break;
+    case EditorTile::GroundBottom:
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_BOTTOM);
+        break;
+    case EditorTile::Platform:
+        gMap->SetTile(tx, ty, MapTile::Type::PLATFORM);
         break;
     case EditorTile::Spike:
-        gMap->SetTile(tx, ty, MapTile::Type::GROUND);
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
         PlaceTrapAtCell(tx, ty, Trap::Type::SpikePlate);
         break;
     case EditorTile::PressurePlate:
-        gMap->SetTile(tx, ty, MapTile::Type::GROUND);
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
         PlaceTrapAtCell(tx, ty, Trap::Type::PressurePlate);
         break;
     case EditorTile::Enemy:
@@ -660,6 +669,7 @@ static void UpdateEditor(float dt)
     case EditorTile::Spawn:
         gSpawn = AEVec2{ (float)tx + 0.5f, (float)ty + 0.5f };
         break;
+    
     }
 }
 

@@ -5,117 +5,182 @@
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 
-MapGrid::MapGrid(int rows, int cols)
-	:	size(rows, cols), 
-		tiles(rows* cols)
+namespace
 {
-	static constexpr float TILE_U_SIZE = 32.0f / 320.0f;  
-	static constexpr float TILE_V_SIZE = 16.0f / 544.0f;  
+	static constexpr const char* SURFACE_PATH = "Assets/Tmp/tile_surface.png";
+	static constexpr const char* BODY_PATH = "Assets/Tmp/tile_middle.png";
+	static constexpr const char* BOTTOM_PATH = "Assets/Tmp/tile_bottom.png";
+	static constexpr const char* PLATFORM_PATH = "Assets/Tmp/platform.png";
 
-	mesh = MeshGenerator::GetSquareMesh(1.f, TILE_U_SIZE, TILE_V_SIZE);
-	tilemapTexture = AEGfxTextureLoad("Assets/Terrain_and_Props.png");
+	// platform behaves as a flat 5-cell-wide platform
+	static constexpr float PLATFORM_WIDTH_TILES = 5.0f;
+	static constexpr float PLATFORM_HEIGHT_TILES = 1.0f;
+	static constexpr int   PLATFORM_COLLISION_WIDTH = 5;
+}
 
-	tileCount = size.x * size.y;
-	 
-	// for (int i = 0; i < uvCoordsSize; ++i)
-	// {
-	// 	uvCoords[i].x = 1.f / uvCoordsSize;
-	// 	uvCoords[i].y = 1.f;
-	// }
+MapGrid::MapGrid(int rows, int cols)
+	: size(rows, cols),
+	tiles(rows* cols),
+	tileCount(rows* cols)
+{
+	// full texture on a 1x1 quad
+	tileMesh = MeshGenerator::GetSquareMesh(1.f, 1.f, 1.f);
 
-	// === Just for testing ===
-	for (int y = 0; y < size.y; y += 3)
-	{
-		for (int x = 5; x < size.x / 2; x++)
-		{
-			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
-		}
-	}
+	surfaceTexture = AEGfxTextureLoad(SURFACE_PATH);
+	bodyTexture = AEGfxTextureLoad(BODY_PATH);
+	bottomTexture = AEGfxTextureLoad(BOTTOM_PATH);
+	platformTexture = AEGfxTextureLoad(PLATFORM_PATH);
 
-	for (int y = 0; y < size.y; y += 4)
-	{
-		for (int x = size.x / 2; x < size.x - 5; x++)
-		{
-			tiles[y * size.x + x].type = (x % 4 >= 2) ? MapTile::Type::GROUND : MapTile::Type::NONE;
-		}
-	}
-
-	// Set horizontal borders 
+	// simple fallback border layout
 	for (int x = 0; x < size.x; ++x)
 	{
-		tiles[0				* size.x + x].type = MapTile::Type::GROUND;
-		tiles[1				* size.x + x].type = MapTile::Type::GROUND;
-		tiles[(size.y - 1)  * size.x + x].type = MapTile::Type::GROUND;
-		tiles[(size.y - 2)  * size.x + x].type = MapTile::Type::GROUND;
+		tiles[0 * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
+
+		if (size.y > 1)
+			tiles[1 * size.x + x].type = MapTile::Type::GROUND_SURFACE;
+
+		tiles[(size.y - 1) * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
+
+		if (size.y > 1)
+			tiles[(size.y - 2) * size.x + x].type = MapTile::Type::GROUND_SURFACE;
 	}
 
-	// Set vertical borders 
 	for (int y = 0; y < size.y; ++y)
 	{
-		tiles[y * size.x + 0].type = MapTile::Type::GROUND;
-		tiles[y * size.x + 1].type = MapTile::Type::GROUND;
-		//tiles[y * size.x + 5].type = MapTile::Type::GROUND;
-		tiles[y * size.x + size.x - 1].type = MapTile::Type::GROUND;
-		tiles[y * size.x + size.x - 2].type = MapTile::Type::GROUND;
+		tiles[y * size.x + 0].type = MapTile::Type::GROUND_BODY;
+
+		if (size.x > 1)
+			tiles[y * size.x + 1].type = MapTile::Type::GROUND_BODY;
+
+		tiles[y * size.x + (size.x - 1)].type = MapTile::Type::GROUND_BODY;
+
+		if (size.x > 1)
+			tiles[y * size.x + (size.x - 2)].type = MapTile::Type::GROUND_BODY;
 	}
 }
 
-/* Calling it's own construct is tmp only. todo proper file read */
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
 {
 }
 
 MapGrid::~MapGrid()
 {
-	AEGfxMeshFree(mesh);
-	AEGfxTextureUnload(tilemapTexture);
+	if (tileMesh)
+		AEGfxMeshFree(tileMesh);
+
+	if (surfaceTexture)
+		AEGfxTextureUnload(surfaceTexture);
+
+	if (bodyTexture)
+		AEGfxTextureUnload(bodyTexture);
+
+	if (bottomTexture)
+		AEGfxTextureUnload(bottomTexture);
+
+	if (platformTexture)
+		AEGfxTextureUnload(platformTexture);
+}
+
+bool MapGrid::IsSolidAtGridCell(int x, int y) const
+{
+	if (x < 0 || x >= size.x || y < 0 || y >= size.y)
+		return false;
+
+	const MapTile::Type here = tiles[y * size.x + x].type;
+
+	// normal solid tiles occupy exactly one cell
+	if (here == MapTile::Type::GROUND_SURFACE ||
+		here == MapTile::Type::GROUND_BODY ||
+		here == MapTile::Type::GROUND_BOTTOM)
+		return true;
+
+	// platform anchor occupies its whole 5-cell span on the same row
+	if (here == MapTile::Type::PLATFORM)
+		return true;
+
+	// check if this cell is covered by a platform anchor to its left
+	for (int anchorX = x - (PLATFORM_COLLISION_WIDTH - 1); anchorX <= x; ++anchorX)
+	{
+		if (anchorX < 0 || anchorX >= size.x)
+			continue;
+
+		if (tiles[y * size.x + anchorX].type == MapTile::Type::PLATFORM)
+		{
+			if (x >= anchorX && x < anchorX + PLATFORM_COLLISION_WIDTH)
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void MapGrid::Render()
 {
 	AEMtx33 transform;
 
-	// Get corners of screen in world space
 	AEVec2 bottomLeft, topRight;
 	AEExtras::ScreenToWorldPosition(AEVec2(0, (f32)AEGfxGetWindowHeight()), bottomLeft);
 	AEExtras::ScreenToWorldPosition(AEVec2((f32)AEGfxGetWindowWidth(), 0), topRight);
 
-	// Offset 
 	topRight.x += 1.f;
 	topRight.y += 1.f;
 
-	// Get grid coordinates for tiles that only the camera can see
 	int minX, minY, maxX, maxY;
 	WorldToGridCoordsClamped(bottomLeft, minX, minY);
 	WorldToGridCoordsClamped(topRight, maxX, maxY);
 
-	//std::cout << std::setw(3) << minX << std::setw(3) << minY << std::setw(3) << maxX << std::setw(3) << maxY << "   ";
-
-	// Loop through each row, only showing tiles that the camera can see
-	for (int y = minY; y < maxY; y++)
+	for (int y = minY; y < maxY; ++y)
 	{
-		// Loop through each column only showing tiles that the camera can see
-		for (int x = minX; x < maxX; x++)
+		for (int x = minX; x < maxX; ++x)
 		{
 			const MapTile* tile = GetTile(x, y);
-			if (tile == nullptr)
+			if (tile == nullptr || tile->type == MapTile::Type::NONE)
 				continue;
 
-			// Local scale. For flipping sprite's facing direction
-			AEMtx33Trans(&transform, (float)(x + 0.5f), (float)(y + 0.5f));
-			// Camera scale. Scales previous translation too.
-			AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
+			AEGfxTexture* tex = nullptr;
+			float scaleX = Camera::scale;
+			float scaleY = Camera::scale;
+			float drawX = (float)x + 0.5f;
+			float drawY = (float)y + 0.5f;
+
+			switch (tile->type)
+			{
+			case MapTile::Type::GROUND_SURFACE:
+				tex = surfaceTexture;
+				break;
+
+			case MapTile::Type::GROUND_BODY:
+				tex = bodyTexture;
+				break;
+
+			case MapTile::Type::GROUND_BOTTOM:
+				tex = bottomTexture;
+				break;
+
+			case MapTile::Type::PLATFORM:
+				tex = platformTexture;
+
+				// one platform tile is the LEFT anchor of a 5x1 platform
+				scaleX = Camera::scale * PLATFORM_WIDTH_TILES;
+				scaleY = Camera::scale * PLATFORM_HEIGHT_TILES;
+
+				drawX = (float)x + (PLATFORM_WIDTH_TILES * 0.5f);
+				drawY = (float)y + 0.5f;
+				break;
+
+			default:
+				break;
+			}
+
+			if (!tex)
+				continue;
+
+			AEMtx33Trans(&transform, drawX, drawY);
+			AEMtx33ScaleApply(&transform, &transform, scaleX, scaleY);
 			AEGfxSetTransform(transform.m);
 
-			if (tile->type == MapTile::Type::NONE)
-				continue;
-
-			// your selected crop in Terrain_and_Props.png
-			static constexpr float TILE_U0 = 230.0f / 320.0f;             // 0.721875
-			static constexpr float TILE_VTOP =(10.0f / 544.0f);     // 0.9632353
-
-			AEGfxTextureSet(tilemapTexture, TILE_U0, TILE_VTOP);
-			AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
+			AEGfxTextureSet(tex, 0.0f, 0.0f);
+			AEGfxMeshDraw(tileMesh, AE_GFX_MDM_TRIANGLES);
 		}
 	}
 }
@@ -128,7 +193,7 @@ inline const MapTile* MapGrid::GetTile(int x, int y)
 #endif
 	return &(tiles[y * size.x + x]);
 }
-//level editor 
+
 void MapGrid::SetTile(int x, int y, MapTile::Type type)
 {
 	if (x < 0 || x >= size.x || y < 0 || y >= size.y)
@@ -136,14 +201,12 @@ void MapGrid::SetTile(int x, int y, MapTile::Type type)
 
 	tiles[y * size.x + x].type = type;
 }
-//level editor
+
 bool MapGrid::CheckPointCollision(float x, float y)
 {
-	int index = WorldToIndex(x, y);
-	if (index < 0)
-		return false;
-
-	return tiles[index].type != MapTile::Type::NONE;
+	int gridX, gridY;
+	WorldToGridCoords(AEVec2(x, y), gridX, gridY);
+	return IsSolidAtGridCell(gridX, gridY);
 }
 
 bool MapGrid::CheckPointCollision(const AEVec2& worldPosition)
@@ -155,11 +218,10 @@ bool MapGrid::CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize
 {
 	AEVec2 halfBoxSize(boxSize.x * 0.5f, boxSize.y * 0.5f);
 
-	// Check with 
-	return	CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
-			CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y + halfBoxSize.y) ||
-			CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
-			CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y + halfBoxSize.y);
+	return CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y + halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y + halfBoxSize.y);
 }
 
 bool MapGrid::CheckBoxCollision(const Box& box)
@@ -169,32 +231,13 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 
 void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
-	// This is a simple and quick collision handler. Should not use when (currentPosition - nextPosition).length > 1 tiles OR colliderSize > 1 tile
-	// todo? proper line drawing (continuous collision)? https://www.redblobgames.com/grids/line-drawing/
-	// tood? do proper collision? https://www.youtube.com/watch?v=8JJ-4JgR7Dg
-
 	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
 
-	// ===== Check if in map =====
-	/*if (currentPosition.x < 0)
-		currentPosition.x = halfColliderSize.x;
-	else if (currentPosition.x > size.x - halfColliderSize.x)
-		currentPosition.x = size.x - halfColliderSize.x;
-
-	if (currentPosition.y < 0)
-		currentPosition.y = halfColliderSize.y;
-	else if (currentPosition.y > size.y - halfColliderSize.y)
-		currentPosition.y = size.y - halfColliderSize.y;*/
-
-	// ===== Get top left & bottom right (from current and next position) =====
 	AEVec2 bottomLeft, topRight;
-	bottomLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x,
-	bottomLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y,
-	topRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x,
+	bottomLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x;
+	bottomLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y;
+	topRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x;
 	topRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
-
-	//AEVec2	topRight(topRight.x, bottomLeft.y),
-	//	bottomLeft(bottomLeft.x, topRight.y);
 
 	int nextGridX, nextGridY;
 	WorldToGridCoords(nextPosition, nextGridX, nextGridY);
@@ -204,7 +247,6 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, cons
 
 	float clearance = 0.2f;
 
-	// Moving right
 	if (isMovingRight)
 	{
 		float colliderPos = nextPosition.x + halfColliderSize.x;
@@ -216,7 +258,6 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, cons
 		else
 			currentPosition.x = nextPosition.x;
 	}
-	// Moving left
 	else
 	{
 		float colliderPos = nextPosition.x - halfColliderSize.x;
@@ -229,7 +270,6 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, cons
 			currentPosition.x = nextPosition.x;
 	}
 
-	// Moving up
 	if (isMovingUp)
 	{
 		float colliderPos = nextPosition.y + halfColliderSize.y;
@@ -241,7 +281,6 @@ void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, cons
 		else
 			currentPosition.y = nextPosition.y;
 	}
-	// Moving down
 	else
 	{
 		float colliderPos = nextPosition.y - halfColliderSize.y;

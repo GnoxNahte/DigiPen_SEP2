@@ -72,7 +72,7 @@ void MainMenuScene::Init()
         player.Reset(lvl.spawn);
 
         // spawn traps and wire up pressure plate links
-        std::vector<SpikePlate*>    spawnedSpikes;
+        std::vector<SpikePlate*> spawnedSpikes;
         std::vector<PressurePlate*> spawnedPlates;
 
         for (const auto& td : lvl.traps)
@@ -97,7 +97,7 @@ void MainMenuScene::Init()
             }
         }
 
-        // every pressure plate triggers every spike plate (same rule as editor)
+        // every pressure plate triggers every spike plate
         for (PressurePlate* plate : spawnedPlates)
             for (SpikePlate* spike : spawnedSpikes)
                 plate->AddLinkedTrap(spike);
@@ -117,8 +117,12 @@ void MainMenuScene::Init()
     {
         mapCols = 40;
 
+        // simple fallback terrain using new tile enums
         for (int x = 0; x < 40; ++x)
-            map.SetTile(x, 1, MapTile::Type::GROUND);
+        {
+            map.SetTile(x, 0, MapTile::Type::GROUND_BODY);
+            map.SetTile(x, 1, MapTile::Type::GROUND_SURFACE);
+        }
 
         player.Reset({ 3.f, 3.f });
     }
@@ -137,11 +141,11 @@ void MainMenuScene::Update()
 
     camera.Update();
 
-    // transition to game when player reaches (3, 48)
+    // transition to game when player reaches the exit area
     if (player.GetPosition().x >= 3.f && player.GetPosition().x <= 4.f &&
         player.GetPosition().y >= 48.f)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
+        gPendingLevelPath = ExeDir() + "Assets\\Levels\\level01.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
 }
@@ -150,7 +154,7 @@ void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
 
-    // reset render state: UI::DrawHealthVignette leaves transparency=0 at full health
+    // reset render state
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);

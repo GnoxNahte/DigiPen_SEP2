@@ -10,7 +10,10 @@ enum class EditorTool
 
 enum class EditorTile
 {
-    Ground = 0,
+    GroundSurface = 0,
+    GroundBody,
+    GroundBottom,
+    Platform,
     Spike,
     PressurePlate,
     Enemy,
@@ -36,7 +39,7 @@ struct EditorUIState
     bool dragPaint = true;
 
     EditorTool        tool = EditorTool::Paint;
-    EditorTile        brush = EditorTile::Ground;
+    EditorTile        brush = EditorTile::GroundSurface;
     EditorEnemyPreset enemyPreset = EditorEnemyPreset::Druid;
 
     // one-frame actions

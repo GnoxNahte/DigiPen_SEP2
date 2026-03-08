@@ -5,8 +5,11 @@ struct MapTile
 public:
 	enum Type
 	{
-		NONE= 0,
-		GROUND,
+		NONE = 0,
+		GROUND_SURFACE,
+		GROUND_BODY,   
+		GROUND_BOTTOM, 
+		PLATFORM,
 
 		MAP_TILE_TYPE_COUNT,
 	};
@@ -18,4 +21,3 @@ public:
 	MapTile();
 	MapTile(Type type);
 };
-

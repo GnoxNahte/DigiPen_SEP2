@@ -13,10 +13,10 @@ public:
     MainMenuScene();
     ~MainMenuScene();
 
-    void Init()   override;
+    void Init() override;
     void Update() override;
     void Render() override;
-    void Exit()   override;
+    void Exit() override;
 
 private:
     static std::string ExeDir();
