@@ -43,6 +43,7 @@ struct LevelData
     std::vector<int> tiles;                 // row-major
     std::vector<TrapDefSimple> traps;
     std::vector<EnemyDefSimple> enemies;
+    std::vector<AEVec2> vines;              // grid cell positions
 };
 
 bool SaveLevelToFile(const char* filename, const LevelData& lvl);
@@ -54,6 +55,7 @@ void BuildLevelDataFromEditor(
     MapGrid& grid, int rows, int cols,
     const std::vector<TrapDefSimple>& traps,
     const std::vector<EnemyDefSimple>& enemies,
+    const std::vector<AEVec2>& vines,
     const AEVec2& spawn,
     LevelData& out);
 
@@ -62,4 +64,5 @@ bool ApplyLevelDataToEditor(
     MapGrid*& ioGrid,
     std::vector<TrapDefSimple>& ioTraps,
     std::vector<EnemyDefSimple>& ioEnemies,
+    std::vector<AEVec2>& ioVines,
     AEVec2& ioSpawn);

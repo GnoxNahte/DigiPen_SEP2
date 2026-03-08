@@ -151,8 +151,20 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     PrintText("tile", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
-    if (Button("ground", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Ground))
-        ui.brush = EditorTile::Ground;
+    if (Button("ground surface", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::GroundSurface))
+        ui.brush = EditorTile::GroundSurface;
+    y -= (h + ui.gap);
+
+    if (Button("ground body", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::GroundBody))
+        ui.brush = EditorTile::GroundBody;
+    y -= (h + ui.gap);
+
+    if (Button("ground bottom", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::GroundBottom))
+        ui.brush = EditorTile::GroundBottom;
+    y -= (h + ui.gap);
+
+    if (Button("platform", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Platform))
+        ui.brush = EditorTile::Platform;
     y -= (h + ui.gap);
 
     if (Button("spike", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Spike))
@@ -169,6 +181,10 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
 
     if (Button("spawn", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Spawn))
         ui.brush = EditorTile::Spawn;
+    y -= (h + ui.gap);
+
+    if (Button("vine", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Vine))
+        ui.brush = EditorTile::Vine;
     y -= (h + ui.gap);
 
     if (ui.brush == EditorTile::Enemy)

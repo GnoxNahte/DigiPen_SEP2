@@ -72,7 +72,7 @@ void Trap::Render() const
     case Type::SpikePlate:    color = 0xFFAAAAAA; break;
     }
 
-    QuickGraphics::DrawRect(m_box.position, m_box.size, color, AE_GFX_MDM_TRIANGLES);
+   // QuickGraphics::DrawRect(m_box.position, m_box.size, color, AE_GFX_MDM_TRIANGLES);
 
 }
 

@@ -159,6 +159,13 @@ private:
     float hpBarChip = 1.0f;   // delayed bar (chip trail)
     float hpChipDelay = 0.0f; // delay before chip starts shrinking
     float prevHpTarget = 1.0f;
+    //UI transitions ----
+    s8 bossFont = -1;
+    bool hudIntroStarted = false;
+    float hudIntroTimer = 0.0f;
+    float nameFadeDuration = 1.5f;   // first: name fades in
+    float barStartDelay = 0.35f;    // wait before bar starts
+    float barFillDuration = 1.5f;    // then bar fills
 
     Box meleeHitbox{ AEVec2{0,0}, AEVec2{1.4f, 0.9f} }; // size tuned later
 };
