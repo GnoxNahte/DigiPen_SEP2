@@ -110,7 +110,10 @@ void MainMenuScene::Init()
 
         for (const auto& td : lvl.traps)
         {
-            Box box{ td.pos, td.size };
+            Box box{};
+            box.size = td.size;
+            box.position = AEVec2{ td.pos.x - td.size.x * 0.5f, td.pos.y - td.size.y * 0.5f };
+
             const Trap::Type tt = static_cast<Trap::Type>(td.type);
 
             if (tt == Trap::Type::SpikePlate)
@@ -253,11 +256,16 @@ void MainMenuScene::Render()
         for (const auto& a : spikeAnims)
         {
             Trap* t = spikeTraps[idx++];
-            float wx = t->GetBox().position.x - t->GetBox().size.x * 0.5f;
-            float wy = t->GetBox().position.y - t->GetBox().size.y * 0.5f;
+
+			// 1. getting the center of the trap's box, so we can lock the spike sprite to it. This is important because some traps (like the lava pool) are larger than 1 tile, and we want the spike animation to be centered on the trap, not skewed to a corner.
+            float centerX = t->GetBox().position.x + t->GetBox().size.x * 0.5f;
+            float centerY = t->GetBox().position.y + t->GetBox().size.y * 0.5f;
+
             AEMtx33 m;
-            AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
+			// 2. pass in the center coordinates to the translation function, so the spike sprite will be drawn centered on the trap's box.
+            AEMtx33Trans(&m, centerX, centerY);
             AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+
             AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
             AEGfxSetBlendMode(AE_GFX_BM_BLEND);
             AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);

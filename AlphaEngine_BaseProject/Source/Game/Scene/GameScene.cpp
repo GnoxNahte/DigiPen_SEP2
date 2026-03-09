@@ -187,7 +187,9 @@ void GameScene::Init()
 			// apply traps
 			for (const auto& td : lvl.traps)
 			{
-				Box box{ td.pos, td.size };
+				Box box{};
+				box.size = td.size;
+				box.position = AEVec2{ td.pos.x - td.size.x * 0.5f, td.pos.y - td.size.y * 0.5f };
 				const Trap::Type tt = static_cast<Trap::Type>(td.type);
 				if (tt == Trap::Type::SpikePlate)
 					trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
