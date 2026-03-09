@@ -48,8 +48,8 @@ Box MakePlayerBodyBox(const Player& p)
     const AEVec2 pos = p.GetPosition();
 
 	// traps that damage on touch should use this box, which covers most of the player's body but not the feet, so that player can still step on pressure plates without taking damage, and it also won't accidentally trigger when player is just near the trap but not actually touching it
-	b.size.x = fullSize.x * 0.8f;   // wider than hurtbox to be more forgiving for trap hits, but not too wide to accidentally trigger when just near
-	b.size.y = fullSize.y * 0.9f;   // cover most of the body but not the feet, so player can still step on plates without taking damage, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player
+	b.size.x = fullSize.x * 0.1f;   // wider than hurtbox to be more forgiving for trap hits, but not too wide to accidentally trigger when just near
+	b.size.y = fullSize.y * 0.55f;   // cover most of the body but not the feet, so player can still step on plates without taking damage, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player
 
     b.position.x = pos.x - b.size.x * 0.5f;
     b.position.y = pos.y - (b.size.y * 0.5f);
