@@ -17,6 +17,7 @@ public:
     ~EnemyBoss();
 
     void Update(const AEVec2& playerPos, bool playerFacingRight);
+    void Reset(const AEVec2& spawnPos);
 
     void Render();
     

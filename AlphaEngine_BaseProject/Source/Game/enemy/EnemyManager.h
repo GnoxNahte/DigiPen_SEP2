@@ -119,6 +119,31 @@ public:
             e->Update(playerPos, map);
     }
 
+    void ResetAll()
+    {
+        enemies.clear();
+        enemies.reserve(spawns.size());
+
+        for (const auto& s : spawns)
+        {
+            switch (s.type)
+            {
+            case EnemySpawnType::Druid:
+                enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y));
+                break;
+
+            case EnemySpawnType::Skeleton:
+                enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y));
+                break;
+
+            case EnemySpawnType::Boss:
+                if (boss)
+                    boss->Reset(s.pos);
+                break;
+            }
+        }
+    }
+
   
     void RenderAll()
     {

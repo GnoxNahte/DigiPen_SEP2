@@ -904,6 +904,55 @@ void EnemyBoss::Render()
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 }
 
+void EnemyBoss::Reset(const AEVec2& spawnPos)
+{
+    position = spawnPos;
+    velocity = AEVec2{ 0.f, 0.f };
+    facingDirection = AEVec2{ 1.f, 0.f };
+
+    hp = maxHP;
+    isDead = false;
+    hideAfterDeath = false;
+
+    chasing = false;
+    isAttacking = false;
+    isGrounded = false;
+
+    deathTimeLeft = 0.f;
+    hurtTimeLeft = 0.f;
+    invulnTimer = 0.f;
+
+    attack.Reset();
+
+    teleportActive = false;
+    teleportTimer = 0.f;
+    teleportMoved = false;
+    teleportCooldownTimer = 0.f;
+
+    specialUnlocked = false;
+    SpecialElapsed = 0.f;
+    specialBurstActive = false;
+    specialSpawnsRemaining = 0;
+    specialSpawnTimer = 0.f;
+
+    g_spellcastUntil5thSpawn = false;
+    g_specialAttacks.clear();
+
+    bossEngaged = false;
+    hudIntroStarted = false;
+    hudIntroTimer = 0.f;
+
+    hpBarFront = 1.f;
+    hpBarChip = 1.f;
+    prevHpTarget = 1.f;
+    hpChipDelay = 0.f;
+
+    sprite.SetState(IDLE, false, nullptr);
+    specialAttackVfx.SetState(SPELL1);
+
+    particleSystem.SetSpawnRate(0.f);
+}
+
 void EnemyBoss::DrawInspector()
 {
     ImGui::Begin("EnemyBoss", &isInspectorOpen);
