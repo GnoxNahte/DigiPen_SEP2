@@ -1,7 +1,10 @@
 #include "Camera.h"
+#include <imgui.h>
+
 #include "../Utils/AEExtras.h"
 #include "../Utils/Easing.h"
 #include "../Game/Time.h"
+#include "../Editor/Editor.h"
 // followed object crosses the current room edge, we shift the roomTarget by
 // exactly one screen-sized "roomSize" in that direction.
 
@@ -10,6 +13,7 @@ float Camera::scale = 1.f;
 AEVec2 Camera::position{ 0.f, 0.f };
 
 Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
+	Inspectable(true),
 	offset(0, 0),
 	follow(nullptr),
 	halfView(0, 0),
@@ -46,6 +50,13 @@ Camera::Camera(const AEVec2& minBounds, const AEVec2& maxBounds, float _scale) :
 
 	// Default room target to the initial camera position.
 	roomTarget = position;
+
+	Editor::RegisterSystem("Camera", this);
+}
+
+Camera::~Camera()
+{
+	Editor::UnregisterSystem("Camera", this);
 }
 
 void Camera::SetFollow(const AEVec2* f, float xOffset, float yOffset, bool setPosToFollow)
@@ -138,4 +149,13 @@ void Camera::Update()
 		position.y = maxBounds.y;
 	}
 	AEGfxSetCamPosition(position.x * Camera::scale, position.y * Camera::scale);
+}
+
+void Camera::DrawInspector()
+{
+	ImGui::Begin("Camera", &isInspectorOpen);
+
+	ImGui::DragFloat("Scale", &scale, 0.1f);
+
+	ImGui::End();
 }

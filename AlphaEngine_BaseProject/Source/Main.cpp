@@ -5,6 +5,7 @@
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
+#include "Editor/Editor.h"
 
 #include <windows.h>
 #include <imgui.h>
@@ -48,14 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;    // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking
-	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
-
-	// Todo - Not sure why not working? - ImGui disable keybord navigation as conflict with game
-	io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
-	io.ConfigNavCaptureKeyboard = false;
 
 	//ImGui::StyleColorsDark();
 
@@ -67,44 +61,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	io.ConfigDpiScaleFonts = true;          // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
 	io.ConfigDpiScaleViewports = true;      // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
 
-	//// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-	//if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	//{
-	//	style.WindowRounding = 0.0f;
-	//	style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-	//}
-
 	HWND hwnd = AESysGetWindowHandle();
 	ImGui_ImplWin32_InitForOpenGL(hwnd);
 	ImGui_ImplOpenGL3_Init();
 
-	//// Win32+GL needs specific hooks for viewport, as there are specific things needed to tie Win32 and GL api.
-	//if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	//{
-	//	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-	//	IM_ASSERT(platform_io.Renderer_CreateWindow == NULL);
-	//	IM_ASSERT(platform_io.Renderer_DestroyWindow == NULL);
-	//	IM_ASSERT(platform_io.Renderer_SwapBuffers == NULL);
-	//	IM_ASSERT(platform_io.Platform_RenderWindow == NULL);
-	//	platform_io.Renderer_CreateWindow = Hook_Renderer_CreateWindow;
-	//	platform_io.Renderer_DestroyWindow = Hook_Renderer_DestroyWindow;
-	//	platform_io.Renderer_SwapBuffers = Hook_Renderer_SwapBuffers;
-	//	platform_io.Platform_RenderWindow = Hook_Platform_RenderWindow;
-	//}
+#if _DEBUG
+	GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
+#else
+	GSM::Init(SceneState::GS_SPLASH_SCREEN);
+#endif
 
-	//GSM::Init(SceneState::GS_SPLASH_SCREEN);
-	GSM::Init(SceneState::GS_GAME);
 	GSM::Update();
 	GSM::Exit();
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
-	//CleanupDeviceWGL(hwnd, &g_MainWindow);
-	//wglDeleteContext(g_hRC);
-	//::DestroyWindow(hwnd);
-	//::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
 	// free the system
 	AESysExit();

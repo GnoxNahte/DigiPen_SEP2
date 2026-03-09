@@ -449,7 +449,15 @@ static void PlayMode_Enter()
         CAMERA_SCALE
     );
 
-    gPlayPlayer = new Player(gMap, nullptr);
+    std::vector<EnemyManager::SpawnInfo> spawns;
+    for (const auto& ed : gEnemyDefs)
+        spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+
+    gPlayEnemies = new EnemyManager();
+    gPlayEnemies->SetSpawns(spawns);
+    gPlayEnemies->SpawnAll();
+
+    gPlayPlayer = new Player(gMap, gPlayEnemies);
     gPlayPlayer->Reset(gSpawn);
 
     gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
@@ -494,12 +502,6 @@ static void PlayMode_Enter()
         for (Trap* target : spawnedLinkTargets)
             plate->AddLinkedTrap(target);
 
-    gPlayEnemies = new EnemyManager();
-    std::vector<EnemyManager::SpawnInfo> spawns;
-    for (const auto& ed : gEnemyDefs)
-        spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
-    gPlayEnemies->SetSpawns(spawns);
-    gPlayEnemies->SpawnAll();
 }
 
 static void PlayMode_Exit()

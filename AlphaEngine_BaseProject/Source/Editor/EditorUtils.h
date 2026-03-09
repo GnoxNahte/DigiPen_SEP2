@@ -10,7 +10,10 @@ class Inspectable
 {
 public:
 	bool enableInspector = false;
-	Inspectable();
+	bool isSystem = false;
+	bool isInspectorOpen = false;
+
+	Inspectable(bool isSystem = false);
 	~Inspectable();
 	virtual void DrawInspector() = 0;
 

@@ -147,7 +147,11 @@ void PlayerStats::LoadFileData()
 
 	// === Combat stats ===
 	maxHealth = doc["maxHealth"].GetInt();
+    invincibleTime = doc["invincibleTime"].GetFloat();
 	attackBuffer = doc["attackBuffer"].GetFloat();
+    knockbackAmt = doc["knockbackAmt"].GetFloat();
+    maxKnockbackDmg = doc["maxKnockbackDmg"].GetFloat();
+    downAirAttackFallSpeed = doc["downAirAttackFallSpeed"].GetFloat();
 
 	auto groundAttackArr = doc["groundAttacks"].GetArray();
 	for (int i = 0; i < groundAttacks.size(); i++)
@@ -219,7 +223,11 @@ void PlayerStats::SaveFileData()
 
     // Combat
     doc.AddMember("maxHealth", maxHealth, allocator);
+    doc.AddMember("invincibleTime", invincibleTime, allocator);
     doc.AddMember("attackBuffer", attackBuffer, allocator);
+    doc.AddMember("knockbackAmt", knockbackAmt, allocator);
+    doc.AddMember("maxKnockbackDmg", maxKnockbackDmg, allocator);
+    doc.AddMember("downAirAttackFallSpeed", downAirAttackFallSpeed, allocator);
 
     // Attack Arrays
     rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
@@ -240,6 +248,7 @@ void PlayerStats::SaveFileData()
     }
     doc.AddMember("airAttacks", airAttacksArr, allocator);
 
+    // If running in the "bin" folder, with the asset outside, try writing to that file
     std::string actualAssetPath = "../../" + file;
     if (std::filesystem::exists(actualAssetPath))
         FileHelper::TryWriteJsonFile(actualAssetPath, doc);
@@ -346,7 +355,11 @@ void PlayerStats::DrawInspector()
     if (ImGui::TreeNode("Combat"))
     {
         ifChanged = ImGui::DragInt("Max Health", &maxHealth, 1.0f, 1, 1000) || ifChanged;
+        ifChanged = ImGui::DragFloat("Invincible Time", &invincibleTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Attack Buffer", &attackBuffer, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Knockback Amount", &knockbackAmt, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Max Knockback Damage", &maxKnockbackDmg, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Down Air Attack Fall Speed", &downAirAttackFallSpeed, 0.01f) || ifChanged;
 
         for (size_t i = 0; i < groundAttacks.size(); i++)
             DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);

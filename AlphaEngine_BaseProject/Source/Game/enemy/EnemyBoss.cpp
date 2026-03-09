@@ -897,7 +897,7 @@ void EnemyBoss::Render()
 
 void EnemyBoss::DrawInspector()
 {
-    ImGui::Begin("EnemyBoss");
+    ImGui::Begin("EnemyBoss", &isInspectorOpen);
 
     if (ImGui::CollapsingHeader("Runtime"))
     {

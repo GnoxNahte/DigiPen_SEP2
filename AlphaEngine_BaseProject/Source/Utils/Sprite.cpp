@@ -43,8 +43,10 @@ void Sprite::Update()
 			currStateIndex = nextStateIndex;
 			ifLockCurrent = false;
 		}
-		// Else, play and repeat current animation
-		else 
+		// Else update current animation
+		// - if ifLoop, keep repeating
+		// - else, play until it's not the last frame
+		else if (currState.ifLoop || frameIndex != currState.frameCount - 1)
 			frameIndex = (frameIndex + 1) % currState.frameCount;
 		
 		uvOffset.x = frameIndex * uvWidth;
@@ -72,7 +74,6 @@ int Sprite::GetState() const
 	return currStateIndex;
 }
 
-// todo - Currently it changes immediately. Add condition to only transition when current anim is done?
 void Sprite::SetState(int nextState, bool ifLock, std::function<void(int)> _onAnimEnd)
 {
 	if (nextState == currStateIndex)

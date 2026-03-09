@@ -33,6 +33,7 @@ public:
         ATTACK_END = ATTACK_3,
         HURT,        
         DEATH,       
+        DEATH_LOOP,       
         SWORD_DRAW,  
         SWORD_SHEATH,
         WALL_SLIDE,  
@@ -40,8 +41,8 @@ public:
         // @todo - Split into air attack and attack down (smash)?
         AIR_ATTACK_1,
         AIR_ATTACK_2,
-        AIR_ATTACK_3,
-        AIR_ATTACK_END = AIR_ATTACK_3,
+        AIR_ATTACK_SMASH,
+        AIR_ATTACK_END = AIR_ATTACK_SMASH,
         RUN_W_SWORD, 
 
         ANIM_COUNT
@@ -104,6 +105,7 @@ private:
     // === Combat ===
     int health;
     bool hasAppliedRecoil; // For current attack
+    f64 lastDamagedTime;
 
     // === Buffs ===
     float buff_MoveSpeedMulti;
@@ -129,13 +131,18 @@ private:
     void HandleGravity();
     void HandleJump();
     void PerformJump();
+    void UpdateCollisions(const AEVec2& nextPosition);
 
+    bool IsDashing();
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();
-    void Attack(AnimState toState);
+    bool IsInvincible();
+    void SetAttack(AnimState toState);
+    void AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack);
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
+    IDamageable* IfCollideEnemy(const Box& collider);
 
     void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();
@@ -144,7 +151,6 @@ private:
 
     void OnBuffSelected(const BuffSelectedEvent& ev);
     static float PercentToScale(int percentage); // Helper to calcualte buffs
-
 };
 
 // ===== Events =====

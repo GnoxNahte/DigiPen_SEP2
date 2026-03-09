@@ -5,17 +5,15 @@
 #include "MainMenuScene.h"
 #include "../../Utils/QuickGraphics.h" 
 #include "../../../Saves/SaveSystem.h"
-#include "../../../Saves/SaveData.h"
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
 #include "LevelEditorScene.h"
 #include "../../Editor/Editor.h"
+#include "../../Utils/Event/EventSystem.h"
 
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
-
-#include "../../Utils/AEExtras.h" // temp
 
 BaseScene* GSM::currentScene = nullptr;
 
@@ -59,6 +57,14 @@ void GSM::Update()
 			LoadState(currentState);
 		}
 
+		if (currentScene == nullptr)
+			throw;
+
+		EventSystem::Trigger(SceneChangeEvent{
+			.previousState = previousState,
+			.currentState = currentState
+		});
+		
 		currentScene->Init();
 
 		while (currentState == nextState)
@@ -135,6 +141,7 @@ std::string GSM::GetStateName(SceneState state)
 	{
 		case GS_QUIT: return "QUIT";
 		case GS_RESTART: return "RESTART";
+		case GS_LEVEL_EDITOR: return "Level Editor";
 		case GS_SPLASH_SCREEN: return "Splash Screen";
 		case GS_MAIN_MENU: return "Main Menu";
 		case GS_GAME: return "Game";

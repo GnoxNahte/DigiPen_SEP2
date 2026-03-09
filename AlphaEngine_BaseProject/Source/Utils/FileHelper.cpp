@@ -5,6 +5,7 @@
 #include <rapidjson/error/en.h>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 #include "FileHelper.h"
 
@@ -38,9 +39,16 @@ bool FileHelper::TryReadJsonFile(const std::string& path, rapidjson::Document& d
     return true;
 }
 
-bool FileHelper::TryWriteJsonFile(const std::string& path, rapidjson::Document& doc)
+bool FileHelper::TryWriteJsonFile(const std::string& path, rapidjson::Document& doc, bool createIfNotFound)
 {
+    if (createIfNotFound)
+    {
+        std::string folder = path.substr(0, path.find_last_of('/'));
+        std::filesystem::create_directory(folder);
+    }
+
     std::ofstream ofs(path, std::ios::binary);
+
     if (!ofs.is_open())
     {
         std::cout << "Failed to open file: " << path << std::endl;
@@ -51,7 +59,6 @@ bool FileHelper::TryWriteJsonFile(const std::string& path, rapidjson::Document& 
     rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
     writer.SetMaxDecimalPlaces(3);
     doc.Accept(writer);
-
 
     return true;
 }
