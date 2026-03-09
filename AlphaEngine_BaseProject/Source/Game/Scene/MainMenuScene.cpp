@@ -198,7 +198,7 @@ void MainMenuScene::Update()
     if (player.GetPosition().x >= 3.f && player.GetPosition().x <= 4.f &&
         player.GetPosition().y >= 48.f)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\level01.lvl";
+        gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
 }
