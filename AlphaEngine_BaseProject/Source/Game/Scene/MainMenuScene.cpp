@@ -6,6 +6,7 @@
 #include "../Environment/MapTile.h"
 #include "../enemy/Enemy.h"
 #include "../Time.h"
+#include "../UI.h"
 
 #include <Windows.h>
 #include <new>
@@ -163,6 +164,8 @@ void MainMenuScene::Init()
 
     camera.SetFollow(&player.GetPosition(), 0, 0, true);
     camera.smoothTime = 0.4f;
+
+    UI::Init(&player);
 }
 
 void MainMenuScene::Update()
@@ -201,6 +204,9 @@ void MainMenuScene::Update()
         gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
         GSM::ChangeScene(SceneState::GS_GAME);
     }
+
+    UI::GetDamageTextSpawner().Update();
+    UI::Update();
 }
 
 void MainMenuScene::Render()
@@ -307,6 +313,8 @@ void MainMenuScene::Render()
         WorldToNDC(9.f, 30.f, nx, ny);
         AEGfxPrint((s8)uiFont, "Good Job!", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
     }
+
+    UI::Render();
 }
 
 void MainMenuScene::Exit()
@@ -326,4 +334,6 @@ void MainMenuScene::Exit()
         AEGfxDestroyFont((s8)uiFont);
         uiFont = -1;
     }
+
+    UI::Exit();
 }
