@@ -84,7 +84,7 @@ public:
         UpdateAll(playerpos, map);
 
         // update boss (if present)
-        if (boss && !boss->IsDead())
+        if (boss)
             boss->Update(playerpos, playerFacingRight); // or whatever your Player exposes
     }
 
