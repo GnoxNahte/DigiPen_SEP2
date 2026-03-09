@@ -9,7 +9,12 @@
 #include "Enemyboss.h"
 #include "IDamageable.h"
 
-
+enum class EnemySpawnType
+{
+    Druid = 0,
+    Skeleton = 1,
+    Boss = 2
+};
 
 class EnemyBoss; 
 class EnemyManager 
@@ -17,7 +22,8 @@ class EnemyManager
 public:
     struct SpawnInfo
     {
-        Enemy::Preset preset;
+       // Enemy::Preset preset;
+        EnemySpawnType type;
         AEVec2 pos;
     };
 
@@ -50,8 +56,27 @@ public:
         enemies.clear();
         enemies.reserve(spawns.size());
 
+       /* for (const auto& s : spawns)
+            enemies.emplace_back(std::make_unique<Enemy>(s.preset, s.pos.x, s.pos.y));*/
+
         for (const auto& s : spawns)
-            enemies.emplace_back(std::make_unique<Enemy>(s.preset, s.pos.x, s.pos.y));
+        switch (s.type)
+        {
+        case EnemySpawnType::Druid:
+            enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y));
+            break;
+
+        case EnemySpawnType::Skeleton:
+            enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y));
+            break;
+
+        case EnemySpawnType::Boss:
+            if (boss)
+            {
+                boss->position = s.pos;
+            }
+            break;
+        }
     }
 
     // --- Manual spawn (optional) ---

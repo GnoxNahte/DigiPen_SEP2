@@ -24,7 +24,8 @@ enum class EditorTile
 enum class EditorEnemyPreset
 {
     Druid = 0,
-    Skeleton
+    Skeleton = 1,
+    Boss = 2
 };
 
 struct EditorUIState

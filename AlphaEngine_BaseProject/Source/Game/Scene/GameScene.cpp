@@ -204,7 +204,7 @@ void GameScene::Init()
 			// enemy spawns from level file
 			std::vector<EnemyManager::SpawnInfo> spawns;
 			for (const auto& ed : lvl.enemies)
-				spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+				spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
 			enemyMgr.SetBoss(&enemyBoss);
 			enemyMgr.SetSpawns(spawns);
 			enemyMgr.SpawnAll();
@@ -217,8 +217,8 @@ void GameScene::Init()
 	// fallback: hardcoded setup
 	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
-	spawns.push_back({ Enemy::Preset::Druid, {30.f, 2.0f} });
-	spawns.push_back({ Enemy::Preset::Skeleton, {34.f, 2.0f} });
+	spawns.push_back({ EnemySpawnType::Druid, {30.f, 2.0f} });
+	spawns.push_back({ EnemySpawnType::Skeleton, {34.f, 2.0f} });
 	enemyMgr.SetBoss(&enemyBoss);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();

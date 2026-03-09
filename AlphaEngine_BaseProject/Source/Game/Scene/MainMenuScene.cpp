@@ -139,7 +139,7 @@ void MainMenuScene::Init()
         // spawn enemies
         std::vector<EnemyManager::SpawnInfo> spawns;
         for (const auto& ed : lvl.enemies)
-            spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
+            spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
 
         if (!spawns.empty())
         {

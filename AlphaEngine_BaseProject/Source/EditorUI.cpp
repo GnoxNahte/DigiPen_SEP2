@@ -197,6 +197,9 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         if (Button("skeleton", x + sw + ui.gap, y, sw, sh, mx, my, mouseLPressed,
             ui.enemyPreset == EditorEnemyPreset::Skeleton))
             ui.enemyPreset = EditorEnemyPreset::Skeleton;
+        if (Button("boss", x + (sw + ui.gap) * 2.2f, y, sw, sh, mx, my, mouseLPressed,
+            ui.enemyPreset == EditorEnemyPreset::Boss))
+            ui.enemyPreset = EditorEnemyPreset::Boss;
         y -= (sh + ui.gap);
     }
 

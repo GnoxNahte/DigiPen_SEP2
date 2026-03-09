@@ -114,6 +114,7 @@ static Player* gPlayPlayer = nullptr;
 static TrapManager* gPlayTraps = nullptr;
 static EnemyManager* gPlayEnemies = nullptr;
 static Camera* gPlayCamera = nullptr;
+static EnemyBoss* gPlayBoss = nullptr;
 
 /*========================================================
     helpers
@@ -187,11 +188,11 @@ static void RemoveEnemyAtCell(int tx, int ty)
     }
 }
 
-static void PlaceEnemyAtCell(int tx, int ty, Enemy::Preset preset)
+static void PlaceEnemyAtCell(int tx, int ty, EnemySpawnType& type)
 {
     RemoveEnemyAtCell(tx, ty);
     EnemyDefSimple e{};
-    e.preset = (int)preset;
+    e.preset = (int)type;
     e.pos = AEVec2{ tx + 0.5f, ty + 0.f };
     gEnemyDefs.push_back(e);
 }
@@ -449,11 +450,24 @@ static void PlayMode_Enter()
         CAMERA_SCALE
     );
 
-    std::vector<EnemyManager::SpawnInfo> spawns;
-    for (const auto& ed : gEnemyDefs)
-        spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
-
     gPlayEnemies = new EnemyManager();
+    //gPlayBoss = new EnemyBoss();
+    gPlayEnemies->SetBoss(gPlayBoss);
+    std::vector<EnemyManager::SpawnInfo> spawns;
+    bool hasBossSpawn = false;
+    for (const auto& ed : gEnemyDefs)
+    {
+        spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
+        EnemySpawnType type = (EnemySpawnType)ed.preset;
+        if (type == EnemySpawnType::Boss)
+            hasBossSpawn = true;
+    }
+    if (hasBossSpawn)
+    {
+        gPlayBoss = new EnemyBoss();
+        gPlayEnemies->SetBoss(gPlayBoss);
+    }
+
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
 
@@ -510,7 +524,7 @@ static void PlayMode_Exit()
     delete gPlayTraps;   gPlayTraps = nullptr;
     delete gPlayEnemies; gPlayEnemies = nullptr;
     delete gPlayCamera;  gPlayCamera = nullptr;
-
+    delete gPlayBoss;   gPlayBoss = nullptr;
     gSpikeAnims.clear();
     gSpikeTraps.clear();
 
@@ -527,7 +541,8 @@ static void PlayMode_Update(float dt)
     const AEVec2 pPos = gPlayPlayer->GetPosition();
     const AEVec2 pSize = gPlayPlayer->GetStats().playerSize;
 
-    gPlayEnemies->UpdateAll(pPos, *gMap);
+    //gPlayEnemies->UpdateAll(pPos, *gMap);
+    gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
 
     gPlayEnemies->ForEachEnemy([&](Enemy& e)
         {
@@ -610,6 +625,8 @@ static void PlayMode_Render()
 
     gPlayPlayer->Render();
     gPlayEnemies->RenderAll();
+    if (gPlayBoss)
+        gPlayBoss->Render();
 
     // vine decorations (purely visual, same in both modes)
     if (gVineTexture && gVineMesh)
@@ -731,8 +748,24 @@ static void UpdateEditor(float dt)
         break;
     case EditorTile::Enemy:
     {
-        Enemy::Preset preset = (gUI.enemyPreset == EditorEnemyPreset::Skeleton)
-            ? Enemy::Preset::Skeleton : Enemy::Preset::Druid;
+        EnemySpawnType preset = EnemySpawnType::Druid;
+
+        switch (gUI.enemyPreset)
+        {
+        case EditorEnemyPreset::Skeleton:
+            preset = EnemySpawnType::Skeleton;
+            break;
+
+        case EditorEnemyPreset::Boss:
+            preset = EnemySpawnType::Boss;
+            break;
+
+        case EditorEnemyPreset::Druid:
+        default:
+            preset = EnemySpawnType::Druid;
+            break;
+        }
+
         PlaceEnemyAtCell(tx, ty, preset);
         break;
     }
@@ -922,7 +955,7 @@ void GameState_LevelEditor_Draw()
         {
             float wx = ed.pos.x - 0.5f;
             float wy = ed.pos.y - 0.5f;
-            bool isSkeleton = (ed.preset == (int)Enemy::Preset::Skeleton);
+            bool isSkeleton = (ed.preset == (int)EnemySpawnType::Skeleton);
             float r = isSkeleton ? 0.6f : 1.0f;
             float g = isSkeleton ? 0.6f : 0.85f;
             float b = isSkeleton ? 1.0f : 0.0f;

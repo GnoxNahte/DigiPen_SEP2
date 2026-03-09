@@ -178,13 +178,12 @@ bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitS
 
     return TryTakeDamage(dmg, {});
 }
-
-EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
+EnemyBoss::EnemyBoss()
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
     , bossFont(AEGfxCreateFont("Assets/m04.ttf", 36))
 {
-    position = AEVec2{ initialPosX, initialPosY };
+    //position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
     specialAttackVfx.SetState(SPELL1);
 
@@ -205,6 +204,16 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY)
     // Optional: default "dust/blood-ish" lifetime for bursts
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
+
+
+
+}
+
+EnemyBoss::EnemyBoss(float initialPosX, float initialPosY) : EnemyBoss()
+{
+
+    position = AEVec2{ initialPosX, initialPosY };
+  
 
 
     

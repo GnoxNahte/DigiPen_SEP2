@@ -12,14 +12,15 @@
 class EnemyBoss : public IDamageable, Inspectable
 {
 public:
-    EnemyBoss(float initialPosX = 0.f, float initialPosY = 0.f);
+    EnemyBoss(float initialPosX, float initialPosY);
+    EnemyBoss();
     ~EnemyBoss();
 
     void Update(const AEVec2& playerPos, bool playerFacingRight);
 
     void Render();
     
-    AEVec2 position{ 0.f, 0.f };
+    AEVec2 position{};
 
 
     bool isDead = false;
