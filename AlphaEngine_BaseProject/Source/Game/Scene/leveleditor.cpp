@@ -500,9 +500,6 @@ static void PlayMode_Enter()
         spawns.push_back({ (Enemy::Preset)ed.preset, ed.pos });
     gPlayEnemies->SetSpawns(spawns);
     gPlayEnemies->SpawnAll();
-
-    // Set the enemy manager reference in the player now that it's been created
-    gPlayPlayer->SetEnemyManager(gPlayEnemies);
 }
 
 static void PlayMode_Exit()
