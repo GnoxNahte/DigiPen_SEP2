@@ -1,10 +1,8 @@
 #pragma once
 #include "../Player/Player.h"
 #include "../Camera.h"
-#include <cmath>
 #include "../Environment/MapGrid.h"
 #include "../../Utils/ParticleSystem.h"
-#include "../../Utils/MeshGenerator.h"
 #include "../Environment/traps.h"
 #include "GSM.h"
 #include "../enemy/EnemyBoss.h"

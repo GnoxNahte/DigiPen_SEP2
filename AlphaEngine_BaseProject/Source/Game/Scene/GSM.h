@@ -53,3 +53,9 @@ private:
 	static SceneState nextState;
 };
 
+// Called after changing scene
+struct SceneChangeEvent
+{
+	SceneState previousState;
+	SceneState currentState;
+};

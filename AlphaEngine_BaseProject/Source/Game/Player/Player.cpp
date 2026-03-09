@@ -41,6 +41,12 @@ Player::~Player()
 
 void Player::Update()
 {
+    if (IsDead())
+    {
+        UpdateAnimation();
+        return;
+    }
+
     UpdateInput();
     UpdateTriggerColliders();
 
@@ -54,7 +60,7 @@ void Player::Update()
     AEVec2 displacement, nextPosition;
     AEVec2Scale(&displacement, &velocity, static_cast<float>(Time::GetInstance().GetScaledDeltaTime()));
     AEVec2Add(&nextPosition, &position, &displacement);
-    map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
+    UpdateCollisions(nextPosition);
 
     UpdateAnimation();
     UpdateTrails();
@@ -77,6 +83,10 @@ void Player::Render()
     // Camera scale. Scales translation too.
     AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
     AEGfxSetTransform(transform.m);
+    
+    // maybe remove, dash time is quite short player might not notice
+    if (IsInvincible())
+        AEGfxSetTransparency(0.5f);
 
     sprite.Render();
 
@@ -88,6 +98,8 @@ void Player::Render()
         RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
+
+    AEGfxSetTransparency(1.f);
 }
 
 void Player::Reset(const AEVec2& initialPos)
@@ -115,9 +127,10 @@ void Player::Reset(const AEVec2& initialPos)
 
     health = stats.maxHealth;
     hasAppliedRecoil = false;
+    lastDamagedTime = std::numeric_limits<f64>::lowest();
 
     buff_MoveSpeedMulti = 1.f;
-    buff_DmgReduction = 0.f;
+    buff_DmgReduction = 1.f;
     buff_critChance = 1.f;
     buff_critDmgMulti = 1.f;
     buff_DmgMultiLowHP = 1.f;
@@ -183,8 +196,13 @@ void Player::UpdateTriggerColliders()
 {
     AEVec2 tmpPosition;
 
+    bool wasGroundCollided = isGroundCollided;
     AEVec2Add(&tmpPosition, &position, &stats.groundChecker.position);
     isGroundCollided = map->CheckBoxCollision(tmpPosition, stats.groundChecker.size);
+
+    // If in air -> grounded
+    if (!wasGroundCollided && isGroundCollided)
+        HandleLanding();
 
     AEVec2Add(&tmpPosition, &position, &stats.ceilingChecker.position);
     isCeilingCollided = map->CheckBoxCollision(tmpPosition, stats.ceilingChecker.size);
@@ -253,21 +271,32 @@ void Player::HorizontalMovement()
 
 void Player::VerticalMovement()
 {
-    HandleLanding();
     HandleGravity();
     HandleJump();
 }
 
 void Player::HandleLanding()
 {
-    if (!isGroundCollided || velocity.y > 0.f)
-        return;
+    int state = sprite.GetState();
+    float angleRange = 5.f;
+    if (state == AnimState::AIR_ATTACK_SMASH)
+    {
+        ParticleSystem::EmitterSettings emitter{
+            .spawnPosRangeX { position.x, position.x },
+            .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
+            .angleRange     { AEDegToRad(0.f), AEDegToRad(angleRange) },
+            .speedRange     { 2.f, 30.f },
+            .lifetimeRange  { 0.1f, 0.3f },
+            .tint           { 0.56f, 0.49f, 0.77f, 1.f }
+        };
+        particleSystem.SpawnParticleBurst(emitter, 25);
+
+        emitter.angleRange.x = AEDegToRad(180.f);
+        emitter.angleRange.y = AEDegToRad(180.f - angleRange);
+        particleSystem.SpawnParticleBurst(emitter, 25);
+    }
 
     // @todo: (Ethan) - Play sound
-    if (!isGroundCollided)
-        lastJumpTime = std::numeric_limits<f64>::lowest();
-        
-    lastGroundedTime = (f32)Time::GetInstance().GetScaledElapsedTime();
 }
 
 void Player::HandleGravity()
@@ -291,14 +320,20 @@ void Player::HandleGravity()
     // If on ground
     else if (isGroundCollided)
     {
+        lastGroundedTime = (f32)Time::GetInstance().GetScaledElapsedTime();
         velocity.y = 0.f;
     }
     // Else, falling
     else
     {
         float acceleration, maxFallSpeed;
+        if (IsAnimAirAttack())
+        {
+            acceleration = -200.f;
+            maxFallSpeed = stats.downAirAttackFallSpeed;
+        }
         // Wall slide
-        if (isLeftWallCollided || isRightWallCollided)
+        else if (isLeftWallCollided || isRightWallCollided)
         {
             acceleration = stats.wallSlideAcceleration;
             maxFallSpeed = stats.wallSlideMaxSpeed;
@@ -355,6 +390,26 @@ void Player::PerformJump()
     //sprite.SetState(JUMP_START, true);
 }
 
+void Player::UpdateCollisions(const AEVec2& nextPosition)
+{
+    // === Map collisions ===
+    map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
+    
+    // === Enemy collisions ===
+    if (IsDashing())
+        return;
+
+    IDamageable* damageable = IfCollideEnemy({ position, stats.playerSize });
+    if (damageable)
+        TryTakeDamage(5, damageable->GetHurtboxPos());
+}
+
+bool Player::IsDashing()
+{
+    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
+    return currTime - dashStartTime < stats.dashTime;
+}
+
 bool Player::IsAnimGroundAttack()
 {
     AnimState state = GetAnimState();
@@ -364,7 +419,7 @@ bool Player::IsAnimGroundAttack()
 bool Player::IsAnimAirAttack()
 {
     AnimState state = GetAnimState();
-    return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_3;
+    return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_END;
 }
 
 bool Player::IsAttacking()
@@ -372,16 +427,47 @@ bool Player::IsAttacking()
     return IsAnimAirAttack() || IsAnimGroundAttack();
 }
 
-void Player::Attack(AnimState toState)
+bool Player::IsInvincible()
+{
+    return IsDashing() || Time::GetInstance().GetScaledElapsedTime() - lastDamagedTime < stats.invincibleTime;
+}
+
+void Player::SetAttack(AnimState toState)
 {
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
 }
 
+void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
+{
+    int damage = attack.damage;
+    // When low health, increase damage
+    // todo - Change to precalculate? make percentage into another variable too
+    if (health < 0.2f * stats.maxHealth)
+        damage = static_cast<int>(damage * buff_DmgMultiLowHP);
+
+    // Crit
+    if (AERandFloat() < buff_critChance)
+        damage = static_cast<int>(damage * buff_critDmgMulti);
+
+    damageable.TryTakeDamage(damage, position);
+    attackedEnemies.push_back(&damageable);
+
+    if (!hasAppliedRecoil)
+    {
+        if (isGroundAttack)
+            velocity.x += facingDirection.x > 0 ? -attack.recoilSpeed : attack.recoilSpeed;
+        else
+            velocity.y += attack.recoilSpeed;
+
+        hasAppliedRecoil = true;
+    }
+}
+
 void Player::UpdateAttacks()
 {
-    AttackStats* attack = nullptr;
+    const AttackStats* attack = nullptr;
     AnimState animState = GetAnimState();
     bool isGroundAttack = false;
 
@@ -407,33 +493,13 @@ void Player::UpdateAttacks()
     // Check if attack hit enemy
     if (enemyManager)
     {
-        enemyManager->ForEachEnemy([&](Enemy& enemy) {
+        enemyManager->ForEachDamageable([&](IDamageable& obj) {
             // If hit enemy && current enemy isn't in attackedEnemies
-            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
-                std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
-            {
-                int damage = attack->damage;
-                // todo - Change to precalculate? make percentage into another variable too
-                if (health < 0.2f * stats.maxHealth)
-                    damage = static_cast<int>(damage * buff_DmgMultiLowHP);
+            bool ifAttack = PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) &&
+                            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend();
 
-                // Crit
-                if (AERandFloat() < buff_critChance)
-                    damage = static_cast<int>(damage * buff_critDmgMulti);
-
-                enemy.TryTakeDamage(damage, colliderPos);
-                attackedEnemies.push_back(&enemy);
-
-                if (!hasAppliedRecoil)
-                {
-                    if (isGroundAttack)
-                        velocity.x += facingDirection.x > 0 ? -attack->recoilSpeed : attack->recoilSpeed;
-                    else 
-                        velocity.y += attack->recoilSpeed;
-
-                    hasAppliedRecoil = true;
-                }
-            }
+            if (ifAttack)
+                AttackDamageable(obj, *attack, isGroundAttack);
         });
     }
 
@@ -459,26 +525,29 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
         return;
     }
 
-    Attack(static_cast<AnimState>(spriteStateIndex + 1));
-
-    // Shouldn't handle input here but not sure how else to do..
-    // If switch direction when chaining attacks
-    if (((AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)) && facingDirection.x > 0) ||
-        ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && facingDirection.x < 0))
-        facingDirection.x *= -1;
-
-    // Temp - If transitioning to last attack
-    if (spriteState == AnimState::ATTACK_END - 1)
+    if (IsAnimGroundAttack())
     {
-        auto emitter = ParticleSystem::EmitterSettings{
-            { position.x + 1.5f, position.x + 1.5f },
-            { position.y + 0.5f, position.y + 0.5f },
-            { AEDegToRad(-15.f), AEDegToRad(15.f) },
-            { 15.f, 20.f },
-            { 0.3f, 0.4f }
-        };
-        particleSystem.SpawnParticleBurst(emitter, 10);
+        SetAttack(static_cast<AnimState>(spriteStateIndex + 1));
+
+        // Shouldn't handle input here but not sure how else to do..
+        // If switch direction when chaining attacks
+        if (((AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)) && facingDirection.x > 0) ||
+            ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && facingDirection.x < 0))
+            facingDirection.x *= -1;
     }
+}
+
+IDamageable* Player::IfCollideEnemy(const Box& collider)
+{
+    IDamageable* collidedEnemy = nullptr;
+
+    // Will override collidedEnemy but not solving for now
+    enemyManager->ForEachDamageable([&](IDamageable& obj) {
+        if (!obj.IsDead() && PhysicsUtils::AABB(collider.position, collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()))
+            collidedEnemy = &obj;
+    });
+
+    return collidedEnemy;
 }
 
 void Player::UpdateTrails()
@@ -509,18 +578,19 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    if (IsAttacking())
+    if (IsAttacking() || IsDead())
     {
-        // Do nothing, go to sprite.Update()
+        sprite.Update();
+        return;
     }
+
     // If player is trying to attack (including input buffer)
-    else if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
+    if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
     {
-        //Attack(AIR_ATTACK_1);
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
-            Attack(AIR_ATTACK_1);
+            SetAttack(AIR_ATTACK_SMASH);
         else
-            Attack(ATTACK_1);
+            SetAttack(ATTACK_1);
     }
     else
     {
@@ -560,11 +630,11 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
     switch (card.type)
     {
     case CARD_TYPE::HERMES_FAVOR:   buff_MoveSpeedMulti     *= PercentToScale(card.effectValue1); break;
-    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= 1.f - (card.effectValue1 / 100.f); break;
     case CARD_TYPE::REVITALIZE:     health = stats.maxHealth; break;
     case CARD_TYPE::SHARPEN:        
-        buff_critDmgMulti *= PercentToScale(card.effectValue1);
-        buff_critChance *= PercentToScale(card.effectValue2); 
+        buff_critDmgMulti   *= PercentToScale(card.effectValue1);
+        buff_critChance     *= PercentToScale(card.effectValue2); 
         break;
     case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
     //case CARD_TYPE::FEATHERWEIGHT: break;
@@ -586,27 +656,34 @@ float Player::PercentToScale(int percentage)
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }
 const AEVec2& Player::GetHurtboxSize() const { return stats.playerSize; }
-bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH; }
+bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAnimState() == AnimState::DEATH_LOOP; }
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 {
+    if (IsInvincible())
+        return health > 0;
+
+    lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
+
     if (health < dmg)
     {
         health = 0;
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
+        sprite.SetState(AnimState::DEATH, false, [&](int) {
+            sprite.SetState(AnimState::DEATH_LOOP); 
+        });
         return false;
     }
 
     health -= dmg;
+    
+    float knockbackStrength = max(dmg / stats.maxKnockbackDmg, 1.f) * stats.knockbackAmt;
 
-    AEVec2 hitOriginCpy = hitOrigin;
-    AEVec2 hitDirection;
-    AEVec2Sub(&hitDirection, &position, &hitOriginCpy);
+    // Calculate knockback direction based on hit origin
+    AEVec2 hitDirection = position - hitOrigin;
     AEVec2Normalize(&hitDirection, &hitDirection);
-
     hitDirection.y = max(hitDirection.y, 0.4f);
-    AEVec2Scale(&hitDirection, &hitDirection, 30);
-    velocity = hitDirection;
+    velocity = hitDirection * knockbackStrength;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
 
@@ -617,7 +694,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 
 void Player::DrawInspector()
 {
-    ImGui::Begin("Player"); 
+    ImGui::Begin("Player", &isInspectorOpen); 
     
     // === Runtime ===
     if (ImGui::CollapsingHeader("Runtime"))
@@ -630,6 +707,7 @@ void Player::DrawInspector()
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
         ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
+        ImGui::TextDisabled("Sprite index: %s", std::to_string(sprite.GetState()).c_str());
         
         ImGui::SeparatorText("Buffs");
         ImGui::DragFloat("Move Speed", &buff_MoveSpeedMulti, 0.1f);

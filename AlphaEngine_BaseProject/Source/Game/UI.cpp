@@ -119,7 +119,7 @@ void UI::DrawHealthVignette() {
 	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
 }
 void UI::InitCooldownMeshes() {
-	const int numViews = 20; // 20 discrete steps
+	const int numViews = 24; // 20 discrete steps
 	cooldownMeshes.resize(numViews + 1); // 0% -> 100%
 
 	for (int i = 0; i <= numViews; ++i)
@@ -136,7 +136,8 @@ void UI::InitCooldownMeshes() {
 void UI::DrawPlayerCooldownMeter() {
 	{
 		if (AEInputCheckCurr(AEVK_Z)) {
-			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", player->GetStats().dashCooldown);
+			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", 
+												player->GetStats().dashCooldown + player->GetStats().dashTime);
 		}
 		auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
 		if (!timer) return;

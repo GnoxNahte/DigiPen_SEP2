@@ -14,6 +14,17 @@ struct AttackStats
 
 /**
  * @brief   Contains the Player stats
+ *          To add a property, need to add it in all these places
+ *          1. Add variable in this struct
+ *          2. LoadFileData()
+ *          3. SaveFileData()
+ *          4. DrawInspector()
+ *          5. Add it in the .json file. Not handling if it can't find it. Don't want to silently fail
+ *          6. + Wherever the variable is used (e.g. Player.h)
+ *          
+ *          Lots of steps and alot of repeated code 
+ *          but since C++ doesn't have reflection, not sure how else to do.
+ *          Tried LIONant's xproperty and RTTR but can't get them to compile in the project...
  */
 struct PlayerStats
 {
@@ -76,7 +87,11 @@ struct PlayerStats
 
 	// === Combat stats ===
 	int maxHealth;
+    float invincibleTime; // After taking damage
+    float knockbackAmt;
+    float maxKnockbackDmg; // At max dmg, apply full knockback
     float attackBuffer;
+    float downAirAttackFallSpeed;
 
     std::array<AttackStats, 3> groundAttacks;
     std::array<AttackStats, 3> airAttacks;
