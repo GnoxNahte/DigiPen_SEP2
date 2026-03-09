@@ -530,6 +530,9 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
 IDamageable* Player::IfCollideEnemy(const Box& collider)
 {
+    if (!enemyManager)
+        return nullptr;
+
     IDamageable* collidedEnemy = nullptr;
 
     // Will override collidedEnemy but not solving for now

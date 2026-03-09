@@ -64,6 +64,11 @@ public:
     bool IsDead() const override;
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
 
+    // Add a setter method to update the enemyManager after construction
+    void SetEnemyManager(EnemyManager* em) {
+        enemyManager = em;
+    }
+
     // === Getters ===
     const AEVec2&       GetPosition() const;
     const PlayerStats&  GetStats()    const;
