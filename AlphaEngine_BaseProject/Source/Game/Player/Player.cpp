@@ -407,9 +407,9 @@ void Player::UpdateAttacks()
     // Check if attack hit enemy
     if (enemyManager)
     {
-        enemyManager->ForEachEnemy([&](Enemy& enemy) {
+        enemyManager->ForEachDamageable([&](IDamageable& enemy) {
             // If hit enemy && current enemy isn't in attackedEnemies
-            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetPosition(), enemy.GetSize()) && 
+            if (PhysicsUtils::AABB(colliderPos, attack->collider.size, enemy.GetHurtboxPos(), enemy.GetHurtboxSize()) && 
                 std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &enemy) == attackedEnemies.cend())
             {
                 int damage = attack->damage;

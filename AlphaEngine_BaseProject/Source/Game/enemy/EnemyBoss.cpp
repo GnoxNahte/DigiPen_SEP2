@@ -355,7 +355,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 
     
 
-    if (isDead)
+  if (isDead)
     {
         // Ensure we are in DEATH state (safe to call; SetState ignores same-state)
         sprite.SetState(DEATH);
