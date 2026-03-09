@@ -664,6 +664,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
         return health > 0;
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
 
     if (health < dmg)
     {
@@ -685,7 +686,6 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     hitDirection.y = max(hitDirection.y, 0.4f);
     velocity = hitDirection * knockbackStrength;
 
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
 
     sprite.SetState(AnimState::HURT);
 

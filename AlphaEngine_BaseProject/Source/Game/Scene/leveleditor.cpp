@@ -14,6 +14,7 @@
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyManager.h"
 #include "../Time.h"
+#include "../UI.h"
 
 #include <iostream>
 #include <vector>
@@ -94,7 +95,7 @@ static std::string NormaliseFilename(const std::string& name)
     else
         dir = ".\\";
 
-    std::string folder = dir + "..\\..\\Assets\\Levels\\";
+    std::string folder = dir + "Assets\\Levels\\";
 
     CreateDirectoryA((dir + "Assets").c_str(), nullptr);
     CreateDirectoryA(folder.c_str(), nullptr);
@@ -459,6 +460,7 @@ static void PlayMode_Enter()
 
     gPlayPlayer = new Player(gMap, gPlayEnemies);
     gPlayPlayer->Reset(gSpawn);
+    UI::Init(gPlayPlayer);
 
     gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
 
@@ -506,6 +508,7 @@ static void PlayMode_Enter()
 
 static void PlayMode_Exit()
 {
+    UI::Exit();
     delete gPlayPlayer;  gPlayPlayer = nullptr;
     delete gPlayTraps;   gPlayTraps = nullptr;
     delete gPlayEnemies; gPlayEnemies = nullptr;
@@ -558,6 +561,8 @@ static void PlayMode_Update(float dt)
             if (++a.frame >= 3) { a.frame = 3; a.done = true; }
         }
     }
+    UI::GetDamageTextSpawner().Update();
+    UI::Update();
 }
 
 static void PlayMode_Render()
@@ -629,6 +634,7 @@ static void PlayMode_Render()
             AEGfxMeshDraw(gVineMesh, AE_GFX_MDM_TRIANGLES);
         }
     }
+    UI::Render();
 }
 
 /*========================================================
