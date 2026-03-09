@@ -7,7 +7,7 @@
 #include "Source/Game/Player/Player.h"
 #include "Source/Utils/QuickGraphics.h"
 
-// ---------- AABB overlap：按 position 为左下(或左上) + size ----------
+// ---------- AABB overlap ----------
 static inline float MinX(const Box& b) { return b.position.x; }
 static inline float MinY(const Box& b) { return b.position.y; }
 static inline float MaxX(const Box& b) { return b.position.x + b.size.x; }
@@ -24,21 +24,35 @@ bool IntersectsBox(const Box& a, const Box& b)
     return true;
 }
 
-Box MakePlayerBox(const Player& p)
+Box MakePlayerFeetBox(const Player& p)
 {
     Box b{};
     const AEVec2 fullSize = p.GetStats().playerSize;
     const AEVec2 pos = p.GetPosition();
 
-    
-    b.size.x = fullSize.x * 0.9f;  
-    b.size.y = 0.18f;              
+	// for ground check and pressure plate triggering: a wide but very thin box at the player's feet, so that it can trigger when player is just barely stepping on it, but won't trigger if player is just near it
+	b.size.x = fullSize.x * 0.6f;  // wider than hurtbox to be more forgiving for stepping on plates, but not too wide to accidentally trigger when just near
+	b.size.y = 0.2f;               // very thin, just a sliver at the feet
 
-    
     b.position.x = pos.x - b.size.x * 0.5f;
+	// moving the box down so that it sits at the player's feet instead of centered on the player's position. The 0.05f is a small extra offset to make it more likely to trigger when stepping on plates.
+    b.position.y = pos.y - (fullSize.y * 0.5f) - 0.05f;
 
-  
-    b.position.y = (pos.y - fullSize.y) - 0.02f;  
+    return b;
+}
+
+Box MakePlayerBodyBox(const Player& p)
+{
+    Box b{};
+    const AEVec2 fullSize = p.GetStats().playerSize;
+    const AEVec2 pos = p.GetPosition();
+
+	// traps that damage on touch should use this box, which covers most of the player's body but not the feet, so that player can still step on pressure plates without taking damage, and it also won't accidentally trigger when player is just near the trap but not actually touching it
+	b.size.x = fullSize.x * 0.8f;   // wider than hurtbox to be more forgiving for trap hits, but not too wide to accidentally trigger when just near
+	b.size.y = fullSize.y * 0.9f;   // cover most of the body but not the feet, so player can still step on plates without taking damage, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player
+
+    b.position.x = pos.x - b.size.x * 0.5f;
+    b.position.y = pos.y - (b.size.y * 0.5f);
 
     return b;
 }
@@ -52,7 +66,17 @@ void Trap::Update(float dt, Player& player)
 {
     if (!m_enabled) { m_prevOverlap = false; return; }
 
-    const Box playerBox = MakePlayerBox(player);
+    Box playerBox;
+    if (m_type == Type::PressurePlate)
+    {
+		playerBox = MakePlayerFeetBox(player); // check feet for pressure plates so player can still trigger when just stepping on it, and won't trigger if player is just near it. Also, this makes it visually clearer that the player is stepping on the plate, since the box is at the feet instead of centered on the player's position.
+    }
+    else
+    {
+		playerBox = MakePlayerBodyBox(player); // checking body for damaging traps so player has to actually be touching the trap to take damage, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player. Pressure plates will use a separate feet box so that player can still trigger them without having to have their body hit the plate, which also allows for more forgiving triggering and visually looks better since the player is stepping on the plate with their feet instead of their body.
+    }
+
+
     const bool overlap = IntersectsBox(m_box, playerBox);
 
     if (overlap && !m_prevOverlap) OnPlayerEnter(player);
@@ -92,7 +116,8 @@ void LavaPool::OnPlayerStay(float dt, Player& player)
     if (m_tickTimer >= m_tickInterval)
     {
         m_tickTimer -= m_tickInterval;
-        player.TryTakeDamage(m_damagePerTick, {});
+        AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
+        player.TryTakeDamage(m_damagePerTick, trapOrigin);
     }
 }
 
@@ -193,8 +218,10 @@ void SpikePlate::OnPlayerEnter(Player& player)
     if (m_hitTimer > 0.f) return;
 
     std::cout << "[Spike] Enter Hit!\n";
-    player.TryTakeDamage(m_damageOnHit, {});
-    m_hitTimer = m_hitCooldown;
+    AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
+    player.TryTakeDamage(m_damageOnHit, trapOrigin);
+
+    m_hitTimer = 0.5f;
 }
 
 void SpikePlate::OnPlayerStay(float, Player& player)
@@ -202,8 +229,10 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     if (!m_spikesUp) return;
     if (m_hitTimer > 0.f) return;
     std::cout << "[Spike] Hit!\n";
-    player.TryTakeDamage(m_damageOnHit, {});
-    m_hitTimer = m_hitCooldown;
+    AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
+    player.TryTakeDamage(m_damageOnHit, trapOrigin);
+
+    m_hitTimer = 0.5f;
 }
 
 // ---------------- TrapManager ----------------
