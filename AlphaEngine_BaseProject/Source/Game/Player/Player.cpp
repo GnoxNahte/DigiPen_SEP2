@@ -85,7 +85,7 @@ void Player::Render()
     AEGfxSetTransform(transform.m);
     
     // maybe remove, dash time is quite short player might not notice
-    if (IsDashing())
+    if (IsInvincible())
         AEGfxSetTransparency(0.5f);
 
     sprite.Render();
@@ -127,6 +127,7 @@ void Player::Reset(const AEVec2& initialPos)
 
     health = stats.maxHealth;
     hasAppliedRecoil = false;
+    lastDamagedTime = std::numeric_limits<f64>::lowest();
 
     buff_MoveSpeedMulti = 1.f;
     buff_DmgReduction = 1.f;
@@ -277,19 +278,22 @@ void Player::VerticalMovement()
 void Player::HandleLanding()
 {
     int state = sprite.GetState();
-    if (state == AnimState::AIR_ATTACK_3)
+    float angleRange = 5.f;
+    if (state == AnimState::AIR_ATTACK_SMASH)
     {
         ParticleSystem::EmitterSettings emitter{
             .spawnPosRangeX { position.x, position.x },
-            .spawnPosRangeY { position.y, position.y },
-            .angleRange     { AEDegToRad(-10.f), AEDegToRad(10.f) },
-            .speedRange     { 2.f, 50.f },
-            .lifetimeRange  { 0.3f, 0.7f },
+            .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
+            .angleRange     { AEDegToRad(0.f), AEDegToRad(angleRange) },
+            .speedRange     { 2.f, 30.f },
+            .lifetimeRange  { 0.1f, 0.3f },
+            .tint           { 0.56f, 0.49f, 0.77f, 1.f }
         };
-        particleSystem.SpawnParticleBurst(emitter, 100);
+        particleSystem.SpawnParticleBurst(emitter, 25);
 
-        emitter.speedRange *= -1;
-        particleSystem.SpawnParticleBurst(emitter, 100);
+        emitter.angleRange.x = AEDegToRad(180.f);
+        emitter.angleRange.y = AEDegToRad(180.f - angleRange);
+        particleSystem.SpawnParticleBurst(emitter, 25);
     }
 
     // @todo: (Ethan) - Play sound
@@ -421,6 +425,11 @@ bool Player::IsAnimAirAttack()
 bool Player::IsAttacking()
 {
     return IsAnimAirAttack() || IsAnimGroundAttack();
+}
+
+bool Player::IsInvincible()
+{
+    return IsDashing() || Time::GetInstance().GetScaledElapsedTime() - lastDamagedTime < stats.invincibleTime;
 }
 
 void Player::SetAttack(AnimState toState)
@@ -578,9 +587,8 @@ void Player::UpdateAnimation()
     // If player is trying to attack (including input buffer)
     if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
     {
-        //Attack(AIR_ATTACK_1);
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
-            SetAttack(AIR_ATTACK_3);
+            SetAttack(AIR_ATTACK_SMASH);
         else
             SetAttack(ATTACK_1);
     }
@@ -652,9 +660,10 @@ bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAn
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
 {
-    // Invincible when dashing
-    if (IsDashing())
+    if (IsInvincible())
         return health > 0;
+
+    lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
 
     if (health < dmg)
     {
@@ -670,10 +679,10 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
     
     float knockbackStrength = max(dmg / stats.maxKnockbackDmg, 1.f) * stats.knockbackAmt;
 
+    // Calculate knockback direction based on hit origin
     AEVec2 hitDirection = position - hitOrigin;
     AEVec2Normalize(&hitDirection, &hitDirection);
     hitDirection.y = max(hitDirection.y, 0.4f);
-
     velocity = hitDirection * knockbackStrength;
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);

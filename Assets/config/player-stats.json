@@ -66,6 +66,7 @@
         "y": 0.898
     },
     "maxHealth": 100,
+    "invincibleTime": 0.5,
     "attackBuffer": 0.1,
     "knockbackAmt": 20.0,
     "maxKnockbackDmg": 20.0,

@@ -147,6 +147,7 @@ void PlayerStats::LoadFileData()
 
 	// === Combat stats ===
 	maxHealth = doc["maxHealth"].GetInt();
+    invincibleTime = doc["invincibleTime"].GetFloat();
 	attackBuffer = doc["attackBuffer"].GetFloat();
     knockbackAmt = doc["knockbackAmt"].GetFloat();
     maxKnockbackDmg = doc["maxKnockbackDmg"].GetFloat();
@@ -222,6 +223,7 @@ void PlayerStats::SaveFileData()
 
     // Combat
     doc.AddMember("maxHealth", maxHealth, allocator);
+    doc.AddMember("invincibleTime", invincibleTime, allocator);
     doc.AddMember("attackBuffer", attackBuffer, allocator);
     doc.AddMember("knockbackAmt", knockbackAmt, allocator);
     doc.AddMember("maxKnockbackDmg", maxKnockbackDmg, allocator);
@@ -353,6 +355,7 @@ void PlayerStats::DrawInspector()
     if (ImGui::TreeNode("Combat"))
     {
         ifChanged = ImGui::DragInt("Max Health", &maxHealth, 1.0f, 1, 1000) || ifChanged;
+        ifChanged = ImGui::DragFloat("Invincible Time", &invincibleTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Attack Buffer", &attackBuffer, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Knockback Amount", &knockbackAmt, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Max Knockback Damage", &maxKnockbackDmg, 0.01f) || ifChanged;
