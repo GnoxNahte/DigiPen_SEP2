@@ -41,8 +41,8 @@ public:
         // @todo - Split into air attack and attack down (smash)?
         AIR_ATTACK_1,
         AIR_ATTACK_2,
-        AIR_ATTACK_3,
-        AIR_ATTACK_END = AIR_ATTACK_3,
+        AIR_ATTACK_SMASH,
+        AIR_ATTACK_END = AIR_ATTACK_SMASH,
         RUN_W_SWORD, 
 
         ANIM_COUNT
@@ -105,6 +105,7 @@ private:
     // === Combat ===
     int health;
     bool hasAppliedRecoil; // For current attack
+    f64 lastDamagedTime;
 
     // === Buffs ===
     float buff_MoveSpeedMulti;
@@ -136,6 +137,7 @@ private:
     bool IsAnimGroundAttack();
     bool IsAnimAirAttack();
     bool IsAttacking();
+    bool IsInvincible();
     void SetAttack(AnimState toState);
     void AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack);
     void UpdateAttacks();
