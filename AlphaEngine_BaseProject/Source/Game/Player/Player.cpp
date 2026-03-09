@@ -543,7 +543,7 @@ IDamageable* Player::IfCollideEnemy(const Box& collider)
 
     // Will override collidedEnemy but not solving for now
     enemyManager->ForEachDamageable([&](IDamageable& obj) {
-        if (PhysicsUtils::AABB(collider.position, collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()))
+        if (!obj.IsDead() && PhysicsUtils::AABB(collider.position, collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()))
             collidedEnemy = &obj;
     });
 
