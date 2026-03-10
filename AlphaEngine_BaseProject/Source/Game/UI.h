@@ -39,7 +39,35 @@ public:
 private:
 	ObjectPool<DamageText> damageTextPool; // Object pool for damage text.
 };
+// Enums for button states, to determine how the button should react to player interaction and what visuals to show.
+enum BUTTON_STATE {
+	BUTTON_NEUTRAL, // The default button state without interaction / exit.
+	BUTTON_HOVERONCE, // The button state when player first hovers over a button.
+	BUTTON_HOVERHELD, // The button state when player stays hovered over a button.
+	BUTTON_CLICKED, // The button state when player releases while mouse is in button. (cursor up)
+	BUTTON_RELEASED, // The button state when player clicks down (cursor down).
+	BUTTON_DISABLED // The button state when disabled, as a separate handling case.
+};
+class Button {
+public:
+	Button() : size{ 0,0 }, pos{ 0,0 }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
+	Button(AEVec2 size, AEVec2 pos) : size{ size }, pos{ pos }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
+	static bool CheckMouseInRectButton(AEVec2 pos, AEVec2 size);
+	AEVec2 GetPos() const { return pos; }
+	AEVec2 GetSize() const { return size; }
 
+private:
+	AEVec2 size; // Size of the button (x is width, y is height). Expressed in percentage of window width and height (0-1).
+	AEVec2 pos; // Position of the button (x-coordinates, y-coordinates). Expressed in percentage of window width and height (0-1).
+	bool hoverOnce; // Checks whether the button is hovered once. Used to handle on first hover cases, e.g. sound.
+	BUTTON_STATE buttonState; // Enum of button's state.
+
+	// Colors to be KIV as currently the buttons are invisible.
+	// //CP_Color defaultColor; // Default color of the button.
+	// //CP_Color hoverColor; // Hover color of the button.
+	// //CP_Color clickedColor; // Clicked color of the button.
+	// //CP_Color drawColor; // Initial Draw color of the button.
+};
 class UI
 {
 public:
@@ -56,18 +84,30 @@ public:
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
 	static void UpdateGameOverStatus();
+	static void UpdateGameOverButtonsAndText();
+	static void DrawGameOverText();
 
+	// Game over screen variables
 	inline static bool deadTimerAdded = false;
 	inline static float gameOverTextFadeTimer; // For game over
 	inline static int   gameOverTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
+	inline static Button restartButton{ { 0.2f, 0.08f }, { 0.5f, 0.35f } };
+	inline static Button menuButton{ {0.2f, 0.08f}, {0.5f, 0.2f} };
 
 private:
+	// Damage text variables
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
-	static const int GAME_OVER_TEXT_SIZE = 48;
 	inline static s8 damageTextFont;
-	inline static s8 gameOverFont;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
+	// Game over screen variables
+	static const int GAME_OVER_TEXT_SIZE = 48;
+	inline static s8 gameOverFont;
+	inline static const float RESTART_NDC_X = -0.9f;  // matches AEGfxPrint x for "Restart Run"
+	inline static const float RESTART_NDC_Y = -0.3f;  // matches AEGfxPrint y for "Restart Run"
+	inline static const float MENU_NDC_X = -0.9f;  // matches AEGfxPrint x for "Menu"
+	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
+	// Health vignette variables.
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;
 	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
@@ -76,31 +116,4 @@ private:
 	// Black overlay attributes.
 	inline static f32 overlayAlpha = 0.75f;
 	inline static f32 fadeSpeed = 3.5f;
-};
-// Enums for button states, to determine how the button should react to player interaction and what visuals to show.
-enum BUTTON_STATE {
-	BUTTON_NEUTRAL, // The default button state without interaction / exit.
-	BUTTON_HOVERONCE, // The button state when player first hovers over a button.
-	BUTTON_HOVERHELD, // The button state when player stays hovered over a button.
-	BUTTON_CLICKED, // The button state when player releases while mouse is in button. (cursor up)
-	BUTTON_RELEASED, // The button state when player clicks down (cursor down).
-	BUTTON_DISABLED // The button state when disabled, as a separate handling case.
-};
-class Button {
-public:
-	Button() : size{ 0,0 }, pos{ 0,0 }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
-	Button(AEVec2 size, AEVec2 pos) : size{ size }, pos{ pos }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
-	static bool CheckMouseInRectButton(AEVec2 pos, AEVec2 size);
-
-private:
-	AEVec2 size; // Size of the button (x is width, y is height). Expressed in percentage of window width and height (0-1).
-	AEVec2 pos; // Position of the button (x-coordinates, y-coordinates). Expressed in percentage of window width and height (0-1).
-	bool hoverOnce; // Checks whether the button is hovered once. Used to handle on first hover cases, e.g. sound.
-	BUTTON_STATE buttonState; // Enum of button's state.
-
-	// Colors to be KIV as currently the buttons are invisible.
-	// //CP_Color defaultColor; // Default color of the button.
-	// //CP_Color hoverColor; // Hover color of the button.
-	// //CP_Color clickedColor; // Clicked color of the button.
-	// //CP_Color drawColor; // Initial Draw color of the button.
 };
