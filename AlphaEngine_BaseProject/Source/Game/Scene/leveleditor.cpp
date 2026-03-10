@@ -95,7 +95,7 @@ static std::string NormaliseFilename(const std::string& name)
     else
         dir = ".\\";
 
-    std::string folder = dir + "Assets\\Levels\\";
+    std::string folder = dir + "..\\..\\Assets\\Levels\\";
 
     CreateDirectoryA((dir + "Assets").c_str(), nullptr);
     CreateDirectoryA(folder.c_str(), nullptr);

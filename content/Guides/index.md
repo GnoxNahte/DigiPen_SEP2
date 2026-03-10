@@ -5,3 +5,4 @@
 - \subpage editor-with-imgui "Editor with ImGui"
 - \subpage particle_system "Particle System Usage"
 - \subpage event-system "Event System"
+- \subpage gsm "Game State Manager"
