@@ -52,13 +52,11 @@ tiles
 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2
 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2
 2 0 0 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 0 2
-traps 7
+traps 5
 trap pressureplate 3.5 7.5 1 1 id -1 links 0
 trap spikeplate 4.5 9.5 1 1 up 1 down 1 dmg 10 startDisabled 1
 trap spikeplate 8.5 9.5 1 1 up 1 down 1 dmg 10 startDisabled 1
 trap spikeplate 9.5 9.5 1 1 up 1 down 1 dmg 10 startDisabled 1
-trap spikeplate 19.5 5.5 1 1 up 1 down 1 dmg 10 startDisabled 1
-trap spikeplate 20.5 5.5 1 1 up 1 down 1 dmg 10 startDisabled 1
 trap spikeplate 21.5 5.5 1 1 up 1 down 1 dmg 10 startDisabled 1
 enemies 4
 enemy skeleton 12.5 6
