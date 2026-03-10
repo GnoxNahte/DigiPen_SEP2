@@ -46,6 +46,7 @@ public:
 	static void Init(Player* player);
 	static void Update();
 	static void Render();
+	static void Reset();
 	static void Exit();
 	inline static s8 GetDamageTextFont() { return damageTextFont; }
 	inline static DamageTextSpawner& GetDamageTextSpawner() { return damageTextSpawner; }
@@ -57,11 +58,15 @@ public:
 	static void UpdateGameOverStatus();
 
 	inline static bool deadTimerAdded = false;
+	inline static float gameOverTextFadeTimer; // For game over
+	inline static int   gameOverTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
 
 private:
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
+	static const int GAME_OVER_TEXT_SIZE = 48;
 	inline static s8 damageTextFont;
+	inline static s8 gameOverFont;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;

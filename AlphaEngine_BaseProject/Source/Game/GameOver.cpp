@@ -10,7 +10,7 @@ static const float CURVE_SCALE = 200.0f;
 static const u32   BLACK = 0xFF000000;
 
 static float eyelidProgress = 0.0f;
-static float eyelidSpeed = 450.0f;
+static float eyelidSpeed = 650.0f;
 
 // Two arrays — one per eyelid, one entry per frame
 static AEGfxVertexList* topFrames[EYELID_FRAMES] = {};
@@ -99,7 +99,10 @@ void FreeEyelidMeshes()
 void UpdateEyelid(float dt)
 {
     float halfH = AEGfxGetWindowHeight() * 0.5f;
-    eyelidProgress += eyelidSpeed * dt;
+    float remaining = halfH - eyelidProgress;
+    float speed = remaining * 1.35f; // proportional to remaining distance
+    speed = AEClamp(speed, 80.0f, eyelidSpeed); // floor prevents infinite crawl
+    eyelidProgress += speed * dt;
     if (eyelidProgress > halfH)
         eyelidProgress = halfH;
 }
@@ -147,4 +150,8 @@ bool EyelidDone()
 void ResetEyelid()
 {
     eyelidProgress = 0.0f;
+}
+float GetEyelidProgress()
+{
+    return eyelidProgress;
 }

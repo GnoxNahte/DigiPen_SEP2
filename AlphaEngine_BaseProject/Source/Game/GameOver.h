@@ -5,4 +5,5 @@ void UpdateEyelid(float dt);
 void DrawEyelid();
 void ResetEyelid();
 bool EyelidDone();
+float GetEyelidProgress();
 

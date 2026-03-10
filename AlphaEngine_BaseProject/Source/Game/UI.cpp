@@ -15,6 +15,7 @@
 ---------------------------------------------*/
 void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
 	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	BuffCardManager::Init();
@@ -22,12 +23,17 @@ void UI::Init(Player* _player) {
 	UI::player = _player;
 	InitCooldownMeshes();
 	BuildEyelidMeshes();
-	deadTimerAdded = false;
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
 	UpdateGameOverStatus();
+	if (player->IsDead() && EyelidDone()) {
+		gameOverTextFadeTimer += static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+		if (gameOverTextFadeTimer >= 0.0f) gameOverTextStage = 1;
+		if (gameOverTextFadeTimer >= 1.5f) gameOverTextStage = 2;
+		if (gameOverTextFadeTimer >= 3.0f) gameOverTextStage = 3;
+	}
 }
 void UI::Render() {
 	DrawPlayerCooldownMeter();
@@ -35,15 +41,33 @@ void UI::Render() {
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
 	if (player->IsDead()) {
-		// Draw whenever progress has started, regardless of the timer's "completion"
 		DrawEyelid();
 		if (EyelidDone()) {
-			std::cout << "EYELID IS DONE!! \n";
+			float t = gameOverTextFadeTimer;
+
+			// alpha for each string — clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
+			float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
+			float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
+			float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+
+			if (a1 > 0.0f)
+				AEGfxPrint(gameOverFont, "Fading...", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
+			if (a2 > 0.0f)
+				AEGfxPrint(gameOverFont, "All is quiet.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
+			if (a3 > 0.0f)
+				AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
 		}
 	}
 }
+void UI::Reset() {
+	deadTimerAdded = false;
+	ResetEyelid();
+	gameOverTextFadeTimer = 0.0f;
+	gameOverTextStage = 0;
+}
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
+	AEGfxDestroyFont(gameOverFont);
 	if (healthVignetteMesh) {
 		AEGfxMeshFree(healthVignetteMesh);
 	}
@@ -188,6 +212,7 @@ void UI::UpdateGameOverStatus() {
 	if (!player->IsDead()) {
 		deadTimerAdded = false;
 		ResetEyelid();
+		return;
 	}
 	if (deadTimerAdded && !TimerSystem::GetInstance().GetTimerByName("DeathAnim")) {
 		deadTimerAdded = false;
@@ -198,6 +223,7 @@ void UI::UpdateGameOverStatus() {
 		ResetEyelid();
 	}
 	auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
+
 	if (timer && timer->completed) {
 		UpdateEyelid(static_cast<float>(Time::GetInstance().GetScaledDeltaTime()));
 	}

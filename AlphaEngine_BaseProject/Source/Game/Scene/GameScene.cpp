@@ -580,9 +580,7 @@ void GameScene::UpdatePauseInput()
 
 			Time::GetInstance().ResetElapsedTime();
 			TimerSystem::GetInstance().Clear();
-			ResetEyelid();
-			UI::deadTimerAdded = false;
-			//UI::playerWasAlive = false;
+			UI::Reset();
 			if (!BuffCardManager::GetCurrentBuffs().empty()) {
 				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
 			}
