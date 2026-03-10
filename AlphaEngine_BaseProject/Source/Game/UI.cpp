@@ -7,6 +7,8 @@
 #include "../Utils/MeshGenerator.h"
 #include "../Game/Time.h"
 #include "../Game/Timer.h"
+#include "../Game/GameOver.h"
+#include <iostream>
 
 /*--------------------------------------------
 			 General UI Functions
@@ -19,16 +21,26 @@ void UI::Init(Player* _player) {
 	BuffCardScreen::Init();
 	UI::player = _player;
 	InitCooldownMeshes();
+	BuildEyelidMeshes();
+	deadTimerAdded = false;
 }
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
+	UpdateGameOverStatus();
 }
 void UI::Render() {
 	DrawPlayerCooldownMeter();
 	DrawHealthVignette();
 	damageTextSpawner.Render();
 	BuffCardScreen::Render();
+	if (player->IsDead()) {
+		// Draw whenever progress has started, regardless of the timer's "completion"
+		DrawEyelid();
+		if (EyelidDone()) {
+			std::cout << "EYELID IS DONE!! \n";
+		}
+	}
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
@@ -44,6 +56,7 @@ void UI::Exit() {
 	}
 	BuffCardScreen::Exit();
 	UI::player = nullptr;
+	FreeEyelidMeshes();
 }
 void UI::DrawHealthVignette() {
 	// --- Rotation ---
@@ -169,6 +182,24 @@ void UI::DrawPlayerCooldownMeter() {
 		// Draw the precomputed mesh
 		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
 		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	}
+}
+void UI::UpdateGameOverStatus() {
+	if (!player->IsDead()) {
+		deadTimerAdded = false;
+		ResetEyelid();
+	}
+	if (deadTimerAdded && !TimerSystem::GetInstance().GetTimerByName("DeathAnim")) {
+		deadTimerAdded = false;
+	}
+	if (!deadTimerAdded) {
+		TimerSystem::GetInstance().AddTimer("DeathAnim", 2.5f, false);
+		deadTimerAdded = true;
+		ResetEyelid();
+	}
+	auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
+	if (timer && timer->completed) {
+		UpdateEyelid(static_cast<float>(Time::GetInstance().GetScaledDeltaTime()));
 	}
 }
 

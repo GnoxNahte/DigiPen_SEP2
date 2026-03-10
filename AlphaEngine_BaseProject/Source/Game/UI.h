@@ -54,6 +54,9 @@ public:
 	static void DrawHealthVignette();
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
+	static void UpdateGameOverStatus();
+
+	inline static bool deadTimerAdded = false;
 
 private:
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;

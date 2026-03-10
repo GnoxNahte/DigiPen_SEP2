@@ -7,6 +7,7 @@
 #include "../BuffCards.h"
 #include "LevelIO.h"
 #include "../../Game/Timer.h"
+#include "../../Game/GameOver.h"
 #include <iomanip>
 #include <sstream>
 
@@ -397,8 +398,9 @@ void GameScene::Render()
 	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
 	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	if (AEInputCheckTriggered(AEVK_R))
+	if (AEInputCheckTriggered(AEVK_R)) {
 		GSM::ChangeScene(SceneState::GS_GAME);
+	}
 #endif
 }
 
@@ -578,6 +580,9 @@ void GameScene::UpdatePauseInput()
 
 			Time::GetInstance().ResetElapsedTime();
 			TimerSystem::GetInstance().Clear();
+			ResetEyelid();
+			UI::deadTimerAdded = false;
+			//UI::playerWasAlive = false;
 			if (!BuffCardManager::GetCurrentBuffs().empty()) {
 				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
 			}
