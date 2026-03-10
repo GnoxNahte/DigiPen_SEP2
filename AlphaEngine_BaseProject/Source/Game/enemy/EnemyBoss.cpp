@@ -432,7 +432,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
 
+    const float dy = std::fabs(playerPos.y - position.y);
+    //const bool yAggroOk = (dy <= aggroYRange);
+    const bool yAttackOk = (dy <= attackYRange);
+
     const bool inAggroRange = (absDx <= aggroRange);
+    const float attackDur = GetAnimDurationSec(sprite, ATTACK);
+    const float effectiveDist = yAttackOk ? absDx : 9999.0f;
 
     if (inAggroRange && !bossEngaged)
     {
@@ -485,12 +491,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
             teleportCooldownTimer = 0.f;
 
             // Prime an immediate attack (EnemyAttack auto-starts if in range)
-            const float newDx = playerPos.x - position.x;
-            const float newAbsDx = std::fabs(newDx);
-            const float attackDur = GetAnimDurationSec(sprite, ATTACK);
+            //const float newDx = playerPos.x - position.x;
+            //const float newAbsDx = std::fabs(newDx);
+            //const float attackDur = GetAnimDurationSec(sprite, ATTACK);
 
             attack.Reset();                 // clears cooldownTimer too
-            attack.Update(0.f, newAbsDx, attackDur); // dt=0 is fine; it can still start attack
+           // const float effectiveDist = yAttackOk ? absDx : 9999.0f;
+            attack.Update(dt, effectiveDist, attackDur);
         }
 
         // Don't let normal animation/movement override TELEPORT this frame.
@@ -538,8 +545,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 
 
     // Update attack component
-    const float attackDur = GetAnimDurationSec(sprite, ATTACK);
-    attack.Update(dt, absDx, attackDur);
+    attack.Update(dt, effectiveDist, attackDur);
 
 
     // Unlock special sequence after boss performs its first normal attack

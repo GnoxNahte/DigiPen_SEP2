@@ -32,6 +32,8 @@ public:
 
     //raise to start chasing player
     float aggroRange = 10.0f;
+    float aggroYRange = 1.0f;
+    float attackYRange = 0.6f;
 
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
