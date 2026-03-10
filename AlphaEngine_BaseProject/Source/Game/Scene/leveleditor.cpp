@@ -552,14 +552,6 @@ static void PlayMode_Update(float dt)
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
 
 	attackSystem.ApplyEnemyAttacksToPlayer(*gPlayPlayer,*gPlayEnemies, gPlayBoss);
-    /*gPlayEnemies->ForEachEnemy([&](Enemy& e)
-        {
-            if (!e.PollAttackHit()) return;
-            const AEVec2 ePos = e.GetPosition();
-            if (std::fabs(pPos.x - ePos.x) <= e.GetAttackHitRange() &&
-                std::fabs(pPos.y - ePos.y) <= pSize.y * 0.5f + 0.6f)
-                gPlayPlayer->TryTakeDamage(e.GetAttackDamage(), e.GetPosition());
-        }); */
 
     gPlayTraps->Update(dt, *gPlayPlayer);
 
