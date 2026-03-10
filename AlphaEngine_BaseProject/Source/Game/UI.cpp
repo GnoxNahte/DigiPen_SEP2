@@ -114,7 +114,7 @@ void UI::DrawHealthVignette() {
 	{
 		float t = (0.5f - healthFraction) / 0.25f;
 		t = AEClamp(t, 0.0f, 1.0f);
-		baseAlpha = 0.75f * t; // Strength of transparency.
+		baseAlpha = 0.4f * t; // Strength of transparency.
 	}
 
 	// --- Heartbeat pulse ---
@@ -170,7 +170,7 @@ void UI::InitCooldownMeshes() {
 }
 void UI::DrawPlayerCooldownMeter() {
 	{
-		if (AEInputCheckCurr(AEVK_Z)) {
+		if (AEInputCheckCurr(AEVK_Z) && !player->IsDead()) {
 			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", 
 												player->GetStats().dashCooldown + player->GetStats().dashTime);
 		}
