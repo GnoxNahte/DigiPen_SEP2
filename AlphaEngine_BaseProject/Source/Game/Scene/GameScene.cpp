@@ -7,7 +7,6 @@
 #include "../BuffCards.h"
 #include "LevelIO.h"
 #include "../../Game/Timer.h"
-#include "../../Game/GameOver.h"
 #include <iomanip>
 #include <sstream>
 
@@ -323,14 +322,14 @@ void GameScene::Update()
 	testParticleSystem.Update();
 
 	// For checking current buffs vector
-	if (AEInputCheckTriggered(AEVK_P)) {
-		std::cout << "Current buffs :\n";
-		for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
-			std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
-				<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
-				<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
-		}
-	}
+	//if (AEInputCheckTriggered(AEVK_P)) {
+	//	std::cout << "Current buffs :\n";
+	//	for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
+	//		std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
+	//			<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
+	//			<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
+	//	}
+	//}
 	// === For Damage Text Testing ===
 	//if AEInputCheckCurr/Triggered
 	//if (AEInputCheckTriggered(AEVK_K))
@@ -344,6 +343,23 @@ void GameScene::Update()
 	//}
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
+	if (UI::restartRun) { // Allow restart run from game over screen (i.e. load game scene again).
+		UI::restartRun = false;
+		pausePage = PausePage::None;
+
+		Time::GetInstance().ResetElapsedTime();
+		TimerSystem::GetInstance().Clear();
+		UI::Reset();
+		if (!BuffCardManager::GetCurrentBuffs().empty()) {
+			BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+		}
+		// Reload the last successfully loaded level (if any)
+		if (!gLastLoadedLevelPath.empty())
+		{
+			gPendingLevelPath = gLastLoadedLevelPath;
+		}
+		GSM::ChangeScene(SceneState::GS_GAME);
+	}
 }
 
 void GameScene::Render()
@@ -399,6 +415,19 @@ void GameScene::Render()
 	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R)) {
+		pausePage = PausePage::None;
+
+		Time::GetInstance().ResetElapsedTime();
+		TimerSystem::GetInstance().Clear();
+		UI::Reset();
+		if (!BuffCardManager::GetCurrentBuffs().empty()) {
+			BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+		}
+		// Reload the last successfully loaded level (if any)
+		if (!gLastLoadedLevelPath.empty())
+		{
+			gPendingLevelPath = gLastLoadedLevelPath;
+		}
 		GSM::ChangeScene(SceneState::GS_GAME);
 	}
 #endif

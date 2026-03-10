@@ -89,6 +89,7 @@ public:
 
 	// Game over screen variables
 	inline static bool deadTimerAdded = false;
+	inline static bool restartRun = false;
 	inline static float gameOverTextFadeTimer; // For game over
 	inline static int   gameOverTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
 	inline static Button restartButton{ { 0.2f, 0.08f }, { 0.5f, 0.35f } };

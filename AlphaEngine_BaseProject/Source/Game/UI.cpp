@@ -10,6 +10,19 @@
 #include "../Game/GameOver.h"
 #include <iostream>
 
+namespace {
+	std::string FormatTimeMMSSMS(double timeInSeconds) {
+		int minutes = static_cast<int>(timeInSeconds) / 60;
+		int seconds = static_cast<int>(timeInSeconds) % 60;
+		int milliseconds = static_cast<int>((timeInSeconds - floor(timeInSeconds)) * 100); // two digits of ms
+
+		// Format with leading zeros
+		char buffer[16];
+		sprintf_s(buffer, "%02d:%02d:%02d", minutes, seconds, milliseconds);
+		return std::string(buffer);
+	}
+}
+
 /*--------------------------------------------
 			 General UI Functions
 ---------------------------------------------*/
@@ -210,11 +223,14 @@ void UI::UpdateGameOverStatus() {
 	auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
 
 	if (timer && timer->completed) {
-		UpdateEyelid(static_cast<float>(Time::GetInstance().GetScaledDeltaTime()));
+		UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
+		if (Time::GetInstance().GetTimeScale() > 0.0f) {
+			Time::GetInstance().SetTimeScale(0);
+		}
 	}
 }
 void UI::UpdateGameOverButtonsAndText() {
-	gameOverTextFadeTimer += static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+	gameOverTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
 	if (gameOverTextFadeTimer >= 0.0f) gameOverTextStage = 1;
 	if (gameOverTextFadeTimer >= 1.5f) gameOverTextStage = 2;
 	if (gameOverTextFadeTimer >= 3.0f) gameOverTextStage = 3;
@@ -245,6 +261,8 @@ void UI::UpdateGameOverButtonsAndText() {
 	if (hoverRestart) {
 		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
 			std::cout << "RESTART\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			restartRun = true;
 			// restart
 		}
 	}
@@ -269,6 +287,10 @@ void UI::DrawGameOverText() {
 		AEGfxPrint(gameOverFont, "All is quiet.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
 	if (a3 > 0.0f) {
 		AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
+		f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
+		std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
+		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.85f, 1.f, 1.f, 1.f, a3);
+
 		float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
 
 		float winW = static_cast<float>(AEGfxGetWindowWidth());
