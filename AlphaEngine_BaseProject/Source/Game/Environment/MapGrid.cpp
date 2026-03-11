@@ -18,10 +18,10 @@ namespace
 	static constexpr int   PLATFORM_COLLISION_WIDTH = 1;
 }
 
-MapGrid::MapGrid(int rows, int cols)
-	: size(rows, cols),
-	tiles(rows* cols),
-	tileCount(rows* cols)
+MapGrid::MapGrid(int cols, int rows)
+	: size(cols, rows),
+	tiles(cols* rows),
+	tileCount(cols* rows)
 {
 	// full texture on a 1x1 quad
 	tileMesh = MeshGenerator::GetSquareMesh(1.f, 1.f, 1.f);
@@ -129,9 +129,9 @@ void MapGrid::Render()
 	WorldToGridCoordsClamped(bottomLeft, minX, minY);
 	WorldToGridCoordsClamped(topRight, maxX, maxY);
 
-	for (int y = minY; y < maxY; ++y)
+	for (int y = minY; y <= maxY; ++y)
 	{
-		for (int x = minX; x < maxX; ++x)
+		for (int x = minX; x <= maxX; ++x)
 		{
 			const MapTile* tile = GetTile(x, y);
 			if (tile == nullptr || tile->type == MapTile::Type::NONE)
@@ -324,6 +324,6 @@ inline void MapGrid::WorldToGridCoords(const AEVec2& worldPosition, int& outX, i
 
 inline void MapGrid::WorldToGridCoordsClamped(const AEVec2& worldPosition, int& outX, int& outY)
 {
-	outX = (int)AEClamp(floorf(worldPosition.x), 1, (float)size.x - 1);
-	outY = (int)AEClamp(floorf(worldPosition.y), 1, (float)size.y - 1);
+	outX = (int)AEClamp(floorf(worldPosition.x), 0, (float)size.x - 1);
+	outY = (int)AEClamp(floorf(worldPosition.y), 0, (float)size.y - 1);
 }
