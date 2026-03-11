@@ -47,7 +47,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.attackHitRange = 1.6f;    // try 1.4–2.0
         c.attackBreakRange = 2.2f;  // how far before attack cancels
         c.attackStartRange = 1.4f;
-        c.maxHp = 5;
+        c.maxHp = 50;
         c.hideAfterDeath = true;
         c.attackDamage = 2;
 
@@ -57,7 +57,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Skeleton.png";
         c.renderScale = 2.f;
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
-        c.maxHp = 10;
+        c.maxHp = 50;
  
         break;
     }
