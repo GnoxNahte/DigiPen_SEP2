@@ -58,12 +58,14 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.spritePath = "Assets/Craftpix/Druid.png";
         c.renderScale = 4.f;
         c.runVelThreshold = 0.1f;
-        c.attackHitRange = 1.6f;    // try 1.4–2.0
-        c.attackBreakRange = 2.2f;  // how far before attack cancels
-        c.attackStartRange = 1.4f;
+        c.attackHitRange = 4.0f;    // try 1.4–2.0
+        c.attackBreakRange = 10.0f;  // how far before attack cancels
+        c.attackStartRange = 3.8f;
         c.maxHp = 50;
         c.hideAfterDeath = true;
         c.attackDamage = 2;
+        c.aggroYRange = 4.0f;       // can notice player across height difference
+        c.attackYRange = 4.0f;       // can still attack across height difference
 
         break;
 
@@ -96,6 +98,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
 Enemy::Enemy(Preset preset, float initialPosX, float initialPosY)
     : Enemy(MakePreset(preset), initialPosX, initialPosY)
 {
+     presetType = preset;
 }
 
 Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
