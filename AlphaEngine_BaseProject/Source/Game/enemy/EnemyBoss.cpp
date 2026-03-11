@@ -1,7 +1,6 @@
 #include "EnemyBoss.h"
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
-#include "../Camera.h"
 #include <AEVec2.h>
 #include <Windows.h>
 #include <vector>
@@ -22,54 +21,7 @@ static inline u32 ScaleAlpha(u32 argb, float alphaMul)
     return (anew << 24) | rgb;
 }
 
-struct SpecialAttack
-{
-    AEVec2 pos{ 0.f, 0.f };
-    AEVec2 vel{ 0.f, 0.f };
-    float  radius{ 0.16f };
-    float  life{ 1.5f };
-    u32    color{ 0xFF66CCFF };
 
-    float debugW{ 0.5f };
-    float debugH{ 1.20f };
-
-    bool alive() const { return life > 0.f; }
-
-    void Update(float dt)
-    {
-        AEVec2 disp;
-        AEVec2Scale(&disp, &vel, dt);
-        AEVec2Add(&pos, &pos, &disp);
-        life -= dt;
-    }
-
-    void Render(Sprite& vfx, float sx, float sy) const
-    {
-        AEMtx33 m;
-        const bool faceRight = (vel.x >= 0.0f);
-
-        AEMtx33Scale(&m, sx, sy);
-
-        float px = vfx.metadata.pivot.x;
-        float py = vfx.metadata.pivot.y;
-
-        if (!faceRight)
-            px = 1.0f - px;
-
-        AEMtx33TransApply(
-            &m, &m,
-            pos.x - (0.5f - px),
-            pos.y - (0.5f - py)
-        );
-
-        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
-        AEGfxSetTransform(m.m);
-
-        AEGfxSetBlendMode(AE_GFX_BM_ADD);
-        vfx.Render();
-        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-    }
-};
 
 
 static bool g_spellcastUntil5thSpawn = false;
@@ -595,7 +547,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
                 specialAttack.color = 0xFFAA66FF;
 
                 g_specialAttacks.push_back(specialAttack);
-
+                SpawnSpecialMuzzleBurst(specialAttack.pos, dir);
                 --specialSpawnsRemaining;
                 if (specialSpawnsRemaining <= 0) g_spellcastUntil5thSpawn = false; // ? stop spellcast as soon as 5th is spawned
 
@@ -710,12 +662,33 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     specialAttackVfx.Update();
 
     // Update + cleanup specials
-    for (auto& specialAttack : g_specialAttacks)
+    /*for (auto& specialAttack : g_specialAttacks)
         specialAttack.Update(dt);
 
     g_specialAttacks.erase(
         std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
             [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }),
+        g_specialAttacks.end()
+    );*/
+
+    for (auto& specialAttack : g_specialAttacks)
+    {
+        specialAttack.Update(dt);
+        if (specialAttack.alive())
+            SpawnSpecialTrail(specialAttack);
+    }
+
+    g_specialAttacks.erase(
+        std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
+            [&](const SpecialAttack& specialAttack)
+            {
+                if (!specialAttack.alive())
+                {
+                    SpawnSpecialImpactBurst(specialAttack.pos);
+                    return true;
+                }
+                return false;
+            }),
         g_specialAttacks.end()
     );
 
@@ -778,6 +751,74 @@ void EnemyBoss::SpawnImpactBurst()
     particleSystem.SpawnParticleBurst(e, 12);
 }
 
+void EnemyBoss::SpawnSpecialTrail(const SpecialAttack& s)
+{
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+    e.behavior = ParticleBehavior::Gravity;
+    e.tint = { 0.70f, 0.30f, 1.00f, 0.85f };
+
+    e.lifetimeRange = { 0.10f, 0.22f };
+    e.speedRange = { 0.2f, 0.8f };
+
+    const float trailLen = 0.4f;
+    const bool faceRight = (s.vel.x >= 0.0f);
+
+    if (faceRight)
+        e.spawnPosRangeX = { s.pos.x - trailLen, s.pos.x + 0.5f };
+    else
+        e.spawnPosRangeX = { s.pos.x - 0.5f, s.pos.x + trailLen };
+
+    e.spawnPosRangeY = { s.pos.y - 0.5f, s.pos.y + 1.5f };
+    e.angleRange = { AEDegToRad(0.f), AEDegToRad(360.f) };
+
+    particleSystem.SpawnParticleBurst(e, 2);
+}
+
+void EnemyBoss::SpawnSpecialImpactBurst(const AEVec2& hitPos)
+{
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+    e.behavior = ParticleBehavior::Gravity;
+    e.tint = { 0.85f, 0.45f, 1.00f, 1.0f };
+
+    // flash
+    e.spawnPosRangeX = { hitPos.x - 0.05f, hitPos.x + 0.05f };
+    e.spawnPosRangeY = { hitPos.y - 0.05f, hitPos.y + 0.05f };
+    e.speedRange = { 4.f, 10.f };
+    e.lifetimeRange = { 0.06f, 0.12f };
+    e.angleRange = { AEDegToRad(0.f), AEDegToRad(360.f) };
+    particleSystem.SpawnParticleBurst(e, 10);
+
+    // outward shards
+    e.spawnPosRangeX = { hitPos.x - 0.08f, hitPos.x + 0.08f };
+    e.spawnPosRangeY = { hitPos.y - 0.08f, hitPos.y + 0.08f };
+    e.speedRange = { 8.f, 18.f };
+    e.lifetimeRange = { 0.15f, 0.35f };
+    e.angleRange = { AEDegToRad(0.f), AEDegToRad(360.f) };
+    particleSystem.SpawnParticleBurst(e, 16);
+}
+
+void EnemyBoss::SpawnSpecialMuzzleBurst(const AEVec2& spawnPos, float dir)
+{
+    ParticleSystem::EmitterSettings e = particleSystem.emitter;
+
+    e.behavior = ParticleBehavior::normal;
+    e.tint = { 0.72f, 0.28f, 1.00f, 1.0f };
+
+    e.spawnPosRangeX = { spawnPos.x - 0.05f, spawnPos.x + 0.05f };
+    e.spawnPosRangeY = { spawnPos.y - 0.05f, spawnPos.y + 0.05f };
+    e.speedRange = { 6.f, 14.f };
+    e.lifetimeRange = { 0.10f, 0.22f };
+
+    if (dir >= 0.f)
+        e.angleRange = { AEDegToRad(-25.f), AEDegToRad(25.f) };
+    else
+        e.angleRange = { AEDegToRad(155.f), AEDegToRad(205.f) };
+
+    particleSystem.SpawnParticleBurst(e, 14);
+}
+
 
 
 int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerSize)
@@ -796,7 +837,7 @@ int EnemyBoss::ConsumeSpecialHits(const AEVec2& playerPos, const AEVec2& playerS
         if (AABB_Overlap2(s.pos, spellSize, playerPos, playerSize))
         {
             ++hits;
-
+            SpawnSpecialImpactBurst(s.pos);
             // Consume the projectile so it only hits once
             s.life = 0.f;
         }
