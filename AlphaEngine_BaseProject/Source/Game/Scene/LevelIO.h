@@ -52,7 +52,7 @@ bool LoadLevelFromFile(const char* filename, LevelData& out);
 // NOTE: MapGrid::GetTile is often NON-const in your codebase,
 // so we take MapGrid& (not const MapGrid&).
 void BuildLevelDataFromEditor(
-    MapGrid& grid, int rows, int cols,
+    MapGrid& grid, int cols, int rows,
     const std::vector<TrapDefSimple>& traps,
     const std::vector<EnemyDefSimple>& enemies,
     const std::vector<AEVec2>& vines,

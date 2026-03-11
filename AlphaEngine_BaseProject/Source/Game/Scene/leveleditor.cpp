@@ -369,7 +369,7 @@ static void Prompt_Update()
         if (gPromptIsSave)
         {
             LevelData lvl;
-            BuildLevelDataFromEditor(*gMap, GRID_ROWS, GRID_COLS,
+            BuildLevelDataFromEditor(*gMap, GRID_COLS, GRID_ROWS,
                 gTrapDefs, gEnemyDefs, gVinePositions, gSpawn, lvl);
             gSaveSuccess = SaveLevelToFile(path.c_str(), lvl);
             gSaveMessageTimer = 2.5f;
