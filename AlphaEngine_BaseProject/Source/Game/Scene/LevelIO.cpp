@@ -52,6 +52,7 @@ namespace
         {
         case 0: return "druid";
         case 1: return "skeleton";
+        case 2: return "boss";
         default: return "unknown";
         }
     }
@@ -67,6 +68,7 @@ namespace
         if (isNumber) { outPresetAsInt = std::stoi(token); return true; }
         if (token == "druid") { outPresetAsInt = 0; return true; }
         if (token == "skeleton") { outPresetAsInt = 1; return true; }
+		if (token == "boss") { outPresetAsInt = 2; return true; }   
         return false;
     }
 
