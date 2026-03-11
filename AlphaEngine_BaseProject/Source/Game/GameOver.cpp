@@ -119,6 +119,7 @@ void DrawEyelid()
     float progressNorm = eyelidProgress / winH; // 0.0 -> 0.5
     float t = progressNorm / 0.5f;              // 0.0 -> 1.0
     int frameIndex = static_cast<int>(t * (EYELID_FRAMES - 1) + 0.5f);
+    //int frameIndex = static_cast<int>((1.0f - t) * (EYELID_FRAMES - 1) + 0.5f);
     if (frameIndex < 0)                frameIndex = 0;
     if (frameIndex >= EYELID_FRAMES)   frameIndex = EYELID_FRAMES - 1;
 

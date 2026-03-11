@@ -289,7 +289,7 @@ void UI::DrawGameOverText() {
 		AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
 		f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
 		std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
-		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.85f, 1.f, 1.f, 1.f, a3);
+		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.65f, 1.f, 1.f, 1.f, a3);
 
 		float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
 
