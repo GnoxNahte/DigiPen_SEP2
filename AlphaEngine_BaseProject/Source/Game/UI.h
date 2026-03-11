@@ -39,36 +39,6 @@ public:
 private:
 	ObjectPool<DamageText> damageTextPool; // Object pool for damage text.
 };
-
-class UI
-{
-public:
-	static void Init(Player* player);
-	static void Update();
-	static void Render();
-	static void Exit();
-	inline static s8 GetDamageTextFont() { return damageTextFont; }
-	inline static DamageTextSpawner& GetDamageTextSpawner() { return damageTextSpawner; }
-	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
-	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE; }
-	static void DrawHealthVignette();
-	static void InitCooldownMeshes();
-	static void DrawPlayerCooldownMeter();
-
-private:
-	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
-	static const int DAMAGE_TEXT_FONT_SIZE = 56;
-	inline static s8 damageTextFont;
-	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
-	inline static Player* player = nullptr;
-	inline static AEGfxTexture* healthVignette;
-	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
-	// Cooldown meshes
-	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
-	// Black overlay attributes.
-	inline static f32 overlayAlpha = 0.75f;
-	inline static f32 fadeSpeed = 3.5f;
-};
 // Enums for button states, to determine how the button should react to player interaction and what visuals to show.
 enum BUTTON_STATE {
 	BUTTON_NEUTRAL, // The default button state without interaction / exit.
@@ -83,6 +53,8 @@ public:
 	Button() : size{ 0,0 }, pos{ 0,0 }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
 	Button(AEVec2 size, AEVec2 pos) : size{ size }, pos{ pos }, hoverOnce{ false }, buttonState{ BUTTON_NEUTRAL } { /* empty by design */ }
 	static bool CheckMouseInRectButton(AEVec2 pos, AEVec2 size);
+	AEVec2 GetPos() const { return pos; }
+	AEVec2 GetSize() const { return size; }
 
 private:
 	AEVec2 size; // Size of the button (x is width, y is height). Expressed in percentage of window width and height (0-1).
@@ -95,4 +67,54 @@ private:
 	// //CP_Color hoverColor; // Hover color of the button.
 	// //CP_Color clickedColor; // Clicked color of the button.
 	// //CP_Color drawColor; // Initial Draw color of the button.
+};
+class UI
+{
+public:
+	static void Init(Player* player);
+	static void Update();
+	static void Render();
+	static void Reset();
+	static void Exit();
+	inline static s8 GetDamageTextFont() { return damageTextFont; }
+	inline static DamageTextSpawner& GetDamageTextSpawner() { return damageTextSpawner; }
+	inline static const int GetMaxDamageTextInstances() { return MAX_DAMAGE_TEXT_INSTANCES; }
+	inline static const int GetDamageTextFontSize() { return DAMAGE_TEXT_FONT_SIZE; }
+	static void DrawHealthVignette();
+	static void InitCooldownMeshes();
+	static void DrawPlayerCooldownMeter();
+	static void UpdateGameOverStatus();
+	static void UpdateGameOverButtonsAndText();
+	static void DrawGameOverText();
+
+	// Game over screen variables
+	inline static bool deadTimerAdded = false;
+	inline static bool restartRun = false;
+	inline static float gameOverTextFadeTimer; // For game over
+	inline static int   gameOverTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
+	inline static Button restartButton{ { 0.2f, 0.08f }, { 0.5f, 0.35f } };
+	inline static Button menuButton{ {0.2f, 0.08f}, {0.5f, 0.2f} };
+
+private:
+	// Damage text variables
+	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
+	static const int DAMAGE_TEXT_FONT_SIZE = 56;
+	inline static s8 damageTextFont;
+	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
+	// Game over screen variables
+	static const int GAME_OVER_TEXT_SIZE = 48;
+	inline static s8 gameOverFont;
+	inline static const float RESTART_NDC_X = -0.9f;  // matches AEGfxPrint x for "Restart Run"
+	inline static const float RESTART_NDC_Y = -0.3f;  // matches AEGfxPrint y for "Restart Run"
+	inline static const float MENU_NDC_X = -0.9f;  // matches AEGfxPrint x for "Menu"
+	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
+	// Health vignette variables.
+	inline static Player* player = nullptr;
+	inline static AEGfxTexture* healthVignette;
+	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
+	// Cooldown meshes
+	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
+	// Black overlay attributes.
+	inline static f32 overlayAlpha = 0.75f;
+	inline static f32 fadeSpeed = 3.5f;
 };

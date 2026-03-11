@@ -170,13 +170,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				// instead of a buff application.
 				AddBuff(cards[cardSelected]); // Add the selected card to the current buffs for reference and UI display.
 			}
-			std::cout << "Selected Card: " << cards[cardSelected].cardName
-				<< '\n' << "Rarity: "
-				<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
-				<< '\n' << "Type:"
-				<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
-				<< '\n' << "Effect: "
-				<< cards[cardSelected].cardEffect << std::endl;
+			//std::cout << "Selected Card: " << cards[cardSelected].cardName
+			//	<< '\n' << "Rarity: "
+			//	<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
+			//	<< '\n' << "Type:"
+			//	<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
+			//	<< '\n' << "Effect: "
+			//	<< cards[cardSelected].cardEffect << std::endl;
 			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
 			Time::GetInstance().SetTimeScale(1.0f);
 		}
@@ -191,13 +191,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					cards[cardSelected].type != REVITALIZE) {
 					AddBuff(cards[cardSelected]);
 				}
-				std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
-					<< '\n' << "Rarity: "
-					<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
-					<< '\n' << "Type:"
-					<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
-					<< '\n' << "Effect: "
-					<< cards[cardSelected].cardEffect << std::endl;
+				//std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
+				//	<< '\n' << "Rarity: "
+				//	<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
+				//	<< '\n' << "Type:"
+				//	<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
+				//	<< '\n' << "Effect: "
+				//	<< cards[cardSelected].cardEffect << std::endl;
 				ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
 				Time::GetInstance().SetTimeScale(1.0f);
 			}

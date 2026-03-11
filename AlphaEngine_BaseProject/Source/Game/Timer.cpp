@@ -44,9 +44,9 @@ void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemov
 	timerMap[name] = timers.size() - 1;
 	activeTimerCount++;
 
-	/*std::cout << "Initialized Timer \"" << timer.name << "\" for " << timer.duration
-		<< " seconds (ignoreScale=" << ignoreTimeScale
-		<< ", ignorePause=" << ignorePause << ")" << std::endl;*/
+	//std::cout << "Initialized Timer \"" << timer.name << "\" for " << timer.duration
+	//	<< " seconds (ignoreScale=" << ignoreTimeScale
+	//	<< ", ignorePause=" << ignorePause << ")" << std::endl;
 }
 void TimerSystem::RemoveTimer(const std::string& name) {
 	auto it = timerMap.find(name);
