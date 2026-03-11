@@ -86,10 +86,9 @@ public:
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();
 	static void DrawGameOverText();
+	inline static bool& GetRestartStatus() { return restartRun; }
 
 	// Game over screen variables
-	inline static bool deadTimerAdded = false;
-	inline static bool restartRun = false;
 	inline static float gameOverTextFadeTimer; // For game over
 	inline static int   gameOverTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
 	inline static Button restartButton{ { 0.2f, 0.08f }, { 0.5f, 0.35f } };
@@ -108,6 +107,8 @@ private:
 	inline static const float RESTART_NDC_Y = -0.3f;  // matches AEGfxPrint y for "Restart Run"
 	inline static const float MENU_NDC_X = -0.9f;  // matches AEGfxPrint x for "Menu"
 	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
+	inline static bool deadTimerAdded = false;
+	inline static bool restartRun = false;
 	// Health vignette variables.
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;
@@ -117,4 +118,5 @@ private:
 	// Black overlay attributes.
 	inline static f32 overlayAlpha = 0.75f;
 	inline static f32 fadeSpeed = 3.5f;
+
 };

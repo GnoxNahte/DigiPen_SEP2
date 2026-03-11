@@ -343,8 +343,8 @@ void GameScene::Update()
 	//}
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
-	if (UI::restartRun) { // Allow restart run from game over screen (i.e. load game scene again).
-		UI::restartRun = false;
+	if (UI::GetRestartStatus()) { // Allow restart run from game over screen (i.e. load game scene again).
+		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
 
 		Time::GetInstance().ResetElapsedTime();
