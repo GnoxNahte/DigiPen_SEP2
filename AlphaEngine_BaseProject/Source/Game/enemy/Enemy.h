@@ -147,7 +147,8 @@ private:
     int lastHitAttackId{ -1 };
   // NEW internal helper
     bool HasGroundAhead(MapGrid& map, float dirX) const;
-  
+    bool HasWallAhead(MapGrid& map, float dirX) const;
+
 
 
 };

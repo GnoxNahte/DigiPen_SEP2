@@ -34,6 +34,20 @@ bool Enemy::HasGroundAhead(MapGrid& map, float dirX) const
     return map.CheckPointCollision(probeX, probeY);
 }
 
+bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
+{
+    const AEVec2 hbPos = GetHurtboxPos();    // center
+    const AEVec2 hbSize = GetHurtboxSize();  // full size
+
+    const float eps = 0.05f;
+
+    // check just in front of the body
+    const float probeX = hbPos.x + dirX * (hbSize.x * 0.5f + eps);
+    const float probeY = hbPos.y; // middle height
+
+    return map.CheckPointCollision(probeX, probeY);
+}
+
 Enemy::Config Enemy::MakePreset(Preset preset)
 {
     Config c{};
@@ -306,7 +320,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
             if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
 
-            if (!HasGroundAhead(map, dirX))
+            if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
             {
                 nextPos.x = position.x;
                 velocity.x = 0.f;
@@ -359,7 +373,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
-                if (!HasGroundAhead(map, dirX))
+                if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
                 {
                     nextPos.x = position.x;
                     velocity.x = 0.f;
@@ -417,11 +431,12 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 AEVec2Add(&nextPos, &position, &displacement);
 
                 // Don’t walk off ledges
-                if (!HasGroundAhead(map, dirX))
+                if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
                 {
                     nextPos.x = position.x;
                     velocity.x = 0.f;
                     idleDirX = -idleDirX;
+                    facingDirection = AEVec2{ idleDirX >= 0.f ? 1.f : -1.f, 0.f };
                     idleWalkLeft = 0.f;
                     idlePauseLeft = 0.35f;
                 }
