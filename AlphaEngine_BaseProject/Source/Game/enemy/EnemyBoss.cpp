@@ -755,6 +755,7 @@ void EnemyBoss::SpawnSpecialTrail(const SpecialAttack& s)
 {
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
 
+
     e.behavior = ParticleBehavior::Gravity;
     e.tint = { 0.70f, 0.30f, 1.00f, 0.85f };
 
@@ -802,6 +803,7 @@ void EnemyBoss::SpawnSpecialImpactBurst(const AEVec2& hitPos)
 void EnemyBoss::SpawnSpecialMuzzleBurst(const AEVec2& spawnPos, float dir)
 {
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
+    e.tint = { 0.85f, 0.45f, 1.00f, 1.0f };
 
     e.behavior = ParticleBehavior::normal;
     e.tint = { 0.72f, 0.28f, 1.00f, 1.0f };
