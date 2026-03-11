@@ -551,7 +551,7 @@ static void PlayMode_Update(float dt)
     //gPlayEnemies->UpdateAll(pPos, *gMap);
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
 
-	attackSystem.ApplyEnemyAttacksToPlayer(*gPlayPlayer,*gPlayEnemies, gPlayBoss);
+	attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
 
     gPlayTraps->Update(dt, *gPlayPlayer);
 
