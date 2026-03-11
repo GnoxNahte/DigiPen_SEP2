@@ -1,4 +1,4 @@
-﻿// leveleditor.cpp
+﻿
 #include "AEEngine.h"
 #include "leveleditor.h"
 
@@ -28,8 +28,8 @@
     configuration
 ========================================================*/
 
-static constexpr int   GRID_ROWS = 50;
-static constexpr int   GRID_COLS = 50;
+static constexpr int   GRID_ROWS = 56;
+static constexpr int   GRID_COLS = 125;
 static constexpr float CAMERA_SCALE = 64.0f;
 static constexpr float CAMERA_SPEED = 10.0f;
 static constexpr float ZOOM_SPEED = 0.05f;
@@ -125,10 +125,10 @@ AttackSystem attackSystem;
     helpers
 ========================================================*/
 
-static bool InBounds(int x, int y)
-{
-    return x >= 0 && x < GRID_ROWS && y >= 0 && y < GRID_COLS;
-}
+//static bool InBounds(int x, int y)
+//{
+ //   return x >= 0 && x < GRID_COLS && y >= 0 && y < GRID_ROWS;
+//}
 
 static void ApplyWorldCamera()
 {
@@ -551,7 +551,7 @@ static void PlayMode_Update(float dt)
     //gPlayEnemies->UpdateAll(pPos, *gMap);
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
 
-	attackSystem.ApplyEnemyAttacksToPlayer(*gPlayPlayer,*gPlayEnemies, gPlayBoss);
+    attackSystem.ApplyEnemyAttacksToPlayer(*gPlayPlayer, *gPlayEnemies, gPlayBoss);
 
     gPlayTraps->Update(dt, *gPlayPlayer);
 
@@ -687,11 +687,16 @@ static void UpdateEditor(float dt)
 
     int tx = (int)std::floor(world.x);
     int ty = (int)std::floor(world.y);
-    gHoverCellValid = InBounds(tx, ty);
+
+    if (tx < 0) tx = 0;
+    if (tx >= GRID_COLS) tx = GRID_COLS - 1;
+
+    if (ty < 0) ty = 0;
+    if (ty >= GRID_ROWS) ty = GRID_ROWS - 1;
+
+    gHoverCellValid = true;
     gHoverCellX = tx;
     gHoverCellY = ty;
-
-    if (!InBounds(tx, ty)) return;
 
     bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON)
         : AEInputCheckTriggered(AEVK_LBUTTON);
@@ -806,7 +811,7 @@ void GameState_LevelEditor_Load()
 void GameState_LevelEditor_Init()
 {
     if (!gMap)
-        gMap = new MapGrid(GRID_ROWS, GRID_COLS);
+        gMap = new MapGrid(GRID_COLS, GRID_ROWS);
 
     if (!gCamera)
         gCamera = new Camera(
