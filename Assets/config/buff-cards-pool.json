@@ -4,7 +4,7 @@
       "type": "HERMES_FAVOR",
       "rarity": "UNCOMMON",
       "name": "Hermes Favor",
-      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
+      "description": "A breeze nudges you forward.",
       "effect": "Gain 5% Move Speed.",
       "effect_value_1": 5
     },
@@ -12,32 +12,32 @@
       "type": "HERMES_FAVOR",
       "rarity": "RARE",
       "name": "Hermes Favor",
-      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
-      "effect": "Gain 7% Move Speed.",
-      "effect_value_1": 7
+      "description": "The wind follows your stride.",
+      "effect": "Gain 8% Move Speed.",
+      "effect_value_1": 8
     },
     {
       "type": "HERMES_FAVOR",
       "rarity": "EPIC",
       "name": "Hermes Favor",
-      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
-      "effect": "Gain 9% Move Speed.",
-      "effect_value_1": 9
+      "description": "The wind races beside you, struggling to keep up.",
+      "effect": "Gain 12% Move Speed.",
+      "effect_value_1": 12
     },
     {
       "type": "HERMES_FAVOR",
       "rarity": "LEGENDARY",
       "name": "Hermes Favor",
-      "description": "A silver laugh rides the wind. The world feels a little slower than you.",
-      "effect": "Gain 11% Move Speed.",
-      "effect_value_1": 11
+      "description": "You outrun the whisper of the wind itself.",
+      "effect": "Gain 15% Move Speed.",
+      "effect_value_1": 15
     },
 
     {
       "type": "IRON_DEFENCE",
       "rarity": "UNCOMMON",
       "name": "Iron Defence",
-      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "description": "Your stance steadies against the world.",
       "effect": "Gain 5% Damage Reduction.",
       "effect_value_1": 5
     },
@@ -45,7 +45,7 @@
       "type": "IRON_DEFENCE",
       "rarity": "RARE",
       "name": "Iron Defence",
-      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "description": "Stone settles into your bones.",
       "effect": "Gain 10% Damage Reduction.",
       "effect_value_1": 10
     },
@@ -53,7 +53,7 @@
       "type": "IRON_DEFENCE",
       "rarity": "EPIC",
       "name": "Iron Defence",
-      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "description": "Steel seems to guard your skin.",
       "effect": "Gain 15% Damage Reduction.",
       "effect_value_1": 15
     },
@@ -61,7 +61,7 @@
       "type": "IRON_DEFENCE",
       "rarity": "LEGENDARY",
       "name": "Iron Defence",
-      "description": "Stone steadies your body; steel guards your skin. Each hit lands softer.",
+      "description": "You stand like an unbreakable fortress.",
       "effect": "Gain 20% Damage Reduction.",
       "effect_value_1": 20
     },
@@ -69,77 +69,190 @@
       "type": "SWITCH_IT_UP",
       "rarity": "EPIC",
       "name": "Switch It Up",
-      "description": "No fate is fixed. The deck reshuffles at your command.",
+      "description": "Fate bends reluctantly. The deck stirs once more.",
       "effect": "Reshuffle the buff cards."
     },
     {
       "type": "REVITALIZE",
-      "rarity": "LEGENDARY",
+      "rarity": "UNCOMMON",
       "name": "Revitalize",
-      "description": "Death loosens its grip. Your vitality is completely restored.",
-      "effect": "Fully restore all HP.",
-      "effect_value_1": 100
+      "description": "Death loosens its grip.",
+      "effect": "Restore 25% of max HP.",
+      "effect_value_1": 25
+    },
+    {
+      "type": "REVITALIZE",
+      "rarity": "RARE",
+      "name": "Revitalize",
+      "description": "Death's grasp falters.",
+      "effect": "Restore 35% of max HP.",
+      "effect_value_1": 35
+    },
+    {
+      "type": "REVITALIZE",
+      "rarity": "EPIC",
+      "name": "Revitalize",
+      "description": "Death retreats from your breath.",
+      "effect": "Restore 50% of max HP.",
+      "effect_value_1": 50
     },
     {
       "type": "SHARPEN",
       "rarity": "UNCOMMON",
       "name": "Sharpen",
-      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
-      "effect": "Increase Damage by 5% and Critical Chance by 5%.",
-      "effect_value_1": 5,
+      "description": "Your weapon stirs with quiet hunger.",
+      "effect": "Increase Damage by 8% and Critical Chance by 5%.",
+      "effect_value_1": 8,
       "effect_value_2": 5
     },
     {
       "type": "SHARPEN",
       "rarity": "RARE",
       "name": "Sharpen",
-      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
-      "effect": "Increase Damage by 8% and Critical Chance by 10%.",
-      "effect_value_1": 8,
-      "effect_value_2": 10
+      "description": "Steel answers your will.",
+      "effect": "Increase Damage by 12% and Critical Chance by 8%.",
+      "effect_value_1": 12,
+      "effect_value_2": 8
     },
     {
       "type": "SHARPEN",
       "rarity": "EPIC",
       "name": "Sharpen",
-      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
-      "effect": "Increase Damage by 12% and Critical Chance by 15%.",
-      "effect_value_1": 12,
-      "effect_value_2": 15
+      "description": "Each strike grows deadlier than the last.",
+      "effect": "Increase Damage by 15% and Critical Chance by 10%.",
+      "effect_value_1": 15,
+      "effect_value_2": 10
     },
     {
       "type": "SHARPEN",
       "rarity": "LEGENDARY",
       "name": "Sharpen",
-      "description": "Your weapon thirsts for battle. Each strike cuts truer than the last.",
-      "effect": "Increase Damage by 15% and Critical Chance by 25%.",
-      "effect_value_1": 15,
-      "effect_value_2": 25
-    },
-    {
-      "type": "BERSERKER",
-      "rarity": "UNCOMMON",
-      "name": "Berserker",
-      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
-      "effect": "Gain 5% bonus attack damage when at 25 HP or below.",
-      "effect_value_1": 5
+      "description": "Your blade thirsts for victory.",
+      "effect": "Increase Damage by 20% and Critical Chance by 15%.",
+      "effect_value_1": 20,
+      "effect_value_2": 15
     },
     {
       "type": "BERSERKER",
       "rarity": "RARE",
       "name": "Berserker",
-      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
-      "effect": "Gain 8% bonus attack damage when at 25 HP or below.",
-      "effect_value_1": 8
+      "description": "Pain sharpens your focus.",
+      "effect": "Increase Critical Chance by 10% below 50% HP.",
+      "effect_value_1": 10
+    },
+    {
+      "type": "BERSERKER",
+      "rarity": "EPIC",
+      "name": "Berserker",
+      "description": "Blood and fury guide your aim.",
+      "effect": "Increase Critical Chance by 20% below 50% HP.",
+      "effect_value_1": 20
     },
     {
       "type": "BERSERKER",
       "rarity": "LEGENDARY",
       "name": "Berserker",
-      "description": "Blood in your eyes, a roar in your throat. Pain is just a catalyst.",
-      "effect": "Gain 15% bonus attack damage when at 25 HP or below.",
+      "description": "On the brink of death, every strike is lethal.",
+      "effect": "Increase Critical Chance by 35% below 50% HP.",
+      "effect_value_1": 35
+    },
+    {
+      "type": "FLEETING_STEP",
+      "rarity": "RARE",
+      "name": "Fleeting Step",
+      "description": "Your step blurs through space, the void waits less between surges.",
+      "effect": "Decrease Dash Cooldown by 15%.",
       "effect_value_1": 15
+    },
+    {
+      "type": "FLEETING_STEP",
+      "rarity": "EPIC",
+      "name": "Fleeting Step",
+      "description": "Each stride pierces the void, the distance between motions shrinks.",
+      "effect": "Decrease Dash Cooldown by 25%.",
+      "effect_value_1": 25
+    },
+    {
+      "type": "SUREFOOTED",
+      "rarity": "RARE",
+      "name": "Surefooted",
+      "description": "Danger bows to your passage, even hidden blades respect your stride.",
+      "effect": "Reduce damage taken from traps by 20%.",
+      "effect_value_1": 20
+    },
+    {
+      "type": "SUREFOOTED",
+      "rarity": "EPIC",
+      "name": "Surefooted",
+      "description": "The earth itself shields you, traps falter before your path.",
+      "effect": "Reduce damage taken from traps by 35%.",
+      "effect_value_1": 35
+    },
+    {
+      "type": "DEEP_VITALITY",
+      "rarity": "UNCOMMON",
+      "name": "Deep Vitality",
+      "description": "The world may strike, but you endure longer.",
+      "effect": "Increase Maximum Health by 10%.",
+      "effect_value_1": 10
+    },
+    {
+      "type": "DEEP_VITALITY",
+      "rarity": "RARE",
+      "name": "Deep Vitality",
+      "description": "Your strength grows, blows bruise but do not break you.",
+      "effect": "Increase Maximum Health by 20%.",
+      "effect_value_1": 20
+    },
+    {
+      "type": "DEEP_VITALITY",
+      "rarity": "EPIC",
+      "name": "Deep Vitality",
+      "description": "Vitality surges, the body resists what once would fell it.",
+      "effect": "Increase Maximum Health by 30%.",
+      "effect_value_1": 30
+    },
+    {
+      "type": "DEEP_VITALITY",
+      "rarity": "LEGENDARY",
+      "name": "Deep Vitality",
+      "description": "Your heart beats like iron, even fate itself struggles to harm you.",
+      "effect": "Increase Maximum Health by 50%.",
+      "effect_value_1": 50
+    },
+    {
+      "type": "HAND_OF_FATE",
+      "rarity": "RARE",
+      "name": "Hand Of Fate",
+      "description": "Fate leans slightly in your favor, each strike finds its mark.",
+      "effect": "Increase Critical Chance by 10%.",
+      "effect_value_1": 10
+    },
+    {
+      "type": "HAND_OF_FATE",
+      "rarity": "EPIC",
+      "name": "Hand Of Fate",
+      "description": "The threads of destiny twist to your hand, your strikes almost cannot miss.",
+      "effect": "Increase Critical Chance by 15%.",
+      "effect_value_1": 15
+    },
+    {
+      "type": "SUNDERING_BLOW",
+      "rarity": "RARE",
+      "name": "Sundering Blow",
+      "description": "When your strikes land true, they carve deep.",
+      "effect": "Increase Critical Damage by 10%.",
+      "effect_value_1": 10
+    },
+    {
+      "type": "SUNDERING_BLOW",
+      "rarity": "EPIC",
+      "name": "Sundering Blow",
+      "description": "Your strikes rend the world, no defense can stand before them.",
+      "effect": "Increase Critical Damage by 25%.",
+      "effect_value_1": 25
     }
+
 
 
   ]
