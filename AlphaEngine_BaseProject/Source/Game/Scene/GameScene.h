@@ -9,6 +9,7 @@
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
+#include "../../Game/Rooms/RoomManager.h"
 
 
 
@@ -37,6 +38,8 @@ private:
 
 	EnemyManager enemyMgr;
 	AttackSystem attackSystem;
+	RoomManager roomMgr;
+	bool roomTransitionLocked = false;
 	// ======================= Pause Overlay (No ImGui) =======================
 	enum class PausePage
 	{
@@ -86,5 +89,8 @@ private:
 	static constexpr int kPauseRarityTexCount = 4; // UNCOMMON/RARE/EPIC/LEGENDARY
 	AEGfxTexture* pauseRarityTex[kPauseRarityTexCount] = { nullptr };
 	s8 pauseFontDesc = -1; // Pixellari
-};
 
+	void ClearRuntimeRoomObjects();
+	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE);
+	RoomDirection CheckRoomExit() const;
+};

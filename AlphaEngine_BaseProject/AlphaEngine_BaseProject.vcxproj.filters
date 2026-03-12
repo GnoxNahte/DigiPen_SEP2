@@ -207,6 +207,9 @@
     <ClCompile Include="Source\Game\GameOver.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -369,6 +372,12 @@
       <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\GameOver.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomData.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomManager.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>
