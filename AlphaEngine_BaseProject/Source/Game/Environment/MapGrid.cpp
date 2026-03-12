@@ -4,6 +4,7 @@
 #include "../../Utils/MeshGenerator.h"
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
+#include "../../Utils/QuickGraphics.h"
 
 namespace
 {
@@ -57,6 +58,12 @@ MapGrid::MapGrid(int rows, int cols)
 		if (size.x > 1)
 			tiles[y * size.x + (size.x - 2)].type = MapTile::Type::GROUND_BODY;
 	}
+
+	
+	tiles[WorldToIndex({ 15, 5 })] = MapTile::Type::GROUND_BODY;
+	tiles[WorldToIndex({ 15, 12 })] = MapTile::Type::GROUND_BODY;
+	tiles[WorldToIndex({ 5, 5 })] = MapTile::Type::GROUND_BODY;
+	tiles[WorldToIndex({ 5, 12 })] = MapTile::Type::GROUND_BODY;
 }
 
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
@@ -234,28 +241,59 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 {
 	// Algorithm: Amanatides and Woo
 	// Reference: https://m4xc.dev/articles/amanatides-and-woo/
-	 
-	AEVec2 displacement{ end - start };
-	Vec2Int step{ sign(displacement.x), sign(displacement.y) };
+	AEVec2 ray{ end - start };
+	Vec2Int step{ sign(ray.x), sign(ray.y) };
 
-	Vec2Int pos{ start };
+	Vec2Int currCell{ start + step };
 
-	int maxSteps = AEExtras::Dist(end, start);
+	AEVec2	tMax{ (currCell - start + step.Max({0, 0})) / ray}, // Percentage of each axis to start to end
+			delta{ AEExtras::Abs(1.f / ray) }; // Amt to move tMax on each step
 
-	//Vec2Int currTile{}
-	return -1.f;
+	bool isAxisX = true;
+	while (tMax.x <= 1.f + delta.x && tMax.y <= 1.f + delta.y)
+	{
+		if (IsSolidAtGridCell(currCell.x, currCell.y))
+		{
+			QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{ 0.5f, 0.5f }, { 1,1 });
+			if (isAxisX)
+				return (tMax.x - delta.x) * AEExtras::Dist(ray);
+			else
+				return (tMax.y - delta.y) * AEExtras::Dist(ray);
+		}
+		QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, {1.f, 1.f}, 0xFF000088, AE_GFX_MDM_LINES_STRIP);
+
+		// Step on the axis where tMax is the smallest
+		if (tMax.x < tMax.y)
+		{
+			tMax.x += delta.x;
+			currCell.x += step.x;
+			isAxisX = true;
+		}
+		else
+		{
+			tMax.y += delta.y;
+			currCell.y += step.y;
+			isAxisX = false;
+		}
+
+		//if (++count < 5)
+		//	std::cout<< " = " << tMax;
+	}
+
+	return AEExtras::Dist(ray);
 }
 
 void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
 	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
-	Vec2Int currPos{ currPosition }, 
-			nextPos{ nextPosition };
-
-	// Grid walking algorithm: https://www.redblobgames.com/grids/line-drawing/#stepping
-	// Inflating collision walls instead? - https://timallanwheeler.com/blog/2023/01/27/2d-player-collision-against-static-geometry/#thinking-in-points
-
+	AEVec2 ray = nextPosition - currPosition;
+	AEVec2 rayDir = ray / AEExtras::Dist(ray);
+	if (AEInputCheckTriggered(AEVK_K))
+		std::cout << "A";
+	float hitDist = Raycast(currPosition, nextPosition);
+	//std::cout << hitDist << " | " << AEExtras::Dist(rayDir * hitDist) << "\n";
+	QuickGraphics::DrawRay(currPosition, currPosition + rayDir * hitDist, 0.1f, 0xFF0000FF);
 	// Raycast the first 2 corners, if both don't hit, 
 	// raycast the corner that its direction is going to
 }

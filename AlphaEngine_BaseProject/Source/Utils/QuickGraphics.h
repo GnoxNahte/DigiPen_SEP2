@@ -16,6 +16,8 @@ public:
 	static void DrawRect(const AEVec2& position, const AEVec2& scale, u32 color = 0xFFFFFFFF, AEGfxMeshDrawMode drawMode = AE_GFX_MDM_TRIANGLES);
 	static void DrawRect(float posX, float posY, float scaleX, float scaleY, u32 color = 0xFFFFFFFF, AEGfxMeshDrawMode drawMode = AE_GFX_MDM_TRIANGLES);
 
+	static void DrawRay(const AEVec2& start, const AEVec2& end, float width = 0.1f, u32 color = 0xFFFFFFFF);
+
 	// Duplicate of AEGfxPrint but without fontId
 	static void PrintText(const char* str, f32 x, f32 y, f32 scale, f32 red, f32 green, f32 blue, f32 alpha);
 

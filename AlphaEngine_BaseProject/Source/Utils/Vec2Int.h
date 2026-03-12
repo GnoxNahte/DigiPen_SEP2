@@ -6,8 +6,62 @@
 struct Vec2Int
 {
 	int x, y;
+	
 	Vec2Int();
 	Vec2Int(const AEVec2& v);
 	Vec2Int(int x, int y);
+
+	AEVec2 GetAEVec2() const;
+
+	Vec2Int Max(const Vec2Int& rhs);
+
+	inline Vec2Int operator+(Vec2Int rhs) const
+	{
+		rhs.x += x;
+		rhs.y += y;
+		return rhs;
+	}
+
+	inline Vec2Int operator-(Vec2Int rhs) const
+	{
+		rhs.x = x - rhs.x;
+		rhs.y = y - rhs.y;
+		return rhs;
+	}
+
+	inline AEVec2 operator+(AEVec2 rhs) const
+	{
+		rhs.x += x;
+		rhs.y += y;
+		return rhs;
+	}
+
+	inline AEVec2 operator-(AEVec2 rhs) const
+	{
+		rhs.x = x - rhs.x;
+		rhs.y = y - rhs.y;
+		return rhs;
+	}
+
+	inline bool operator==(const Vec2Int& rhs) const
+	{
+		return x == rhs.x && y == rhs.y;
+	}
+
+	inline bool operator!=(const Vec2Int& rhs) const
+	{
+		return x != rhs.x || y != rhs.y;
+	}
 };
 
+inline AEVec2 operator+(AEVec2 lhs, const Vec2Int& rhs)
+{
+	return rhs + lhs;
+}
+
+inline AEVec2 operator-(AEVec2 lhs, const Vec2Int& rhs)
+{
+	lhs.x -= rhs.x;
+	lhs.y -= rhs.y;
+	return lhs;
+}

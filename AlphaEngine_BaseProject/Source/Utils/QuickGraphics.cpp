@@ -1,5 +1,6 @@
 #include "QuickGraphics.h"
 #include "../Game/Camera.h"
+#include "AEExtras.h"
 
 AEGfxVertexList* QuickGraphics::rect = nullptr;
 s8 QuickGraphics::font = 0;
@@ -29,6 +30,30 @@ void QuickGraphics::DrawRect(float posX, float posY, float scaleX, float scaleY,
 
     AEGfxMeshDraw(rect, drawMode);
     
+    // Reset
+    AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+}
+
+void QuickGraphics::DrawRay(const AEVec2& start, const AEVec2& end, float width, u32 color)
+{
+    AEVec2 midpoint = (start + end) * 0.5f;
+    float angle = AEExtras::Angle(end - start);
+
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    SetColorToMultiply(color);
+
+    AEMtx33 rotation;
+    AEMtx33Rot(&rotation, angle);
+
+    AEMtx33 transform;
+    AEMtx33Scale(&transform, AEExtras::Dist(end - start), width); // local scale
+    AEMtx33Concat(&transform, &rotation, &transform); // rotation
+    AEMtx33TransApply(&transform, &transform, midpoint.x, midpoint.y); // local transform
+    AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale); // local -> world space
+    AEGfxSetTransform(transform.m);
+    AEGfxMeshDraw(rect, AE_GFX_MDM_TRIANGLES);
+
     // Reset
     AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);

@@ -1,6 +1,7 @@
 #pragma once
 #include "AEEngine.h"
 #include <iostream>
+#include <iomanip>
 
 namespace AEExtras
 {
@@ -39,16 +40,26 @@ namespace AEExtras
 	float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
 	float RemapClamp(float value, const AEVec2& inRange, const AEVec2& outRange);
 
-	// Same as AEVec2Distance but allows const 
-	inline f32 Dist(const AEVec2& lhs, const AEVec2& rhs)
+	// Same as AEVec2SquareDistance but allows const 
+	inline f32 SqrDist(const AEVec2& v)
 	{
-		return sqrtf(SqrDist(lhs, rhs));
+		return v.x * v.x + v.y * v.y;
 	}
 
-	// Same as AEVec2SquareDistance but allows const 
-	inline f32 SqrDist(const AEVec2& lhs, const AEVec2& rhs)
+	// Same as AEVec2Distance but allows const 
+	inline f32 Dist(const AEVec2& v)
 	{
-		return (rhs.x - lhs.x) * (rhs.x - lhs.x) + (rhs.y - lhs.y) * (rhs.y - lhs.y)
+		return sqrtf(SqrDist(v));
+	}
+
+	inline AEVec2 Abs(const AEVec2& v)
+	{
+		return { fabsf(v.x), fabsf(v.y) };
+	}
+
+	inline float Angle(const AEVec2& v)
+	{
+		return atan2f(v.y, v.x);
 	}
 }
 
@@ -86,6 +97,20 @@ inline AEVec2& operator*=(AEVec2& lhs, float rhs)
 	return lhs;
 }
 
+inline AEVec2& operator/=(AEVec2& lhs, const AEVec2& rhs)
+{
+	lhs.x /= rhs.x;
+	lhs.y /= rhs.y;
+	return lhs;
+}
+
+inline AEVec2& operator/=(AEVec2& lhs, float rhs)
+{
+	lhs.x /= rhs;
+	lhs.y /= rhs;
+	return lhs;
+}
+
 inline AEVec2 operator+(AEVec2 lhs, const AEVec2& rhs)
 {
 	lhs += rhs;
@@ -110,9 +135,34 @@ inline AEVec2 operator*(float lhs, AEVec2 rhs)
 	return rhs;
 }
 
+inline AEVec2 operator/(AEVec2 lhs, const AEVec2& rhs)
+{
+	lhs /= rhs;
+	return lhs;
+}
+
+inline AEVec2 operator/(float lhs, AEVec2 rhs)
+{
+	rhs.x = lhs / rhs.x;
+	rhs.y = lhs / rhs.y;
+	return rhs;
+}
+
+inline AEVec2 operator/(AEVec2 lhs, float rhs)
+{
+	lhs.x /= rhs;
+	lhs.y /= rhs;
+	return lhs;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const AEVec2& v)
 {
-	os << "(" << v.x << "," << v.y << ")";
+	os << "(" << std::fixed << std::setprecision(3) << v.x << "," << v.y << ")";
 	return os;
 }
 
+inline AEMtx33 operator*(AEMtx33 lhs, const AEMtx33& rhs)
+{
+	AEMtx33Concat(&lhs, &lhs, &rhs);
+	return lhs;
+}

@@ -110,8 +110,8 @@ void Player::Render()
     AEVec2 vel = mousePos - position;
     map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize);
     //QuickGraphics::DrawRect(mousePos, stats.playerSize, ifCollide ? 0xFFFF0000 : 0xFF00FF00);
-    QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0xFF00FF00);
-    QuickGraphics::DrawRect(mousePos, stats.playerSize, 0xFFFF0000);
+    QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
+    QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
 }
 
 void Player::Reset(const AEVec2& initialPos)
