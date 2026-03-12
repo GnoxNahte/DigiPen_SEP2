@@ -25,6 +25,8 @@ public:
 	bool CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize);
 	bool CheckBoxCollision(const Box& box);
 
+	float Raycast(const AEVec2& start, const AEVec2& end);
+
 	void HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size);
 
 private:

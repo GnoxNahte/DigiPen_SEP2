@@ -100,6 +100,18 @@ void Player::Render()
     }
 
     AEGfxSetTransparency(1.f);
+
+
+    // TODO - DELETE. just for testing dynamic map collision
+    AEVec2 mousePos;
+    AEExtras::GetCursorWorldPosition(mousePos);
+    mousePos.y += 0.5f * stats.playerSize.y;
+    AEVec2 collidedPos = position;
+    AEVec2 vel = mousePos - position;
+    map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize);
+    //QuickGraphics::DrawRect(mousePos, stats.playerSize, ifCollide ? 0xFFFF0000 : 0xFF00FF00);
+    QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0xFF00FF00);
+    QuickGraphics::DrawRect(mousePos, stats.playerSize, 0xFFFF0000);
 }
 
 void Player::Reset(const AEVec2& initialPos)

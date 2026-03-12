@@ -229,69 +229,35 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 	return CheckBoxCollision(box.position, box.size);
 }
 
-void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
+// Returns -1 if no collision
+float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 {
-	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
+	// Algorithm: Amanatides and Woo
+	// Reference: https://m4xc.dev/articles/amanatides-and-woo/
+	 
+	AEVec2 displacement{ end - start };
+	Vec2Int step{ sign(displacement.x), sign(displacement.y) };
 
-	AEVec2 bottomLeft, topRight;
-	bottomLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x;
-	bottomLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y;
-	topRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x;
-	topRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
+	Vec2Int pos{ start };
 
-	int nextGridX, nextGridY;
-	WorldToGridCoords(nextPosition, nextGridX, nextGridY);
+	int maxSteps = AEExtras::Dist(end, start);
 
-	bool isMovingRight = nextPosition.x > currentPosition.x;
-	bool isMovingUp = nextPosition.y > currentPosition.y;
+	//Vec2Int currTile{}
+	return -1.f;
+}
 
-	float clearance = 0.2f;
+void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
+{
+	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
-	if (isMovingRight)
-	{
-		float colliderPos = nextPosition.x + halfColliderSize.x;
-		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
-		{
-			currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
-			velocity.x = 0.f;
-		}
-		else
-			currentPosition.x = nextPosition.x;
-	}
-	else
-	{
-		float colliderPos = nextPosition.x - halfColliderSize.x;
-		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
-		{
-			currentPosition.x = nextGridX + halfColliderSize.x;
-			velocity.x = 0.f;
-		}
-		else
-			currentPosition.x = nextPosition.x;
-	}
+	Vec2Int currPos{ currPosition }, 
+			nextPos{ nextPosition };
 
-	if (isMovingUp)
-	{
-		float colliderPos = nextPosition.y + halfColliderSize.y;
-		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
-		{
-			currentPosition.y = nextGridY + 1.01f - halfColliderSize.y;
-			velocity.y = 0.f;
-		}
-		else
-			currentPosition.y = nextPosition.y;
-	}
-	else
-	{
-		float colliderPos = nextPosition.y - halfColliderSize.y;
-		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
-		{
-			currentPosition.y = nextGridY + halfColliderSize.y;
-			velocity.y = 0.f;
-		}
-		else
-			currentPosition.y = nextPosition.y;
-	}
+	// Grid walking algorithm: https://www.redblobgames.com/grids/line-drawing/#stepping
+	// Inflating collision walls instead? - https://timallanwheeler.com/blog/2023/01/27/2d-player-collision-against-static-geometry/#thinking-in-points
+
+	// Raycast the first 2 corners, if both don't hit, 
+	// raycast the corner that its direction is going to
 }
 
 int MapGrid::WorldToIndex(float x, float y)

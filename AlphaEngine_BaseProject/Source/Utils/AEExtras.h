@@ -38,6 +38,24 @@ namespace AEExtras
 
 	float Remap(float value, const AEVec2& inRange, const AEVec2& outRange);
 	float RemapClamp(float value, const AEVec2& inRange, const AEVec2& outRange);
+
+	// Same as AEVec2Distance but allows const 
+	inline f32 Dist(const AEVec2& lhs, const AEVec2& rhs)
+	{
+		return sqrtf(SqrDist(lhs, rhs));
+	}
+
+	// Same as AEVec2SquareDistance but allows const 
+	inline f32 SqrDist(const AEVec2& lhs, const AEVec2& rhs)
+	{
+		return (rhs.x - lhs.x) * (rhs.x - lhs.x) + (rhs.y - lhs.y) * (rhs.y - lhs.y)
+	}
+}
+
+template <typename T>
+inline int sign(T val)
+{
+	return (val > T(0)) - (val < T(0));
 }
 
 // === AEVec2 operator overloads ===
@@ -97,3 +115,4 @@ inline std::ostream& operator<<(std::ostream& os, const AEVec2& v)
 	os << "(" << v.x << "," << v.y << ")";
 	return os;
 }
+
