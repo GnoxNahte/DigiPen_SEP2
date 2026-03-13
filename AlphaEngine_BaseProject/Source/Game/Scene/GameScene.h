@@ -11,8 +11,6 @@
 #include "../enemy/AttackSystem.h"
 #include "../../Game/Rooms/RoomManager.h"
 
-
-
 class GameScene : public BaseScene
 {
 public:
@@ -40,6 +38,7 @@ private:
 	AttackSystem attackSystem;
 	RoomManager roomMgr;
 	bool roomTransitionLocked = false;
+
 	// ======================= Pause Overlay (No ImGui) =======================
 	enum class PausePage
 	{

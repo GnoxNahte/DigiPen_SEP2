@@ -9,6 +9,7 @@
 #include "../../Game/Timer.h"
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
@@ -23,7 +24,6 @@ std::string gLastLoadedLevelPath; // last successfully loaded level path for res
 		&& dy <= (aSize.y + bSize.y) * 0.5f;
 }*/
 
-
 namespace
 {
 	// squared-distance check (no sqrt)
@@ -34,98 +34,151 @@ namespace
 		return (dx * dx + dy * dy) <= (range * range);
 	}
 
-	void BuildTestRooms(RoomManager& roomMgr)
+	RoomID RoomIdFromIndex(int idx)
+	{
+		if (idx < 0 || idx >= ROOM_COUNT)
+			return ROOM_NONE;
+		return static_cast<RoomID>(idx);
+	}
+
+	bool PointInRoom(const AEVec2& p, int roomX, int roomY)
+	{
+		const float minX = (float)(roomX * ROOM_COLS);
+		const float minY = (float)(roomY * ROOM_ROWS);
+		const float maxX = minX + (float)ROOM_COLS;
+		const float maxY = minY + (float)ROOM_ROWS;
+
+		return p.x >= minX && p.x < maxX &&
+			p.y >= minY && p.y < maxY;
+	}
+
+	void BuildRoomsFromLevelData(const LevelData& lvl, RoomManager& roomMgr, RoomID& outStartRoom)
 	{
 		roomMgr.Clear();
+		outStartRoom = ROOM_1;
 
-		// =========================
-		// ROOM 1
-		// layout:
-		// ROOM_3
-		//   |
-		// ROOM_1 --- ROOM_2
-		// =========================
-		RoomData room1{};
-		room1.id = ROOM_1;
-		room1.rightRoom = ROOM_2;
-		room1.topRoom = ROOM_3;
+		if (lvl.cols <= 0 || lvl.rows <= 0)
+			return;
 
-		room1.startSpawn = { 2.5f, 3.0f };
-		room1.entryFromLeft = { 3.0f, 3.0f };
-		room1.entryFromRight = { 21.0f, 3.0f };
-		room1.entryFromTop = { 12.5f, 10.0f };
-		room1.entryFromBottom = { 12.5f, 3.0f };
+		const int roomsX = lvl.cols / ROOM_COLS;
+		const int roomsY = lvl.rows / ROOM_ROWS;
 
-		// floor
-		for (int x = 0; x < ROOM_COLS; ++x)
-			room1.tiles[0][x] = MapTile::Type::GROUND_BOTTOM;
+		if (roomsX <= 0 || roomsY <= 0)
+			return;
 
-		// little platform
-		for (int x = 8; x <= 12; ++x)
-			room1.tiles[4][x] = MapTile::Type::GROUND_SURFACE;
+		const int totalRooms = roomsX * roomsY;
+		const int roomCountToUse = (totalRooms < ROOM_COUNT) ? totalRooms : ROOM_COUNT;
 
-		// left wall
-		for (int y = 1; y <= 5; ++y)
-			room1.tiles[y][0] = MapTile::Type::GROUND_BODY;
+		for (int i = 0; i < roomCountToUse; ++i)
+		{
+			const int rx = i % roomsX;
+			const int ry = i / roomsX;
 
-		// =========================
-		// ROOM 2
-		// =========================
-		RoomData room2{};
-		room2.id = ROOM_2;
-		room2.leftRoom = ROOM_1;
+			RoomData room{};
+			room.id = RoomIdFromIndex(i);
 
-		room2.startSpawn = { 2.5f, 3.0f };
-		room2.entryFromLeft = { 3.0f, 3.0f };
-		room2.entryFromRight = { 21.0f, 3.0f };
-		room2.entryFromTop = { 12.5f, 10.0f };
-		room2.entryFromBottom = { 12.5f, 3.0f };
+		
+		// neighbors
+			if (ry - 1 >= 0)
+				room.topRoom = RoomIdFromIndex(i - roomsX);
+			if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
+				room.bottomRoom = RoomIdFromIndex(i + roomsX);
+			if (rx - 1 >= 0)
+				room.leftRoom = RoomIdFromIndex(i - 1);
+			if (rx + 1 < roomsX && i + 1 < roomCountToUse)
+				room.rightRoom = RoomIdFromIndex(i + 1);
 
-		for (int x = 0; x < ROOM_COLS; ++x)
-			room2.tiles[0][x] = MapTile::Type::GROUND_BOTTOM;
+			// tiles
+			for (int y = 0; y < ROOM_ROWS; ++y)
+			{
+				for (int x = 0; x < ROOM_COLS; ++x)
+				{
+					const int globalX = rx * ROOM_COLS + x;
+					const int globalY = ry * ROOM_ROWS + y;
 
-		// raised platform
-		for (int x = 14; x <= 20; ++x)
-			room2.tiles[5][x] = MapTile::Type::GROUND_SURFACE;
+					int v = (int)MapTile::Type::NONE;
+					if (globalX >= 0 && globalX < lvl.cols &&
+						globalY >= 0 && globalY < lvl.rows)
+					{
+						v = lvl.tiles[(size_t)globalY * (size_t)lvl.cols + (size_t)globalX];
+					}
 
-		// one enemy
-		room2.enemyCount = 1;
-		room2.enemies[0].preset = (int)EnemySpawnType::Druid;
-		room2.enemies[0].pos = { 16.5f, 2.0f };
+					if (v < 0 || v >= MapTile::typeCount)
+						v = (int)MapTile::Type::NONE;
 
-		// =========================
-		// ROOM 3
-		// =========================
-		RoomData room3{};
-		room3.id = ROOM_3;
-		room3.bottomRoom = ROOM_1;
+					room.tiles[y][x] = (MapTile::Type)v;
+				}
+			}
 
-		room3.startSpawn = { 12.5f, 3.0f };
-		room3.entryFromLeft = { 3.0f, 3.0f };
-		room3.entryFromRight = { 21.0f, 3.0f };
-		room3.entryFromTop = { 12.5f, 10.0f };
-		room3.entryFromBottom = { 12.5f, 3.0f };
+			// default entry points
+			room.entryFromLeft = { 3.0f, 3.0f };
+			room.entryFromRight = { (float)ROOM_COLS - 4.0f, 3.0f };
+			room.entryFromTop = { ROOM_COLS * 0.5f, (float)ROOM_ROWS - 4.0f };
+			room.entryFromBottom = { ROOM_COLS * 0.5f, 3.0f };
 
-		for (int x = 0; x < ROOM_COLS; ++x)
-			room3.tiles[0][x] = MapTile::Type::GROUND_BOTTOM;
+			// default start spawn
+			room.startSpawn = { 2.5f, 3.0f };
 
-		// ceiling-ish platform
-		for (int x = 5; x <= 18; ++x)
-			room3.tiles[8][x] = MapTile::Type::GROUND_SURFACE;
+			// spawn belongs to this room?
+			if (PointInRoom(lvl.spawn, rx, ry))
+			{
+				room.startSpawn = {
+					lvl.spawn.x - rx * (float)ROOM_COLS,
+					lvl.spawn.y - ry * (float)ROOM_ROWS
+				};
+				outStartRoom = room.id;
+			}
 
-		// one spike trap
-		room3.trapCount = 1;
-		room3.traps[0].type = (int)Trap::Type::SpikePlate;
-		room3.traps[0].pos = { 10.5f, 1.5f };
-		room3.traps[0].size = { 1.0f, 1.0f };
-		room3.traps[0].upTime = 1.0f;
-		room3.traps[0].downTime = 1.0f;
-		room3.traps[0].damageOnHit = 10;
-		room3.traps[0].startDisabled = false;
+			// enemies in this room
+			for (const auto& e : lvl.enemies)
+			{
+				if (!PointInRoom(e.pos, rx, ry))
+					continue;
 
-		roomMgr.SetRoom(ROOM_1, room1);
-		roomMgr.SetRoom(ROOM_2, room2);
-		roomMgr.SetRoom(ROOM_3, room3);
+				if (room.enemyCount >= MAX_ROOM_ENEMIES)
+					continue;
+
+				room.enemies[room.enemyCount].preset = e.preset;
+				room.enemies[room.enemyCount].pos = {
+					e.pos.x - rx * (float)ROOM_COLS,
+					e.pos.y - ry * (float)ROOM_ROWS
+				};
+				++room.enemyCount;
+			}
+
+			// traps in this room
+			for (const auto& t : lvl.traps)
+			{
+				if (!PointInRoom(t.pos, rx, ry))
+					continue;
+
+				if (room.trapCount >= MAX_ROOM_TRAPS)
+					continue;
+
+				room.traps[room.trapCount].type = t.type;
+				room.traps[room.trapCount].pos = {
+					t.pos.x - rx * (float)ROOM_COLS,
+					t.pos.y - ry * (float)ROOM_ROWS
+				};
+				room.traps[room.trapCount].size = t.size;
+				room.traps[room.trapCount].upTime = t.upTime;
+				room.traps[room.trapCount].downTime = t.downTime;
+				room.traps[room.trapCount].damageOnHit = t.damageOnHit;
+				room.traps[room.trapCount].startDisabled = t.startDisabled;
+				room.traps[room.trapCount].damagePerTick = t.damagePerTick;
+				room.traps[room.trapCount].tickInterval = t.tickInterval;
+				++room.trapCount;
+			}
+
+			roomMgr.SetRoom(room.id, room);
+			std::cout << "room " << (int)room.id
+				<< " rx=" << rx << " ry=" << ry
+				<< " L=" << (int)room.leftRoom
+				<< " R=" << (int)room.rightRoom
+				<< " T=" << (int)room.topRoom
+				<< " B=" << (int)room.bottomRoom
+				<< "\n";
+		}
 	}
 }
 
@@ -236,7 +289,6 @@ RoomDirection GameScene::CheckRoomExit() const
 
 	return DIR_NONE;
 }
-
 GameScene::GameScene() :
 	map(ROOM_COLS, ROOM_ROWS),
 	player(&map, &enemyMgr),
@@ -373,10 +425,61 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
-	BuildTestRooms(roomMgr);
-	roomMgr.SetCurrentRoom(ROOM_1);
+	roomMgr.Clear();
+
+	bool loadedFromFile = false;
+	LevelData loadedLevel{};
+	RoomID startRoom = ROOM_1;
+
+	if (!gPendingLevelPath.empty())
+	{
+		std::cout << "pending path: " << gPendingLevelPath << "\n";
+
+		LevelData lvl;
+		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
+		{
+			std::cout << "load success\n";
+			std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
+
+			loadedFromFile = true;
+			loadedLevel = lvl;
+			gLastLoadedLevelPath = gPendingLevelPath;
+			BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
+			gPendingLevelPath.clear();
+		}
+		else
+		{
+			std::cout << "load failed\n";
+		}
+
+		gPendingLevelPath.clear();
+	}
+	else
+	{
+		std::cout << "pending path empty\n";
+	}
+
+	if (!loadedFromFile)
+	{
+		// fallback: build a single empty-ish room if no file was loaded
+		LevelData lvl{};
+		lvl.rows = ROOM_ROWS;
+		lvl.cols = ROOM_COLS;
+		lvl.spawn = { 2.5f, 3.0f };
+		lvl.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
+
+		for (int x = 0; x < ROOM_COLS; ++x)
+			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
+
+		BuildRoomsFromLevelData(lvl, roomMgr, startRoom);
+	}
+
+	roomMgr.SetCurrentRoom(startRoom);
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
+	std::cout << "lvl.cols=" << loadedLevel.cols
+		<< " lvl.rows=" << loadedLevel.rows
+		<< "\n";
 }
 
 void GameScene::Update()
@@ -430,6 +533,17 @@ void GameScene::Update()
 				BuildCurrentRoom(cameFrom);
 				roomTransitionLocked = true;
 				return;
+			}
+			else
+			{
+				AEVec2 p = player.GetPosition();
+
+				if (p.x < 0.0f) p.x = 0.0f;
+				if (p.x > (float)ROOM_COLS - 0.1f) p.x = (float)ROOM_COLS - 0.1f;
+				if (p.y < 0.0f) p.y = 0.0f;
+				if (p.y > (float)ROOM_ROWS - 0.1f) p.y = (float)ROOM_ROWS - 0.1f;
+
+				player.Reset(p);
 			}
 		}
 	}
