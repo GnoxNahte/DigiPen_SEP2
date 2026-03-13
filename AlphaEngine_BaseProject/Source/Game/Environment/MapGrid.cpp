@@ -61,12 +61,6 @@ MapGrid::MapGrid(int rows, int cols)
 		if (size.x > 1)
 			tiles[y * size.x + (size.x - 2)].type = MapTile::Type::GROUND_BODY;
 	}
-
-	
-	tiles[WorldToIndex({ 15, 5 })] = MapTile::Type::GROUND_BODY;
-	tiles[WorldToIndex({ 15, 12 })] = MapTile::Type::GROUND_BODY;
-	tiles[WorldToIndex({ 5, 5 })] = MapTile::Type::GROUND_BODY;
-	tiles[WorldToIndex({ 5, 12 })] = MapTile::Type::GROUND_BODY;
 }
 
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
@@ -317,6 +311,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 {
 	if (currPosition == nextPosition)
 		return;
+
 	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
 	AEVec2 ray = nextPosition - currPosition;
@@ -339,17 +334,10 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	float hitBotRight = Raycast(botRight, botRight + ray);
 
 	float dist = std::min({ hitTopRight, hitBotLeft, hitTopLeft, hitBotRight });
-	// For debug only
-	QuickGraphics::DrawRay(topRight, topRight + rayDir * hitTopRight, 0.1f, 0xFF0000FF);
-	QuickGraphics::DrawRay(botLeft, botLeft + rayDir * hitBotLeft, 0.1f, 0xFF0000FF);
-	QuickGraphics::DrawRay(topLeft, topLeft + rayDir * hitTopLeft, 0.1f, 0xFF0000FF);
-	QuickGraphics::DrawRay(botRight, botRight + rayDir * hitBotRight, 0.1f, 0xFF0000FF);
-
+	
+	// EPSILON to prevent clipping into the tile
 	currPosition += rayDir * dist - raySign * EPSILON;
 
-	// Prevent clipping into the next tile
-	currPosition.x -= raySign.x * EPSILON;
-	currPosition.y -= raySign.y * EPSILON;
 	// ===== Sliding =====
 	if (!ifSlide)
 		return;
@@ -359,12 +347,9 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	{
 		AEVec2 point = currPosition + raySign * halfColliderSize;
 		float x1 = Raycast(point, { point.x + remainingRay.x, point.y });
-		QuickGraphics::DrawRay(point, point + AEVec2{ raySign.x * x1, 0 }, 0.1f, 0xFFFF0000);
 
 		point.y -= colliderSize.y * raySign.y;
 		float x2 = Raycast(point, { point.x + remainingRay.x, point.y });
-		QuickGraphics::DrawRay(point, point + AEVec2{ raySign.x * x2, 0 }, 0.1f, 0xFFFF0000);
-		std::cout << x1 << "\n";
 
 		remainingRay.x = std::min(x1, x2) * raySign.x;
 	}
@@ -373,17 +358,13 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	{
 		AEVec2 point = currPosition + raySign * halfColliderSize;
 		float y1 = Raycast(point, { point.x, point.y + remainingRay.y });
-		QuickGraphics::DrawRay(point, { point.x, point.y + remainingRay.y }, 0.1f, 0xFFFF0000);
 
 		point.y -= colliderSize.y * raySign.y;
 		float y2 = Raycast(point, { point.x, point.y + remainingRay.y });
-		QuickGraphics::DrawRay(point, { point.x, point.y + remainingRay.y }, 0.1f, 0xFFFF0000);
 
 		remainingRay.y = std::min(y1, y2) * raySign.y;
 	}
 
-	//currPosition += remainingRay;
-	std::cout << remainingRay << "\n";
 	currPosition += remainingRay;
 }
 

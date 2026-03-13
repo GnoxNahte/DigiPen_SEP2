@@ -100,21 +100,6 @@ void Player::Render()
     }
 
     AEGfxSetTransparency(1.f);
-
-
-    // TODO - DELETE. just for testing dynamic map collision
-    AEVec2 mousePos;
-    AEExtras::GetCursorWorldPosition(mousePos);
-    mousePos.y += 0.5f * stats.playerSize.y;
-    AEVec2 collidedPos = position;
-    AEVec2 vel = mousePos - position;
-    map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize, true);
-    //QuickGraphics::DrawRect(mousePos, stats.playerSize, ifCollide ? 0xFFFF0000 : 0xFF00FF00);
-    QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
-    QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
-
-    if (AEInputCheckCurr(AEVK_RBUTTON))
-        position = collidedPos;
 }
 
 void Player::Reset(const AEVec2& initialPos)
@@ -405,11 +390,11 @@ void Player::PerformJump()
     //sprite.SetState(JUMP_START, true);
 }
 
-void Player::UpdateCollisions(const AEVec2& )
+void Player::UpdateCollisions(const AEVec2& nextPosition)
 {
     // === Map collisions ===
     // TODO (IMPT): Uncomment
-    //map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize, true);
+    map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize, true);
     
     // === Enemy collisions ===
     if (IsDashing())

@@ -217,7 +217,7 @@ void GameScene::Init()
 	}
 
 	// fallback: hardcoded setup
-	player.Reset(AEVec2{ 10, 5 });
+	player.Reset(AEVec2{ 2, 2 });
 	std::vector<EnemyManager::SpawnInfo> spawns;
 	spawns.push_back({ EnemySpawnType::Druid, {30.f, 2.0f} });
 	spawns.push_back({ EnemySpawnType::Skeleton, {34.f, 2.0f} });
