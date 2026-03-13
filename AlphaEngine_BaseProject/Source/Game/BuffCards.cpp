@@ -42,6 +42,11 @@ void BuffCardScreen::Init() {
 	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
 	cardFrontTex[BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
+	cardFrontTex[FLEETING_STEP] = AEGfxTextureLoad("Assets/Fleeting_Step.png");
+	cardFrontTex[SUREFOOTED] = AEGfxTextureLoad("Assets/Surefooted.png");
+	cardFrontTex[DEEP_VITALITY] = AEGfxTextureLoad("Assets/Deep_Vitality.png");
+	cardFrontTex[HAND_OF_FATE] = AEGfxTextureLoad("Assets/Hand_Of_Fate.png");
+	cardFrontTex[SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Sundering_Blow.png");
 
 	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
 	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
@@ -293,7 +298,11 @@ CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
 	else if (typeStr == "REVITALIZE") return REVITALIZE;
 	else if (typeStr == "SHARPEN") return SHARPEN;
 	else if (typeStr == "BERSERKER") return BERSERKER;
-	else if (typeStr == "FEATHERWEIGHT") return FEATHERWEIGHT;
+	else if (typeStr == "FLEETING_STEP") return FLEETING_STEP;
+	else if (typeStr == "SUREFOOTED") return SUREFOOTED;
+	else if (typeStr == "DEEP_VITALITY") return DEEP_VITALITY;
+	else if (typeStr == "HAND_OF_FATE") return HAND_OF_FATE;
+	else if (typeStr == "SUNDERING_BLOW") return SUNDERING_BLOW;
 	else return HERMES_FAVOR; // default fallback
 }
 CARD_RARITY BuffCardManager::GetCardRarity(std::string rarityStr) {

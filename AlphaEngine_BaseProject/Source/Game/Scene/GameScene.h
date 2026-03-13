@@ -79,7 +79,7 @@ private:
 	// UI layout helpers
 	std::string FormatRunTime() const;
 	// ---- Pause overlay textures (buff icons) ----
-	static constexpr int kPauseBuffTexCount = 8; // enough for your CARD_TYPE values
+	static constexpr int kPauseBuffTexCount = 20; // enough for your CARD_TYPE values
 	AEGfxTexture* pauseBuffTex[kPauseBuffTexCount] = { nullptr };
 
 	// glowing rarity overlay textures for cards (same as BuffCardScreen)

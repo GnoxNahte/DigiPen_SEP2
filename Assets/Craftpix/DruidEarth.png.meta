@@ -1,0 +1,8 @@
+{
+  "stateInfo": [
+    { "name": "SPELL",  "frameCount": 7, "sampleRate": 12 }
+  ],
+  "defaultSampleRate": 12,
+  "pivot": { "x": 0.5, "y": 0.35 }
+}
+
