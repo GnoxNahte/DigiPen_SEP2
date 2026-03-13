@@ -15,6 +15,7 @@ struct Vec2Int
 
 	static Vec2Int Max(const Vec2Int& lhs, const Vec2Int& rhs);
 
+	// === With Vec2Int ===
 	inline Vec2Int operator+(Vec2Int rhs) const
 	{
 		rhs.x += x;
@@ -29,6 +30,17 @@ struct Vec2Int
 		return rhs;
 	}
 
+	inline bool operator==(const Vec2Int& rhs) const
+	{
+		return x == rhs.x && y == rhs.y;
+	}
+
+	inline bool operator!=(const Vec2Int& rhs) const
+	{
+		return x != rhs.x || y != rhs.y;
+	}
+
+	// === With AEVec2 ===
 	inline AEVec2 operator+(AEVec2 rhs) const
 	{
 		rhs.x += x;
@@ -43,14 +55,16 @@ struct Vec2Int
 		return rhs;
 	}
 
-	inline bool operator==(const Vec2Int& rhs) const
+	inline AEVec2 operator*(AEVec2 rhs) const
 	{
-		return x == rhs.x && y == rhs.y;
+		rhs.x *= x;
+		rhs.y *= y;
+		return rhs;
 	}
 
-	inline bool operator!=(const Vec2Int& rhs) const
+	inline AEVec2 operator*(float rhs) const
 	{
-		return x != rhs.x || y != rhs.y;
+		return { x * rhs, y * rhs };
 	}
 };
 
