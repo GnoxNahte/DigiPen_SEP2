@@ -15,6 +15,20 @@
 // defined in GameScene.cpp
 extern std::string gPendingLevelPath;
 
+namespace
+{
+    static RoomDirection CheckMenuExit(const AEVec2& playerPos, int mapRows)
+    {
+        const bool nearLeft = playerPos.x <= 2.0f;
+        const bool nearTop = playerPos.y >= (float)mapRows - 2.0f;
+
+        if (nearLeft && nearTop)
+            return DIR_LEFT;
+
+        return DIR_NONE;
+    }
+}
+
 AEGfxVertexList* MainMenuScene::MakeSpikeMesh(int frame)
 {
     const float uMin = frame * 0.25f;
@@ -77,16 +91,17 @@ void MainMenuScene::Init()
     for (int i = 0; i < 4; ++i)
         spikeMeshes[i] = MakeSpikeMesh(i);
 
-    std::string path = "Assets\\Levels\\themenu.lvl";
+    std::string path = "..\\..\\Assets\\Levels\\gamewholelv.lvl";
 
     LevelData lvl;
     if (LoadLevelFromFile(path.c_str(), lvl))
     {
         mapCols = lvl.cols;
+        mapRows = lvl.rows;
 
         // reconstruct map safely (no shallow copy)
         map.~MapGrid();
-        new (&map) MapGrid(lvl.rows, lvl.cols);
+        new (&map) MapGrid(lvl.cols, lvl.rows);
 
         for (int y = 0; y < lvl.rows; ++y)
         {
@@ -154,6 +169,7 @@ void MainMenuScene::Init()
     else
     {
         mapCols = 40;
+        mapRows = 50;
 
         // simple fallback terrain using new tile enums
         for (int x = 0; x < 40; ++x)
@@ -201,11 +217,13 @@ void MainMenuScene::Update()
     camera.Update();
 
     // transition to game when player reaches the exit area
-    if (player.GetPosition().x >= 3.f && player.GetPosition().x <= 4.f &&
-        player.GetPosition().y >= 48.f)
+    RoomDirection exitDir = CheckMenuExit(player.GetPosition(), mapRows);
+    if (exitDir == DIR_LEFT)
     {
-        gPendingLevelPath = ExeDir() + "Assets\\Levels\\levelone.lvl";
+        gPendingLevelPath = ExeDir() + "..\\..\\Assets\\Levels\\checktransit.lvl";
+        std::cout << "Setting pending path to: " << gPendingLevelPath << "\n";
         GSM::ChangeScene(SceneState::GS_GAME);
+        return;
     }
 
     UI::GetDamageTextSpawner().Update();
@@ -257,12 +275,12 @@ void MainMenuScene::Render()
         {
             Trap* t = spikeTraps[idx++];
 
-			// 1. getting the center of the trap's box, so we can lock the spike sprite to it. This is important because some traps (like the lava pool) are larger than 1 tile, and we want the spike animation to be centered on the trap, not skewed to a corner.
+            // 1. getting the center of the trap's box, so we can lock the spike sprite to it. This is important because some traps (like the lava pool) are larger than 1 tile, and we want the spike animation to be centered on the trap, not skewed to a corner.
             float centerX = t->GetBox().position.x + t->GetBox().size.x * 0.5f;
             float centerY = t->GetBox().position.y + t->GetBox().size.y * 0.5f;
 
             AEMtx33 m;
-			// 2. pass in the center coordinates to the translation function, so the spike sprite will be drawn centered on the trap's box.
+            // 2. pass in the center coordinates to the translation function, so the spike sprite will be drawn centered on the trap's box.
             AEMtx33Trans(&m, centerX, centerY);
             AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
 

@@ -7,7 +7,7 @@ static constexpr int ROOM_COLS = 25;
 static constexpr int ROOM_ROWS = 14;
 static constexpr int MAX_ROOM_ENEMIES = 32;
 static constexpr int MAX_ROOM_TRAPS = 32;
-static constexpr int ROOM_COUNT = 10;
+static constexpr int ROOM_COUNT = 20;
 
 enum RoomID
 {

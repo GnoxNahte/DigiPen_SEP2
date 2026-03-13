@@ -63,6 +63,8 @@ namespace
 		const int roomsX = lvl.cols / ROOM_COLS;
 		const int roomsY = lvl.rows / ROOM_ROWS;
 
+
+
 		if (roomsX <= 0 || roomsY <= 0)
 			return;
 
@@ -76,7 +78,12 @@ namespace
 
 			RoomData room{};
 			room.id = RoomIdFromIndex(i);
-
+			std::cout << "lvl.cols=" << lvl.cols
+				<< " lvl.rows=" << lvl.rows
+				<< " roomsX=" << roomsX
+				<< " roomsY=" << roomsY
+				<< " totalRooms=" << (roomsX * roomsY)
+				<< "\n";
 		
 		// neighbors
 			if (ry - 1 >= 0)
@@ -475,6 +482,13 @@ void GameScene::Init()
 	}
 
 	roomMgr.SetCurrentRoom(startRoom);
+	const RoomData& r = roomMgr.GetCurrentRoom();
+	std::cout << "startRoom=" << (int)startRoom
+		<< " L=" << (int)r.leftRoom
+		<< " R=" << (int)r.rightRoom
+		<< " T=" << (int)r.topRoom
+		<< " B=" << (int)r.bottomRoom
+		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
 	std::cout << "lvl.cols=" << loadedLevel.cols
