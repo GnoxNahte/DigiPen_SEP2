@@ -287,7 +287,11 @@ GameScene::GameScene() :
 	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
 	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
+	pauseBuffTex[(int)FLEETING_STEP] = AEGfxTextureLoad("Assets/Fleeting_Step.png");
+	pauseBuffTex[(int)SUREFOOTED] = AEGfxTextureLoad("Assets/Surefooted.png");
+	pauseBuffTex[(int)DEEP_VITALITY] = AEGfxTextureLoad("Assets/Deep_Vitality.png");
+	pauseBuffTex[(int)HAND_OF_FATE] = AEGfxTextureLoad("Assets/Hand_Of_Fate.png");
+	pauseBuffTex[(int)SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Sundering_Blow.png");
 
 	// Fonts for pause overlay
 	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
@@ -438,7 +442,7 @@ void GameScene::Update()
 	const AEVec2 pSize = player.GetStats().playerSize;
 
 
-	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, &enemyBoss, map);
 
 	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------
 	//const AEVec2 pPos = player.GetPosition();

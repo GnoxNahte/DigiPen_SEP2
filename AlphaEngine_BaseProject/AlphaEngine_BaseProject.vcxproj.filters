@@ -75,9 +75,6 @@
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp">
       <Filter>Source Files\Game\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\Player\Player.cpp">
-      <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Utils\Sprite.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
@@ -209,6 +206,9 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
       <Filter>Header Files\Game</Filter>
+       </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
