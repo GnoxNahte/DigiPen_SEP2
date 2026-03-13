@@ -13,7 +13,7 @@ struct Vec2Int
 
 	AEVec2 GetAEVec2() const;
 
-	Vec2Int Max(const Vec2Int& rhs);
+	static Vec2Int Max(const Vec2Int& lhs, const Vec2Int& rhs);
 
 	inline Vec2Int operator+(Vec2Int rhs) const
 	{

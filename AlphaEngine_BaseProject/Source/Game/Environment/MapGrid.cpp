@@ -1,10 +1,13 @@
 #include <iostream>
+#include <algorithm>
 
 #include "MapGrid.h"
 #include "../../Utils/MeshGenerator.h"
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 #include "../../Utils/QuickGraphics.h"
+#undef min
+#undef max
 
 namespace
 {
@@ -239,22 +242,48 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 // Returns -1 if no collision
 float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 {
+	if (start == end)
+		return AEExtras::Dist(end - start);
+
+	if (AEInputCheckTriggered(AEVK_K))
+		std::cout << "A";
 	// Algorithm: Amanatides and Woo
 	// Reference: https://m4xc.dev/articles/amanatides-and-woo/
 	AEVec2 ray{ end - start };
 	Vec2Int step{ sign(ray.x), sign(ray.y) };
 
-	Vec2Int currCell{ start + step };
+	std::cout << ray << "\n";
 
-	AEVec2	tMax{ (currCell - start + step.Max({0, 0})) / ray}, // Percentage of each axis to start to end
+	Vec2Int currCell{ start + step };
+	Vec2Int endCell{ end + step };
+
+	// tMax: Percentage of each axis from start to end
+	// 1. currCell - start = amt moved from start to curr cell. (Floating point of start cell for now, since cell size == 1)
+	// 2. Vec2Int::Max(step, {0,0}) = If positive (in their own axis), start from the next cell
+	// 3. <result> / ray = Get percentage of the ray 
+	//
+	// delta: Get amt to move each step
+	AEVec2	tMax{ (currCell - start + Vec2Int::Max(step, {0,0})) / ray },
 			delta{ AEExtras::Abs(1.f / ray) }; // Amt to move tMax on each step
 
+	// When divide by 0
+	if (ray.x == 0.f)
+	{
+		tMax.x = std::numeric_limits<f32>::max();
+		delta.x = std::numeric_limits<f32>::max();
+	}
+	if (ray.y == 0.f)
+	{
+		tMax.y = std::numeric_limits<f32>::max();
+		delta.y = std::numeric_limits<f32>::max();
+	}
+
 	bool isAxisX = true;
-	while (tMax.x <= 1.f + delta.x && tMax.y <= 1.f + delta.y)
+	//while (tMax.x <= 1.f + delta.x && tMax.y <= 1.f + delta.y)
+	while (currCell != endCell)
 	{
 		if (IsSolidAtGridCell(currCell.x, currCell.y))
 		{
-			QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{ 0.5f, 0.5f }, { 1,1 });
 			if (isAxisX)
 				return (tMax.x - delta.x) * AEExtras::Dist(ray);
 			else
@@ -280,22 +309,51 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 		//	std::cout<< " = " << tMax;
 	}
 
+	float x = tMax.x <= 1.f + delta.x;
+	std::cout << x;
+
 	return AEExtras::Dist(ray);
 }
 
 void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize)
 {
+	if (currPosition == nextPosition)
+		return;
 	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
 	AEVec2 ray = nextPosition - currPosition;
-	AEVec2 rayDir = ray / AEExtras::Dist(ray);
+	AEVec2 rayDir = AEExtras::GetNormalise(ray);
 	if (AEInputCheckTriggered(AEVK_K))
 		std::cout << "A";
-	float hitDist = Raycast(currPosition, nextPosition);
+	//float hitDist = Raycast(currPosition, nextPosition);
 	//std::cout << hitDist << " | " << AEExtras::Dist(rayDir * hitDist) << "\n";
-	QuickGraphics::DrawRay(currPosition, currPosition + rayDir * hitDist, 0.1f, 0xFF0000FF);
-	// Raycast the first 2 corners, if both don't hit, 
-	// raycast the corner that its direction is going to
+	//QuickGraphics::DrawRay(currPosition, currPosition + rayDir * hitDist, 0.1f, 0xFF0000FF);
+
+	AEVec2 offset{ halfColliderSize };
+
+	float hitTopRight = Raycast(currPosition + offset, nextPosition + offset);
+	float hitBotLeft = Raycast(currPosition - offset, nextPosition - offset);
+
+	// For debug only
+	QuickGraphics::DrawRay(currPosition + offset, currPosition + offset + rayDir * hitTopRight, 0.1f, 0xFF0000FF);
+	QuickGraphics::DrawRay(currPosition - offset, currPosition - offset + rayDir * hitBotLeft, 0.1f, 0xFF0000FF);
+
+	offset.x *= -1.f;
+	float hitTopLeft = Raycast(currPosition + offset, nextPosition + offset);
+	float hitBotRight = Raycast(currPosition - offset, nextPosition - offset);
+
+	QuickGraphics::DrawRay(currPosition + offset, currPosition + offset + rayDir * hitTopLeft, 0.1f, 0xFF0000FF);
+	QuickGraphics::DrawRay(currPosition - offset, currPosition - offset + rayDir * hitBotRight, 0.1f, 0xFF0000FF);
+
+	float dist = std::min({ hitTopRight, hitBotLeft, hitTopLeft, hitBotRight });
+	//if (dist == hitTopLeft)
+	//{
+
+	//}
+
+	currPosition = currPosition + rayDir * (dist * 0.999f);
+	if (std::isinf(dist))
+		std::cout << dist << "\n";
 }
 
 int MapGrid::WorldToIndex(float x, float y)

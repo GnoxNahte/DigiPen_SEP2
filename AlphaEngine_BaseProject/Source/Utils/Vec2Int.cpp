@@ -19,10 +19,10 @@ AEVec2 Vec2Int::GetAEVec2() const
 	);
 }
 
-Vec2Int Vec2Int::Max(const Vec2Int& rhs)
+Vec2Int Vec2Int::Max(const Vec2Int& lhs, const Vec2Int& rhs)
 {
 	return {
-		std::max(x, rhs.x),
-		std::max(y, rhs.y)
+		std::max(lhs.x, rhs.x),
+		std::max(lhs.y, rhs.y)
 	};
 }

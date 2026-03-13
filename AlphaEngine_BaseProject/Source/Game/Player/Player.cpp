@@ -23,7 +23,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     map(map),
     enemyManager(enemyManager)
 {
-    Reset(AEVec2{ 2, 4 });
+    Reset(AEVec2{ 10, 10 });
 
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
@@ -405,6 +405,7 @@ void Player::PerformJump()
 void Player::UpdateCollisions(const AEVec2& nextPosition)
 {
     // === Map collisions ===
+    // TODO (IMPT): Uncomment
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize);
     
     // === Enemy collisions ===
