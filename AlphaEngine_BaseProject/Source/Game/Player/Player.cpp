@@ -11,7 +11,7 @@
 #include "../../Game/Time.h"
 #include "../UI.h"
 #include "../../Utils/PhysicsUtils.h"
-#include "../../AudioManager.h"
+#include "../AudioManager.h"
 
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
