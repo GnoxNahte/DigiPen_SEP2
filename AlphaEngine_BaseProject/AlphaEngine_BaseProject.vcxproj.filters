@@ -111,9 +111,6 @@
     <ClCompile Include="Source\Game\UI.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="traps.cpp">
-      <Filter>Source Files\Game\Environment</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Utils\ObjectPool.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
@@ -204,8 +201,17 @@
     <ClCompile Include="Source\Game\GameOver.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Game\Player\Player.cpp">
       <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\traps.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioManager.cpp">
+      <Filter>Source Files\Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -277,9 +283,6 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Scene\MainMenuScene.h">
       <Filter>Header Files\Game\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="traps.h">
-      <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
     <ClInclude Include="..\Extern\imgui\include\imconfig.h">
       <Filter>Library Files\ImGui</Filter>
@@ -366,6 +369,18 @@
       <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\GameOver.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomData.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomManager.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\traps.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioManager.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>

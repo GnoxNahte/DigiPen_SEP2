@@ -12,7 +12,7 @@ static const u32   BLACK = 0xFF000000;
 static float eyelidProgress = 0.0f;
 static float eyelidSpeed = 650.0f;
 
-// Two arrays — one per eyelid, one entry per frame
+// Two arrays? one per eyelid, one entry per frame
 static AEGfxVertexList* topFrames[EYELID_FRAMES] = {};
 static AEGfxVertexList* bottomFrames[EYELID_FRAMES] = {};
 
@@ -115,7 +115,7 @@ void DrawEyelid()
     float winW = static_cast<float>(AEGfxGetWindowWidth());
     float winH = static_cast<float>(AEGfxGetWindowHeight());
 
-    // Map progress to frame index — same rounding pattern as cooldown meter
+    // Map progress to frame index ?same rounding pattern as cooldown meter
     float progressNorm = eyelidProgress / winH; // 0.0 -> 0.5
     float t = progressNorm / 0.5f;              // 0.0 -> 1.0
     int frameIndex = static_cast<int>(t * (EYELID_FRAMES - 1) + 0.5f);
@@ -147,7 +147,7 @@ bool EyelidDone()
     return eyelidProgress >= AEGfxGetWindowHeight() * 0.5f;
 }
 
-// Resets progress only — meshes untouched
+// Resets progress only? meshes untouched
 void ResetEyelid()
 {
     eyelidProgress = 0.0f;

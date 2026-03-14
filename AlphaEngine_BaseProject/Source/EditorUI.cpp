@@ -110,13 +110,13 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     const float h = ui.rowH;
     float y = (float)windowH - ui.pad - h;
 
-    // ── title ────────────────────────────────────────────────────────────────
+    // title
     PrintText("LEVEL EDITOR", x, y + 10.f, 0.9f, 0.9f, 0.9f);
     y -= (h + ui.gap);
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // ── play / stop ──────────────────────────────────────────────────────────
+    // play / stop
     const char* playLabel = ui.playMode ? "stop" : "play";
     if (Button(playLabel, x, y, w, h, mx, my, mouseLPressed))
         ui.requestTogglePlay = true;
@@ -124,7 +124,6 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // hide editing tools in play mode
     if (ui.playMode)
     {
         AEGfxSetRenderMode(AE_GFX_RM_COLOR);
@@ -134,20 +133,34 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         return;
     }
 
-    // ── tool ─────────────────────────────────────────────────────────────────
+    // tool
     PrintText("tool", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
-    float hw = (w - ui.gap) * 0.5f;
-    if (Button("paint", x, y, hw, h, mx, my, mouseLPressed, ui.tool == EditorTool::Paint))
+    float thirdW = (w - ui.gap * 2.f) / 3.f;
+    if (Button("paint", x, y, thirdW, h, mx, my, mouseLPressed, ui.tool == EditorTool::Paint))
         ui.tool = EditorTool::Paint;
-    if (Button("erase", x + hw + ui.gap, y, hw, h, mx, my, mouseLPressed, ui.tool == EditorTool::Erase))
+    if (Button("erase", x + thirdW + ui.gap, y, thirdW, h, mx, my, mouseLPressed, ui.tool == EditorTool::Erase))
         ui.tool = EditorTool::Erase;
+    if (Button("bind", x + (thirdW + ui.gap) * 2.f, y, thirdW, h, mx, my, mouseLPressed, ui.tool == EditorTool::Bind))
+        ui.tool = EditorTool::Bind;
+
     y -= (h + ui.gap);
+
+    if (ui.tool == EditorTool::Bind)
+    {
+        const char* bindMsg =
+            (ui.bindSourceTrapId < 0)
+            ? "bind: click pressure plate"
+            : "bind: click spike to toggle";
+        PrintText(bindMsg, x, y + 10.f, 1.f, 0.85f, 0.35f);
+        y -= (h + ui.gap);
+    }
+
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // ── palette ──────────────────────────────────────────────────────────────
+    // palette
     PrintText("tile", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
@@ -175,6 +188,10 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
         ui.brush = EditorTile::PressurePlate;
     y -= (h + ui.gap);
 
+    if (Button("lava", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Lava))
+        ui.brush = EditorTile::Lava;
+    y -= (h + ui.gap);
+
     if (Button("enemy", x, y, w, h, mx, my, mouseLPressed, ui.brush == EditorTile::Enemy))
         ui.brush = EditorTile::Enemy;
     y -= (h + ui.gap);
@@ -191,22 +208,26 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     {
         float sw = (w - ui.gap) * 0.5f;
         float sh = h * 0.8f;
+
         if (Button("druid", x, y, sw, sh, mx, my, mouseLPressed,
             ui.enemyPreset == EditorEnemyPreset::Druid))
             ui.enemyPreset = EditorEnemyPreset::Druid;
+
         if (Button("skeleton", x + sw + ui.gap, y, sw, sh, mx, my, mouseLPressed,
             ui.enemyPreset == EditorEnemyPreset::Skeleton))
             ui.enemyPreset = EditorEnemyPreset::Skeleton;
+
         if (Button("boss", x + (sw + ui.gap) * 2.2f, y, sw, sh, mx, my, mouseLPressed,
             ui.enemyPreset == EditorEnemyPreset::Boss))
             ui.enemyPreset = EditorEnemyPreset::Boss;
+
         y -= (sh + ui.gap);
     }
 
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // ── options ──────────────────────────────────────────────────────────────
+    // options
     if (Button(ui.dragPaint ? "drag: on" : "drag: off", x, y, w, h, mx, my, mouseLPressed))
         ui.dragPaint = !ui.dragPaint;
     y -= (h + ui.gap);
@@ -218,7 +239,7 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     Sep(x, y + h + 2.f, w);
     y -= ui.gap;
 
-    // ── file ─────────────────────────────────────────────────────────────────
+    // file
     PrintText("file", x, y + 10.f, 0.7f, 0.7f, 0.7f);
     y -= (h + ui.gap);
 
@@ -233,7 +254,6 @@ void EditorUI_Draw(EditorUIState& ui, EditorUIIO& io,
     if (Button("clear map", x, y, w, h, mx, my, mouseLPressed))
         ui.requestClearMap = true;
 
-    // restore state
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetColorToAdd(0, 0, 0, 0);

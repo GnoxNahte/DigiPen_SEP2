@@ -31,32 +31,8 @@ MapGrid::MapGrid(int cols, int rows)
 	bottomTexture = AEGfxTextureLoad(BOTTOM_PATH);
 	platformTexture = AEGfxTextureLoad(PLATFORM_PATH);
 
-	// simple fallback border layout
-	for (int x = 0; x < size.x; ++x)
-	{
-		tiles[0 * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
-
-		if (size.y > 1)
-			tiles[1 * size.x + x].type = MapTile::Type::GROUND_SURFACE;
-
-		tiles[(size.y - 1) * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
-
-		if (size.y > 1)
-			tiles[(size.y - 2) * size.x + x].type = MapTile::Type::GROUND_SURFACE;
-	}
-
-	for (int y = 0; y < size.y; ++y)
-	{
-		tiles[y * size.x + 0].type = MapTile::Type::GROUND_BODY;
-
-		if (size.x > 1)
-			tiles[y * size.x + 1].type = MapTile::Type::GROUND_BODY;
-
-		tiles[y * size.x + (size.x - 1)].type = MapTile::Type::GROUND_BODY;
-
-		if (size.x > 1)
-			tiles[y * size.x + (size.x - 2)].type = MapTile::Type::GROUND_BODY;
-	}
+	for (auto& t : tiles)
+		t.type = MapTile::Type::NONE;
 }
 
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
