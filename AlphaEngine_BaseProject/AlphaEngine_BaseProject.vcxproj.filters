@@ -347,9 +347,6 @@
     <ClInclude Include="Source\Game\enemy\IDamageable.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\enemy\EnemyAttackSystem.h">
-      <Filter>Header Files\Game\enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Background.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
