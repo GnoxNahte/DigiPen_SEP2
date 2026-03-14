@@ -1,5 +1,4 @@
-﻿
-#include "AEEngine.h"
+﻿#include "AEEngine.h"
 #include "leveleditor.h"
 
 #include "../Environment/MapGrid.h"
@@ -23,6 +22,7 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
+#include <algorithm>
 
 /*========================================================
     configuration
@@ -50,6 +50,7 @@ static s8            gUIFont = -1;
 static std::vector<TrapDefSimple>  gTrapDefs;
 static std::vector<EnemyDefSimple> gEnemyDefs;
 static AEVec2                      gSpawn{ 5.0f, 5.0f };
+static int                         gNextTrapId = 1;
 
 static float gSaveMessageTimer = 0.f;
 static bool  gSaveSuccess = false;
@@ -74,7 +75,7 @@ static std::vector<Trap*>     gSpikeTraps;
 // ── vine decoration state ─────────────────────────────────────────────────
 static AEGfxTexture* gVineTexture = nullptr;
 static AEGfxVertexList* gVineMesh = nullptr;
-static std::vector<AEVec2> gVinePositions;  // grid cell coords (x, y)  // raw ptrs into gPlayTraps, parallel to gSpikeAnims
+static std::vector<AEVec2> gVinePositions;
 
 /*========================================================
     save prompt state
@@ -125,11 +126,6 @@ AttackSystem attackSystem;
     helpers
 ========================================================*/
 
-//static bool InBounds(int x, int y)
-//{
- //   return x >= 0 && x < GRID_COLS && y >= 0 && y < GRID_ROWS;
-//}
-
 static void ApplyWorldCamera()
 {
     if (!gCamera) return;
@@ -142,17 +138,121 @@ static void ApplyWorldCamera()
 
 // ── trap helpers ─────────────────────────────────────────────────────────────
 
+static bool TrapDefMatchesCell(const TrapDefSimple& t, int tx, int ty)
+{
+    const int ex = (int)std::floor(t.pos.x);
+    const int ey = (int)std::floor(t.pos.y);
+    return ex == tx && ey == ty;
+}
+
+static int AllocateTrapId()
+{
+    return gNextTrapId++;
+}
+
+static void RebuildNextTrapId()
+{
+    gNextTrapId = 1;
+    for (const auto& t : gTrapDefs)
+    {
+        if (t.id >= gNextTrapId)
+            gNextTrapId = t.id + 1;
+    }
+}
+
+static TrapDefSimple* FindTrapById(int id)
+{
+    if (id < 0) return nullptr;
+
+    for (auto& t : gTrapDefs)
+    {
+        if (t.id == id)
+            return &t;
+    }
+    return nullptr;
+}
+
+static TrapDefSimple* FindTrapAtCellOfType(int tx, int ty, Trap::Type type)
+{
+    for (auto& t : gTrapDefs)
+    {
+        if (t.type == (int)type && TrapDefMatchesCell(t, tx, ty))
+            return &t;
+    }
+    return nullptr;
+}
+
+static void RemoveLinksReferencingTrapId(int trapId)
+{
+    if (trapId < 0) return;
+
+    for (auto& t : gTrapDefs)
+    {
+        if (t.type != (int)Trap::Type::PressurePlate) continue;
+
+        t.links.erase(
+            std::remove(t.links.begin(), t.links.end(), trapId),
+            t.links.end());
+    }
+
+    if (gUI.bindSourceTrapId == trapId)
+        gUI.bindSourceTrapId = -1;
+}
+
+static void CleanupTrapLinks()
+{
+    for (auto& plate : gTrapDefs)
+    {
+        if (plate.type != (int)Trap::Type::PressurePlate) continue;
+
+        plate.links.erase(
+            std::remove_if(plate.links.begin(), plate.links.end(),
+                [](int linkId)
+                {
+                    TrapDefSimple* target = FindTrapById(linkId);
+                    return (target == nullptr) ||
+                        (target->type != (int)Trap::Type::SpikePlate);
+                }),
+            plate.links.end());
+
+        std::sort(plate.links.begin(), plate.links.end());
+        plate.links.erase(
+            std::unique(plate.links.begin(), plate.links.end()),
+            plate.links.end());
+    }
+}
+
 static void RemoveTrapsAtCell(int tx, int ty)
 {
+    std::vector<int> removedIds;
+
     for (size_t i = 0; i < gTrapDefs.size();)
     {
-        int ex = (int)std::floor(gTrapDefs[i].pos.x);
-        int ey = (int)std::floor(gTrapDefs[i].pos.y);
-        if (ex == tx && ey == ty)
+        if (TrapDefMatchesCell(gTrapDefs[i], tx, ty))
+        {
+            removedIds.push_back(gTrapDefs[i].id);
             gTrapDefs.erase(gTrapDefs.begin() + (ptrdiff_t)i);
+        }
         else
+        {
             ++i;
+        }
     }
+
+    for (int removedId : removedIds)
+        RemoveLinksReferencingTrapId(removedId);
+}
+
+static void TogglePlateSpikeLink(TrapDefSimple& plate, TrapDefSimple& spike)
+{
+    if (plate.id < 0) plate.id = AllocateTrapId();
+    if (spike.id < 0) spike.id = AllocateTrapId();
+
+    auto it = std::find(plate.links.begin(), plate.links.end(), spike.id);
+    if (it == plate.links.end())
+        plate.links.push_back(spike.id);
+    else
+        plate.links.erase(it);
 }
 
 static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
@@ -164,17 +264,28 @@ static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
     t.upTime = 1.0f;
     t.downTime = 1.0f;
     t.damageOnHit = 10;
-    if (trapType == Trap::Type::SpikePlate)
-        t.startDisabled = true;
-    else
-        t.startDisabled = false;
+	t.damagePerTick = 10;
+    t.tickInterval = 0.2f;
+    t.startDisabled = (trapType == Trap::Type::SpikePlate);
+    t.id = AllocateTrapId();
 
-    for (auto& e : gTrapDefs)
+    for (auto& existing : gTrapDefs)
     {
-        int ex = (int)std::floor(e.pos.x);
-        int ey = (int)std::floor(e.pos.y);
-        if (ex == tx && ey == ty && e.type == t.type) { e = t; return; }
+        if (!TrapDefMatchesCell(existing, tx, ty)) continue;
+        if (existing.type != t.type) continue;
+
+        const int keepId = existing.id;
+        const std::vector<int> keepLinks = existing.links;
+
+        existing = t;
+        existing.id = keepId;
+
+        if (trapType == Trap::Type::PressurePlate)
+            existing.links = keepLinks;
+
+        return;
     }
+
     gTrapDefs.push_back(t);
 }
 
@@ -204,8 +315,6 @@ static void PlaceEnemyAtCell(int tx, int ty, EnemySpawnType& type)
 
 // ── spike mesh builder ────────────────────────────────────────────────────────
 
-// Builds a unit quad with UVs baked for one horizontal frame of the sprite sheet.
-// Sheet is 64x16 => 4 frames of 16px => each frame = 0.25 UV width.
 static AEGfxVertexList* MakeSpikeMesh(int frame)
 {
     const float uMin = frame * 0.25f;
@@ -377,9 +486,13 @@ static void Prompt_Update()
         else
         {
             LevelData lvl;
-            if (LoadLevelFromFile(path.c_str(), lvl))
+            if (LoadLevelFromFile(path.c_str(), lvl) &&
+                ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gEnemyDefs, gVinePositions, gSpawn))
             {
-                ApplyLevelDataToEditor(lvl, gMap, gTrapDefs, gEnemyDefs, gVinePositions, gSpawn);
+                RebuildNextTrapId();
+                CleanupTrapLinks();
+                gUI.bindSourceTrapId = -1;
+
                 gSaveSuccess = true;
                 gSaveMessageTimer = 2.5f;
             }
@@ -456,8 +569,8 @@ static void PlayMode_Enter()
     );
 
     gPlayEnemies = new EnemyManager();
-    //gPlayBoss = new EnemyBoss();
     gPlayEnemies->SetBoss(gPlayBoss);
+
     std::vector<EnemyManager::SpawnInfo> spawns;
     bool hasBossSpawn = false;
     for (const auto& ed : gEnemyDefs)
@@ -467,6 +580,7 @@ static void PlayMode_Enter()
         if (type == EnemySpawnType::Boss)
             hasBossSpawn = true;
     }
+
     if (hasBossSpawn)
     {
         gPlayBoss = new EnemyBoss();
@@ -484,8 +598,16 @@ static void PlayMode_Enter()
 
     gPlayTraps = new TrapManager();
 
-    std::vector<PressurePlate*> spawnedPlates;
-    std::vector<Trap*>          spawnedLinkTargets;
+    struct PendingPlateBinding
+    {
+        PressurePlate* plate = nullptr;
+        const TrapDefSimple* def = nullptr;
+    };
+
+    std::vector<PendingPlateBinding> pendingPlates;
+    std::vector<std::pair<int, Trap*>> spawnedById;
+    std::vector<Trap*> spawnedSpikes;
+    bool hasExplicitLinks = false;
 
     for (const auto& td : gTrapDefs)
     {
@@ -496,42 +618,88 @@ static void PlayMode_Enter()
             td.pos.y - td.size.y * 0.5f
         };
 
+        Trap* spawnedTrap = nullptr;
+
         if (td.type == (int)Trap::Type::SpikePlate)
         {
             SpikePlate& spikeRef = gPlayTraps->Spawn<SpikePlate>(
                 box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
 
-            spawnedLinkTargets.push_back(&spikeRef);
+            spawnedTrap = &spikeRef;
+            spawnedSpikes.push_back(&spikeRef);
 
-            // parallel spike animation entry
             gSpikeTraps.push_back(&spikeRef);
             gSpikeAnims.emplace_back();
         }
         else if (td.type == (int)Trap::Type::PressurePlate)
         {
             PressurePlate& plateRef = gPlayTraps->Spawn<PressurePlate>(box);
-            spawnedPlates.push_back(&plateRef);
+            spawnedTrap = &plateRef;
+
+            pendingPlates.push_back({ &plateRef, &td });
+            if (!td.links.empty())
+                hasExplicitLinks = true;
         }
         else if (td.type == (int)Trap::Type::LavaPool)
         {
-            gPlayTraps->Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+            LavaPool& lavaRef = gPlayTraps->Spawn<LavaPool>(
+                box, td.damagePerTick, td.tickInterval);
+            spawnedTrap = &lavaRef;
         }
+
+        if (spawnedTrap && td.id >= 0)
+            spawnedById.push_back({ td.id, spawnedTrap });
     }
 
-    for (PressurePlate* plate : spawnedPlates)
-        for (Trap* target : spawnedLinkTargets)
-            plate->AddLinkedTrap(target);
+    auto FindSpawnedTrapById = [&spawnedById](int id) -> Trap*
+        {
+            for (const auto& entry : spawnedById)
+            {
+                if (entry.first == id)
+                    return entry.second;
+            }
+            return nullptr;
+        };
 
+    // new behavior: if any pressure plate has explicit links defined,
+    // only link those specified traps
+    if (hasExplicitLinks)
+    {
+        for (const auto& pending : pendingPlates)
+        {
+            if (!pending.plate || !pending.def) continue;
+
+            for (int linkId : pending.def->links)
+            {
+                Trap* target = FindSpawnedTrapById(linkId);
+                if (target)
+                    pending.plate->AddLinkedTrap(target);
+            }
+        }
+    }
+    // old behavior (legacy): if no explicit links defined,
+    // link all spike plates to all pressure plates by default
+    else
+    {
+        for (const auto& pending : pendingPlates)
+        {
+            for (Trap* spike : spawnedSpikes)
+            {
+                if (pending.plate && spike)
+                    pending.plate->AddLinkedTrap(spike);
+            }
+        }
+    }
 }
 
 static void PlayMode_Exit()
 {
     UI::Exit();
-    delete gPlayPlayer;  gPlayPlayer = nullptr;
-    delete gPlayTraps;   gPlayTraps = nullptr;
-    delete gPlayEnemies; gPlayEnemies = nullptr;
-    delete gPlayCamera;  gPlayCamera = nullptr;
-    delete gPlayBoss;   gPlayBoss = nullptr;
+    delete gPlayPlayer;   gPlayPlayer = nullptr;
+    delete gPlayTraps;    gPlayTraps = nullptr;
+    delete gPlayEnemies;  gPlayEnemies = nullptr;
+    delete gPlayCamera;   gPlayCamera = nullptr;
+    delete gPlayBoss;     gPlayBoss = nullptr;
     gSpikeAnims.clear();
     gSpikeTraps.clear();
 
@@ -546,17 +714,13 @@ static void PlayMode_Update(float dt)
     gPlayCamera->Update();
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
-    const AEVec2 pSize = gPlayPlayer->GetStats().playerSize;
 
-    //gPlayEnemies->UpdateAll(pPos, *gMap);
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
 
-	attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
+    attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
 
     gPlayTraps->Update(dt, *gPlayPlayer);
 
-    // tick spike animators
-    // spike starts disabled (startDisabled=true), plate calls SetEnabled(true) — that's our trigger
     for (int i = 0; i < (int)gSpikeTraps.size(); ++i)
     {
         SpikeAnim& a = gSpikeAnims[i];
@@ -573,6 +737,7 @@ static void PlayMode_Update(float dt)
             if (++a.frame >= 3) { a.frame = 3; a.done = true; }
         }
     }
+
     UI::GetDamageTextSpawner().Update();
     UI::Update();
 }
@@ -584,18 +749,25 @@ static void PlayMode_Render()
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     gMap->Render();
 
-    // pressure plate green rects
+    // lava + pressure plate overlays
     AEGfxSetRenderMode(AE_GFX_RM_COLOR);
     AEGfxSetColorToAdd(0, 0, 0, 0);
     for (const auto& td : gTrapDefs)
     {
-        if (td.type != (int)Trap::Type::PressurePlate) continue;
         float wx = td.pos.x - td.size.x * 0.5f;
         float wy = td.pos.y - td.size.y * 0.5f;
-        DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+
+        if (td.type == (int)Trap::Type::LavaPool)
+        {
+            DrawWorldRect(wx, wy, td.size.x, td.size.y, 1.0f, 0.35f, 0.05f, 0.70f);
+        }
+        else if (td.type == (int)Trap::Type::PressurePlate)
+        {
+            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+        }
     }
 
-    // spike animated sprites — draw black rect first to cover any external red outline
+    // spike animated sprites
     int spikeIdx = 0;
     for (const auto& td : gTrapDefs)
     {
@@ -605,13 +777,11 @@ static void PlayMode_Render()
         float wx = td.pos.x - td.size.x * 0.5f;
         float wy = td.pos.y - td.size.y * 0.5f;
 
-        // black rect to cover the red outline drawn externally
         AEGfxSetRenderMode(AE_GFX_RM_COLOR);
         AEGfxSetBlendMode(AE_GFX_BM_BLEND);
         AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
         DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.f, 0.f, 0.f, 1.f);
 
-        // spike sprite on top
         AEMtx33 m;
         AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
         AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
@@ -630,7 +800,6 @@ static void PlayMode_Render()
     if (gPlayBoss)
         gPlayBoss->Render();
 
-    // vine decorations (purely visual, same in both modes)
     if (gVineTexture && gVineMesh)
     {
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -648,6 +817,7 @@ static void PlayMode_Render()
             AEGfxMeshDraw(gVineMesh, AE_GFX_MDM_TRIANGLES);
         }
     }
+
     UI::Render();
 }
 
@@ -698,24 +868,71 @@ static void UpdateEditor(float dt)
     gHoverCellX = tx;
     gHoverCellY = ty;
 
-    bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON)
-        : AEInputCheckTriggered(AEVK_LBUTTON);
-    bool rmb = AEInputCheckTriggered(AEVK_RBUTTON);
+    const bool lmbTriggered = AEInputCheckTriggered(AEVK_LBUTTON);
+    const bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON) : lmbTriggered;
+    const bool rmb = AEInputCheckTriggered(AEVK_RBUTTON);
+
+    // bind mode: click pressure plate -> click spike to toggle link
+    if (gUI.tool == EditorTool::Bind)
+    {
+        if (rmb)
+        {
+            gUI.bindSourceTrapId = -1;
+            return;
+        }
+
+        if (!lmbTriggered) return;
+
+        TrapDefSimple* plateAtCell = FindTrapAtCellOfType(tx, ty, Trap::Type::PressurePlate);
+        TrapDefSimple* spikeAtCell = FindTrapAtCellOfType(tx, ty, Trap::Type::SpikePlate);
+
+        if (gUI.bindSourceTrapId < 0)
+        {
+            if (plateAtCell)
+                gUI.bindSourceTrapId = plateAtCell->id;
+            return;
+        }
+
+        TrapDefSimple* selectedPlate = FindTrapById(gUI.bindSourceTrapId);
+        if (!selectedPlate || selectedPlate->type != (int)Trap::Type::PressurePlate)
+        {
+            gUI.bindSourceTrapId = -1;
+            return;
+        }
+
+        if (plateAtCell)
+        {
+            gUI.bindSourceTrapId = plateAtCell->id;
+            return;
+        }
+
+        if (spikeAtCell)
+        {
+            TogglePlateSpikeLink(*selectedPlate, *spikeAtCell);
+            CleanupTrapLinks();
+            return;
+        }
+
+        gUI.bindSourceTrapId = -1;
+        return;
+    }
 
     if (rmb)
     {
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
         RemoveTrapsAtCell(tx, ty);
         RemoveEnemyAtCell(tx, ty);
-        // remove vine at this cell if present
+
         gVinePositions.erase(
             std::remove_if(gVinePositions.begin(), gVinePositions.end(),
-                [tx, ty](const AEVec2& v) {
+                [tx, ty](const AEVec2& v)
+                {
                     return (int)v.x == tx && (int)v.y == ty;
                 }),
             gVinePositions.end());
         return;
     }
+
     if (!lmb) return;
 
     if (gUI.tool == EditorTool::Erase)
@@ -723,9 +940,11 @@ static void UpdateEditor(float dt)
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
         RemoveTrapsAtCell(tx, ty);
         RemoveEnemyAtCell(tx, ty);
+
         gVinePositions.erase(
             std::remove_if(gVinePositions.begin(), gVinePositions.end(),
-                [tx, ty](const AEVec2& v) {
+                [tx, ty](const AEVec2& v)
+                {
                     return (int)v.x == tx && (int)v.y == ty;
                 }),
             gVinePositions.end());
@@ -737,23 +956,37 @@ static void UpdateEditor(float dt)
     case EditorTile::GroundSurface:
         gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
         break;
+
     case EditorTile::GroundBody:
         gMap->SetTile(tx, ty, MapTile::Type::GROUND_BODY);
         break;
+
     case EditorTile::GroundBottom:
         gMap->SetTile(tx, ty, MapTile::Type::GROUND_BOTTOM);
         break;
+
     case EditorTile::Platform:
         gMap->SetTile(tx, ty, MapTile::Type::PLATFORM);
         break;
+
     case EditorTile::Spike:
         gMap->SetTile(tx, ty, MapTile::Type::NONE);
+        RemoveTrapsAtCell(tx, ty);
         PlaceTrapAtCell(tx, ty, Trap::Type::SpikePlate);
         break;
+
     case EditorTile::PressurePlate:
         gMap->SetTile(tx, ty, MapTile::Type::GROUND_SURFACE);
+        RemoveTrapsAtCell(tx, ty);
         PlaceTrapAtCell(tx, ty, Trap::Type::PressurePlate);
         break;
+
+    case EditorTile::Lava:
+        gMap->SetTile(tx, ty, MapTile::Type::GROUND_BODY);
+        RemoveTrapsAtCell(tx, ty);
+        PlaceTrapAtCell(tx, ty, Trap::Type::LavaPool);
+        break;
+
     case EditorTile::Enemy:
     {
         EnemySpawnType preset = EnemySpawnType::Druid;
@@ -777,24 +1010,33 @@ static void UpdateEditor(float dt)
         PlaceEnemyAtCell(tx, ty, preset);
         break;
     }
+
     case EditorTile::Spawn:
         gSpawn = AEVec2{ (float)tx + 0.5f, (float)ty + 0.5f };
         break;
+
     case EditorTile::Vine:
     {
-        // only add if not already present at this cell
         bool exists = false;
         for (const auto& v : gVinePositions)
-            if ((int)v.x == tx && (int)v.y == ty) { exists = true; break; }
+        {
+            if ((int)v.x == tx && (int)v.y == ty)
+            {
+                exists = true;
+                break;
+            }
+        }
+
         if (!exists)
         {
             gVinePositions.push_back(AEVec2{ (float)tx, (float)ty });
-            std::cout << "[Vine] placed at (" << tx << ", " << ty << ") total=" << gVinePositions.size() << "\n";
+            std::cout << "[Vine] placed at (" << tx << ", " << ty
+                << ") total=" << gVinePositions.size() << "\n";
         }
         break;
     }
-    }  // end switch
-}  // end UpdateEditor
+    }
+}
 
 /*========================================================
     GameState lifecycle
@@ -827,12 +1069,10 @@ void GameState_LevelEditor_Init()
     EditorUI_SetFont(gUIFont);
     OverlayInit();
 
-    // load spike spritesheet and build per-frame meshes
     gSpikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
     for (int i = 0; i < 4; ++i)
         gSpikeMeshes[i] = MakeSpikeMesh(i);
 
-    // load vine texture and build simple unit quad
     gVineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     std::cout << "[Vine] texture load: " << (gVineTexture ? "OK" : "FAILED - check Assets/Tmp/vines.png") << "\n";
     AEGfxMeshStart();
@@ -849,11 +1089,14 @@ void GameState_LevelEditor_Init()
 
     gTrapDefs.clear();
     gEnemyDefs.clear();
+    gVinePositions.clear();
     gSpawn = { 5.f, 5.f };
+    gNextTrapId = 1;
 
     gPromptActive = false;
     gPromptInput = "";
     gSaveMessageTimer = 0.f;
+    gUI.bindSourceTrapId = -1;
 }
 
 void GameState_LevelEditor_Update()
@@ -877,9 +1120,12 @@ void GameState_LevelEditor_Update()
         for (int row = 0; row < GRID_ROWS; ++row)
             for (int col = 0; col < GRID_COLS; ++col)
                 gMap->SetTile(col, row, MapTile::Type::NONE);
+
         gTrapDefs.clear();
         gEnemyDefs.clear();
         gVinePositions.clear();
+        gNextTrapId = 1;
+        gUI.bindSourceTrapId = -1;
         gUI.requestClearMap = false;
     }
 
@@ -957,6 +1203,36 @@ void GameState_LevelEditor_Draw()
                 AEGfxSetRenderMode(AE_GFX_RM_COLOR);
                 DrawWorldRect(wx, wy, t.size.x, t.size.y, 0.20f, 0.75f, 0.20f, 0.70f);
             }
+            else if (t.type == (int)Trap::Type::LavaPool)
+            {
+                AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+                DrawWorldRect(wx, wy, t.size.x, t.size.y, 1.0f, 0.35f, 0.05f, 0.80f);
+            }
+        }
+
+        if (gUI.tool == EditorTool::Bind && gUI.bindSourceTrapId >= 0)
+        {
+            TrapDefSimple* selectedPlate = FindTrapById(gUI.bindSourceTrapId);
+            if (selectedPlate && selectedPlate->type == (int)Trap::Type::PressurePlate)
+            {
+                float pwx = selectedPlate->pos.x - selectedPlate->size.x * 0.5f;
+                float pwy = selectedPlate->pos.y - selectedPlate->size.y * 0.5f;
+
+                DrawWorldRect(pwx, pwy, selectedPlate->size.x, selectedPlate->size.y,
+                    1.0f, 1.0f, 0.2f, 0.45f);
+
+                for (int linkId : selectedPlate->links)
+                {
+                    TrapDefSimple* linkedSpike = FindTrapById(linkId);
+                    if (!linkedSpike) continue;
+
+                    float swx = linkedSpike->pos.x - linkedSpike->size.x * 0.5f;
+                    float swy = linkedSpike->pos.y - linkedSpike->size.y * 0.5f;
+
+                    DrawWorldRect(swx, swy, linkedSpike->size.x, linkedSpike->size.y,
+                        1.0f, 1.0f, 0.2f, 0.25f);
+                }
+            }
         }
 
         for (const auto& ed : gEnemyDefs)
@@ -972,7 +1248,6 @@ void GameState_LevelEditor_Draw()
 
         DrawWorldRect(gSpawn.x - 0.15f, gSpawn.y - 0.15f, 0.3f, 0.3f, 1, 1, 1, 1);
 
-        // vine decorations
         if (gVineTexture && gVineMesh)
         {
             AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -1041,13 +1316,15 @@ void GameState_LevelEditor_Free()
         if (gSpikeMeshes[i]) { AEGfxMeshFree(gSpikeMeshes[i]); gSpikeMeshes[i] = nullptr; }
 
     if (gVineTexture) { AEGfxTextureUnload(gVineTexture); gVineTexture = nullptr; }
-    if (gVineMesh) { AEGfxMeshFree(gVineMesh);         gVineMesh = nullptr; }
+    if (gVineMesh) { AEGfxMeshFree(gVineMesh); gVineMesh = nullptr; }
     gVinePositions.clear();
 
     delete gMap;    gMap = nullptr;
     delete gCamera; gCamera = nullptr;
     gTrapDefs.clear();
     gEnemyDefs.clear();
+    gNextTrapId = 1;
+    gUI.bindSourceTrapId = -1;
 }
 
 void GameState_LevelEditor_Unload()

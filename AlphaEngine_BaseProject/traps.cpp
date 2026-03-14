@@ -70,13 +70,13 @@ void Trap::Update(float dt, Player& player)
     if (!m_enabled) { m_prevOverlap = false; return; }
 
     Box playerBox;
-    if (m_type == Type::PressurePlate)
+    if (m_type == Type::PressurePlate || m_type == Type::LavaPool)
     {
-		playerBox = MakePlayerFeetBox(player); // check feet for pressure plates so player can still trigger when just stepping on it, and won't trigger if player is just near it. Also, this makes it visually clearer that the player is stepping on the plate, since the box is at the feet instead of centered on the player's position.
+        playerBox = MakePlayerFeetBox(player);
     }
     else
     {
-		playerBox = MakePlayerBodyBox(player); // checking body for damaging traps so player has to actually be touching the trap to take damage, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player. Pressure plates will use a separate feet box so that player can still trigger them without having to have their body hit the plate, which also allows for more forgiving triggering and visually looks better since the player is stepping on the plate with their feet instead of their body.
+        playerBox = MakePlayerBodyBox(player);
     }
 
 
@@ -113,6 +113,15 @@ LavaPool::LavaPool(const Box& box, int damagePerTick, float tickInterval)
 {
 }
 
+void LavaPool::OnPlayerEnter(Player& player)
+{
+    AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
+    player.TryTakeDamage(m_damagePerTick, trapOrigin);
+
+	// entering lava should cause immediate damage, and then start the tick timer so that it will deal damage periodically after that as well
+    m_tickTimer = 0.f;
+}
+
 void LavaPool::OnPlayerStay(float dt, Player& player)
 {
     m_tickTimer += dt;
@@ -129,7 +138,12 @@ PressurePlate::PressurePlate(const Box& box) : Trap(Type::PressurePlate, box) {}
 
 void PressurePlate::AddLinkedTrap(Trap* t)
 {
-    if (t) m_linked.push_back(t);
+    if (!t) return;
+
+    if (std::find(m_linked.begin(), m_linked.end(), t) != m_linked.end())
+        return;
+
+    m_linked.push_back(t);
 }
 
 void PressurePlate::OnPlayerEnter(Player&)
@@ -224,7 +238,7 @@ void SpikePlate::OnPlayerEnter(Player& player)
     AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
     player.TryTakeDamage(m_damageOnHit, trapOrigin);
 
-    m_hitTimer = 0.5f;
+    m_hitTimer = m_hitCooldown;;
 }
 
 void SpikePlate::OnPlayerStay(float, Player& player)
@@ -235,7 +249,7 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
     player.TryTakeDamage(m_damageOnHit, trapOrigin);
 
-    m_hitTimer = 0.5f;
+    m_hitTimer = m_hitCooldown;;
 }
 
 // ---------------- TrapManager ----------------

@@ -1,11 +1,11 @@
-// EditorUI.h
 #pragma once
 #include "AEEngine.h"
 
 enum class EditorTool
 {
     Paint = 0,
-    Erase
+    Erase,
+    Bind
 };
 
 enum class EditorTile
@@ -16,6 +16,7 @@ enum class EditorTile
     Platform,
     Spike,
     PressurePlate,
+    Lava,
     Enemy,
     Spawn,
     Vine
@@ -43,6 +44,9 @@ struct EditorUIState
     EditorTool        tool = EditorTool::Paint;
     EditorTile        brush = EditorTile::GroundSurface;
     EditorEnemyPreset enemyPreset = EditorEnemyPreset::Druid;
+
+    // bind mode: currently selected pressure plate id
+    int bindSourceTrapId = -1;
 
     // one-frame actions
     bool requestClearMap = false;

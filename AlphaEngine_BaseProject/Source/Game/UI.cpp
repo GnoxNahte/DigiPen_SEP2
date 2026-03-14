@@ -276,7 +276,7 @@ void UI::UpdateGameOverButtonsAndText() {
 void UI::DrawGameOverText() {
 	float t = gameOverTextFadeTimer;
 
-	// alpha for each string — clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
+	// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
 	float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
 	float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
 	float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);

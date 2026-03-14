@@ -123,6 +123,7 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
         out << "trap " << TrapTypeToString(t.type) << ' ';
         out << t.pos.x << ' ' << t.pos.y << ' ';
         out << t.size.x << ' ' << t.size.y;
+        out << " id " << t.id;   // all traps have id
 
         const Trap::Type tt = static_cast<Trap::Type>(t.type);
         if (tt == Trap::Type::SpikePlate)
@@ -139,9 +140,8 @@ bool SaveLevelToFile(const char* filename, const LevelData& lvl)
         }
         else if (tt == Trap::Type::PressurePlate)
         {
-            out << " id " << t.id
-                << " links " << (int)t.links.size();
-            for (int id : t.links) out << ' ' << id;
+            out << " links " << (int)t.links.size();
+            for (int linkId : t.links) out << ' ' << linkId;
         }
 
         out << "\n";
@@ -244,6 +244,29 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
             ss >> key;
             if (!ss) break;
 
+			// all traps have id, so we can parse it for any trap type; if it's missing or invalid, we'll just leave id as -1
+            if (key == "id")
+            {
+                ss >> t.id;
+                continue;
+            }
+
+			// links only matters for pressure plates, but we can parse it for any trap type; if it's not a pressure plate, we'll just ignore the links data
+            if (key == "links")
+            {
+                int n = 0; ss >> n;
+                if (n < 0) n = 0;
+                t.links.clear();
+                t.links.reserve((size_t)n);
+                for (int k = 0; k < n; ++k)
+                {
+                    int linkId = -1;
+                    ss >> linkId;
+                    t.links.push_back(linkId);
+                }
+                continue;
+            }
+
             const Trap::Type tt = static_cast<Trap::Type>(t.type);
 
             if (tt == Trap::Type::SpikePlate)
@@ -258,7 +281,6 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                 }
                 else
                 {
-                    // unknown key, ignore token
                     std::string junk;
                     ss >> junk;
                 }
@@ -273,31 +295,10 @@ bool LoadLevelFromFile(const char* filename, LevelData& outLvl)
                     ss >> junk;
                 }
             }
-            else if (tt == Trap::Type::PressurePlate)
-            {
-                if (key == "id") ss >> t.id;
-                else if (key == "links")
-                {
-                    int n = 0; ss >> n;
-                    if (n < 0) n = 0;
-                    t.links.clear();
-                    t.links.reserve((size_t)n);
-                    for (int k = 0; k < n; ++k)
-                    {
-                        int id = -1; ss >> id;
-                        t.links.push_back(id);
-                    }
-                }
-                else
-                {
-                    std::string junk;
-                    ss >> junk;
-                }
-            }
             else
             {
-                // unknown trap type: ignore any remaining tokens
-                break;
+                std::string junk;
+                ss >> junk;
             }
         }
 
