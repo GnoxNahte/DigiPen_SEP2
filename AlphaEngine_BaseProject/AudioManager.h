@@ -3,12 +3,15 @@
 
 enum class SoundId
 {
-    PlayerDeath
+    PlayerAttack1,
+    PlayerAttack2,
+    PlayerAttack3
 };
 
 enum class MusicId
 {
-    MainMenu
+    MainMenu,
+    Death
 };
 
 class AudioManager
@@ -28,4 +31,6 @@ public:
 
     static void PlaySFX(SoundId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
     static void PlayMusic(MusicId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
+
+    static void PlayNextAttackSFX();
 };

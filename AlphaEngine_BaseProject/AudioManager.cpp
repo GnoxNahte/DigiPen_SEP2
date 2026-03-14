@@ -13,10 +13,17 @@ namespace
     AEAudioGroup gSFXGroup{};
     AEAudioGroup gMusicGroup{};
 
-    AEAudio gPlayerDeath{};
-    AEAudio gMainMenu_Credit_Music{};
-	AEAudio gGamesense{};
-    AEAudio gVictory{};
+    // SFX
+    AEAudio gPlayerAttack1{};
+    AEAudio gPlayerAttack2{};
+    AEAudio gPlayerAttack3{};
+
+    // Music
+    AEAudio gMainMenuMusic{};
+    AEAudio gDeathMusic{};
+
+	// attack loop index for player attack SFX, will loop through 3 different attack SFX in order to add variety to the sound effects when player attacks
+    int gNextAttackIndex = 0;
 
     float Clamp01(float v)
     {
@@ -52,19 +59,38 @@ void AudioManager::LoadAll()
     if (gAudioLoaded)
         return;
 
-    gPlayerDeath = AEAudioLoadSound("Assets/music/death.mp3");
-    gMainMenu_Credit_Music = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
-	gGamesense = AEAudioLoadMusic("Assets/music/gamesense.mp3");
-	gVictory = AEAudioLoadMusic("Assets/music/victory.mp3");
+    // SFX
+    gPlayerAttack1 = AEAudioLoadSound("Assets/music/player_attack1.mp3");
+    gPlayerAttack2 = AEAudioLoadSound("Assets/music/player_attack2.mp3");
+    gPlayerAttack3 = AEAudioLoadSound("Assets/music/player_attack3.mp3");
 
+    // Music
+    gMainMenuMusic = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
+    gDeathMusic = AEAudioLoadMusic("Assets/music/death.mp3");
 
     gAudioLoaded = true;
 }
 
 void AudioManager::Exit()
 {
-    // 你这版 AlphaEngine 没有 AEUnloadAudio / AEUnloadAudioGroup
-    // 所以第一阶段先不要卸载，先保证能编译、能播放
+    gPlayerAttack1 = AEAudio{};
+    gPlayerAttack2 = AEAudio{};
+    gPlayerAttack3 = AEAudio{};
+
+    gMainMenuMusic = AEAudio{};
+    gDeathMusic = AEAudio{};
+
+    gSFXGroup = AEAudioGroup{};
+    gMusicGroup = AEAudioGroup{};
+
+    gNextAttackIndex = 0;
+
+    gAudioLoaded = false;
+    gAudioInitialized = false;
+
+    gMasterVolume = 1.0f;
+    gSFXVolume = 1.0f;
+    gMusicVolume = 1.0f;
 }
 
 void AudioManager::SetMasterVolume(float v)
@@ -106,8 +132,14 @@ void AudioManager::PlaySFX(SoundId id, float volumeScale, float pitch, int loopC
 
     switch (id)
     {
-    case SoundId::PlayerDeath:
-        audio = gPlayerDeath;
+    case SoundId::PlayerAttack1:
+        audio = gPlayerAttack1;
+        break;
+    case SoundId::PlayerAttack2:
+        audio = gPlayerAttack2;
+        break;
+    case SoundId::PlayerAttack3:
+        audio = gPlayerAttack3;
         break;
     default:
         return;
@@ -126,11 +158,32 @@ void AudioManager::PlayMusic(MusicId id, float volumeScale, float pitch, int loo
     switch (id)
     {
     case MusicId::MainMenu:
-        audio = gMainMenu_Credit_Music;
+        audio = gMainMenuMusic;
+        break;
+    case MusicId::Death:
+        audio = gDeathMusic;
         break;
     default:
         return;
     }
 
     AEAudioPlay(audio, gMusicGroup, FinalMusicVolume(volumeScale), pitch, loopCount);
+}
+
+void AudioManager::PlayNextAttackSFX()
+{
+    switch (gNextAttackIndex)
+    {
+    case 0:
+        PlaySFX(SoundId::PlayerAttack1);
+        break;
+    case 1:
+        PlaySFX(SoundId::PlayerAttack2);
+        break;
+    case 2:
+        PlaySFX(SoundId::PlayerAttack3);
+        break;
+    }
+
+    gNextAttackIndex = (gNextAttackIndex + 1) % 3;
 }
