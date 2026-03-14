@@ -9,6 +9,7 @@
 #include "../Game/Timer.h"
 #include "../Game/GameOver.h"
 #include <iostream>
+#include "../Game/AudioManager.h"
 
 namespace {
 	std::string FormatTimeMMSSMS(double timeInSeconds) {
@@ -219,6 +220,7 @@ void UI::UpdateGameOverStatus() {
 		TimerSystem::GetInstance().AddTimer("DeathAnim", 2.5f, false);
 		deadTimerAdded = true;
 		ResetEyelid();
+		
 	}
 	auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
 

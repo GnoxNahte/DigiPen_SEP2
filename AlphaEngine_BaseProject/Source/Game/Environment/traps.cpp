@@ -4,8 +4,8 @@
 #include <iostream>
 
 
-#include "../../Source/Game/Player/Player.h"
-#include "../../Source/Utils/QuickGraphics.h"
+#include "../../Game/Player/Player.h"
+#include "../../Utils/QuickGraphics.h"
 
 // ---------- AABB overlap ----------
 static inline float MinX(const Box& b) { return b.position.x; }

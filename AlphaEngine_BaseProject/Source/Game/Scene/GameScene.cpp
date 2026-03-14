@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include "../AudioManager.h"
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
@@ -491,6 +492,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
+	AudioManager::PlayMusic(MusicId::GameSense, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
 		<< "\n";
@@ -929,9 +931,8 @@ void GameScene::UpdatePauseInput()
 			TimerSystem::GetInstance().Clear();
 			UI::Reset();
 			if (!BuffCardManager::GetCurrentBuffs().empty()) {
-				BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+				BuffCardManager::ResetCurrentBuffs();
 			}
-			// Reload the last successfully loaded level (if any)
 			if (!gLastLoadedLevelPath.empty())
 			{
 				gPendingLevelPath = gLastLoadedLevelPath;
@@ -973,7 +974,93 @@ void GameScene::UpdatePauseInput()
 	}
 	else if (pausePage == PausePage::Settings)
 	{
-		// Placeholder: you can add sliders later; for now just stay here
+		auto Clamp01_UI = [](float v) -> float
+			{
+				if (v < 0.0f) return 0.0f;
+				if (v > 1.0f) return 1.0f;
+				return v;
+			};
+
+		auto PointInRectPx = [](float mx, float my, const UIRect& r) -> bool
+			{
+				const float left = r.pos.x - r.size.x * 0.5f;
+				const float right = r.pos.x + r.size.x * 0.5f;
+				const float top = r.pos.y - r.size.y * 0.5f;
+				const float bottom = r.pos.y + r.size.y * 0.5f;
+
+				return (mx >= left && mx <= right && my >= top && my <= bottom);
+			};
+
+		auto SliderValueFromMouse = [&](float mouseX, float leftX, float width) -> float
+			{
+				if (width <= 0.0f) return 0.0f;
+				return Clamp01_UI((mouseX - leftX) / width);
+			};
+
+		// ===== overlay setting =====
+		const float sliderLeft = 860.0f;
+		const float sliderWidth = 330.0f;
+		const float knobSize = 28.0f;
+		const float hitboxHeight = 36.0f;
+
+		const float bgmY = 350.0f;
+		const float sfxY = 460.0f;
+
+		s32 mx = 0;
+		s32 my = 0;
+		AEInputGetCursorPosition(&mx, &my);
+
+		const bool mousePressed = AEInputCheckTriggered(AEVK_LBUTTON);
+		const bool mouseHeld = AEInputCheckCurr(AEVK_LBUTTON);
+
+		auto MakeTrackRect = [&](float y) -> UIRect
+			{
+				return UIRect{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, hitboxHeight } };
+			};
+
+		auto MakeKnobRect = [&](float value, float y) -> UIRect
+			{
+				return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
+			};
+
+		UIRect bgmTrack = MakeTrackRect(bgmY);
+		UIRect sfxTrack = MakeTrackRect(sfxY);
+
+		UIRect bgmKnob = MakeKnobRect(AudioManager::GetMusicVolume(), bgmY);
+		UIRect sfxKnob = MakeKnobRect(AudioManager::GetSFXVolume(), sfxY);
+
+		if (mousePressed)
+		{
+			if (PointInRectPx((float)mx, (float)my, bgmTrack) ||
+				PointInRectPx((float)mx, (float)my, bgmKnob))
+			{
+				draggingBgmSlider = true;
+			}
+
+			if (PointInRectPx((float)mx, (float)my, sfxTrack) ||
+				PointInRectPx((float)mx, (float)my, sfxKnob))
+			{
+				draggingSfxSlider = true;
+			}
+		}
+
+		if (!mouseHeld)
+		{
+			draggingBgmSlider = false;
+			draggingSfxSlider = false;
+		}
+
+		if (draggingBgmSlider)
+		{
+			float v = SliderValueFromMouse((float)mx, sliderLeft, sliderWidth);
+			AudioManager::SetMusicVolume(v);
+		}
+
+		if (draggingSfxSlider)
+		{
+			float v = SliderValueFromMouse((float)mx, sliderLeft, sliderWidth);
+			AudioManager::SetSFXVolume(v);
+		}
 	}
 }
 
@@ -987,8 +1074,11 @@ void GameScene::RenderPauseOverlay()
 
 
 	// Titles
-	DrawTextPx(pauseFontLarge, "PAUSED", 40, 100, 1.0f, 1, 1, 1, 1);
-	DrawTextPx(pauseFontRuntime, "Run Time : " + FormatRunTime(), 40, 150, 1.0f, 1, 1, 1, 1);
+	if (pausePage != PausePage::Settings)
+	{
+		DrawTextPx(pauseFontLarge, "PAUSED", 40, 100, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontRuntime, "Run Time : " + FormatRunTime(), 40, 150, 1.0f, 1, 1, 1, 1);
+	}
 
 	// Buttons
 	auto drawBtn = [&](const char* label, const UIRect& r)
@@ -1030,8 +1120,57 @@ void GameScene::RenderPauseOverlay()
 	}
 	else if (pausePage == PausePage::Settings)
 	{
-		DrawTextPx(pauseFontLarge, "SETTINGS", 40, 160, 1.0f, 1, 1, 1, 1);
-		DrawTextPx(pauseFontSmall, "Press ESC to go back.", 40, 200, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontLarge, "SETTINGS", 40.f, 100.f, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontRuntime, "ESC - BACK", 40.f, 845.f, 1.0f, 1, 1, 1, 1);
+
+		const float labelX = 420.0f;
+		const float sliderLeft = 860.0f;
+		const float sliderWidth = 330.0f;
+		const float percentX = 1230.0f;
+
+		const float bgmY = 350.0f;
+		const float sfxY = 460.0f;
+
+		const float trackH = 8.0f;
+		const float knobSz = 28.0f;
+
+		auto DrawSlider = [&](const char* label, float value, float y, bool dragging)
+			{
+				int percent = (int)(value * 100.0f + 0.5f);
+
+				// label
+				DrawTextPx(pauseFontRuntime, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, 1);
+
+				// base track
+				UIRect trackBg{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, trackH } };
+				DrawSolidPanel(trackBg, 0.20f);
+
+				// filled track
+				float filledW = sliderWidth * value;
+				if (filledW > 0.0f)
+				{
+					UIRect trackFill{ { sliderLeft + filledW * 0.5f, y }, { filledW, trackH } };
+					DrawSolidPanel(trackFill, 0.50f);
+				}
+
+				// knob
+				float knobX = sliderLeft + sliderWidth * value;
+				UIRect knob{ { knobX, y }, { knobSz, knobSz } };
+				DrawSolidPanel(knob, dragging ? 0.60f : 0.36f);
+
+				// percent text
+				DrawTextPx(
+					pauseFontRuntime,
+					std::to_string(percent),
+					percentX,
+					y - 18.0f,
+					1.0f,
+					1.0f, 0.95f, 0.35f, 1.0f
+				);
+			};
+
+		DrawSlider("BGM Volume", AudioManager::GetMusicVolume(), bgmY, draggingBgmSlider);
+		DrawSlider("SFX Volume", AudioManager::GetSFXVolume(), sfxY, draggingSfxSlider);
 	}
 
 	// ============================== Active Buffs (top-right) ==============================

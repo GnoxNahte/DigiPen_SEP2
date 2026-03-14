@@ -210,7 +210,7 @@
     <ClCompile Include="Source\Game\Environment\traps.cpp">
       <Filter>Source Files\Game\Environment</Filter>
     </ClCompile>
-    <ClCompile Include="AudioManager.cpp">
+    <ClCompile Include="Source\Game\AudioManager.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
   </ItemGroup>
@@ -380,7 +380,7 @@
     <ClInclude Include="Source\Game\Environment\traps.h">
       <Filter>Header Files\Game\Environment</Filter>
     </ClInclude>
-    <ClInclude Include="AudioManager.h">
+    <ClInclude Include="Source\Game\AudioManager.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>

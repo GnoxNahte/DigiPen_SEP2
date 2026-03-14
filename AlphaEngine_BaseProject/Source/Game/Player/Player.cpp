@@ -11,6 +11,7 @@
 #include "../../Game/Time.h"
 #include "../UI.h"
 #include "../../Utils/PhysicsUtils.h"
+#include "../AudioManager.h"
 
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
@@ -434,6 +435,8 @@ bool Player::IsInvincible()
 
 void Player::SetAttack(AnimState toState)
 {
+    AudioManager::PlayNextAttackSFX();
+
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
@@ -672,6 +675,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
         sprite.SetState(AnimState::DEATH, false, [&](int) {
             sprite.SetState(AnimState::DEATH_LOOP); 
+            AudioManager::PlayMusic(MusicId::Death);
         });
         return false;
     }
