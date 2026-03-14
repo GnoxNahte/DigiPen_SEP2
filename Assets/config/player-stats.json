@@ -71,7 +71,7 @@
     "attackComboBuffer": 0.1,
     "knockbackAmt": 20.0,
     "maxKnockbackDmg": 20.0,
-    "downAirAttackFallSpeed": -100.0,
+    "slamAttackFallSpeed": -100.0,
     "groundAttacks": [
         {
             "damage": 10,

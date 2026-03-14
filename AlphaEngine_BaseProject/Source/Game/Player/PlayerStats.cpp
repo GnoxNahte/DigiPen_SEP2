@@ -25,7 +25,6 @@ namespace
 	{
 		attack.damage = obj["damage"].GetInt();
 		attack.recoilSpeed = obj["recoilSpeed"].GetFloat();
-		attack.knockbackForce = obj["knockbackForce"].GetFloat();
 		
 		LoadBox(obj["collider"].GetObj(), attack.collider);
 	}
@@ -49,7 +48,6 @@ namespace
     {
         obj.SetObject();
         obj.AddMember("damage", attack.damage, allocator);
-        obj.AddMember("knockbackForce", attack.knockbackForce, allocator);
         obj.AddMember("recoilSpeed", attack.recoilSpeed, allocator);
 
         rapidjson::Value collider(rapidjson::kObjectType);
@@ -81,7 +79,6 @@ namespace
         ImGui::Indent();
         {
             ifChanged = ImGui::DragInt(("Damage##" + str).c_str(), &attack.damage, 0.1f) || ifChanged;
-            ifChanged = ImGui::DragFloat(("Knockback Force##" + str).c_str(), &attack.knockbackForce, 0.01f) || ifChanged;
             ifChanged = ImGui::DragFloat(("Recoil Speed##" + str).c_str(), &attack.recoilSpeed, 0.01f) || ifChanged;
             ifChanged = DrawInspectorBox(("Collider##" + str).c_str(), attack.collider) || ifChanged; // causing double ID... not fixing for now. Need to make another function that doesnt add id?
         }
@@ -152,7 +149,7 @@ void PlayerStats::LoadFileData()
     attackComboBuffer = doc["attackComboBuffer"].GetFloat();
     knockbackAmt = doc["knockbackAmt"].GetFloat();
     maxKnockbackDmg = doc["maxKnockbackDmg"].GetFloat();
-    downAirAttackFallSpeed = doc["downAirAttackFallSpeed"].GetFloat();
+    slamAttackFallSpeed = doc["slamAttackFallSpeed"].GetFloat();
 
 	auto groundAttackArr = doc["groundAttacks"].GetArray();
 	for (int i = 0; i < groundAttacks.size(); i++)
@@ -229,7 +226,7 @@ void PlayerStats::SaveFileData()
     doc.AddMember("attackComboBuffer", attackBuffer, allocator);
     doc.AddMember("knockbackAmt", knockbackAmt, allocator);
     doc.AddMember("maxKnockbackDmg", maxKnockbackDmg, allocator);
-    doc.AddMember("downAirAttackFallSpeed", downAirAttackFallSpeed, allocator);
+    doc.AddMember("slamAttackFallSpeed", slamAttackFallSpeed, allocator);
 
     // Attack Arrays
     rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
@@ -362,7 +359,7 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Attack Combo Buffer", &attackComboBuffer, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Knockback Amount", &knockbackAmt, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Max Knockback Damage", &maxKnockbackDmg, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat("Down Air Attack Fall Speed", &downAirAttackFallSpeed, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Down Air Attack Fall Speed", &slamAttackFallSpeed, 0.01f) || ifChanged;
 
         for (size_t i = 0; i < groundAttacks.size(); i++)
             DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);

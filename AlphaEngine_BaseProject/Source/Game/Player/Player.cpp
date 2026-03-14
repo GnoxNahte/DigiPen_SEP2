@@ -346,7 +346,7 @@ void Player::HandleGravity()
         else if (IsAnimAirAttack())
         {
             acceleration = -200.f;
-            maxFallSpeed = stats.downAirAttackFallSpeed;
+            maxFallSpeed = stats.slamAttackFallSpeed;
         }
         // Wall slide
         else if (isLeftWallCollided || isRightWallCollided)
