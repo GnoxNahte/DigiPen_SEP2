@@ -62,7 +62,19 @@ public:
 public:
     Enemy(Preset preset = Preset::Druid, float initialPosX = 0.f, float initialPosY = 0.f);
     Enemy(const Config& cfg, float initialPosX, float initialPosY);
+ 
+    static Config MakePreset(Preset preset);
     ~Enemy() = default;
+
+    int GetMaxHp() const { return cfg.maxHp; }
+    int GetCurrentHp() const { return hp; }
+
+    void SetMaxHp(int value) { cfg.maxHp = value; }
+    void SetCurrentHp(int value) { hp = value; }
+    void SetAttackDamage(int value) { cfg.attackDamage = value; }
+
+    void ApplyRoomScaling(int extraHp, int extraDamage);
+   
 
   virtual const  AEVec2& GetHurtboxPos()  const override 
     {
@@ -113,12 +125,12 @@ public:
 
     ParticleSystem particleSystem{ 30, {} }; // pool size 30 is enough for small bursts
 
-
 private:
     void UpdateAnimation();
-    static Config MakePreset(Preset preset);
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
     Preset presetType = Preset::Skeleton;
+
+
 
 private:
     Config cfg;
