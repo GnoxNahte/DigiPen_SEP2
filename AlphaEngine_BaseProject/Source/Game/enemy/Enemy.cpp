@@ -48,6 +48,7 @@ bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
     return map.CheckPointCollision(probeX, probeY);
 }
 
+
 Enemy::Config Enemy::MakePreset(Preset preset)
 {
     Config c{};
@@ -586,6 +587,19 @@ bool Enemy::CheckIfClicked(const AEVec2& mousePos)
     return fabsf(position.x - mousePos.x) < size.x &&
     fabsf(position.y - mousePos.y) < size.y;
 
+}
+
+void Enemy::ApplyRoomScaling(int extraHp, int extraDamage)
+{
+    cfg.maxHp += extraHp;
+    if (cfg.maxHp < 1) cfg.maxHp = 1;
+
+    hp += extraHp;
+    if (hp > cfg.maxHp) hp = cfg.maxHp;
+    if (hp < 1) hp = 1;
+
+    cfg.attackDamage += extraDamage;
+    if (cfg.attackDamage < 1) cfg.attackDamage = 1;
 }
 
 // ---- Render ----
