@@ -11,7 +11,9 @@ enum class SoundId
 enum class MusicId
 {
     MainMenu,
-    Death
+    Death,
+    GameSense,
+    Victory
 };
 
 class AudioManager

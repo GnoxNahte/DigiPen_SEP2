@@ -38,6 +38,8 @@ private:
 	AttackSystem attackSystem;
 	RoomManager roomMgr;
 	bool roomTransitionLocked = false;
+	bool draggingBgmSlider = false;
+	bool draggingSfxSlider = false;
 
 	// ======================= Pause Overlay (No ImGui) =======================
 	enum class PausePage

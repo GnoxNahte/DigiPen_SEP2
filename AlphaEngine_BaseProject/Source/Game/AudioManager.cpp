@@ -20,10 +20,17 @@ namespace
 
     // Music
     AEAudio gMainMenuMusic{};
+    AEAudio gGameSenseMusic{};
+    AEAudio gVictoryMusic{};
     AEAudio gDeathMusic{};
 
-	// attack loop index for player attack SFX, will loop through 3 different attack SFX in order to add variety to the sound effects when player attacks
     int gNextAttackIndex = 0;
+
+    bool gHasCurrentMusic = false;
+    MusicId gCurrentMusicId = MusicId::MainMenu;
+    float gCurrentMusicVolumeScale = 1.0f;
+    float gCurrentMusicPitch = 1.0f;
+    int gCurrentMusicLoopCount = 0;
 
     float Clamp01(float v)
     {
@@ -32,12 +39,33 @@ namespace
 
     float FinalSFXVolume(float scale)
     {
-        return Clamp01(gMasterVolume) * Clamp01(gSFXVolume) * Clamp01(scale);
+        return Clamp01(scale);
     }
 
     float FinalMusicVolume(float scale)
     {
-        return Clamp01(gMasterVolume) * Clamp01(gMusicVolume) * Clamp01(scale);
+        return Clamp01(scale);
+    }
+
+    void RefreshCurrentMusicState(MusicId id, float volumeScale, float pitch, int loopCount)
+    {
+        gCurrentMusicId = id;
+        gCurrentMusicVolumeScale = volumeScale;
+        gCurrentMusicPitch = pitch;
+        gCurrentMusicLoopCount = loopCount;
+        gHasCurrentMusic = true;
+    }
+
+    void ApplyGroupVolumes()
+    {
+        const float sfxGroupVol = Clamp01(gMasterVolume) * Clamp01(gSFXVolume);
+        const float musicGroupVol = Clamp01(gMasterVolume) * Clamp01(gMusicVolume);
+
+        if (AEAudioIsValidGroup(gSFXGroup))
+            AEAudioSetGroupVolume(gSFXGroup, sfxGroupVol);
+
+        if (AEAudioIsValidGroup(gMusicGroup))
+            AEAudioSetGroupVolume(gMusicGroup, musicGroupVol);
     }
 }
 
@@ -49,6 +77,8 @@ void AudioManager::Init()
     gSFXGroup = AEAudioCreateGroup();
     gMusicGroup = AEAudioCreateGroup();
     gAudioInitialized = true;
+
+    ApplyGroupVolumes();
 }
 
 void AudioManager::LoadAll()
@@ -67,23 +97,65 @@ void AudioManager::LoadAll()
     // Music
     gMainMenuMusic = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
     gDeathMusic = AEAudioLoadMusic("Assets/music/death.mp3");
+    gGameSenseMusic = AEAudioLoadMusic("Assets/music/gamesense.mp3");
+    gVictoryMusic = AEAudioLoadMusic("Assets/music/victory.mp3");
 
     gAudioLoaded = true;
 }
 
 void AudioManager::Exit()
 {
+	// stop all audio first
+    if (AEAudioIsValidGroup(gSFXGroup))
+        AEAudioStopGroup(gSFXGroup);
+
+    if (AEAudioIsValidGroup(gMusicGroup))
+        AEAudioStopGroup(gMusicGroup);
+
+	// unload SFX
+    if (AEAudioIsValidAudio(gPlayerAttack1))
+        AEAudioUnloadAudio(gPlayerAttack1);
+    if (AEAudioIsValidAudio(gPlayerAttack2))
+        AEAudioUnloadAudio(gPlayerAttack2);
+    if (AEAudioIsValidAudio(gPlayerAttack3))
+        AEAudioUnloadAudio(gPlayerAttack3);
+
+    // unload Music
+    if (AEAudioIsValidAudio(gMainMenuMusic))
+        AEAudioUnloadAudio(gMainMenuMusic);
+    if (AEAudioIsValidAudio(gDeathMusic))
+        AEAudioUnloadAudio(gDeathMusic);
+    if (AEAudioIsValidAudio(gGameSenseMusic))
+        AEAudioUnloadAudio(gGameSenseMusic);
+    if (AEAudioIsValidAudio(gVictoryMusic))
+        AEAudioUnloadAudio(gVictoryMusic);
+
+    // unload group
+    if (AEAudioIsValidGroup(gSFXGroup))
+        AEAudioUnloadAudioGroup(gSFXGroup);
+    if (AEAudioIsValidGroup(gMusicGroup))
+        AEAudioUnloadAudioGroup(gMusicGroup);
+
+	// cleaning up state
     gPlayerAttack1 = AEAudio{};
     gPlayerAttack2 = AEAudio{};
     gPlayerAttack3 = AEAudio{};
 
     gMainMenuMusic = AEAudio{};
     gDeathMusic = AEAudio{};
+    gGameSenseMusic = AEAudio{};
+    gVictoryMusic = AEAudio{};
 
     gSFXGroup = AEAudioGroup{};
     gMusicGroup = AEAudioGroup{};
 
     gNextAttackIndex = 0;
+
+    gHasCurrentMusic = false;
+    gCurrentMusicId = MusicId::MainMenu;
+    gCurrentMusicVolumeScale = 1.0f;
+    gCurrentMusicPitch = 1.0f;
+    gCurrentMusicLoopCount = 0;
 
     gAudioLoaded = false;
     gAudioInitialized = false;
@@ -96,16 +168,19 @@ void AudioManager::Exit()
 void AudioManager::SetMasterVolume(float v)
 {
     gMasterVolume = Clamp01(v);
+    ApplyGroupVolumes();
 }
 
 void AudioManager::SetSFXVolume(float v)
 {
     gSFXVolume = Clamp01(v);
+    ApplyGroupVolumes();
 }
 
 void AudioManager::SetMusicVolume(float v)
 {
     gMusicVolume = Clamp01(v);
+    ApplyGroupVolumes();
 }
 
 float AudioManager::GetMasterVolume()
@@ -145,6 +220,7 @@ void AudioManager::PlaySFX(SoundId id, float volumeScale, float pitch, int loopC
         return;
     }
 
+    ApplyGroupVolumes();
     AEAudioPlay(audio, gSFXGroup, FinalSFXVolume(volumeScale), pitch, loopCount);
 }
 
@@ -163,10 +239,17 @@ void AudioManager::PlayMusic(MusicId id, float volumeScale, float pitch, int loo
     case MusicId::Death:
         audio = gDeathMusic;
         break;
+    case MusicId::GameSense:
+        audio = gGameSenseMusic;
+        break;
+    case MusicId::Victory:
+        audio = gVictoryMusic;
+        break;
     default:
         return;
     }
 
+    RefreshCurrentMusicState(id, volumeScale, pitch, loopCount);
     AEAudioPlay(audio, gMusicGroup, FinalMusicVolume(volumeScale), pitch, loopCount);
 }
 
@@ -182,6 +265,8 @@ void AudioManager::PlayNextAttackSFX()
         break;
     case 2:
         PlaySFX(SoundId::PlayerAttack3);
+        break;
+    default:
         break;
     }
 
