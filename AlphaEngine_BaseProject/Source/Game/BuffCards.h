@@ -12,7 +12,11 @@ enum CARD_TYPE {
 	REVITALIZE,
 	SHARPEN,
 	BERSERKER,
-	FEATHERWEIGHT
+	FLEETING_STEP,
+	SUREFOOTED,
+	DEEP_VITALITY,
+	HAND_OF_FATE,
+	SUNDERING_BLOW
 };
 
 // Enumeration types for card rarity.
@@ -113,6 +117,11 @@ public:
 		case REVITALIZE: return "REVITALIZE";
 		case SHARPEN: return "SHARPEN";
 		case BERSERKER: return "BERSERKER";
+		case FLEETING_STEP: return "FLEETING_STEP";
+		case SUREFOOTED: return "SUREFOOTED";
+		case DEEP_VITALITY: return "DEEP_VITALITY";
+		case HAND_OF_FATE: return "HAND_OF_FATE";
+		case SUNDERING_BLOW: return "SUNDERING_BLOW";
 		default: return "UNKNOWN_TYPE";
 		}
 	}
@@ -128,10 +137,6 @@ public:
 	}
 
 private:
-	static const int UNCOMMON_CARDS = 20; // Number of uncommon cards in the pool.
-	static const int RARE_CARDS = 20; // Number of rare cards in the pool.
-	static const int EPIC_CARDS = 20; // Number of epic cards in the pool.
-	static const int LEGENDARY_CARDS = 10; // Number of legendary cards in the pool.
 
 	// Flags
 	inline static bool shuffled = false; // To ensure the card shuffle only occurs once per call.

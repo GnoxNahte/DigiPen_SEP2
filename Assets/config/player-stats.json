@@ -76,7 +76,7 @@
         {
             "damage": 10,
             "knockbackForce": 5.0,
-            "recoilSpeed": 10.0,
+            "recoilSpeed": 4.0,
             "collider": {
                 "position": {
                     "x": 0.4,
@@ -91,7 +91,7 @@
         {
             "damage": 20,
             "knockbackForce": 7.0,
-            "recoilSpeed": 10.0,
+            "recoilSpeed": 4.0,
             "collider": {
                 "position": {
                     "x": 0.25,
@@ -106,7 +106,7 @@
         {
             "damage": 30,
             "knockbackForce": 8.0,
-            "recoilSpeed": 10.0,
+            "recoilSpeed": 3.5,
             "collider": {
                 "position": {
                     "x": 0.1,

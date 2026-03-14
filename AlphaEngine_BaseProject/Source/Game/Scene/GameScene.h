@@ -9,8 +9,7 @@
 #include "../enemy/Enemy.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
-
-
+#include "../../Game/Rooms/RoomManager.h"
 
 class GameScene : public BaseScene
 {
@@ -37,6 +36,9 @@ private:
 
 	EnemyManager enemyMgr;
 	AttackSystem attackSystem;
+	RoomManager roomMgr;
+	bool roomTransitionLocked = false;
+
 	// ======================= Pause Overlay (No ImGui) =======================
 	enum class PausePage
 	{
@@ -79,12 +81,15 @@ private:
 	// UI layout helpers
 	std::string FormatRunTime() const;
 	// ---- Pause overlay textures (buff icons) ----
-	static constexpr int kPauseBuffTexCount = 8; // enough for your CARD_TYPE values
+	static constexpr int kPauseBuffTexCount = 20; // enough for your CARD_TYPE values
 	AEGfxTexture* pauseBuffTex[kPauseBuffTexCount] = { nullptr };
 
 	// glowing rarity overlay textures for cards (same as BuffCardScreen)
 	static constexpr int kPauseRarityTexCount = 4; // UNCOMMON/RARE/EPIC/LEGENDARY
 	AEGfxTexture* pauseRarityTex[kPauseRarityTexCount] = { nullptr };
 	s8 pauseFontDesc = -1; // Pixellari
-};
 
+	void ClearRuntimeRoomObjects();
+	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE);
+	RoomDirection CheckRoomExit() const;
+};

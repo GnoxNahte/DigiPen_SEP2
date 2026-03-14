@@ -10,7 +10,7 @@
 class MapGrid
 {
 public:
-	MapGrid(int rows, int cols);
+	MapGrid(int cols, int rows);
 	MapGrid(const char* file);
 	~MapGrid();
 

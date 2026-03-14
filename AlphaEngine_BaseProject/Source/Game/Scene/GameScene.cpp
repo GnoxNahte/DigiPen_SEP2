@@ -9,6 +9,7 @@
 #include "../../Game/Timer.h"
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
@@ -23,7 +24,6 @@ std::string gLastLoadedLevelPath; // last successfully loaded level path for res
 		&& dy <= (aSize.y + bSize.y) * 0.5f;
 }*/
 
-
 namespace
 {
 	// squared-distance check (no sqrt)
@@ -33,13 +33,273 @@ namespace
 		float dy = b.y - a.y;
 		return (dx * dx + dy * dy) <= (range * range);
 	}
+
+	RoomID RoomIdFromIndex(int idx)
+	{
+		if (idx < 0 || idx >= ROOM_COUNT)
+			return ROOM_NONE;
+		return static_cast<RoomID>(idx);
+	}
+
+	bool PointInRoom(const AEVec2& p, int roomX, int roomY)
+	{
+		const float minX = (float)(roomX * ROOM_COLS);
+		const float minY = (float)(roomY * ROOM_ROWS);
+		const float maxX = minX + (float)ROOM_COLS;
+		const float maxY = minY + (float)ROOM_ROWS;
+
+		return p.x >= minX && p.x < maxX &&
+			p.y >= minY && p.y < maxY;
+	}
+
+	void BuildRoomsFromLevelData(const LevelData& lvl, RoomManager& roomMgr, RoomID& outStartRoom)
+	{
+		roomMgr.Clear();
+		outStartRoom = ROOM_1;
+
+		if (lvl.cols <= 0 || lvl.rows <= 0)
+			return;
+
+		const int roomsX = lvl.cols / ROOM_COLS;
+		const int roomsY = lvl.rows / ROOM_ROWS;
+
+
+
+		if (roomsX <= 0 || roomsY <= 0)
+			return;
+
+		const int totalRooms = roomsX * roomsY;
+		const int roomCountToUse = (totalRooms < ROOM_COUNT) ? totalRooms : ROOM_COUNT;
+
+		for (int i = 0; i < roomCountToUse; ++i)
+		{
+			const int rx = i % roomsX;
+			const int ry = i / roomsX;
+
+			RoomData room{};
+			room.id = RoomIdFromIndex(i);
+			std::cout << "lvl.cols=" << lvl.cols
+				<< " lvl.rows=" << lvl.rows
+				<< " roomsX=" << roomsX
+				<< " roomsY=" << roomsY
+				<< " totalRooms=" << (roomsX * roomsY)
+				<< "\n";
+		
+		// neighbors
+			if (ry - 1 >= 0)
+				room.topRoom = RoomIdFromIndex(i - roomsX);
+			if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
+				room.bottomRoom = RoomIdFromIndex(i + roomsX);
+			if (rx - 1 >= 0)
+				room.leftRoom = RoomIdFromIndex(i - 1);
+			if (rx + 1 < roomsX && i + 1 < roomCountToUse)
+				room.rightRoom = RoomIdFromIndex(i + 1);
+
+			// tiles
+			for (int y = 0; y < ROOM_ROWS; ++y)
+			{
+				for (int x = 0; x < ROOM_COLS; ++x)
+				{
+					const int globalX = rx * ROOM_COLS + x;
+					const int globalY = ry * ROOM_ROWS + y;
+
+					int v = (int)MapTile::Type::NONE;
+					if (globalX >= 0 && globalX < lvl.cols &&
+						globalY >= 0 && globalY < lvl.rows)
+					{
+						v = lvl.tiles[(size_t)globalY * (size_t)lvl.cols + (size_t)globalX];
+					}
+
+					if (v < 0 || v >= MapTile::typeCount)
+						v = (int)MapTile::Type::NONE;
+
+					room.tiles[y][x] = (MapTile::Type)v;
+				}
+			}
+
+			// default entry points
+			room.entryFromLeft = { 3.0f, 3.0f };
+			room.entryFromRight = { (float)ROOM_COLS - 4.0f, 3.0f };
+			room.entryFromTop = { ROOM_COLS * 0.5f, (float)ROOM_ROWS - 4.0f };
+			room.entryFromBottom = { ROOM_COLS * 0.5f, 3.0f };
+
+			// default start spawn
+			room.startSpawn = { 2.5f, 3.0f };
+
+			// spawn belongs to this room?
+			if (PointInRoom(lvl.spawn, rx, ry))
+			{
+				room.startSpawn = {
+					lvl.spawn.x - rx * (float)ROOM_COLS,
+					lvl.spawn.y - ry * (float)ROOM_ROWS
+				};
+				outStartRoom = room.id;
+			}
+
+			// enemies in this room
+			for (const auto& e : lvl.enemies)
+			{
+				if (!PointInRoom(e.pos, rx, ry))
+					continue;
+
+				if (room.enemyCount >= MAX_ROOM_ENEMIES)
+					continue;
+
+				room.enemies[room.enemyCount].preset = e.preset;
+				room.enemies[room.enemyCount].pos = {
+					e.pos.x - rx * (float)ROOM_COLS,
+					e.pos.y - ry * (float)ROOM_ROWS
+				};
+				++room.enemyCount;
+			}
+
+			// traps in this room
+			for (const auto& t : lvl.traps)
+			{
+				if (!PointInRoom(t.pos, rx, ry))
+					continue;
+
+				if (room.trapCount >= MAX_ROOM_TRAPS)
+					continue;
+
+				room.traps[room.trapCount].type = t.type;
+				room.traps[room.trapCount].pos = {
+					t.pos.x - rx * (float)ROOM_COLS,
+					t.pos.y - ry * (float)ROOM_ROWS
+				};
+				room.traps[room.trapCount].size = t.size;
+				room.traps[room.trapCount].upTime = t.upTime;
+				room.traps[room.trapCount].downTime = t.downTime;
+				room.traps[room.trapCount].damageOnHit = t.damageOnHit;
+				room.traps[room.trapCount].startDisabled = t.startDisabled;
+				room.traps[room.trapCount].damagePerTick = t.damagePerTick;
+				room.traps[room.trapCount].tickInterval = t.tickInterval;
+				++room.trapCount;
+			}
+
+			roomMgr.SetRoom(room.id, room);
+			std::cout << "room " << (int)room.id
+				<< " rx=" << rx << " ry=" << ry
+				<< " L=" << (int)room.leftRoom
+				<< " R=" << (int)room.rightRoom
+				<< " T=" << (int)room.topRoom
+				<< " B=" << (int)room.bottomRoom
+				<< "\n";
+		}
+	}
 }
 
+void GameScene::ClearRuntimeRoomObjects()
+{
+	// rebuild managers by assignment/reset so we do not disturb other scene systems
+	trapMgr = TrapManager{};
 
+	enemyMgr = EnemyManager{};
+	enemyMgr.SetBoss(&enemyBoss);
+}
+
+void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
+{
+	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return;
+
+	const RoomData& room = roomMgr.GetCurrentRoom();
+
+	// clear current map
+	for (int y = 0; y < ROOM_ROWS; ++y)
+	{
+		for (int x = 0; x < ROOM_COLS; ++x)
+		{
+			map.SetTile(x, y, MapTile::Type::NONE);
+		}
+	}
+
+	// apply room tiles into active map
+	for (int y = 0; y < ROOM_ROWS; ++y)
+	{
+		for (int x = 0; x < ROOM_COLS; ++x)
+		{
+			map.SetTile(x, y, room.tiles[y][x]);
+		}
+	}
+
+	// clear and rebuild runtime room objects
+	ClearRuntimeRoomObjects();
+
+	// rebuild traps
+	for (int i = 0; i < room.trapCount; ++i)
+	{
+		const RoomTrapSpawn& td = room.traps[i];
+
+		Box box{};
+		box.size = td.size;
+		box.position = AEVec2{
+			td.pos.x - td.size.x * 0.5f,
+			td.pos.y - td.size.y * 0.5f
+		};
+
+		const Trap::Type tt = static_cast<Trap::Type>(td.type);
+
+		if (tt == Trap::Type::SpikePlate)
+		{
+			trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+		}
+		else if (tt == Trap::Type::PressurePlate)
+		{
+			trapMgr.Spawn<PressurePlate>(box);
+		}
+		else if (tt == Trap::Type::LavaPool)
+		{
+			trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+		}
+	}
+
+	// rebuild enemies
+	std::vector<EnemyManager::SpawnInfo> spawns;
+	for (int i = 0; i < room.enemyCount; ++i)
+	{
+		spawns.push_back({
+			(EnemySpawnType)room.enemies[i].preset,
+			room.enemies[i].pos
+			});
+	}
+
+	enemyMgr.SetBoss(&enemyBoss);
+	enemyMgr.SetSpawns(spawns);
+	enemyMgr.SpawnAll();
+
+	// spawn player
+	AEVec2 spawn = room.startSpawn;
+	if (cameFrom != DIR_NONE)
+		spawn = roomMgr.GetEntrySpawn(room.id, cameFrom);
+
+	player.Reset(spawn);
+
+	// fixed room camera (Celeste-style)
+	camera.position = { ROOM_COLS * 0.5f, ROOM_ROWS * 0.5f };
+	Camera::position = camera.position;
+	AEGfxSetCamPosition(camera.position.x * Camera::scale, camera.position.y * Camera::scale);
+}
+
+RoomDirection GameScene::CheckRoomExit() const
+{
+	const AEVec2 p = player.GetPosition();
+
+	if (p.y < 0.0f)
+		return DIR_BOTTOM;
+	if (p.y >= (float)ROOM_ROWS)
+		return DIR_TOP;
+	if (p.x < 0.0f)
+		return DIR_LEFT;
+	if (p.x >= (float)ROOM_COLS)
+		return DIR_RIGHT;
+
+	return DIR_NONE;
+}
 GameScene::GameScene() :
-	map(50, 50),
+	map(ROOM_COLS, ROOM_ROWS),
 	player(&map, &enemyMgr),
-	camera({ 1,1 }, { 49, 49 }, 64),
+	camera({ 1,1 }, { (float)(ROOM_COLS - 1), (float)(ROOM_ROWS - 1) }, 64),
 	testParticleSystem(
 		20,
 		ParticleSystem::EmitterSettings{
@@ -50,7 +310,7 @@ GameScene::GameScene() :
 		),
 	enemyBoss(35, 2.90f)
 {
-	camera.SetFollow(&player.GetPosition(), 0, 50, true);
+	// camera.SetFollow(&player.GetPosition(), 0, (float)ROOM_COLS, true);
 	// =============================== Traps Setup (debug) ===========================
 	//auto& plate = trapMgr.Spawn<PressurePlate>(
 	//	Box{ {2.f, 4.f}, {4.f, 1.f} }   
@@ -86,7 +346,11 @@ GameScene::GameScene() :
 	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
 	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
 	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	pauseBuffTex[(int)FEATHERWEIGHT] = AEGfxTextureLoad("Assets/Featherweight.png");
+	pauseBuffTex[(int)FLEETING_STEP] = AEGfxTextureLoad("Assets/Fleeting_Step.png");
+	pauseBuffTex[(int)SUREFOOTED] = AEGfxTextureLoad("Assets/Surefooted.png");
+	pauseBuffTex[(int)DEEP_VITALITY] = AEGfxTextureLoad("Assets/Deep_Vitality.png");
+	pauseBuffTex[(int)HAND_OF_FATE] = AEGfxTextureLoad("Assets/Hand_Of_Fate.png");
+	pauseBuffTex[(int)SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Sundering_Blow.png");
 
 	// Fonts for pause overlay
 	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
@@ -168,62 +432,68 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
-	// Load level from file if one was passed in from the menu
+	roomMgr.Clear();
+
+	bool loadedFromFile = false;
+	LevelData loadedLevel{};
+	RoomID startRoom = ROOM_1;
+
 	if (!gPendingLevelPath.empty())
 	{
+		std::cout << "pending path: " << gPendingLevelPath << "\n";
+
 		LevelData lvl;
 		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
 		{
-			gLastLoadedLevelPath = gPendingLevelPath; // remember last loaded level for restart
-			// apply tiles to existing map member
-			for (int y = 0; y < lvl.rows && y < 50; ++y)
-				for (int x = 0; x < lvl.cols && x < 50; ++x)
-				{
-					int v = lvl.tiles[(size_t)y * lvl.cols + x];
-					if (v < 0 || v >= MapTile::typeCount) v = 0;
-					map.SetTile(x, y, (MapTile::Type)v);
-				}
+			std::cout << "load success\n";
+			std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
 
-			// apply traps
-			for (const auto& td : lvl.traps)
-			{
-				Box box{};
-				box.size = td.size;
-				box.position = AEVec2{ td.pos.x - td.size.x * 0.5f, td.pos.y - td.size.y * 0.5f };
-				const Trap::Type tt = static_cast<Trap::Type>(td.type);
-				if (tt == Trap::Type::SpikePlate)
-					trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
-				else if (tt == Trap::Type::PressurePlate)
-					trapMgr.Spawn<PressurePlate>(box);
-				else if (tt == Trap::Type::LavaPool)
-					trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
-			}
-
-			// spawn point from level file
-			player.Reset(lvl.spawn);
-			camera.SetFollow(&player.GetPosition(), 0, (float)lvl.cols, true);
-
-			// enemy spawns from level file
-			std::vector<EnemyManager::SpawnInfo> spawns;
-			for (const auto& ed : lvl.enemies)
-				spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
-			enemyMgr.SetBoss(&enemyBoss);
-			enemyMgr.SetSpawns(spawns);
-			enemyMgr.SpawnAll();
-
+			loadedFromFile = true;
+			loadedLevel = lvl;
+			gLastLoadedLevelPath = gPendingLevelPath;
+			BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 			gPendingLevelPath.clear();
 		}
+		else
+		{
+			std::cout << "load failed\n";
+		}
+
 		gPendingLevelPath.clear();
 	}
+	else
+	{
+		std::cout << "pending path empty\n";
+	}
 
-	// fallback: hardcoded setup
-	player.Reset(AEVec2{ 10, 5 });
-	std::vector<EnemyManager::SpawnInfo> spawns;
-	spawns.push_back({ EnemySpawnType::Druid, {30.f, 2.0f} });
-	spawns.push_back({ EnemySpawnType::Skeleton, {34.f, 2.0f} });
-	enemyMgr.SetBoss(&enemyBoss);
-	enemyMgr.SetSpawns(spawns);
-	enemyMgr.SpawnAll();
+	if (!loadedFromFile)
+	{
+		// fallback: build a single empty-ish room if no file was loaded
+		LevelData lvl{};
+		lvl.rows = ROOM_ROWS;
+		lvl.cols = ROOM_COLS;
+		lvl.spawn = { 2.5f, 3.0f };
+		lvl.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
+
+		for (int x = 0; x < ROOM_COLS; ++x)
+			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
+
+		BuildRoomsFromLevelData(lvl, roomMgr, startRoom);
+	}
+
+	roomMgr.SetCurrentRoom(startRoom);
+	const RoomData& r = roomMgr.GetCurrentRoom();
+	std::cout << "startRoom=" << (int)startRoom
+		<< " L=" << (int)r.leftRoom
+		<< " R=" << (int)r.rightRoom
+		<< " T=" << (int)r.topRoom
+		<< " B=" << (int)r.bottomRoom
+		<< "\n";
+	BuildCurrentRoom();
+	roomTransitionLocked = false;
+	std::cout << "lvl.cols=" << loadedLevel.cols
+		<< " lvl.rows=" << loadedLevel.rows
+		<< "\n";
 }
 
 void GameScene::Update()
@@ -244,10 +514,53 @@ void GameScene::Update()
 		UpdatePauseInput();
 		return;
 	}
+
+	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+
 	player.Update();
-	camera.Update();
 
+	// unlock only when player is back inside room bounds
+	if (roomTransitionLocked)
+	{
+		if (CheckRoomExit() == DIR_NONE)
+			roomTransitionLocked = false;
+	}
 
+	if (!roomTransitionLocked)
+	{
+		RoomDirection exitDir = CheckRoomExit();
+		if (exitDir != DIR_NONE)
+		{
+			if (roomMgr.ChangeRoom(exitDir))
+			{
+				RoomDirection cameFrom = DIR_NONE;
+
+				switch (exitDir)
+				{
+				case DIR_TOP:    cameFrom = DIR_BOTTOM; break;
+				case DIR_LEFT:   cameFrom = DIR_RIGHT;  break;
+				case DIR_BOTTOM: cameFrom = DIR_TOP;    break;
+				case DIR_RIGHT:  cameFrom = DIR_LEFT;   break;
+				default: break;
+				}
+
+				BuildCurrentRoom(cameFrom);
+				roomTransitionLocked = true;
+				return;
+			}
+			else
+			{
+				AEVec2 p = player.GetPosition();
+
+				if (p.x < 0.0f) p.x = 0.0f;
+				if (p.x > (float)ROOM_COLS - 0.1f) p.x = (float)ROOM_COLS - 0.1f;
+				if (p.y < 0.0f) p.y = 0.0f;
+				if (p.y > (float)ROOM_ROWS - 0.1f) p.y = (float)ROOM_ROWS - 0.1f;
+
+				player.Reset(p);
+			}
+		}
+	}
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.IsFacingRight(), map);
@@ -257,7 +570,7 @@ void GameScene::Update()
 	const AEVec2 pSize = player.GetStats().playerSize;
 
 
-	attackSystem.ApplyEnemyAttacksToPlayer(player, enemyMgr, &enemyBoss);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, &enemyBoss, map);
 
 	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------
 	//const AEVec2 pPos = player.GetPosition();
@@ -309,7 +622,6 @@ void GameScene::Update()
 		});
 	*/
 
-	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 	trapMgr.Update(dt, player);
 
 	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
@@ -343,8 +655,8 @@ void GameScene::Update()
 	//}
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
-	if (UI::restartRun) { // Allow restart run from game over screen (i.e. load game scene again).
-		UI::restartRun = false;
+	if (UI::GetRestartStatus()) { // Allow restart run from game over screen (i.e. load game scene again).
+		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
 
 		Time::GetInstance().ResetElapsedTime();
@@ -364,6 +676,12 @@ void GameScene::Update()
 
 void GameScene::Render()
 {
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(1.f);
+	AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+	AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+
 	Background::Render();
 	map.Render();
 	//trapMgr.Render();   // for debug
@@ -727,10 +1045,10 @@ void GameScene::RenderPauseOverlay()
 		const int maxCards = cols * maxRows; // 9
 
 		// Slightly smaller cards
-		const float cardW = 150.0f;   
-		const float cardH = 212.0f;   
-		const float gapX = 50.0f;    
-		const float gapY = 30.0f;    
+		const float cardW = 150.0f;
+		const float cardH = 212.0f;
+		const float gapX = 50.0f;
+		const float gapY = 30.0f;
 
 		const int count = (int)buffs.size();
 		const int drawCount = (count < maxCards) ? count : maxCards;
@@ -806,7 +1124,7 @@ void GameScene::RenderPauseOverlay()
 				DrawTextPx(
 					pauseFontDesc,
 					desc,
-					120.0f, h - 95.0f, 1.0f,   
+					120.0f, h - 95.0f, 1.0f,
 					0.9f, 0.9f, 0.9f, 1.0f
 				);
 			}

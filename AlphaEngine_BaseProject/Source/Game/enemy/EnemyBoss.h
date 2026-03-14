@@ -6,8 +6,56 @@
 #include "../../Editor/EditorUtils.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../../Utils/Box.h"
+#include "../Camera.h"
 
+struct SpecialAttack
+{
+    AEVec2 pos{ 0.f, 0.f };
+    AEVec2 vel{ 0.f, 0.f };
+    float  radius{ 0.16f };
+    float  life{ 1.5f };
+    u32    color{ 0xFF66CCFF };
 
+    float debugW{ 0.5f };
+    float debugH{ 1.20f };
+
+    bool alive() const { return life > 0.f; }
+
+    void Update(float dt)
+    {
+        AEVec2 disp;
+        AEVec2Scale(&disp, &vel, dt);
+        AEVec2Add(&pos, &pos, &disp);
+        life -= dt;
+    }
+
+    void Render(Sprite& vfx, float sx, float sy) const
+    {
+        AEMtx33 m;
+        const bool faceRight = (vel.x >= 0.0f);
+
+        AEMtx33Scale(&m, sx, sy);
+
+        float px = vfx.metadata.pivot.x;
+        float py = vfx.metadata.pivot.y;
+
+        if (!faceRight)
+            px = 1.0f - px;
+
+        AEMtx33TransApply(
+            &m, &m,
+            pos.x - (0.5f - px),
+            pos.y - (0.5f - py)
+        );
+
+        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+        AEGfxSetTransform(m.m);
+
+        AEGfxSetBlendMode(AE_GFX_BM_ADD);
+        vfx.Render();
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    }
+};
 
 class EnemyBoss : public IDamageable, Inspectable
 {
@@ -38,6 +86,9 @@ public:
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
     void SpawnImpactBurst();
+    void SpawnSpecialTrail(const SpecialAttack& s);
+    void SpawnSpecialImpactBurst(const AEVec2& hitPos);
+    void SpawnSpecialMuzzleBurst(const AEVec2& spawnPos, float dir);
     void SpawnSpellChargeVfx(float dt);
 
     bool IsDead() const override { return isDead; }
@@ -136,7 +187,7 @@ private:
 
     // Debug / collider size (use AEVec2 like Player)
     AEVec2 size{ 0.8f, 0.8f };
-    bool debugDraw{ true };
+    bool debugDraw{ false };
 
     // --- Health / damage ---
     int   maxHP{ 50 };

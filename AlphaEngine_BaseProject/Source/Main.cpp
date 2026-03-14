@@ -6,6 +6,7 @@
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
 #include "Editor/Editor.h"
+#include "Game/AudioManager.h"
 
 #include <windows.h>
 #include <imgui.h>
@@ -37,6 +38,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// reset the system modules
 	AESysReset();
+	AudioManager::Init();
 
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
@@ -79,6 +81,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ImGui::DestroyContext();
 
 	// free the system
+	AudioManager::Exit();
 	AESysExit();
 }
 

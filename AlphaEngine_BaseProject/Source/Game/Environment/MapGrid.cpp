@@ -24,10 +24,10 @@ namespace
 	static constexpr int   PLATFORM_COLLISION_WIDTH = 1;
 }
 
-MapGrid::MapGrid(int rows, int cols)
-	: size(rows, cols),
-	tiles(rows* cols),
-	tileCount(rows* cols)
+MapGrid::MapGrid(int cols, int rows)
+	: size(cols, rows),
+	tiles(cols* rows),
+	tileCount(cols* rows)
 {
 	// full texture on a 1x1 quad
 	tileMesh = MeshGenerator::GetSquareMesh(1.f, 1.f, 1.f);
@@ -37,32 +37,8 @@ MapGrid::MapGrid(int rows, int cols)
 	bottomTexture = AEGfxTextureLoad(BOTTOM_PATH);
 	platformTexture = AEGfxTextureLoad(PLATFORM_PATH);
 
-	// simple fallback border layout
-	for (int x = 0; x < size.x; ++x)
-	{
-		tiles[0 * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
-
-		if (size.y > 1)
-			tiles[1 * size.x + x].type = MapTile::Type::GROUND_SURFACE;
-
-		tiles[(size.y - 1) * size.x + x].type = MapTile::Type::GROUND_BOTTOM;
-
-		if (size.y > 1)
-			tiles[(size.y - 2) * size.x + x].type = MapTile::Type::GROUND_SURFACE;
-	}
-
-	for (int y = 0; y < size.y; ++y)
-	{
-		tiles[y * size.x + 0].type = MapTile::Type::GROUND_BODY;
-
-		if (size.x > 1)
-			tiles[y * size.x + 1].type = MapTile::Type::GROUND_BODY;
-
-		tiles[y * size.x + (size.x - 1)].type = MapTile::Type::GROUND_BODY;
-
-		if (size.x > 1)
-			tiles[y * size.x + (size.x - 2)].type = MapTile::Type::GROUND_BODY;
-	}
+	for (auto& t : tiles)
+		t.type = MapTile::Type::NONE;
 }
 
 MapGrid::MapGrid(const char*) : MapGrid(10, 10)
@@ -135,9 +111,9 @@ void MapGrid::Render()
 	WorldToGridCoordsClamped(bottomLeft, minX, minY);
 	WorldToGridCoordsClamped(topRight, maxX, maxY);
 
-	for (int y = minY; y < maxY; ++y)
+	for (int y = minY; y <= maxY; ++y)
 	{
-		for (int x = minX; x < maxX; ++x)
+		for (int x = minX; x <= maxX; ++x)
 		{
 			const MapTile* tile = GetTile(x, y);
 			if (tile == nullptr || tile->type == MapTile::Type::NONE)
@@ -421,6 +397,6 @@ inline void MapGrid::WorldToGridCoords(const AEVec2& worldPosition, int& outX, i
 
 inline void MapGrid::WorldToGridCoordsClamped(const AEVec2& worldPosition, int& outX, int& outY)
 {
-	outX = (int)AEClamp(floorf(worldPosition.x), 1, (float)size.x - 1);
-	outY = (int)AEClamp(floorf(worldPosition.y), 1, (float)size.y - 1);
+	outX = (int)AEClamp(floorf(worldPosition.x), 0, (float)size.x - 1);
+	outY = (int)AEClamp(floorf(worldPosition.y), 0, (float)size.y - 1);
 }

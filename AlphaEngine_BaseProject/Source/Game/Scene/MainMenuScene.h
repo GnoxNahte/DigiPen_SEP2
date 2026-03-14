@@ -4,6 +4,7 @@
 #include "../Environment/MapGrid.h"
 #include "../Environment/traps.h"
 #include "../enemy/EnemyManager.h"
+#include "../../Game/Rooms/RoomData.h"
 #include "GSM.h"
 #include <string>
 #include <vector>
@@ -29,6 +30,7 @@ private:
     Camera       camera;
 
     int mapCols = 100;
+    int mapRows = 100;
     int uiFont = -1;
 
     // vine decoration

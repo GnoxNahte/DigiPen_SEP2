@@ -1,14 +1,16 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <utility>
 
 #include "AEEngine.h"
-#include "../../Utils/Box.h" 
+#include "../../Source/Utils/Box.h" 
 
 class Player;
 
 bool IntersectsBox(const Box& a, const Box& b);
-Box MakePlayerBox(const Player& p);
+Box MakePlayerFeetBox(const Player& p);
+Box MakePlayerBodyBox(const Player& p);
 
 class Trap
 {
@@ -50,6 +52,7 @@ public:
     LavaPool(const Box& box, int damagePerTick, float tickInterval);
 
 protected:
+    void OnPlayerEnter(Player& player) override;
     void OnPlayerStay(float dt, Player& player) override;
 
 private:
@@ -77,6 +80,8 @@ public:
     SpikePlate(const Box& box, float upTime, float downTime, int damageOnHit, bool startDisabled);
 
     void Update(float dt, Player& player) override;
+    void ActivateFromPlate();
+    void OnPlayerEnter(Player& player) override;
 
 protected:
     void OnPlayerStay(float dt, Player& player) override;
@@ -89,8 +94,9 @@ private:
     bool  m_spikesUp = false;
     float m_phaseTimer = 0.f;
 
-    float m_hitCooldown = 0.25f;
+    float m_hitCooldown = 0.5f;
     float m_hitTimer = 0.f;
+    bool m_lockedOn = false;
 };
 
 class TrapManager

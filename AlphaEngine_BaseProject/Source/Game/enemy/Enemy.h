@@ -56,6 +56,7 @@ public:
         int animIdle = 3;
         int animHurt = 4;
         int animDeath = 1;
+
     };
 
 public:
@@ -78,7 +79,9 @@ public:
 
     // For GameScene to apply damage later
     bool PollAttackHit() { return !dead && attack.PollHit(); }
-    
+
+    Preset GetPreset() const { return presetType; }
+    bool IsDruid() const { return presetType == Preset::Druid; }
 
     //For enemy life system
     bool IsDead() const { return dead; }
@@ -115,6 +118,7 @@ private:
     void UpdateAnimation();
     static Config MakePreset(Preset preset);
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
+    Preset presetType = Preset::Skeleton;
 
 private:
     Config cfg;
@@ -147,7 +151,8 @@ private:
     int lastHitAttackId{ -1 };
   // NEW internal helper
     bool HasGroundAhead(MapGrid& map, float dirX) const;
-  
+    bool HasWallAhead(MapGrid& map, float dirX) const;
+
 
 
 };
