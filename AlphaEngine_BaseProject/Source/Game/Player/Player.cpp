@@ -13,6 +13,19 @@
 #include "../../Utils/PhysicsUtils.h"
 #include "../AudioManager.h"
 
+namespace
+{
+    float PercentToScale(int percentage)
+    {
+        return 1.f + percentage / 100.f;
+    }
+
+    float PercentToScaleInvert(int percentage)
+    {
+        return 1.f - percentage / 100.f;
+    }
+}
+
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
@@ -144,7 +157,7 @@ void Player::Reset(const AEVec2& initialPos)
 	lastAttackHeld = std::numeric_limits<f64>::lowest(); 
 	dashStartTime = std::numeric_limits<f64>::lowest();
 
-    health = stats.maxHealth;
+    health = maxHealth = stats.maxHealth;
     hasAppliedRecoil = false;
     lastDamagedTime = std::numeric_limits<f64>::lowest();
     lastAttackEndTime = std::numeric_limits<f64>::lowest();
@@ -152,9 +165,11 @@ void Player::Reset(const AEVec2& initialPos)
 
     buff_MoveSpeedMulti = 1.f;
     buff_DmgReduction = 1.f;
+    buff_TrapDmgReduction = 1.f;
     buff_critChance = 1.f;
     buff_critDmgMulti = 1.f;
     buff_DmgMultiLowHP = 1.f;
+    buff_DashCooldownMulti = 1.f;
 
     attackedEnemies.clear();
     sprite.SetState(AnimState::IDLE_W_SWORD);
@@ -183,6 +198,13 @@ bool Player::IsFacingRight() const
     return facingDirection.x > 0.f;
 }
 
+float Player::GetDashCooldownPercentage() const
+{
+    float timeSinceDash = static_cast<float>(Time::GetInstance().GetScaledElapsedTime() - dashStartTime);
+    float percentage = timeSinceDash / (stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime);
+    return AEClamp(percentage, 0.f, 1.f);
+}
+
 Player::AnimState Player::GetAnimState() const
 {
     return static_cast<AnimState>(sprite.GetState());
@@ -208,7 +230,7 @@ void Player::UpdateInput()
     if (AEInputCheckCurr(AEVK_X))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown + stats.dashTime)
+    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime)
         dashStartTime = currTime;
 }
 
@@ -463,7 +485,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     int damage = attack.damage;
     // When low health, increase damage
     // todo - Change to precalculate? make percentage into another variable too
-    if (health < 0.2f * stats.maxHealth)
+    if (health < 0.2f * maxHealth)
         damage = static_cast<int>(damage * buff_DmgMultiLowHP);
 
     // Crit
@@ -613,7 +635,7 @@ void Player::UpdateAnimation()
     {
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
             SetAttack(AIR_ATTACK_SMASH);
-        else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
+        else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END && !IsAttacking())
             SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
         else if (!IsAnimGroundAttack())
             SetAttack(ATTACK_1);
@@ -656,14 +678,25 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
     switch (card.type)
     {
     case CARD_TYPE::HERMES_FAVOR:   buff_MoveSpeedMulti     *= PercentToScale(card.effectValue1); break;
-    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= 1.f - (card.effectValue1 / 100.f); break;
-    case CARD_TYPE::REVITALIZE:     health = stats.maxHealth; break;
+    case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= PercentToScaleInvert(card.effectValue1); break;
+    case CARD_TYPE::REVITALIZE:     
+        health = min(static_cast<int>(health + card.effectValue1 / 100.f * maxHealth), maxHealth); break;
     case CARD_TYPE::SHARPEN:        
         buff_critDmgMulti   *= PercentToScale(card.effectValue1);
         buff_critChance     *= PercentToScale(card.effectValue2); 
         break;
     case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
-    //case CARD_TYPE::FEATHERWEIGHT: break;
+    case CARD_TYPE::FLEETING_STEP:  buff_DashCooldownMulti  *= PercentToScaleInvert(card.effectValue1); break;
+    case CARD_TYPE::SUREFOOTED:     buff_TrapDmgReduction   *= PercentToScaleInvert(card.effectValue1); break;
+    case CARD_TYPE::DEEP_VITALITY: {
+        int newMaxHealth = static_cast<int>(maxHealth * PercentToScale(card.effectValue1));
+        float percentage = static_cast<float>(health) / maxHealth;
+        health = static_cast<int>(percentage * newMaxHealth);
+        maxHealth = newMaxHealth;
+        break;
+    }
+    case CARD_TYPE::HAND_OF_FATE:   buff_critChance     *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::SUNDERING_BLOW: buff_critDmgMulti   *= PercentToScale(card.effectValue1); break;
     
     // Not handling
     case CARD_TYPE::SWITCH_IT_UP: 
@@ -673,11 +706,6 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         std::cout << "Player.OnBuffSelectedEvent - Unknown card type\n";
         break;
     }
-}
-
-float Player::PercentToScale(int percentage)
-{
-    return 1.f + percentage / 100.f;
 }
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }
@@ -732,16 +760,19 @@ void Player::DrawInspector()
         ImGui::DragFloat2("Facing direction", &facingDirection.x, 0.1f);
 
         ImGui::SeparatorText("Stats");
-        ImGui::SliderInt("Health", &health, 0, stats.maxHealth);
+        ImGui::SliderInt("Health", &health, 0, maxHealth);
+        ImGui::TextDisabled("Max Health: %d", maxHealth);
         ImGui::TextDisabled("Is attacking: %s", IsAttacking() ? "Y" : "N");
         ImGui::TextDisabled("Sprite index: %s", std::to_string(sprite.GetState()).c_str());
         
         ImGui::SeparatorText("Buffs");
         ImGui::DragFloat("Move Speed", &buff_MoveSpeedMulti, 0.1f);
         ImGui::DragFloat("Damage Reduction", &buff_DmgReduction, 0.1f);
+        ImGui::DragFloat("Trap Damage Reduction", &buff_TrapDmgReduction, 0.1f);
         ImGui::DragFloat("Crit Chance", &buff_critChance, 0.1f);
         ImGui::DragFloat("Crit Dmg", &buff_critDmgMulti, 0.1f);
         ImGui::DragFloat("Damage Low HP", &buff_DmgMultiLowHP, 0.1f);
+        ImGui::DragFloat("Dash Cooldown Multi", &buff_DashCooldownMulti, 0.1f);
     }
 
     // === Stats ===

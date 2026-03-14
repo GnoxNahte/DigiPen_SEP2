@@ -165,14 +165,6 @@ void MapGrid::Render()
 			AEGfxMeshDraw(tileMesh, AE_GFX_MDM_TRIANGLES);
 		}
 	}
-
-	// DEBUG ONLY, TODO delete
-	AEVec2 mousePos;
-	AEExtras::GetCursorWorldPosition(mousePos);
-	Vec2Int cell;
-	WorldToGridCoords(mousePos, cell.x, cell.y);
-	std::string ppos = "Mouse Grid Cell: " + std::to_string(cell.x) + ", " + std::to_string(cell.y);
-	QuickGraphics::PrintText(ppos.c_str(), -1, 0.75f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 }
 
 inline const MapTile* MapGrid::GetTile(int x, int y)
