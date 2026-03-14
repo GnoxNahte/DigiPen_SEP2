@@ -91,6 +91,7 @@ struct PlayerStats
     float knockbackAmt;
     float maxKnockbackDmg; // At max dmg, apply full knockback
     float attackBuffer;
+    float attackComboBuffer;
     float downAirAttackFallSpeed;
 
     std::array<AttackStats, 3> groundAttacks;

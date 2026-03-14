@@ -106,6 +106,8 @@ private:
     int health;
     bool hasAppliedRecoil; // For current attack
     f64 lastDamagedTime;
+    f64 lastAttackEndTime;
+    AnimState lastAttackCombo;
 
     // === Buffs ===
     float buff_MoveSpeedMulti;

@@ -146,6 +146,8 @@ void Player::Reset(const AEVec2& initialPos)
     health = stats.maxHealth;
     hasAppliedRecoil = false;
     lastDamagedTime = std::numeric_limits<f64>::lowest();
+    lastAttackEndTime = std::numeric_limits<f64>::lowest();
+    lastAttackCombo = AnimState::ATTACK_1;
 
     buff_MoveSpeedMulti = 1.f;
     buff_DmgReduction = 1.f;
@@ -523,12 +525,14 @@ void Player::UpdateAttacks()
 
 void Player::OnAttackAnimEnd(int spriteStateIndex)
 {
-    attackedEnemies.clear();
-    hasAppliedRecoil = false;
-
     AnimState spriteState = static_cast<AnimState>(spriteStateIndex);
 
-    bool inAttackInputBuffer = static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer;
+    attackedEnemies.clear();
+    hasAppliedRecoil = false;
+    lastAttackEndTime = Time::GetInstance().GetScaledElapsedTime();
+    lastAttackCombo = spriteState;
+
+    bool inAttackInputBuffer = Time::GetInstance().GetScaledElapsedTime() - lastAttackHeld < stats.attackBuffer;
     bool isLastAttack = spriteState == AnimState::ATTACK_END || spriteState == AnimState::AIR_ATTACK_END;
     
     // If not in attack input buffer OR is last attack in combo, 
@@ -592,21 +596,26 @@ void Player::UpdateTrails()
 
 void Player::UpdateAnimation()
 {
-    if (IsAttacking() || IsDead())
+    //std::cout << GetAnimState();
+
+    if (IsDead())
     {
         sprite.Update();
         return;
     }
 
+    f64 time = Time::GetInstance().GetScaledElapsedTime();
     // If player is trying to attack (including input buffer)
-    if (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastAttackHeld < stats.attackBuffer)
+    if (time - lastAttackHeld < stats.attackBuffer)
     {
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
             SetAttack(AIR_ATTACK_SMASH);
-        else
+        else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
+            SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
+        else if (!IsAnimGroundAttack())
             SetAttack(ATTACK_1);
     }
-    else
+    else if (!IsAttacking())
     {
         if ((isLeftWallCollided || isRightWallCollided) && velocity.y != 0.f)
         {
