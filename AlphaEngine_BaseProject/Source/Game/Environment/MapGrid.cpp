@@ -6,6 +6,8 @@
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
 #include "../../Utils/QuickGraphics.h"
+#include "../../Editor/Editor.h"
+
 #undef min
 #undef max
 
@@ -187,6 +189,14 @@ void MapGrid::Render()
 			AEGfxMeshDraw(tileMesh, AE_GFX_MDM_TRIANGLES);
 		}
 	}
+
+	// DEBUG ONLY, TODO delete
+	AEVec2 mousePos;
+	AEExtras::GetCursorWorldPosition(mousePos);
+	Vec2Int cell;
+	WorldToGridCoords(mousePos, cell.x, cell.y);
+	std::string ppos = "Mouse Grid Cell: " + std::to_string(cell.x) + ", " + std::to_string(cell.y);
+	QuickGraphics::PrintText(ppos.c_str(), -1, 0.75f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 }
 
 inline const MapTile* MapGrid::GetTile(int x, int y)
@@ -243,7 +253,7 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 	AEVec2 ray{ end - start };
 	float rayDist = AEExtras::Dist(ray);
 
-	Vec2Int step{ sign(ray.x), sign(ray.y) };
+	Vec2Int step{ Sign(ray.x), Sign(ray.y) };
 
 	Vec2Int currCell{ start };
 
@@ -257,7 +267,7 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 	//
 	// delta: Amt to move each step
 	AEVec2	tMax{ (currCell - start + Vec2Int::Max(step, {0,0})) / ray },
-			delta{ AEExtras::Abs(1.f / ray) }; // Amt to move tMax on each step
+			delta{ AEExtras::Abs(1.f / ray) };
 
 	// When divide by 0
 	if (ray.x == 0.f)
@@ -276,12 +286,20 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 	{
 		if (IsSolidAtGridCell(currCell.x, currCell.y))
 		{
+			if (Editor::GetShowColliders())
+			{
+				QuickGraphics::DrawRay(start, start + (isAxisX ? (tMax.x - delta.x) : (tMax.y - delta.y)) * ray, 0.1f, 0xAAFF8800);
+				QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, { 1.f, 1.f }, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+			}
+
 			if (isAxisX)
 				return (tMax.x - delta.x) * rayDist;
 			else
 				return (tMax.y - delta.y) * rayDist;
 		}
-		QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, {1.f, 1.f}, 0xFF000088, AE_GFX_MDM_LINES_STRIP);
+
+		if (Editor::GetShowColliders())
+			QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, { 1.f, 1.f }, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
 
 		// Step on the axis where tMax is the smallest
 		if (tMax.x < tMax.y)
@@ -298,6 +316,9 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 		}
 	}
 
+	if (Editor::GetShowColliders())
+		QuickGraphics::DrawRay(start, end, 0.1f, 0xAA88FF88);
+
 	return rayDist;
 }
 
@@ -307,43 +328,44 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 // - Raycasts from 4 vertices of the box
 // - Get min dist from the raycasts
 // - Make it slide
-void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSize, bool ifSlide)
+void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSizeTmp, bool ifSlide)
 {
 	if (currPosition == nextPosition)
 		return;
 
+	//float epsilon = EPSILON;
+	constexpr float epsilon = 0.01f;
+
+	AEVec2 colliderSize = colliderSizeTmp - AEVec2{ epsilon, epsilon };
 	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
 	AEVec2 ray = nextPosition - currPosition;
 	float rayDist = AEExtras::Dist(ray);
 	AEVec2 rayDir = ray / rayDist;
 
-	Vec2Int raySign{ sign(rayDir.x), sign(rayDir.y) };
+	Vec2Int raySign{ Sign_NoZero(rayDir.x), Sign_NoZero(rayDir.y) };
 
-	AEVec2 offset{ halfColliderSize };
-	AEVec2	topRight{ currPosition + offset },
-			botLeft { currPosition - offset };
+	float dist = rayDist;
+	AEVec2 corner{ currPosition + raySign * halfColliderSize };
+	dist = std::min(dist, Raycast(corner, corner + ray));
 
-	offset.x *= -1.f;
-	AEVec2	topLeft { currPosition + offset },
-			botRight{ currPosition - offset };
-
-	float hitTopRight = Raycast(topRight, topRight + ray);
-	float hitBotLeft  = Raycast(botLeft, botLeft + ray);
-	float hitTopLeft  = Raycast(topLeft, topLeft + ray);
-	float hitBotRight = Raycast(botRight, botRight + ray);
-
-	float dist = std::min({ hitTopRight, hitBotLeft, hitTopLeft, hitBotRight });
+	corner.x -= colliderSize.x * raySign.x;
+	dist = std::min(dist, Raycast(corner, corner + ray));
 	
+	corner.x += colliderSize.x * raySign.x; // Revert previous offset
+	corner.y -= colliderSize.y * raySign.y;
+	dist = std::min(dist, Raycast(corner, corner + ray));
+
 	// EPSILON to prevent clipping into the tile
-	currPosition += rayDir * dist - raySign * EPSILON;
+	currPosition += rayDir * dist - Vec2Int{ Sign(rayDir.x), Sign(rayDir.y) } * epsilon;
 
 	// ===== Sliding =====
-	if (!ifSlide)
+	if (!ifSlide || dist == rayDist)
 		return;
 	AEVec2 remainingRay = rayDir * (rayDist - dist);
 
 	// Check raycast for x (on the leading side and in that direction)
+	if (std::abs(remainingRay.x) > epsilon)
 	{
 		AEVec2 point = currPosition + raySign * halfColliderSize;
 		float x1 = Raycast(point, { point.x + remainingRay.x, point.y });
@@ -355,6 +377,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	}
 
 	// Check raycast for y (on the leading side and in that direction)
+	if (std::abs(remainingRay.y) > epsilon)
 	{
 		AEVec2 point = currPosition + raySign * halfColliderSize;
 		float y1 = Raycast(point, { point.x, point.y + remainingRay.y });

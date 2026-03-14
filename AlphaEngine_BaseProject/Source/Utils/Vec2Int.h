@@ -1,5 +1,8 @@
 #pragma once
 #include <AEVec2.h>
+#include <iostream>
+#include <iomanip>
+
 /**
  * @brief Similar to AEVec2 but this uses ints instead
  */
@@ -78,4 +81,10 @@ inline AEVec2 operator-(AEVec2 lhs, const Vec2Int& rhs)
 	lhs.x -= rhs.x;
 	lhs.y -= rhs.y;
 	return lhs;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Vec2Int& v)
+{
+	os << "(" << std::setw(2) << v.x << "," << v.y << ")";
+	return os;
 }

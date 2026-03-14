@@ -189,7 +189,13 @@ namespace AEExtras
 }
 
 template <typename T>
-inline int sign(T val)
+inline int Sign(T val)
 {
 	return (val > T(0)) - (val < T(0));
+}
+
+template <typename T>
+inline int Sign_NoZero(T val)
+{
+	return (val >= T(0)) - (val < T(0));
 }

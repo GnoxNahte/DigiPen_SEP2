@@ -47,6 +47,9 @@ void Player::Update()
         return;
     }
 
+    if (Time::GetInstance().GetTimeScale() == 0.f)
+        return;
+
     UpdateInput();
     UpdateTriggerColliders();
 
@@ -100,6 +103,21 @@ void Player::Render()
     }
 
     AEGfxSetTransparency(1.f);
+
+    //// Test dynamic collision
+    //AEVec2 mousePos;
+    //AEExtras::GetCursorWorldPosition(mousePos);
+    //mousePos.y += 0.5f * stats.playerSize.y;
+    //AEVec2 collidedPos = position;
+    //AEVec2 vel = mousePos - position;
+    //map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize, true);
+    ////QuickGraphics::DrawRect(mousePos, stats.playerSize, ifCollide ? 0xFFFF0000 : 0xFF00FF00);
+    //QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
+    //QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
+    //std::cout << position << "     " << collidedPos << vel << "\n";
+
+    //if (AEInputCheckCurr(AEVK_RBUTTON))
+    //    position = collidedPos;
 }
 
 void Player::Reset(const AEVec2& initialPos)
@@ -167,7 +185,6 @@ Player::AnimState Player::GetAnimState() const
     return static_cast<AnimState>(sprite.GetState());
 }
 
-
 void Player::UpdateInput()
 {
     float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
@@ -194,24 +211,16 @@ void Player::UpdateInput()
 
 void Player::UpdateTriggerColliders()
 {
-    AEVec2 tmpPosition;
-
     bool wasGroundCollided = isGroundCollided;
-    AEVec2Add(&tmpPosition, &position, &stats.groundChecker.position);
-    isGroundCollided = map->CheckBoxCollision(tmpPosition, stats.groundChecker.size);
+    isGroundCollided = map->CheckBoxCollision(position + stats.groundChecker.position, stats.groundChecker.size);
 
     // If in air -> grounded
     if (!wasGroundCollided && isGroundCollided)
         HandleLanding();
 
-    AEVec2Add(&tmpPosition, &position, &stats.ceilingChecker.position);
-    isCeilingCollided = map->CheckBoxCollision(tmpPosition, stats.ceilingChecker.size);
-
-    AEVec2Add(&tmpPosition, &position, &stats.leftWallChecker.position);
-    isLeftWallCollided = map->CheckBoxCollision(tmpPosition, stats.leftWallChecker.size);
-
-    AEVec2Add(&tmpPosition, &position, &stats.rightWallChecker.position);
-    isRightWallCollided = map->CheckBoxCollision(tmpPosition, stats.rightWallChecker.size);
+    isCeilingCollided   = map->CheckBoxCollision(position + stats.ceilingChecker.position,  stats.ceilingChecker.size);
+    isLeftWallCollided  = map->CheckBoxCollision(position + stats.leftWallChecker.position, stats.leftWallChecker.size);
+    isRightWallCollided = map->CheckBoxCollision(position + stats.rightWallChecker.position,stats.rightWallChecker.size);
 }
 
 void Player::HorizontalMovement()
@@ -256,7 +265,7 @@ void Player::HorizontalMovement()
             velocity.x += stats.moveAcceleration * inputDirection.x * dt * buff_MoveSpeedMulti;
 
             float maxSpeed = (isGroundCollided ? stats.maxSpeed : stats.airStrafeMaxSpeed) * buff_MoveSpeedMulti;
-            if (IsAttacking())
+            if (IsAttacking() && isGroundCollided)
                 maxSpeed *= stats.attackMaxSpeedMultiplier;
             velocity.x = AEClamp(velocity.x, -maxSpeed, maxSpeed);
         }
@@ -327,7 +336,12 @@ void Player::HandleGravity()
     else
     {
         float acceleration, maxFallSpeed;
-        if (IsAnimAirAttack())
+        if (IsDashing())
+        {
+            acceleration = 0.f;
+            maxFallSpeed = 0.f;
+        }
+        else if (IsAnimAirAttack())
         {
             acceleration = -200.f;
             maxFallSpeed = stats.downAirAttackFallSpeed;
@@ -393,11 +407,10 @@ void Player::PerformJump()
 void Player::UpdateCollisions(const AEVec2& nextPosition)
 {
     // === Map collisions ===
-    // TODO (IMPT): Uncomment
     map->HandleBoxCollision(position, velocity, nextPosition, stats.playerSize, true);
     
     // === Enemy collisions ===
-    if (IsDashing())
+    if (IsDashing() || IsAnimAirAttack())
         return;
 
     IDamageable* damageable = IfCollideEnemy({ position, stats.playerSize });

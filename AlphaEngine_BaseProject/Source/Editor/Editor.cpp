@@ -7,6 +7,8 @@
 #include "../Utils/FileHelper.h"
 #include "../Game/Time.h"
 
+#undef GetObject
+
 void Editor::Register(Inspectable* obj)
 {
 	Get().gameObjs.emplace_back(obj);
@@ -179,12 +181,18 @@ void Editor::LoadEditorPrefs()
 	if (!success)
 		return;
 
-	SceneState sceneState = static_cast<SceneState>(doc["lastOpenedScene"].GetInt());
-	// Prevent loading QUIT or RESTART states. Something went wrong but not don't read for now
-	if (sceneState >= 0)
-		editorPrefs.lastOpenedScene = sceneState;
-	else
-		std::cout << "Failed to load scene editor prefs\n";
+	if (doc.HasMember("showColliders"))
+		showColliders = doc["showColliders"].GetBool();
+
+	if (doc.HasMember("lastOpenedScene"))
+	{
+		SceneState sceneState = static_cast<SceneState>(doc["lastOpenedScene"].GetInt());
+		// Prevent loading QUIT or RESTART states. Something went wrong but not don't read for now
+		if (sceneState >= 0)
+			editorPrefs.lastOpenedScene = sceneState;
+		else
+			std::cout << "Failed to load scene editor prefs\n";
+	}
 }
 
 void Editor::SaveEditorPrefs()
@@ -193,6 +201,7 @@ void Editor::SaveEditorPrefs()
 	doc.SetObject();
 	auto& allocator = doc.GetAllocator();
 	doc.AddMember("lastOpenedScene", editorPrefs.lastOpenedScene, allocator);
+	doc.AddMember("showColliders", showColliders, allocator);
 
 	FileHelper::TryWriteJsonFile(editorPrefsPath, doc, true);
 }
@@ -202,4 +211,6 @@ void Editor::OnSceneChange(const SceneChangeEvent& ev)
 	editorPrefs.lastOpenedScene = ev.currentState;
 	
 	focusedObject = nullptr;
+
+	SaveEditorPrefs();
 }
