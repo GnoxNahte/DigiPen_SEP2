@@ -8,6 +8,7 @@
 #include "Enemy.h"     
 #include "Enemyboss.h"
 #include "IDamageable.h"
+#include "../Rooms/RoomData.h"
 
 enum class EnemySpawnType
 {
@@ -17,6 +18,7 @@ enum class EnemySpawnType
 };
 
 class EnemyBoss; 
+
 class EnemyManager 
 {
 public:
@@ -28,6 +30,8 @@ public:
     };
 
 public:
+
+ 
 
 
     void SetBoss(EnemyBoss* b) {
@@ -63,13 +67,31 @@ public:
         switch (s.type)
         {
         case EnemySpawnType::Druid:
-            enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y));
-            break;
+        {
+            auto e = std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y);
+            //DEPTH IS USE TO SCALE THE HEALTH AND DAMAGE OR REGULAR ENEMY
+            int depth = 0;
+            if (currentRoomId != ROOM_NONE)
+                depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
+
+            e->ApplyRoomScaling(depth * 10, depth * 1);
+            enemies.emplace_back(std::move(e));
+        }
+        break;
 
         case EnemySpawnType::Skeleton:
-            enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y));
-            break;
+        {
+            auto e = std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y);
+            
+            int depth = 0;
+            if (currentRoomId != ROOM_NONE)
+                depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
 
+            e->ApplyRoomScaling(depth * 10, depth * 1);
+            enemies.emplace_back(std::move(e));
+        }
+        break;
+    
         case EnemySpawnType::Boss:
             if (boss)
             {
@@ -129,12 +151,30 @@ public:
             switch (s.type)
             {
             case EnemySpawnType::Druid:
-                enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y));
-                break;
+            {
+                auto e = std::make_unique<Enemy>(Enemy::Preset::Druid, s.pos.x, s.pos.y);
+                //DEPTH IS USE TO SCALE THE HEALTH AND DAMAGE OR REGULAR ENEMY
+                int depth = 0;
+                if (currentRoomId != ROOM_NONE)
+                    depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
+
+                e->ApplyRoomScaling(depth * 10, depth * 1);
+                enemies.emplace_back(std::move(e));
+            }
+            break;
 
             case EnemySpawnType::Skeleton:
-                enemies.emplace_back(std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y));
-                break;
+            {
+                auto e = std::make_unique<Enemy>(Enemy::Preset::Skeleton, s.pos.x, s.pos.y);
+
+                int depth = 0;
+                if (currentRoomId != ROOM_NONE)
+                    depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
+
+                e->ApplyRoomScaling(depth * 10, depth * 1);
+                enemies.emplace_back(std::move(e));
+            }
+            break;
 
             case EnemySpawnType::Boss:
                 if (boss)
@@ -168,9 +208,36 @@ public:
 
     int Count() const { return (int)enemies.size(); }
 
+    void SetCurrentRoomID(RoomID id)
+    {
+        currentRoomId = id;
+    }
+
+
+
 private:
     std::vector<SpawnInfo> spawns;                     // editor/level data
     std::vector<std::unique_ptr<Enemy>> enemies;       // runtime instances
     IDamageable* bossDamageable = nullptr;
 	EnemyBoss* boss = nullptr; // optional direct pointer if you need boss-specific logic
+    
+    RoomID currentRoomId = ROOM_1;
+    /*
+    Enemy::Config BuildScaledConfig(Enemy::Preset preset) const
+    {
+        Enemy::Config cfg = Enemy::MakePreset(preset);
+
+        int depth = 0;
+        if (currentRoomId != ROOM_NONE)
+            depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
+
+        cfg.maxHp += depth * 10;          // example: +10 hp per deeper room
+        cfg.attackDamage += depth * 1;    // example: +1 damage per deeper room
+
+        if (cfg.maxHp < 1) cfg.maxHp = 1;
+        if (cfg.attackDamage < 1) cfg.attackDamage = 1;
+
+        return cfg;
+    }
+    */
 };
