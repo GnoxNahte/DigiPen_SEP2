@@ -73,7 +73,7 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
     meleeHitbox.position.y = bPos.y + 0.10f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& )
+bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE )
 {
     if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;

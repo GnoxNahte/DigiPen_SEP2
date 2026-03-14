@@ -121,7 +121,7 @@ public:
 
     int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return invulnTimer > 0.f; }
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg);

@@ -62,7 +62,7 @@ public:
     const AEVec2& GetHurtboxPos() const override;
     const AEVec2& GetHurtboxSize() const override;
     bool IsDead() const override;
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_ENEMY_ATTACK) override;
 
     // === Getters ===
     const AEVec2&       GetPosition() const;

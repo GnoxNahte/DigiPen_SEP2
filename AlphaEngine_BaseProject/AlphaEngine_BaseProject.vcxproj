@@ -164,6 +164,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h" />
     <ClInclude Include="Saves\SaveData.h" />
     <ClInclude Include="Saves\SaveSystem.h" />
+    <ClInclude Include="Source\CommonTypes.h" />
     <ClInclude Include="Source\EditorUI.h" />
     <ClInclude Include="Source\Editor\Editor.h" />
     <ClInclude Include="Source\Editor\EditorUtils.h" />

@@ -166,7 +166,7 @@ void Player::Reset(const AEVec2& initialPos)
     buff_MoveSpeedMulti = 1.f;
     buff_DmgReduction = 1.f;
     buff_TrapDmgReduction = 1.f;
-    buff_critChance = 1.f;
+    buff_critChance = 0.f;
     buff_critDmgMulti = 1.f;
     buff_DmgMultiLowHP = 1.f;
     buff_DashCooldownMulti = 1.f;
@@ -483,16 +483,22 @@ void Player::SetAttack(AnimState toState)
 void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
 {
     int damage = attack.damage;
-    // When low health, increase damage
-    // todo - Change to precalculate? make percentage into another variable too
-    if (health < 0.2f * maxHealth)
-        damage = static_cast<int>(damage * buff_DmgMultiLowHP);
+
+    // 100% crit if low health
+    // Else crit depending on chance
+    bool isCrit = health < 0.2f * maxHealth || AERandFloat() < buff_critChance;
 
     // Crit
-    if (AERandFloat() < buff_critChance)
+    if (isCrit)
+    {
         damage = static_cast<int>(damage * buff_critDmgMulti);
+        damageable.TryTakeDamage(damage, position, DAMAGE_TYPE_CRIT);
+    }
+    else
+    {
+        damageable.TryTakeDamage(damage, position, DAMAGE_TYPE_ENEMY_ATTACK);
+    }
 
-    damageable.TryTakeDamage(damage, position);
     attackedEnemies.push_back(&damageable);
 
     if (!hasAppliedRecoil)
@@ -683,7 +689,7 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         health = min(static_cast<int>(health + card.effectValue1 / 100.f * maxHealth), maxHealth); break;
     case CARD_TYPE::SHARPEN:        
         buff_critDmgMulti   *= PercentToScale(card.effectValue1);
-        buff_critChance     *= PercentToScale(card.effectValue2); 
+        buff_critChance     += card.effectValue2 / 100.f; 
         break;
     case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
     case CARD_TYPE::FLEETING_STEP:  buff_DashCooldownMulti  *= PercentToScaleInvert(card.effectValue1); break;
@@ -695,7 +701,7 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         maxHealth = newMaxHealth;
         break;
     }
-    case CARD_TYPE::HAND_OF_FATE:   buff_critChance     *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::HAND_OF_FATE:   buff_critChance     += card.effectValue1 / 100.f; break;
     case CARD_TYPE::SUNDERING_BLOW: buff_critDmgMulti   *= PercentToScale(card.effectValue1); break;
     
     // Not handling
@@ -712,13 +718,16 @@ const AEVec2& Player::GetHurtboxPos()  const { return position; }
 const AEVec2& Player::GetHurtboxSize() const { return stats.playerSize; }
 bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAnimState() == AnimState::DEATH_LOOP; }
 
-bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin)
+bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
     if (IsInvincible())
+    {
+        //UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_MISS, position);
         return health > 0;
+    }
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_ATTACK, position);
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position);
 
     if (health < dmg)
     {

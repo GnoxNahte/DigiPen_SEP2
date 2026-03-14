@@ -88,7 +88,7 @@ public:
     int  GetHP() const { return hp; }
 
     // Returns true if damage was actually applied.
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
 
  
     //void ApplyDamage(int dmg);
