@@ -71,6 +71,13 @@ void Editor::Update()
 
 	if (AEInputCheckTriggered(AEVK_LCTRL))
 		instance.showColliders = !instance.showColliders;
+
+	if (AEInputCheckTriggered(AEVK_F1))
+		Time::GetInstance().SetTimeScale(0.f);
+	else if (AEInputCheckTriggered(AEVK_F2))
+		Time::GetInstance().SetTimeScale(0.25f);
+	else if (AEInputCheckTriggered(AEVK_F3))
+		Time::GetInstance().SetTimeScale(1.f);
 }
 
 void Editor::DrawInspectors()

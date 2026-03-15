@@ -27,6 +27,13 @@ inline AEVec2& operator-=(AEVec2& lhs, const AEVec2& rhs)
 	return lhs;
 }
 
+inline AEVec2& operator*= (AEVec2& lhs, const AEVec2& rhs)
+{
+	lhs.x *= rhs.x;
+	lhs.y *= rhs.y;
+	return lhs;
+}
+
 inline AEVec2& operator*=(AEVec2& lhs, float rhs)
 {
 	lhs.x *= rhs;
@@ -57,6 +64,12 @@ inline AEVec2 operator+(AEVec2 lhs, const AEVec2& rhs)
 inline AEVec2 operator-(AEVec2 lhs, const AEVec2& rhs)
 {
 	lhs -= rhs;
+	return lhs;
+}
+
+inline AEVec2 operator*(AEVec2 lhs, const AEVec2& rhs)
+{
+	lhs *= rhs;
 	return lhs;
 }
 
@@ -185,6 +198,11 @@ namespace AEExtras
 	inline float Angle(const AEVec2& v)
 	{
 		return atan2f(v.y, v.x);
+	}
+
+	inline bool IsZero(const AEVec2& v)
+	{
+		return v.x == 0 && v.y == 0;
 	}
 }
 

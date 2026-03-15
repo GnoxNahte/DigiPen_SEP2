@@ -38,7 +38,7 @@ struct PlayerStats
     float turnTime;
     float inAirTurnTime;
 
-    float dashSpeed;
+    AEVec2 dashSpeed;
     float dashCooldown;
     float dashTime;
 

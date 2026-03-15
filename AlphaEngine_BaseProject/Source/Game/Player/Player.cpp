@@ -42,6 +42,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
+    particleSystem.emitter.tint.a = 0.5f;
 
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
         OnBuffSelected(ev);
@@ -68,6 +69,17 @@ void Player::Update()
     UpdateTriggerColliders();
 
     // Update velocity
+    if (IsDashing())
+    {
+        AEVec2 speed = stats.dashSpeed * buff_MoveSpeedMulti;
+        // If moving in the same direction
+        if (inputDirection.x * velocity.x >= 0)
+            speed *= 1.5f;
+        if (inputDirection.y * velocity.y >= 0)
+            speed *= 1.5f;
+
+        velocity = AEExtras::Normalise(AEExtras::IsZero(inputDirection) ? facingDirection : inputDirection) * speed;
+    }
     HorizontalMovement();
     VerticalMovement();
 
@@ -107,16 +119,19 @@ void Player::Render()
 
     sprite.Render();
 
+    AEGfxSetTransparency(1.f);
+
     if (Editor::GetShowColliders())
     {
-        RenderDebugCollider(stats.groundChecker);
-        RenderDebugCollider(stats.ceilingChecker);
-        RenderDebugCollider(stats.leftWallChecker);
-        RenderDebugCollider(stats.rightWallChecker);
+        //RenderDebugCollider(stats.groundChecker);
+        //RenderDebugCollider(stats.ceilingChecker);
+        //RenderDebugCollider(stats.leftWallChecker);
+        //RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
 
-    AEGfxSetTransparency(1.f);
+    //if (AEInputCheckTriggered(AEVK_K))
+    //    std::cout << "A";
 
     //// Test dynamic collision
     //AEVec2 mousePos;
@@ -125,12 +140,11 @@ void Player::Render()
     //AEVec2 collidedPos = position;
     //AEVec2 vel = mousePos - position;
     //map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize, true);
-    ////QuickGraphics::DrawRect(mousePos, stats.playerSize, ifCollide ? 0xFFFF0000 : 0xFF00FF00);
     //QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
     //QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
     //std::cout << position << "     " << collidedPos << vel << "\n";
 
-    //if (AEInputCheckCurr(AEVK_RBUTTON))
+    //if (AEInputCheckTriggered(AEVK_RBUTTON))
     //    position = collidedPos;
 }
 
@@ -250,26 +264,13 @@ void Player::UpdateTriggerColliders()
 
 void Player::HorizontalMovement()
 {
+    if (IsDashing())
+        return;
+
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
 
-    float dashPercentage = static_cast<float>((currTime - dashStartTime) / stats.dashTime);
-
-    if (dashPercentage < 1.f)
-    {
-        float speed = stats.dashSpeed * buff_MoveSpeedMulti;
-        // If moving in the same direction
-        if (inputDirection.x * velocity.x >= 0)
-            speed *= 1.5f;
-        if (facingDirection.x < 0.f)
-            speed = -speed;
-        velocity.x = speed;
-
-        /*float value = 1 - dashPercentage * dashPercentage;
-        velocity.x = AEExtras::RemapClamp(value, { 0.f, 1.f }, { stats.dashSpeed, stats.maxSpeed });*/
-    }
     // Slow player down when not pressing any buttons
-    else if (inputDirection.x == 0)
+    if (inputDirection.x == 0)
     {
         float velocityChange = stats.stopAcceleration * dt * buff_MoveSpeedMulti;
         // -velocityChange because stats.stopAcceleration < 0, so negate that
@@ -335,8 +336,11 @@ void Player::HandleLanding()
 
 void Player::HandleGravity()
 {
-    float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+    if (IsDashing())
+        return;
 
+    float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+    
     // If moving up
     if (velocity.y > 0.f)
     {
@@ -345,7 +349,7 @@ void Player::HandleGravity()
         else
         {
             float velocityChange = stats.gravity * dt;
-            if (!isJumpHeld && (static_cast<float>(Time::GetInstance().GetScaledElapsedTime()) - lastJumpTime) > stats.minJumpTime)
+            if (!isJumpHeld && (Time::GetInstance().GetScaledElapsedTime() - lastJumpTime) > stats.minJumpTime)
                 velocityChange *= stats.gravityMultiplierWhenRelease;
 
             velocity.y += velocityChange;
@@ -361,12 +365,7 @@ void Player::HandleGravity()
     else
     {
         float acceleration, maxFallSpeed;
-        if (IsDashing())
-        {
-            acceleration = 0.f;
-            maxFallSpeed = 0.f;
-        }
-        else if (IsAnimAirAttack())
+        if (IsAnimAirAttack())
         {
             acceleration = -200.f;
             maxFallSpeed = stats.slamAttackFallSpeed;
@@ -599,29 +598,30 @@ IDamageable* Player::IfCollideEnemy(const Box& collider)
     return collidedEnemy;
 }
 
+// Update particle system
 void Player::UpdateTrails()
 {
-    // Update particle system
-    float currVelocityAngle;
-    if (velocity.y == 0.f)
-        currVelocityAngle = (velocity.x > 0) ? AEDegToRad(180.f) : 0.f;
-    else if (velocity.x == 0.f)
-        currVelocityAngle = (velocity.y > 0) ? AEDegToRad(-90.f) : -90.f;
-    else
-        currVelocityAngle = atan2f(velocity.x, velocity.y) + AEDegToRad(180.f);
+    // Update Angle 
+    float baseAngle = (velocity.x > 0) ? AEDegToRad(180.f) : 0.f;
+    float angleRange = AEDegToRad(50.f) * Sign(velocity.x);
+    particleSystem.emitter.angleRange.x = baseAngle;
+    particleSystem.emitter.angleRange.y = baseAngle - angleRange;
 
-    float angleRange = AEDegToRad(50.f) * 0.5f;
-    particleSystem.emitter.angleRange.x = currVelocityAngle - angleRange;
-    particleSystem.emitter.angleRange.y = currVelocityAngle + angleRange;
-
+    // Update Speed
     float speed = AEVec2Length(&velocity);
     particleSystem.emitter.speedRange.x = speed * 0.3f * 0.75f;
     particleSystem.emitter.speedRange.y = speed * 0.3f * 1.5f;
-    //std::cout << "Angle: " << AERadToDeg(currVelocityAngle - angleRange) << "\n";
-    particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
 
+    // Update spawn rate
+    if (isGroundCollided)
+        particleSystem.SetSpawnRate(AEExtras::RemapClamp(speed, { 0.f, stats.maxSpeed }, { -100.f, 50.f }));
+    else 
+        particleSystem.SetSpawnRate(0.f);
+
+    // Update spawn pos
     AEVec2Set(&particleSystem.emitter.spawnPosRangeX, position.x + 0.6f, position.x);
-    AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y - 0.0f, position.y + 1.f);
+    AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y, position.y);
+
     particleSystem.Update();
 }
 

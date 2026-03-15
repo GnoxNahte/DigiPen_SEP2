@@ -9,16 +9,17 @@
 
 namespace
 {
+    void LoadVec2(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AEVec2& v)
+    {
+        v.x = obj["x"].GetFloat();
+        v.y = obj["y"].GetFloat();
+    }
+
 	// doc - can be rapidjson::Document or rapidjson::GenericObject
 	void LoadBox(const rapidjson::GenericObject<false, rapidjson::Value>& obj, Box& box)
 	{
-		auto positionObj = obj["position"].GetObj();
-		box.position.x = positionObj["x"].GetFloat();
-		box.position.y = positionObj["y"].GetFloat();
-        
-		auto sizeObj = obj["size"].GetObj();
-		box.size.x = sizeObj["x"].GetFloat();
-		box.size.y = sizeObj["y"].GetFloat();
+        LoadVec2(obj["position"].GetObj(), box.position);
+        LoadVec2(obj["size"].GetObj(), box.size);
 	}
 
 	void LoadAttack(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AttackStats& attack)
@@ -29,24 +30,25 @@ namespace
 		LoadBox(obj["collider"].GetObj(), attack.collider);
 	}
 
+    void SaveVec2(rapidjson::Value& obj, const AEVec2& v, rapidjson::Document::AllocatorType& allocator)
+    {
+        obj.AddMember("x", v.x, allocator);
+        obj.AddMember("y", v.y, allocator);
+    }
+
     void SaveBox(rapidjson::Value& obj, const Box& box, rapidjson::Document::AllocatorType& allocator)
     {
-        obj.SetObject();
-
         rapidjson::Value position(rapidjson::kObjectType);
-        position.AddMember("x", box.position.x, allocator);
-        position.AddMember("y", box.position.y, allocator);
+        SaveVec2(position, box.position, allocator);
         obj.AddMember("position", position, allocator);
 
         rapidjson::Value size(rapidjson::kObjectType);
-        size.AddMember("x", box.size.x, allocator);
-        size.AddMember("y", box.size.y, allocator);
+        SaveVec2(size, box.size, allocator);
         obj.AddMember("size", size, allocator);
     }
 
     void SaveAttack(rapidjson::Value& obj, const AttackStats& attack, rapidjson::Document::AllocatorType& allocator)
     {
-        obj.SetObject();
         obj.AddMember("damage", attack.damage, allocator);
         obj.AddMember("recoilSpeed", attack.recoilSpeed, allocator);
 
@@ -114,7 +116,7 @@ void PlayerStats::LoadFileData()
 	turnTime = doc["turnTime"].GetFloat();
 	inAirTurnTime = doc["inAirTurnTime"].GetFloat();
 
-	dashSpeed = doc["dashSpeed"].GetFloat();
+    LoadVec2(doc["dashSpeed"].GetObj(), dashSpeed);
 	dashCooldown = doc["dashCooldown"].GetFloat();
 	dashTime = doc["dashTime"].GetFloat();
 
@@ -178,7 +180,9 @@ void PlayerStats::SaveFileData()
     doc.AddMember("inAirTurnTime", inAirTurnTime, allocator);
 
     // Dash / Gravity
-    doc.AddMember("dashSpeed", dashSpeed, allocator);
+    rapidjson::Value dashSpeedObj(rapidjson::kObjectType);
+    SaveVec2(dashSpeedObj, dashSpeed, allocator);
+    doc.AddMember("dashSpeed", dashSpeedObj, allocator);
     doc.AddMember("dashCooldown", dashCooldown, allocator);
     doc.AddMember("dashTime", dashTime, allocator);
     doc.AddMember("maxFallVelocity", maxFallVelocity, allocator);
@@ -277,7 +281,7 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Stop Time", &stopTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Turn Time", &turnTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("In Air Turn Time", &inAirTurnTime, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat("Dash Speed", &dashSpeed, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("Dash Speed", &dashSpeed.x, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Cooldown", &dashCooldown, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Time", &dashTime, 0.01f) || ifChanged;
 

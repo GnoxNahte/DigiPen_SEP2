@@ -6,9 +6,12 @@
     "stopTime": 0.2,
     "turnTime": 0.075,
     "inAirTurnTime": 0.1,
-    "dashSpeed": 20.0,
+    "dashSpeed": {
+        "x": 12.5,
+        "y": 10.0
+    },
     "dashCooldown": 0.5,
-    "dashTime": 0.1,
+    "dashTime": 0.15,
     "maxFallVelocity": -17.5,
     "wallSlideMaxSpeedTime": 0.5,
     "wallSlideMaxSpeed": -10.0,
@@ -75,7 +78,6 @@
     "groundAttacks": [
         {
             "damage": 10,
-            "knockbackForce": 5.0,
             "recoilSpeed": 4.0,
             "collider": {
                 "position": {
@@ -90,7 +92,6 @@
         },
         {
             "damage": 20,
-            "knockbackForce": 7.0,
             "recoilSpeed": 4.0,
             "collider": {
                 "position": {
@@ -105,7 +106,6 @@
         },
         {
             "damage": 30,
-            "knockbackForce": 8.0,
             "recoilSpeed": 3.5,
             "collider": {
                 "position": {
@@ -122,7 +122,6 @@
     "airAttacks": [
         {
             "damage": 15,
-            "knockbackForce": 6.0,
             "recoilSpeed": 10.0,
             "collider": {
                 "position": {
@@ -137,7 +136,6 @@
         },
         {
             "damage": 25,
-            "knockbackForce": 8.0,
             "recoilSpeed": 10.0,
             "collider": {
                 "position": {
@@ -152,7 +150,6 @@
         },
         {
             "damage": 50,
-            "knockbackForce": 10.0,
             "recoilSpeed": 10.0,
             "collider": {
                 "position": {

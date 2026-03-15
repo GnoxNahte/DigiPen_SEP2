@@ -350,7 +350,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 		AEVec2 point = currPosition + raySign * halfColliderSize;
 		float y1 = Raycast(point, { point.x, point.y + remainingRay.y });
 
-		point.y -= colliderSize.y * raySign.y;
+		point.x -= colliderSize.x * raySign.x;
 		float y2 = Raycast(point, { point.x, point.y + remainingRay.y });
 
 		remainingRay.y = std::min(y1, y2) * raySign.y;
