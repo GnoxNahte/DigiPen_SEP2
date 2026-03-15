@@ -1,9 +1,15 @@
 #include <iostream>
+#include <algorithm>
 
 #include "MapGrid.h"
 #include "../../Utils/MeshGenerator.h"
 #include "../Camera.h"
 #include "../../Utils/AEExtras.h"
+#include "../../Utils/QuickGraphics.h"
+#include "../../Editor/Editor.h"
+
+#undef min
+#undef max
 
 namespace
 {
@@ -205,69 +211,152 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 	return CheckBoxCollision(box.position, box.size);
 }
 
-void MapGrid::HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& colliderSize)
+float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 {
-	AEVec2 halfColliderSize(colliderSize.x * 0.5f, colliderSize.y * 0.5f);
+	if (start == end)
+		return 0.f;
 
-	AEVec2 bottomLeft, topRight;
-	bottomLeft.x = min(currentPosition.x, nextPosition.x) - halfColliderSize.x;
-	bottomLeft.y = min(currentPosition.y, nextPosition.y) - halfColliderSize.y;
-	topRight.x = max(currentPosition.x, nextPosition.x) + halfColliderSize.x;
-	topRight.y = max(currentPosition.y, nextPosition.y) + halfColliderSize.y;
+	// Algorithm: Amanatides and Woo
+	// Reference: https://m4xc.dev/articles/amanatides-and-woo/
+	AEVec2 ray{ end - start };
+	float rayDist = AEExtras::Dist(ray);
 
-	int nextGridX, nextGridY;
-	WorldToGridCoords(nextPosition, nextGridX, nextGridY);
+	Vec2Int step{ Sign(ray.x), Sign(ray.y) };
 
-	bool isMovingRight = nextPosition.x > currentPosition.x;
-	bool isMovingUp = nextPosition.y > currentPosition.y;
+	Vec2Int currCell{ start };
 
-	float clearance = 0.2f;
+	if (IsSolidAtGridCell(currCell.x, currCell.y))
+		return 0.f;
 
-	if (isMovingRight)
+	// tMax: Percentage of each axis from start to end
+	// 1. currCell - start = amt moved from start to curr cell. (Floating point of start cell for now, since cell size == 1)
+	// 2. Vec2Int::Max(step, {0,0}) = If positive (in their own axis), start from the next cell
+	// 3. <result> / ray = Percentage of the ray 
+	//
+	// delta: Amt to move each step
+	AEVec2	tMax{ (currCell - start + Vec2Int::Max(step, {0,0})) / ray },
+			delta{ AEExtras::Abs(1.f / ray) };
+
+	// When divide by 0
+	if (ray.x == 0.f)
 	{
-		float colliderPos = nextPosition.x + halfColliderSize.x;
-		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
-		{
-			currentPosition.x = nextGridX + 1.01f - halfColliderSize.x;
-			velocity.x = 0.f;
-		}
-		else
-			currentPosition.x = nextPosition.x;
+		tMax.x = std::numeric_limits<f32>::max();
+		delta.x = std::numeric_limits<f32>::max();
 	}
-	else
+	if (ray.y == 0.f)
 	{
-		float colliderPos = nextPosition.x - halfColliderSize.x;
-		if (CheckPointCollision(colliderPos, topRight.y - clearance) || CheckPointCollision(colliderPos, bottomLeft.y + clearance))
-		{
-			currentPosition.x = nextGridX + halfColliderSize.x;
-			velocity.x = 0.f;
-		}
-		else
-			currentPosition.x = nextPosition.x;
+		tMax.y = std::numeric_limits<f32>::max();
+		delta.y = std::numeric_limits<f32>::max();
 	}
 
-	if (isMovingUp)
+	bool isAxisX = true;
+	while (tMax.x <= 1.f + delta.x && tMax.y <= 1.f + delta.y)
 	{
-		float colliderPos = nextPosition.y + halfColliderSize.y;
-		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
+		if (IsSolidAtGridCell(currCell.x, currCell.y))
 		{
-			currentPosition.y = nextGridY + 1.01f - halfColliderSize.y;
-			velocity.y = 0.f;
+			if (Editor::GetShowColliders())
+			{
+				QuickGraphics::DrawRay(start, start + (isAxisX ? (tMax.x - delta.x) : (tMax.y - delta.y)) * ray, 0.1f, 0xAAFF8800);
+				QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, { 1.f, 1.f }, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+			}
+
+			if (isAxisX)
+				return (tMax.x - delta.x) * rayDist;
+			else
+				return (tMax.y - delta.y) * rayDist;
+		}
+
+		if (Editor::GetShowColliders())
+			QuickGraphics::DrawRect(currCell.GetAEVec2() + AEVec2{0.5f, 0.5f}, { 1.f, 1.f }, 0xFF00FF00, AE_GFX_MDM_LINES_STRIP);
+
+		// Step on the axis where tMax is the smallest
+		if (tMax.x < tMax.y)
+		{
+			tMax.x += delta.x;
+			currCell.x += step.x;
+			isAxisX = true;
 		}
 		else
-			currentPosition.y = nextPosition.y;
-	}
-	else
-	{
-		float colliderPos = nextPosition.y - halfColliderSize.y;
-		if (CheckPointCollision(topRight.x - clearance, colliderPos) || CheckPointCollision(bottomLeft.x + clearance, colliderPos))
 		{
-			currentPosition.y = nextGridY + halfColliderSize.y;
-			velocity.y = 0.f;
+			tMax.y += delta.y;
+			currCell.y += step.y;
+			isAxisX = false;
 		}
-		else
-			currentPosition.y = nextPosition.y;
 	}
+
+	if (Editor::GetShowColliders())
+		QuickGraphics::DrawRay(start, end, 0.1f, 0xAA88FF88);
+
+	return rayDist;
+}
+
+// Not the most efficient algorithm but not sure how else to do dynamic collision with a grid...
+// Also doesn't handle properly if colliderSize > 2
+// Rough explanation
+// - Raycasts from 4 vertices of the box
+// - Get min dist from the raycasts
+// - Make it slide
+void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& nextPosition, const AEVec2& colliderSizeTmp, bool ifSlide)
+{
+	if (currPosition == nextPosition)
+		return;
+
+	//float epsilon = EPSILON;
+	constexpr float epsilon = 0.01f;
+
+	AEVec2 colliderSize = colliderSizeTmp - AEVec2{ epsilon, epsilon };
+	AEVec2 halfColliderSize = colliderSize * 0.5f;
+
+	AEVec2 ray = nextPosition - currPosition;
+	float rayDist = AEExtras::Dist(ray);
+	AEVec2 rayDir = ray / rayDist;
+
+	Vec2Int raySign{ Sign_NoZero(rayDir.x), Sign_NoZero(rayDir.y) };
+
+	float dist = rayDist;
+	AEVec2 corner{ currPosition + raySign * halfColliderSize };
+	dist = std::min(dist, Raycast(corner, corner + ray));
+
+	corner.x -= colliderSize.x * raySign.x;
+	dist = std::min(dist, Raycast(corner, corner + ray));
+	
+	corner.x += colliderSize.x * raySign.x; // Revert previous offset
+	corner.y -= colliderSize.y * raySign.y;
+	dist = std::min(dist, Raycast(corner, corner + ray));
+
+	// EPSILON to prevent clipping into the tile
+	currPosition += rayDir * dist - Vec2Int{ Sign(rayDir.x), Sign(rayDir.y) } * epsilon;
+
+	// ===== Sliding =====
+	if (!ifSlide || dist == rayDist)
+		return;
+	AEVec2 remainingRay = rayDir * (rayDist - dist);
+
+	// Check raycast for x (on the leading side and in that direction)
+	if (std::abs(remainingRay.x) > epsilon)
+	{
+		AEVec2 point = currPosition + raySign * halfColliderSize;
+		float x1 = Raycast(point, { point.x + remainingRay.x, point.y });
+
+		point.y -= colliderSize.y * raySign.y;
+		float x2 = Raycast(point, { point.x + remainingRay.x, point.y });
+
+		remainingRay.x = std::min(x1, x2) * raySign.x;
+	}
+
+	// Check raycast for y (on the leading side and in that direction)
+	if (std::abs(remainingRay.y) > epsilon)
+	{
+		AEVec2 point = currPosition + raySign * halfColliderSize;
+		float y1 = Raycast(point, { point.x, point.y + remainingRay.y });
+
+		point.x -= colliderSize.x * raySign.x;
+		float y2 = Raycast(point, { point.x, point.y + remainingRay.y });
+
+		remainingRay.y = std::min(y1, y2) * raySign.y;
+	}
+
+	currPosition += remainingRay;
 }
 
 int MapGrid::WorldToIndex(float x, float y)

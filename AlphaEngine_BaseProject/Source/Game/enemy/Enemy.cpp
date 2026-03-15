@@ -474,14 +474,14 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     UpdateEnemyParticles();
 }
 
-bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
+bool Enemy::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE type)
 {
     if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
 
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
 
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_NORMAL, position);
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position);
 
     if (hp <= 0)
     {

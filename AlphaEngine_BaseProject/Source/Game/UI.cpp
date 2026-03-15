@@ -171,15 +171,8 @@ void UI::InitCooldownMeshes() {
 }
 void UI::DrawPlayerCooldownMeter() {
 	{
-		if (AEInputCheckCurr(AEVK_Z) && !player->IsDead()) {
-			TimerSystem::GetInstance().AddTimer("Player Cooldown Timer", 
-												player->GetStats().dashCooldown + player->GetStats().dashTime);
-		}
-		auto* timer = TimerSystem::GetInstance().GetTimerByName("Player Cooldown Timer");
-		if (!timer) return;
-
-		float percent = AEClamp(1.0f - static_cast<float>(timer->percentage), 0.0f, 1.0f);
-
+		float percent = 1.0f - player->GetDashCooldownPercentage();
+		
 		// Pick the closest precomputed mesh
 		int numViews = static_cast<int>(cooldownMeshes.size()) - 1;
 		int meshIndex = static_cast<int>(percent * numViews + 0.5f); // round to nearest
