@@ -54,8 +54,8 @@ struct PlayerStats
     float timeToMaxHeight;
     float timeToGround;
     float gravityMultiplierWhenRelease; // Multiple gravity if jump button is released
-    float coyoteTime;
-    float jumpBuffer;
+    float coyoteTime;                   // Allows player to jump for some time after leaving the platform
+    float jumpBuffer;                   // Allows the player to jump if they press and release 'Jump' before reaching the ground
     float wallJumpHorizontalVelocity;   // Default Wall jump horizontal velocity 
     float wallJumpHorizontalVelocityTowardsWall; //Wall jump horizontal velocity when horizontal input is towards wall
 
@@ -92,6 +92,7 @@ struct PlayerStats
     float attackBuffer;         // Input attack buffer
     float attackComboBuffer;    // Input attack buffer for combos
     float slamAttackFallSpeed;  
+    float slamAttackMaxHeight;  // Applies max damage at max height
 
     std::array<AttackStats, 3> groundAttacks;
     std::array<AttackStats, 3> airAttacks; // Currently only using last attack as ground slam

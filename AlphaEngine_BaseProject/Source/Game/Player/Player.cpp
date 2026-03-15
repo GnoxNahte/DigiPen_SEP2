@@ -178,6 +178,7 @@ void Player::Reset(const AEVec2& initialPos)
     lastDamagedTime = std::numeric_limits<f64>::lowest();
     lastAttackEndTime = std::numeric_limits<f64>::lowest();
     lastAttackCombo = AnimState::ATTACK_1;
+    slamStartHeight = std::numeric_limits<float>::lowest();
 
     buff_MoveSpeedMulti = 1.f;
     buff_DmgReduction = 1.f;
@@ -472,6 +473,9 @@ bool Player::IsInvincible()
 
 void Player::SetAttack(AnimState toState)
 {
+    if (toState == AIR_ATTACK_SMASH)
+        slamStartHeight = position.y;
+    
     AudioManager::PlayNextAttackSFX();
 
     sprite.SetState(toState, false,
@@ -482,6 +486,12 @@ void Player::SetAttack(AnimState toState)
 void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
 {
     int damage = attack.damage;
+
+    if (!isGroundAttack)
+    {
+        float scale = AEClamp((slamStartHeight - position.y) / stats.slamAttackMaxHeight, 0.1f, 1.f);
+        damage = static_cast<int>(damage * scale);
+    }
 
     // 100% crit if low health
     // Else crit depending on chance
@@ -629,7 +639,7 @@ void Player::UpdateAnimation()
 {
     //std::cout << GetAnimState();
 
-    if (IsDead())
+    if (IsDead() || IsAttacking())
     {
         sprite.Update();
         return;
@@ -641,12 +651,12 @@ void Player::UpdateAnimation()
     {
         if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
             SetAttack(AIR_ATTACK_SMASH);
-        else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END && !IsAttacking())
+        else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
             SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
         else if (!IsAnimGroundAttack())
             SetAttack(ATTACK_1);
     }
-    else if (!IsAttacking())
+    else
     {
         // If is wall climbing/sliding
         if ((isLeftWallCollided || isRightWallCollided) && velocity.y != 0.f)

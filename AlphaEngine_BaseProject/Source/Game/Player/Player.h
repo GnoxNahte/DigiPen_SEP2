@@ -110,6 +110,7 @@ private:
     f64 lastDamagedTime;
     f64 lastAttackEndTime;
     AnimState lastAttackCombo;
+    float slamStartHeight;
 
     // === Buffs ===
     float buff_MoveSpeedMulti;
