@@ -492,7 +492,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
-	AudioManager::PlayMusic(MusicId::GameSense, 1.0f, 1.0f, -1);
+	AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
 		<< "\n";
