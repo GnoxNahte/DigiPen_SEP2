@@ -69,7 +69,7 @@ public:
     const PlayerStats&  GetStats()    const;
     float   GetDashCooldownPercentage() const;
     int     GetHealth()     const;
-    bool    IsFacingRight() const;
+    bool    GetIsFacingRight() const;
     AnimState GetAnimState() const;
 
 private:
@@ -89,7 +89,7 @@ private:
     // === Movement data ===
     AEVec2 position;
     AEVec2 velocity;
-    AEVec2 facingDirection;
+    bool isFacingRight;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
     f64 dashStartTime = -1.f;

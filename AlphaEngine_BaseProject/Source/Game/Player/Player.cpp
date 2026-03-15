@@ -29,10 +29,6 @@ namespace
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
-    facingDirection{},
-    inputDirection{},
-    transform{},
-    velocity{},
     particleSystem{ 50, {} },
     map(map),
     enemyManager(enemyManager)
@@ -78,8 +74,14 @@ void Player::Update()
         if (inputDirection.y * velocity.y >= 0)
             speed *= 1.5f;
 
-        velocity = AEExtras::Normalise(AEExtras::IsZero(inputDirection) ? facingDirection : inputDirection) * speed;
+        // If no input from player, dash in the player facing direction
+        if (AEExtras::IsZero(inputDirection))
+            velocity = AEVec2{ isFacingRight ? speed.x : -speed.x, 0.f };
+        // Else dash using inputDirection
+        else
+            velocity = AEExtras::Normalise(inputDirection) * speed;
     }
+
     HorizontalMovement();
     VerticalMovement();
 
@@ -100,9 +102,9 @@ void Player::Render()
     particleSystem.Render();
 
     // Local scale. For flipping sprite's facing direction
-    bool ifFaceRight = (velocity.x != 0.f && !IsAttacking()) ? (velocity.x > 0) : (facingDirection.x > 0);
     // Multiply height by 0.74f because sprite aspect ratio isn't a square
-    AEMtx33Scale(&transform, ifFaceRight ? 2.f : -2.f, 2.f * 0.74f);
+    constexpr float scale = 2.f;
+    AEMtx33Scale(&transform, isFacingRight ? scale : -scale, scale * 0.74f);
     AEMtx33TransApply(
         &transform,
         &transform,
@@ -159,7 +161,7 @@ void Player::Reset(const AEVec2& initialPos)
     lastJumpPressed = -1.f;
     ifReleaseJumpAfterJumping = true;
 
-    facingDirection = inputDirection;
+    isFacingRight = true;
     lastJumpTime = -1.f;
     lastGroundedTime = -1.f;
 
@@ -205,11 +207,9 @@ const PlayerStats& Player::GetStats() const
     return stats;
 }
 
-bool Player::IsFacingRight() const
+bool Player::GetIsFacingRight() const
 {
-    // match your Render() logic
-    if (velocity.x != 0.f) return velocity.x > 0.f;
-    return facingDirection.x > 0.f;
+    return isFacingRight;
 }
 
 float Player::GetDashCooldownPercentage() const
@@ -238,8 +238,8 @@ void Player::UpdateInput()
     if (AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_C))
         lastJumpPressed = currTime;
 
-    if ((inputDirection.x != 0 || inputDirection.y != 0) && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
-        facingDirection = inputDirection;
+    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
+        isFacingRight = inputDirection.x > 0;
 
     if (AEInputCheckCurr(AEVK_X))
         lastAttackHeld = currTime;
@@ -503,7 +503,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     if (!hasAppliedRecoil)
     {
         if (isGroundAttack)
-            velocity.x += facingDirection.x > 0 ? -attack.recoilSpeed : attack.recoilSpeed;
+            velocity.x += isFacingRight ? -attack.recoilSpeed : attack.recoilSpeed;
         else
             velocity.y += attack.recoilSpeed;
 
@@ -532,7 +532,7 @@ void Player::UpdateAttacks()
         return;
 
     AEVec2 colliderPos{ 
-        position.x + attack->collider.position.x * (facingDirection.x > 0 ? 1.f : -1.f),
+        position.x + attack->collider.position.x * (isFacingRight ? 1.f : -1.f),
         position.y + attack->collider.position.y
     };
 
@@ -579,9 +579,9 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
         // Shouldn't handle input here but not sure how else to do..
         // If switch direction when chaining attacks
-        if (((AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)) && facingDirection.x > 0) ||
-            ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && facingDirection.x < 0))
-            facingDirection.x *= -1;
+        if (((AEInputCheckCurr(AEVK_LEFT)  || AEInputCheckCurr(AEVK_A)) && isFacingRight) ||
+            ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && !isFacingRight))
+            isFacingRight = !isFacingRight;
     }
 }
 
@@ -648,14 +648,15 @@ void Player::UpdateAnimation()
     }
     else if (!IsAttacking())
     {
+        // If is wall climbing/sliding
         if ((isLeftWallCollided || isRightWallCollided) && velocity.y != 0.f)
         {
             sprite.SetState(AnimState::WALL_SLIDE);
             
-            // If player isn't surrounded by walls
+            // If player isn't surrounded by walls (but is near at least 1 wall)
             // Depending on the wall, they are near, make the player face the correct wall
             if (!(isLeftWallCollided && isRightWallCollided))
-                facingDirection.x = fabsf(facingDirection.x) * (isLeftWallCollided ? 1.f : -1.f);
+                isFacingRight = isLeftWallCollided;
         }
         else if (!isGroundCollided)
             sprite.SetState(AnimState::FALLING);
@@ -766,7 +767,7 @@ void Player::DrawInspector()
         ImGui::SeparatorText("Physics");
         ImGui::DragFloat2("Position", &position.x, 0.1f);
         ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
-        ImGui::DragFloat2("Facing direction", &facingDirection.x, 0.1f);
+        ImGui::Checkbox("Is facing right", &isFacingRight);
 
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, maxHealth);
