@@ -495,7 +495,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     }
     else
     {
-        damageable.TryTakeDamage(damage, position, DAMAGE_TYPE_ENEMY_ATTACK);
+        damageable.TryTakeDamage(damage, position, DAMAGE_TYPE_NORMAL);
     }
 
     attackedEnemies.push_back(&damageable);
