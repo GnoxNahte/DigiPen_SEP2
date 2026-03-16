@@ -325,11 +325,13 @@ void Player::HandleLanding()
             .lifetimeRange  { 0.1f, 0.3f },
             .tint           { 0.56f, 0.49f, 0.77f, 1.f }
         };
-        particleSystem.SpawnParticleBurst(emitter, 25);
+
+        int spawnCount = static_cast<int>(30 * GetSlamAttackScale());
+        particleSystem.SpawnParticleBurst(emitter, spawnCount);
 
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
-        particleSystem.SpawnParticleBurst(emitter, 25);
+        particleSystem.SpawnParticleBurst(emitter, spawnCount);
     }
 
     // @todo: (Ethan) - Play sound
@@ -488,10 +490,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     int damage = attack.damage;
 
     if (!isGroundAttack)
-    {
-        float scale = AEClamp((slamStartHeight - position.y) / stats.slamAttackMaxHeight, 0.1f, 1.f);
-        damage = static_cast<int>(damage * scale);
-    }
+        damage = static_cast<int>(damage * GetSlamAttackScale());
 
     // 100% crit if low health
     // Else crit depending on chance
@@ -514,8 +513,6 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     {
         if (isGroundAttack)
             velocity.x += isFacingRight ? -attack.recoilSpeed : attack.recoilSpeed;
-        else
-            velocity.y += attack.recoilSpeed;
 
         hasAppliedRecoil = true;
     }
@@ -606,6 +603,11 @@ IDamageable* Player::IfCollideEnemy(const Box& collider)
     });
 
     return collidedEnemy;
+}
+
+float Player::GetSlamAttackScale()
+{
+    return AEClamp((slamStartHeight - position.y) / stats.slamAttackMaxHeight, 0.1f, 1.f);
 }
 
 // Update particle system
