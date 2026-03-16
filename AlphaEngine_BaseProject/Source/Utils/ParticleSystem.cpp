@@ -94,6 +94,7 @@ Particle& ParticleSystem::SpawnParticle(const EmitterSettings& _emitter)
 	p.lifetime = AEExtras::RandomRange(_emitter.lifetimeRange);
 	p.behavior = _emitter.behavior;
 	p.behaviorParams = _emitter.behaviorParams;
+	p.size = AEExtras::RandomRange(_emitter.sizeRange);
 
 	AEVec2FromAngle(&p.velocity, AEExtras::RandomRange(_emitter.angleRange));
 	AEVec2Scale(&p.velocity, &p.velocity, AEExtras::RandomRange(_emitter.speedRange));
@@ -183,7 +184,7 @@ void Particle::Render(AEGfxVertexList* mesh)
 {
 	AEMtx33 transform;
 
-	AEMtx33Scale(&transform, 0.1f, 0.1f);
+	AEMtx33Scale(&transform, size, size);
 	AEMtx33TransApply(
 		&transform,
 		&transform,

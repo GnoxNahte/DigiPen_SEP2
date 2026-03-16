@@ -31,6 +31,7 @@ struct Particle : public ObjectPoolItem
 	AEVec2 velocity = { 0.f, 0.f };
 	float spawnTime = -1.f;
 	float lifetime = -1.f;
+	float size = 0.1f;
 	Color4 tint;
 	ParticleBehavior behavior = ParticleBehavior::normal;
 	ParticleBehaviorParams behaviorParams;
@@ -63,6 +64,8 @@ public:
 		AEVec2 speedRange;
 		// Range of lifetime.
 		AEVec2 lifetimeRange;
+
+		AEVec2 sizeRange{ 0.1f, 0.1f };
 
 		Color4 tint;
 
