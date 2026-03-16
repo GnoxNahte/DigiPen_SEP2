@@ -31,12 +31,12 @@ Box MakePlayerFeetBox(const Player& p)
 	const AEVec2 pos = p.GetPosition(); // pos is the center of the player
 
 	// width covers the whole player to make it easier to step on plates, and also visually looks better since the plate is under the player's feet, so it makes sense for the box to be as wide as the player. The height is just a thin strip at the bottom of the player to check for stepping on plates, and it also visually looks better for spikes to come out of the ground between the player's feet instead of right in the middle of the player.
-    b.size.x = fullSize.x;
+    b.size.x = fullSize.x * 0.4f;;
 	// add on the y axis to cover the area where the player's feet would be, so that player can still trigger pressure plates even if they are slightly above it due to the groundChecker intercepting a bit early, and it also visually looks better since the player is stepping on the plate with their feet instead of their body. The height of 0.4f is chosen to be large enough to account for the groundChecker intercepting a bit early and causing the player to be slightly above the plate, but not too large that it would cause the plate to be triggered when the player is just near it.
     b.size.y = 0.4f;
 
 	// X axis : player center minus half the width to align with left edge of player, so that the plate is under the player's feet and it's easier to step on plates since the box is as wide as the player, and it also visually looks better since the plate is under the player's feet, so it makes sense for the box to be as wide as the player
-    b.position.x = pos.x - (fullSize.x * 0.5f);
+    b.position.x = pos.x - (b.size.x * 0.5f);
 	// Y axis : player center minus half the player's height to get to the bottom of the player, then add a small tolerance of 0.25f to account for the groundChecker intercepting a bit early and causing the player to be slightly above the plate, and it also visually looks better since the player is stepping on the plate with their feet instead of their body. The tolerance of 0.25f is chosen to be large enough to account for the groundChecker intercepting a bit early and causing the player to be slightly above the plate, but not too large that it would cause the plate to be triggered when the player is just near it.
 	// the 0.5f is to get to the bottom of the player, since the player's position is at the center, and we want the box to be at the feet. Then we add 0.25f to give some tolerance for the player being slightly above the plate due to the groundChecker intercepting a bit early, and it also visually looks better since the player is stepping on the plate with their feet instead of their body.
     b.position.y = pos.y - (fullSize.y * 0.5f) - 0.25f;
