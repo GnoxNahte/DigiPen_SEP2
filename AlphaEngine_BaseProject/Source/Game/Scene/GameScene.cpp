@@ -998,7 +998,7 @@ void GameScene::RenderPauseOverlay()
 
 		{
 			AEMtx33 scale, rot, trans, transform;
-			AEMtx33Scale(&scale, 760.0f, 360.0f);
+			AEMtx33Scale(&scale, 850.0f, 400.0f);
 			AEMtx33Rot(&rot, 0.0f);
 			AEVec2 eng = ScreenToEngine(centerX, centerY);
 			AEMtx33Trans(&trans, eng.x + Camera::position.x * Camera::scale, eng.y + Camera::position.y * Camera::scale);
@@ -1014,8 +1014,8 @@ void GameScene::RenderPauseOverlay()
 			AEGfxMeshDraw(pauseRectMesh, AE_GFX_MDM_TRIANGLES);
 		}
 
-		DrawTextPx(pauseFontLarge, "RESTART RUN?", centerX - 225.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
-		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST.", centerX - 280.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
+		DrawTextPx(pauseFontLarge, "RESTART RUN?", centerX - 320.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST", centerX - 370.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
 
 		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
