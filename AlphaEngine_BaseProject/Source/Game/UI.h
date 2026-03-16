@@ -3,6 +3,7 @@
 #include <string>
 #include "../Utils/ObjectPool.h"
 #include "Player/Player.h"
+#include "../Game/enemy/EnemyBoss.h"
 #include "../CommonTypes.h"
 struct DamageText : public ObjectPoolItem {
 	std::string damageType{}; // Type of damage to be printed. Crit, resist, normal etc.
@@ -60,6 +61,14 @@ private:
 	// //CP_Color clickedColor; // Clicked color of the button.
 	// //CP_Color drawColor; // Initial Draw color of the button.
 };
+enum class BossIntroPhase
+{
+	None,
+	Black,
+	TextFadeIn,
+	TextHold,
+	EyelidOpen
+};
 class UI
 {
 public:
@@ -86,6 +95,12 @@ public:
 	inline static Button restartButton{ { 0.2f, 0.08f }, { 0.5f, 0.35f } };
 	inline static Button menuButton{ {0.2f, 0.08f}, {0.5f, 0.2f} };
 
+	//boss intro screen
+	static void StartBossIntro();
+	static bool IsBossIntroActive();
+	static void UpdateBossIntro();
+	static void RenderBossIntro();
+
 private:
 	// Damage text variables
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
@@ -110,5 +125,11 @@ private:
 	// Black overlay attributes.
 	inline static f32 overlayAlpha = 0.75f;
 	inline static f32 fadeSpeed = 3.5f;
+	// boss intros attributes
+	inline static bool bossIntroActive = false;
+	inline static BossIntroPhase bossIntroPhase = BossIntroPhase::None;
+	inline static float bossIntroTimer = 0.0f;
+	inline static float bossIntroTextAlpha = 0.0f;
+	//inline static std::string bossIntroText = "What an ominous feeling....";
 
 };

@@ -41,6 +41,12 @@ void UI::Init(Player* _player) {
 void UI::Update() {
 	BuffCardManager::Update();
 	BuffCardScreen::Update();
+
+	if (bossIntroActive)
+	{
+		UpdateBossIntro();
+		return;
+	}
 	UpdateGameOverStatus();
 	if (player->IsDead() && EyelidDone()) {
 		UpdateGameOverButtonsAndText();
@@ -50,6 +56,11 @@ void UI::Render() {
 	DrawPlayerCooldownMeter();
 	DrawHealthVignette();
 	damageTextSpawner.Render();
+	if (bossIntroActive)
+	{
+		RenderBossIntro();
+		return;
+	}
 	BuffCardScreen::Render();
 	if (player->IsDead()) {
 		DrawEyelid();
@@ -453,6 +464,104 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 	text.position = position;
 	text.alpha = 1.0f;
 	text.OnGet();
+}
+/*--------------------------------------
+		  Boss Intro functions
+---------------------------------------*/
+void UI::StartBossIntro()
+{
+	bossIntroActive = true;
+	bossIntroPhase = BossIntroPhase::Black;
+	bossIntroTimer = 0.0f;
+	bossIntroTextAlpha = 0.0f;
+
+	SetEyelidProgress(GetEyelidMaxProgress()); // start fully closed / black
+}
+
+bool UI::IsBossIntroActive()
+{
+	return bossIntroActive;
+}
+
+void UI::UpdateBossIntro()
+{
+	if (!bossIntroActive) return;
+
+	float dt = static_cast<float>(Time::GetInstance().GetDeltaTime());
+	bossIntroTimer += dt;
+
+	switch (bossIntroPhase)
+	{
+	case BossIntroPhase::Black:
+		if (bossIntroTimer >= 0.55f)
+		{
+			bossIntroPhase = BossIntroPhase::TextFadeIn;
+			bossIntroTimer = 0.0f;
+		}
+		break;
+
+	case BossIntroPhase::TextFadeIn:
+		bossIntroTextAlpha = AEClamp(bossIntroTimer / 0.8f, 0.0f, 1.0f);
+		if (bossIntroTimer >= 1.5f)
+		{
+			bossIntroPhase = BossIntroPhase::TextHold;
+			bossIntroTimer = 0.0f;
+			bossIntroTextAlpha = 1.0f;
+		}
+		break;
+
+	case BossIntroPhase::TextHold:
+		if (bossIntroTimer >= 1.0f)
+		{
+			bossIntroPhase = BossIntroPhase::EyelidOpen;
+			bossIntroTimer = 0.0f;
+		}
+		break;
+
+	case BossIntroPhase::EyelidOpen:
+		UpdateEyelidOpen(dt);
+		bossIntroTextAlpha = 1.0f - AEClamp(bossIntroTimer / 0.8f, 0.0f, 1.0f);
+
+		if (EyelidFullyOpen())
+		{
+			bossIntroActive = false;
+			bossIntroPhase = BossIntroPhase::None;
+			bossIntroTimer = 0.0f;
+			bossIntroTextAlpha = 0.0f;
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+void UI::RenderBossIntro()
+{
+	if (!bossIntroActive) return;
+
+	DrawEyelid(); // since progress was set to fully closed initially
+
+	if (bossIntroPhase == BossIntroPhase::TextFadeIn ||
+		bossIntroPhase == BossIntroPhase::TextHold ||
+		bossIntroPhase == BossIntroPhase::EyelidOpen)
+	{
+		// tune this starting x until the full sentence looks centered
+		float x = -0.62f;
+		float y = 0.05f;
+		float scale = 0.9f;
+		float alpha = bossIntroTextAlpha;
+
+		AEGfxPrint(gameOverFont,
+			"What an ",
+			x, y, scale,
+			1.0f, 1.0f, 1.0f, alpha);
+
+		AEGfxPrint(gameOverFont,
+			"ominous feeling....",
+			x + 0.23f, y, scale,
+			0.75f, 0.08f, 0.08f, alpha);
+	}
 }
 /*--------------------------------------
 			Button Functions
