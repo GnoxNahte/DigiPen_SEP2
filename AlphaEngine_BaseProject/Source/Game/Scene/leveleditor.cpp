@@ -10,7 +10,6 @@
 #include "LevelIO.h"
 #include "../Environment/traps.h"
 #include "../Player/Player.h"
-#include "../enemy/Enemy.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
 
@@ -585,7 +584,7 @@ static void PlayMode_Enter()
     {
         gPlayBoss = new EnemyBoss();
         gPlayEnemies->SetBoss(gPlayBoss);
-        UI::StartBossIntro();
+       
     }
 
     gPlayEnemies->SetSpawns(spawns);
@@ -594,7 +593,10 @@ static void PlayMode_Enter()
     gPlayPlayer = new Player(gMap, gPlayEnemies);
     gPlayPlayer->Reset(gSpawn);
     UI::Init(gPlayPlayer);
-
+    if (hasBossSpawn)
+    {
+        UI::StartBossIntro();
+    }
     gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
 
     gPlayTraps = new TrapManager();
