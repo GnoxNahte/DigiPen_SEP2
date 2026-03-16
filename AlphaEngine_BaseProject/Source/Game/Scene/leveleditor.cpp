@@ -585,6 +585,7 @@ static void PlayMode_Enter()
     {
         gPlayBoss = new EnemyBoss();
         gPlayEnemies->SetBoss(gPlayBoss);
+        UI::StartBossIntro();
     }
 
     gPlayEnemies->SetSpawns(spawns);
@@ -710,6 +711,13 @@ static void PlayMode_Update(float dt)
 {
     if (!gPlayPlayer || !gPlayCamera) return;
 
+    if (UI::IsBossIntroActive())
+    {
+        UI::Update();
+        gPlayCamera->Update(); // optional if you still want camera follow
+        return;
+    }
+
     gPlayPlayer->Update();
     gPlayCamera->Update();
 
@@ -717,7 +725,9 @@ static void PlayMode_Update(float dt)
 
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->GetIsFacingRight(), *gMap);
 
+
     attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
+   
 
     gPlayTraps->Update(dt, *gPlayPlayer);
 
@@ -739,6 +749,7 @@ static void PlayMode_Update(float dt)
     }
 
     UI::GetDamageTextSpawner().Update();
+   
     UI::Update();
 }
 

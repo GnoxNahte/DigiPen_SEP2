@@ -96,7 +96,7 @@ void FreeEyelidMeshes()
 }
 
 // Call in UI::Update() when player is dead
-void UpdateEyelid(float dt)
+/*void UpdateEyelid(float dt)
 {
     float halfH = AEGfxGetWindowHeight() * 0.5f;
     float remaining = halfH - eyelidProgress;
@@ -105,7 +105,7 @@ void UpdateEyelid(float dt)
     eyelidProgress += speed * dt;
     if (eyelidProgress > halfH)
         eyelidProgress = halfH;
-}
+*/
 
 // Call in UI::Render() when player is dead
 void DrawEyelid()
@@ -142,10 +142,7 @@ void DrawEyelid()
     AEGfxMeshDraw(bottomFrames[frameIndex], AE_GFX_MDM_TRIANGLES);
 }
 
-bool EyelidDone()
-{
-    return eyelidProgress >= AEGfxGetWindowHeight() * 0.5f;
-}
+
 
 // Resets progress only? meshes untouched
 void ResetEyelid()
@@ -155,4 +152,87 @@ void ResetEyelid()
 float GetEyelidProgress()
 {
     return eyelidProgress;
+}
+
+
+float GetEyelidMaxProgress()
+{
+    return AEGfxGetWindowHeight() * 0.5f;
+}
+
+void SetEyelidProgress(float progressPx)
+{
+    float maxP = GetEyelidMaxProgress();
+    if (progressPx < 0.0f) progressPx = 0.0f;
+    if (progressPx > maxP) progressPx = maxP;
+    eyelidProgress = progressPx;
+}
+
+void UpdateEyelidClose(float dt)
+{
+    float halfH = GetEyelidMaxProgress();
+    float remaining = halfH - eyelidProgress;
+    float speed = remaining * 1.35f;
+    speed = AEClamp(speed, 80.0f, eyelidSpeed);
+
+    eyelidProgress += speed * dt;
+    if (eyelidProgress > halfH)
+        eyelidProgress = halfH;
+}
+
+void UpdateEyelidOpen(float dt)
+{
+    float maxP = GetEyelidMaxProgress();
+    float speed = maxP * 1.0f;
+    speed = AEClamp(speed, 80.0f, eyelidSpeed);
+
+    eyelidProgress -= speed * dt;
+    if (maxP < 0.0f)
+        maxP = 0.0f;
+}
+
+void DrawEyelidAtProgress(float progressPx)
+{
+    if (progressPx <= 0.0f) return;
+
+    float winW = static_cast<float>(AEGfxGetWindowWidth());
+    float winH = static_cast<float>(AEGfxGetWindowHeight());
+
+    float progressNorm = progressPx / winH;
+    float t = progressNorm / 0.5f;
+
+    int frameIndex = static_cast<int>(t * (EYELID_FRAMES - 1) + 0.5f);
+    if (frameIndex < 0) frameIndex = 0;
+    if (frameIndex >= EYELID_FRAMES) frameIndex = EYELID_FRAMES - 1;
+
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    AEGfxSetBlendMode(AE_GFX_BM_NONE);
+    AEGfxSetTransparency(1.0f);
+    AEGfxSetColorToMultiply(1, 1, 1, 1);
+    AEGfxSetColorToAdd(0, 0, 0, 0);
+
+    AEMtx33 scale, translate, transform;
+    AEMtx33Scale(&scale, winW, winH);
+    AEMtx33Trans(&translate,
+        Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+    AEMtx33Concat(&transform, &translate, &scale);
+
+    AEGfxSetTransform(transform.m);
+    AEGfxMeshDraw(topFrames[frameIndex], AE_GFX_MDM_TRIANGLES);
+    AEGfxMeshDraw(bottomFrames[frameIndex], AE_GFX_MDM_TRIANGLES);
+}
+/**void DrawEyelid()
+{
+    DrawEyelidAtProgress(eyelidProgress);
+}*/
+
+bool EyelidFullyClosed()
+{
+    return eyelidProgress >= GetEyelidMaxProgress();
+}
+
+bool EyelidFullyOpen()
+{
+    return eyelidProgress <= 0.0f;
 }
