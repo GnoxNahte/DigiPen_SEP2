@@ -1,4 +1,4 @@
-#include "GameScene.h"
+﻿#include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 #include "../Time.h"
@@ -14,16 +14,6 @@
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
-
-//AABB collision helper
-/*static bool AABB_Overlap(const AEVec2& aPos, const AEVec2& aSize,
-	const AEVec2& bPos, const AEVec2& bSize)
-{
-	const float dx = std::fabs(aPos.x - bPos.x);
-	const float dy = std::fabs(aPos.y - bPos.y);
-	return dx <= (aSize.x + bSize.x) * 0.5f
-		&& dy <= (aSize.y + bSize.y) * 0.5f;
-}*/
 
 namespace
 {
@@ -85,8 +75,8 @@ namespace
 				<< " roomsY=" << roomsY
 				<< " totalRooms=" << (roomsX * roomsY)
 				<< "\n";
-		
-		// neighbors
+
+			// neighbors
 			if (ry - 1 >= 0)
 				room.topRoom = RoomIdFromIndex(i - roomsX);
 			if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
@@ -297,6 +287,7 @@ RoomDirection GameScene::CheckRoomExit() const
 
 	return DIR_NONE;
 }
+
 GameScene::GameScene() :
 	map(ROOM_COLS, ROOM_ROWS),
 	player(&map, &enemyMgr),
@@ -311,25 +302,6 @@ GameScene::GameScene() :
 		),
 	enemyBoss(35, 2.90f)
 {
-	// camera.SetFollow(&player.GetPosition(), 0, (float)ROOM_COLS, true);
-	// =============================== Traps Setup (debug) ===========================
-	//auto& plate = trapMgr.Spawn<PressurePlate>(
-	//	Box{ {2.f, 4.f}, {4.f, 1.f} }   
-	//);
-
-	//auto& spikes = trapMgr.Spawn<SpikePlate>(
-	//	Box{ {6.5f, 4.f}, {3.f, 1.f} }, 
-	//	1.f, 1.f, 10, true
-	//);
-	// 
-	//plate.AddLinkedTrap(&spikes);
-
-	//trapMgr.Spawn<LavaPool>(
-	//	Box{ {2.f, 3.0f}, {4.f, 0.8f} }, 
-	//	2, 0.2f
-	//);
-
-
 	UI::Init(&player);
 	Background::Init();
 	// Init pause overlay resources 
@@ -340,7 +312,6 @@ GameScene::GameScene() :
 	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
 
 	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
-	// If your enum order differs, adjust the mapping here.
 	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
 	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
 	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
@@ -366,7 +337,7 @@ GameScene::GameScene() :
 	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
 
 	// Pixellari for description (match BuffCardScreen)
-	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30); // change to your description font
+	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30);
 }
 
 GameScene::~GameScene()
@@ -398,11 +369,6 @@ GameScene::~GameScene()
 	if (pauseFontRuntime)
 	{
 		AEGfxDestroyFont(pauseFontRuntime);
-	}
-	if (pauseRectMesh)
-	{
-		AEGfxMeshFree(pauseRectMesh);
-		pauseRectMesh = nullptr;
 	}
 
 	// Free buff icon textures for pause overlay
@@ -504,7 +470,7 @@ void GameScene::Update()
 	if (AEInputCheckTriggered(AEVK_ESCAPE))
 	{
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
-		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit)
+		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart)
 			pausePage = PausePage::Menu;
 		else
 			TogglePause();
@@ -566,98 +532,22 @@ void GameScene::Update()
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
-	//enemyBoss.Update(p, player.GetIsFacingRight());
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-
 	attackSystem.UpdateEnemyAttack(player, enemyMgr, &enemyBoss, map);
-
-	// --- DELETE THIS LATER, PREVIOUS ENEMY ATTACK PLAYER!!!!! -------
-	//const AEVec2 pPos = player.GetPosition();
-	//const AEVec2 pSize = player.GetStats().playerSize;
-	/*
-	// Boss normal melee attack (ATTACK state via EnemyAttack)
-	if (enemyBoss.PollAttackHit())
-	{
-		// EnemyAttack already checked absDx <= hitRange at hit moment (because Boss uses absDx in attack.Update).
-		// Add a Y tolerance so it doesn't hit through platforms.
-		const float dy = std::fabs(pPos.y - enemyBoss.position.y);
-		const float yTol = (pSize.y * 0.5f) + 0.6f; // tune 0.3~1.0 depending on your level scale
-
-		if (dy <= yTol)
-		{
-			player.TakeDamage(enemyBoss.attackDamage, enemyBoss.position); // choose your boss damage
-			std::cout << "[Boss] HIT player (melee)\n";
-		}
-	}
-
-	// Boss special spell damage
-	const int spellHits = enemyBoss.ConsumeSpecialHits(player.GetPosition(),
-	player.GetStats().playerSize);
-	if (spellHits > 0)
-	{
-		const int spellDmg = 1;                 // tune
-		player.TakeDamage(spellHits * spellDmg, enemyBoss.position);
-		std::cout << "[Boss] spell hit x" << spellHits << "\n";
-	}
-
-	enemyMgr.ForEachEnemy([&](Enemy& e)
-		{
-			// do player/enemy AABB checks here
-			// if hit: e.ApplyDamage(1);
-
-			if (!e.PollAttackHit()) return;
-
-			const AEVec2 ePos = e.GetPosition();
-
-			const float dx = std::fabs(pPos.x - ePos.x);
-			const float dy = std::fabs(pPos.y - ePos.y);
-
-			// mid/close range on X, plus a small Y tolerance so it doesn't hit through floors
-			if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
-			{
-				player.TakeDamage(e.GetAttackDamage(), e.GetPosition());
-				std::cout << "Enemy HIT player!\n";
-			}
-		});
-	*/
 
 	trapMgr.Update(dt, player);
 
-	//std::cout << std::fixed << std::setprecision(2) << AEFrameRateControllerGetFrameRate() << std::endl;
-
-	// === Particle system test ===
 	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
-	//testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 5000000.f : 0.f);
 	if (AEInputCheckTriggered(AEVK_G))
 		testParticleSystem.SpawnParticleBurst(300);
 	testParticleSystem.Update();
 
-	// For checking current buffs vector
-	//if (AEInputCheckTriggered(AEVK_P)) {
-	//	std::cout << "Current buffs :\n";
-	//	for (auto& buffs : BuffCardManager::GetCurrentBuffs()) {
-	//		std::cout << "Buff: " << buffs.cardName << " Type: " << BuffCardManager::CardTypeToString(buffs.type) << " Rarity: "
-	//			<< BuffCardManager::CardRarityToString(buffs.rarity) << "\nDescription: " << buffs.cardDesc << "\nEffect: " << buffs.cardEffect
-	//			<< " Effect value 1: " << buffs.effectValue1 << " Effect value 2:" << buffs.effectValue2 << std::endl;
-	//	}
-	//}
-	// === For Damage Text Testing ===
-	//if AEInputCheckCurr/Triggered
-	//if (AEInputCheckTriggered(AEVK_K))
-	//{
-	//	AEVec2 pos{};
-	//	pos.x = AEExtras::RandomRange({ 2.5f, 24.f });
-	//	pos.y = AEExtras::RandomRange({ 2.5f, 10.f });
-	//	DAMAGE_TYPE type = static_cast<DAMAGE_TYPE>(AEExtras::RandomRange({ 0,6 }));
-	//	int dmg = static_cast<int>(AEExtras::RandomRange({ 1,1000 }));
-	//	UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, pos);
-	//}
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
-	if (UI::GetRestartStatus()) { // Allow restart run from game over screen (i.e. load game scene again).
+	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
 
@@ -665,9 +555,8 @@ void GameScene::Update()
 		TimerSystem::GetInstance().Clear();
 		UI::Reset();
 		if (!BuffCardManager::GetCurrentBuffs().empty()) {
-			BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+			BuffCardManager::ResetCurrentBuffs();
 		}
-		// Reload the last successfully loaded level (if any)
 		if (!gLastLoadedLevelPath.empty())
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
@@ -686,38 +575,16 @@ void GameScene::Render()
 
 	Background::Render();
 	map.Render();
-	//trapMgr.Render();   // for debug
 	testParticleSystem.Render();
 	player.Render();
 	enemyBoss.Render();
 	enemyMgr.RenderAll();
 	UI::Render();
-	// Draw pause overlay on top of game render
+
 	if (IsPaused())
 	{
 		RenderPauseOverlay();
 	}
-
-	// === Code below is for DEBUG ONLY ===
-
-	// === Debug Info ===
-	//Box playerBox{ player.GetPosition(), player.GetSize() };
-
-	//Box plateBox{ {2.f, 4.f}, {4.f, 1.f} };
-	//Box spikeBox{ {6.5f, 4.f}, {3.f, 1.f} };
-	//Box lavaBox{ {2.f, 3.0f}, {4.f, 0.8f} };
-
-
-	//bool onPlate = IntersectsBox(playerBox, plateBox);
-	//bool onSpike = IntersectsBox(playerBox, spikeBox);
-	//bool onLava = IntersectsBox(playerBox, lavaBox);
-
-	//std::string ov = "Overlap: Plate=" + std::to_string(onPlate)
-	//	+ " Spike=" + std::to_string(onSpike)
-	//	+ " Lava=" + std::to_string(onLava);
-	//QuickGraphics::PrintText(ov.c_str(), -1, 0.60f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
-
-
 
 #if _DEBUG
 	AEVec2 worldMousePos;
@@ -727,7 +594,6 @@ void GameScene::Render()
 	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-
 	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
@@ -736,14 +602,12 @@ void GameScene::Render()
 
 	if (AEInputCheckTriggered(AEVK_R)) {
 		pausePage = PausePage::None;
-
 		Time::GetInstance().ResetElapsedTime();
 		TimerSystem::GetInstance().Clear();
 		UI::Reset();
 		if (!BuffCardManager::GetCurrentBuffs().empty()) {
-			BuffCardManager::ResetCurrentBuffs(); // Only clears vector of held buffs.
+			BuffCardManager::ResetCurrentBuffs();
 		}
-		// Reload the last successfully loaded level (if any)
 		if (!gLastLoadedLevelPath.empty())
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
@@ -778,7 +642,6 @@ static AEVec2 ScreenToEngine(float px, float py)
 {
 	float w = (float)AEGfxGetWindowWidth();
 	float h = (float)AEGfxGetWindowHeight();
-	// Screen: (0,0) top-left. Engine: (0,0) center, +Y up.
 	return AEVec2{ px - w * 0.5f, (h * 0.5f) - py };
 }
 
@@ -786,7 +649,6 @@ void GameScene::DrawDimBackground(float alpha)
 {
 	if (alpha <= 0.0f) return;
 
-	// Full-screen overlay in WORLD space, aligned to current camera (same as BuffCardScreen::DrawBlackOverlay)
 	AEMtx33 scale, rotate, translate, transform;
 
 	AEMtx33Scale(&scale,
@@ -795,7 +657,6 @@ void GameScene::DrawDimBackground(float alpha)
 
 	AEMtx33Rot(&rotate, 0.0f);
 
-	// IMPORTANT: follow camera so it covers the viewport regardless of camera movement
 	AEMtx33Trans(&translate,
 		Camera::position.x * Camera::scale,
 		Camera::position.y * Camera::scale);
@@ -805,7 +666,6 @@ void GameScene::DrawDimBackground(float alpha)
 
 	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 
-	// Solid black with alpha
 	AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 1.f);
 	AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
@@ -829,10 +689,8 @@ void GameScene::DrawSolidPanel(const UIRect& r, float alpha)
 	AEMtx33Concat(&transform, &rot, &scale);
 	AEMtx33Concat(&transform, &trans, &transform);
 
-	// Use the same render-state pattern as BuffCardScreen::DrawBlackOverlay()
 	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
 
-	// Multiply should stay neutral; darkening comes from the additive alpha
 	AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
 	AEGfxSetColorToAdd(0.f, 0.f, 0.f, alpha);
 
@@ -875,7 +733,6 @@ void GameScene::DrawTextPx(s8 font, const std::string& text, float px, float py,
 	float w = (float)AEGfxGetWindowWidth();
 	float h = (float)AEGfxGetWindowHeight();
 
-	// Convert pixel position to NDC position for AEGfxPrint
 	float xNdc = (px / w) * 2.0f - 1.0f;
 	float yNdc = 1.0f - (py / h) * 2.0f;
 
@@ -894,12 +751,12 @@ bool GameScene::IsClicked(const UIRect& r) const
 
 std::string GameScene::FormatRunTime() const
 {
-	double t = Time::GetInstance().GetScaledElapsedTime(); // seconds
+	double t = Time::GetInstance().GetScaledElapsedTime();
 	int totalMs = (int)(t * 1000.0);
 
-	int mm = (totalMs / 60000) % 100;      // minutes
-	int ss = (totalMs / 1000) % 60;        // seconds
-	int cs = (totalMs / 10) % 100;         // centiseconds (00-99)
+	int mm = (totalMs / 60000) % 100;
+	int ss = (totalMs / 1000) % 60;
+	int cs = (totalMs / 10) % 100;
 
 	std::ostringstream oss;
 	oss << std::setfill('0') << std::setw(2) << mm << ":"
@@ -924,20 +781,7 @@ void GameScene::UpdatePauseInput()
 		}
 		if (IsClicked(btnRestart))
 		{
-			pausePage = PausePage::None;
-			Time::GetInstance().SetPaused(false);
-
-			Time::GetInstance().ResetElapsedTime();
-			TimerSystem::GetInstance().Clear();
-			UI::Reset();
-			if (!BuffCardManager::GetCurrentBuffs().empty()) {
-				BuffCardManager::ResetCurrentBuffs();
-			}
-			if (!gLastLoadedLevelPath.empty())
-			{
-				gPendingLevelPath = gLastLoadedLevelPath;
-			}
-			GSM::ChangeScene(SceneState::GS_GAME);
+			pausePage = PausePage::ConfirmRestart;
 			return;
 		}
 		if (IsClicked(btnSettings))
@@ -956,8 +800,8 @@ void GameScene::UpdatePauseInput()
 		float w = (float)AEGfxGetWindowWidth();
 		float h = (float)AEGfxGetWindowHeight();
 
-		UIRect btnNo{ { w * 0.5f - 90, h * 0.5f + 30 }, {140, 44} };
-		UIRect btnYes{ { w * 0.5f + 90, h * 0.5f + 30 }, {140, 44} };
+		UIRect btnNo{ { w * 0.5f - 100, h * 0.5f + 30 }, {140, 44} };
+		UIRect btnYes{ { w * 0.5f + 100, h * 0.5f + 30 }, {140, 44} };
 
 		if (IsClicked(btnNo))
 		{
@@ -972,76 +816,92 @@ void GameScene::UpdatePauseInput()
 			return;
 		}
 	}
+	else if (pausePage == PausePage::ConfirmRestart)
+	{
+		float w = (float)AEGfxGetWindowWidth();
+		float h = (float)AEGfxGetWindowHeight();
+		float centerX = w * 0.5f;
+		float centerY = h * 0.5f;
+
+		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+
+		if (IsClicked(btnNo))
+		{
+			pausePage = PausePage::Menu;
+			return;
+		}
+		if (IsClicked(btnYes))
+		{
+			pausePage = PausePage::None;
+			Time::GetInstance().SetPaused(false);
+			Time::GetInstance().ResetElapsedTime();
+			TimerSystem::GetInstance().Clear();
+			UI::Reset();
+			if (!BuffCardManager::GetCurrentBuffs().empty()) {
+				BuffCardManager::ResetCurrentBuffs();
+			}
+			if (!gLastLoadedLevelPath.empty())
+			{
+				gPendingLevelPath = gLastLoadedLevelPath;
+			}
+			GSM::ChangeScene(SceneState::GS_GAME);
+			return;
+		}
+	}
 	else if (pausePage == PausePage::Settings)
 	{
-		auto Clamp01_UI = [](float v) -> float
-			{
-				if (v < 0.0f) return 0.0f;
-				if (v > 1.0f) return 1.0f;
-				return v;
+		auto Clamp01_UI = [](float v) -> float {
+			if (v < 0.0f) return 0.0f;
+			if (v > 1.0f) return 1.0f;
+			return v;
 			};
 
-		auto PointInRectPx = [](float mx, float my, const UIRect& r) -> bool
-			{
-				const float left = r.pos.x - r.size.x * 0.5f;
-				const float right = r.pos.x + r.size.x * 0.5f;
-				const float top = r.pos.y - r.size.y * 0.5f;
-				const float bottom = r.pos.y + r.size.y * 0.5f;
-
-				return (mx >= left && mx <= right && my >= top && my <= bottom);
+		auto PointInRectPx = [](float mx, float my, const UIRect& r) -> bool {
+			const float left = r.pos.x - r.size.x * 0.5f;
+			const float right = r.pos.x + r.size.x * 0.5f;
+			const float top = r.pos.y - r.size.y * 0.5f;
+			const float bottom = r.pos.y + r.size.y * 0.5f;
+			return (mx >= left && mx <= right && my >= top && my <= bottom);
 			};
 
-		auto SliderValueFromMouse = [&](float mouseX, float leftX, float width) -> float
-			{
-				if (width <= 0.0f) return 0.0f;
-				return Clamp01_UI((mouseX - leftX) / width);
+		auto SliderValueFromMouse = [&](float mouseX, float leftX, float width) -> float {
+			if (width <= 0.0f) return 0.0f;
+			return Clamp01_UI((mouseX - leftX) / width);
 			};
 
-		// ===== overlay setting =====
 		const float sliderLeft = 860.0f;
 		const float sliderWidth = 330.0f;
 		const float knobSize = 28.0f;
 		const float hitboxHeight = 36.0f;
-
 		const float bgmY = 350.0f;
 		const float sfxY = 460.0f;
 
-		s32 mx = 0;
-		s32 my = 0;
+		s32 mx = 0, my = 0;
 		AEInputGetCursorPosition(&mx, &my);
 
 		const bool mousePressed = AEInputCheckTriggered(AEVK_LBUTTON);
 		const bool mouseHeld = AEInputCheckCurr(AEVK_LBUTTON);
 
-		auto MakeTrackRect = [&](float y) -> UIRect
-			{
-				return UIRect{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, hitboxHeight } };
+		auto MakeTrackRect = [&](float y) -> UIRect {
+			return UIRect{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, hitboxHeight } };
 			};
-
-		auto MakeKnobRect = [&](float value, float y) -> UIRect
-			{
-				return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
+		auto MakeKnobRect = [&](float value, float y) -> UIRect {
+			return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
 			};
 
 		UIRect bgmTrack = MakeTrackRect(bgmY);
 		UIRect sfxTrack = MakeTrackRect(sfxY);
-
 		UIRect bgmKnob = MakeKnobRect(AudioManager::GetMusicVolume(), bgmY);
 		UIRect sfxKnob = MakeKnobRect(AudioManager::GetSFXVolume(), sfxY);
 
 		if (mousePressed)
 		{
-			if (PointInRectPx((float)mx, (float)my, bgmTrack) ||
-				PointInRectPx((float)mx, (float)my, bgmKnob))
-			{
+			if (PointInRectPx((float)mx, (float)my, bgmTrack) || PointInRectPx((float)mx, (float)my, bgmKnob))
 				draggingBgmSlider = true;
-			}
 
-			if (PointInRectPx((float)mx, (float)my, sfxTrack) ||
-				PointInRectPx((float)mx, (float)my, sfxKnob))
-			{
+			if (PointInRectPx((float)mx, (float)my, sfxTrack) || PointInRectPx((float)mx, (float)my, sfxKnob))
 				draggingSfxSlider = true;
-			}
 		}
 
 		if (!mouseHeld)
@@ -1051,16 +911,10 @@ void GameScene::UpdatePauseInput()
 		}
 
 		if (draggingBgmSlider)
-		{
-			float v = SliderValueFromMouse((float)mx, sliderLeft, sliderWidth);
-			AudioManager::SetMusicVolume(v);
-		}
+			AudioManager::SetMusicVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
 
 		if (draggingSfxSlider)
-		{
-			float v = SliderValueFromMouse((float)mx, sliderLeft, sliderWidth);
-			AudioManager::SetSFXVolume(v);
-		}
+			AudioManager::SetSFXVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
 	}
 }
 
@@ -1069,41 +923,21 @@ void GameScene::RenderPauseOverlay()
 	float w = (float)AEGfxGetWindowWidth();
 	float h = (float)AEGfxGetWindowHeight();
 
-	// Dim background
 	DrawDimBackground(0.75f);
 
-
-	// Titles
 	if (pausePage != PausePage::Settings)
 	{
 		DrawTextPx(pauseFontLarge, "PAUSED", 40, 100, 1.0f, 1, 1, 1, 1);
 		DrawTextPx(pauseFontRuntime, "Run Time : " + FormatRunTime(), 40, 150, 1.0f, 1, 1, 1, 1);
 	}
 
-	// Buttons
 	auto drawBtn = [&](const char* label, const UIRect& r)
 		{
 			const bool hover = IsMouseOver(r);
-
-			// 1) add a subtle scaling effect when hover (like it's "lifting up" towards the player)
 			const float textScale = hover ? 1.05f : 1.0f;
-
-			// 2) change text color when hover; also make non-hovered buttons slightly transparent to de-emphasize them (except the hovered one, which is fully opaque)
 			float cr = 1.f, cg = 1.f, cb = 1.f, ca = hover ? 1.f : 0.85f;
-			if (hover)
-			{
-				cr = 1.0f;  cg = 0.95f; cb = 0.35f; // bright yellow for hover
-			}
-
-			// 3) text only
-			DrawTextPx(
-				pauseFontSmall,
-				label,
-				r.pos.x - 55,
-				r.pos.y + 6,
-				textScale,
-				cr, cg, cb, ca
-			);
+			if (hover) { cr = 1.0f; cg = 0.95f; cb = 0.35f; }
+			DrawTextPx(pauseFontSmall, label, r.pos.x - 55, r.pos.y + 6, textScale, cr, cg, cb, ca);
 		};
 
 	UIRect btnResume{ {150, 300}, {340, 60} };
@@ -1127,25 +961,19 @@ void GameScene::RenderPauseOverlay()
 		const float sliderLeft = 860.0f;
 		const float sliderWidth = 330.0f;
 		const float percentX = 1230.0f;
-
 		const float bgmY = 350.0f;
 		const float sfxY = 460.0f;
-
 		const float trackH = 8.0f;
 		const float knobSz = 28.0f;
 
 		auto DrawSlider = [&](const char* label, float value, float y, bool dragging)
 			{
 				int percent = (int)(value * 100.0f + 0.5f);
-
-				// label
 				DrawTextPx(pauseFontRuntime, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, 1);
 
-				// base track
 				UIRect trackBg{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, trackH } };
 				DrawSolidPanel(trackBg, 0.20f);
 
-				// filled track
 				float filledW = sliderWidth * value;
 				if (filledW > 0.0f)
 				{
@@ -1153,121 +981,56 @@ void GameScene::RenderPauseOverlay()
 					DrawSolidPanel(trackFill, 0.50f);
 				}
 
-				// knob
 				float knobX = sliderLeft + sliderWidth * value;
 				UIRect knob{ { knobX, y }, { knobSz, knobSz } };
 				DrawSolidPanel(knob, dragging ? 0.60f : 0.36f);
 
-				// percent text
-				DrawTextPx(
-					pauseFontRuntime,
-					std::to_string(percent),
-					percentX,
-					y - 18.0f,
-					1.0f,
-					1.0f, 0.95f, 0.35f, 1.0f
-				);
+				DrawTextPx(pauseFontRuntime, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, 1.0f);
 			};
 
 		DrawSlider("BGM Volume", AudioManager::GetMusicVolume(), bgmY, draggingBgmSlider);
 		DrawSlider("SFX Volume", AudioManager::GetSFXVolume(), sfxY, draggingSfxSlider);
 	}
-
-	// ============================== Active Buffs (top-right) ==============================
-	// Draw only existing buffs. 1 row max, 4 cards per row. No placeholders.
-	const auto& buffs = BuffCardManager::GetCurrentBuffs();
-	if (!buffs.empty())
+	else if (pausePage == PausePage::ConfirmRestart)
 	{
+		float centerX = w * 0.5f;
+		float centerY = h * 0.5f;
 
-		const int cols = 3;
-		const int maxRows = 3;
-		const int maxCards = cols * maxRows; // 9
-
-		// Slightly smaller cards
-		const float cardW = 150.0f;
-		const float cardH = 212.0f;
-		const float gapX = 50.0f;
-		const float gapY = 30.0f;
-
-		const int count = (int)buffs.size();
-		const int drawCount = (count < maxCards) ? count : maxCards;
-
-
-		// Anchor: move this block to the right & top area (match your red mark)
-		// (0,0) is top-left in pixel coordinates
-		const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
-		const float anchorY = 150.0f;      // increase => move down, decrease => move up
-
-		// Title position (aligned with cards)
-		DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 100.0f, 0.95f, 1, 1, 1, 1);
-
-
-
-		for (int i = 0; i < drawCount; ++i)
 		{
-			const BuffCard& b = buffs[i];
+			AEMtx33 scale, rot, trans, transform;
+			AEMtx33Scale(&scale, 760.0f, 360.0f);
+			AEMtx33Rot(&rot, 0.0f);
+			AEVec2 eng = ScreenToEngine(centerX, centerY);
+			AEMtx33Trans(&trans, eng.x + Camera::position.x * Camera::scale, eng.y + Camera::position.y * Camera::scale);
+			AEMtx33Concat(&transform, &rot, &scale);
+			AEMtx33Concat(&transform, &trans, &transform);
 
-			UIRect card;
-			card.size = { cardW, cardH };
-
-			// UIRect.pos is center-based (pixel coords)
-			const int cx = i % cols;   // column index: 0,1,2
-			const int cy = i / cols;   // row index: 0,0,0,1,1,1,...
-
-			const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
-			const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
-			card.pos = { centerX, centerY };
-
-			// Pick buff front texture by card type; fallback to card back if missing
-			AEGfxTexture* tex = nullptr;
-			int typeIdx = (int)b.type;
-			if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
-				tex = pauseBuffTex[typeIdx];
-			if (!tex)
-				tex = pauseCardBackTex;
-
-			DrawTexturePanel(tex, card, 1.0f);
-
-			// --- draw glow (rarity emission) ---
-			AEGfxTexture* glow = nullptr;
-			int r = (int)b.rarity;
-			if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
-
-			if (glow)
-			{
-				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen 
-				UIRect glowRect = card;
-				glowRect.size.x *= EMISSION_SCALE;
-				glowRect.size.y *= EMISSION_SCALE;
-				// pos same as card center, so glow is centered on card
-				DrawTexturePanel(glow, glowRect, 1.0f);
-			}
-
-			// Hover tooltip (text only)
-			if (IsMouseOver(card))
-			{
-				// tooltip panel
-				DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
-
-				// Title (m04)
-				DrawTextPx(
-					pauseFontSmall,
-					b.cardName,
-					120.0f, h - 125.0f, 1.0f,
-					1, 1, 1, 1
-				);
-
-				// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
-				const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
-
-				DrawTextPx(
-					pauseFontDesc,
-					desc,
-					120.0f, h - 95.0f, 1.0f,
-					0.9f, 0.9f, 0.9f, 1.0f
-				);
-			}
+			AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+			AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
+			AEGfxSetColorToAdd(0.18f, 0.18f, 0.18f, 0.90f);
+			AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+			AEGfxSetTransparency(0.90f);
+			AEGfxSetTransform(transform.m);
+			AEGfxMeshDraw(pauseRectMesh, AE_GFX_MDM_TRIANGLES);
 		}
+
+		DrawTextPx(pauseFontLarge, "RESTART RUN?", centerX - 225.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST.", centerX - 280.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
+
+		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+
+		bool hoverNo = IsMouseOver(btnNo);
+		float scaleNo = hoverNo ? 1.05f : 1.0f;
+		float rNo = 1.f, gNo = 1.f, bNo = 1.f, aNo = hoverNo ? 1.f : 0.85f;
+		if (hoverNo) { rNo = 1.0f; gNo = 0.95f; bNo = 0.35f; }
+
+		bool hoverYes = IsMouseOver(btnYes);
+		float scaleYes = hoverYes ? 1.05f : 1.0f;
+		float rYes = 1.f, gYes = 1.f, bYes = 1.f, aYes = hoverYes ? 1.f : 0.85f;
+		if (hoverYes) { rYes = 1.0f; gYes = 0.4f; bYes = 0.4f; }
+
+		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
+		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
-	// ======================================================================================
 }
