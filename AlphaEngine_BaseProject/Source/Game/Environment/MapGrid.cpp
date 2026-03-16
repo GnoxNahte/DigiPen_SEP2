@@ -65,28 +65,16 @@ MapGrid::~MapGrid()
 
 bool MapGrid::IsSolidAtGridCell(int x, int y) const
 {
-	if (IsSolidAtGridCellIgnorePlatform(x, y))
-		return true;
-	else
-		return IsPlatform(x, y);
-}
-
-bool MapGrid::IsSolidAtGridCellIgnorePlatform(int x, int y) const
-{
 	if (x < 0 || x >= size.x || y < 0 || y >= size.y)
 		return false;
 
 	const MapTile::Type here = tiles[y * size.x + x].type;
 
 	// normal solid tiles occupy exactly one cell
-	return	here == MapTile::Type::GROUND_SURFACE ||
-			here == MapTile::Type::GROUND_BODY ||
-			here == MapTile::Type::GROUND_BOTTOM;
-}
-
-bool MapGrid::IsPlatform(int x, int y) const
-{
-	const MapTile::Type here = tiles[y * size.x + x].type;
+	if (here == MapTile::Type::GROUND_SURFACE ||
+		here == MapTile::Type::GROUND_BODY ||
+		here == MapTile::Type::GROUND_BOTTOM)
+		return true;
 
 	// platform anchor occupies its whole 5-cell span on the same row
 	if (here == MapTile::Type::PLATFORM)
@@ -196,31 +184,31 @@ void MapGrid::SetTile(int x, int y, MapTile::Type type)
 	tiles[y * size.x + x].type = type;
 }
 
-bool MapGrid::CheckPointCollision(float x, float y, bool includePlatforms)
+bool MapGrid::CheckPointCollision(float x, float y)
 {
 	int gridX, gridY;
 	WorldToGridCoords(AEVec2(x, y), gridX, gridY);
-	return includePlatforms ? IsSolidAtGridCell(gridX, gridY) : IsSolidAtGridCellIgnorePlatform(gridX, gridY);
+	return IsSolidAtGridCell(gridX, gridY);
 }
 
-bool MapGrid::CheckPointCollision(const AEVec2& worldPosition, bool includePlatforms)
+bool MapGrid::CheckPointCollision(const AEVec2& worldPosition)
 {
-	return CheckPointCollision(worldPosition.x, worldPosition.y, includePlatforms);
+	return CheckPointCollision(worldPosition.x, worldPosition.y);
 }
 
-bool MapGrid::CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize, bool includePlatforms)
+bool MapGrid::CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize)
 {
 	AEVec2 halfBoxSize(boxSize.x * 0.5f, boxSize.y * 0.5f);
 
-	return CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y - halfBoxSize.y, includePlatforms) ||
-		CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y + halfBoxSize.y, includePlatforms) ||
-		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y - halfBoxSize.y, includePlatforms) ||
-		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y + halfBoxSize.y, includePlatforms);
+	return CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x - halfBoxSize.x, boxPosition.y + halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y - halfBoxSize.y) ||
+		CheckPointCollision(boxPosition.x + halfBoxSize.x, boxPosition.y + halfBoxSize.y);
 }
 
-bool MapGrid::CheckBoxCollision(const Box& box, bool includePlatforms)
+bool MapGrid::CheckBoxCollision(const Box& box)
 {
-	return CheckBoxCollision(box.position, box.size, includePlatforms);
+	return CheckBoxCollision(box.position, box.size);
 }
 
 float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
@@ -237,24 +225,17 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 
 	Vec2Int currCell{ start };
 
+	if (IsSolidAtGridCell(currCell.x, currCell.y))
+		return 0.f;
+
 	// tMax: Percentage of each axis from start to end
 	// 1. currCell - start = amt moved from start to curr cell. (Floating point of start cell for now, since cell size == 1)
 	// 2. Vec2Int::Max(step, {0,0}) = If positive (in their own axis), start from the next cell
 	// 3. <result> / ray = Percentage of the ray 
 	//
 	// delta: Amt to move each step
-	AEVec2	tMax{ (currCell - start + Vec2Int::Max(step, {0,0})) / ray };
-	AEVec2 delta{ AEExtras::Abs(1.f / ray) };
-
-	if (IsPlatform(currCell.x, currCell.y))
-	{
-		tMax.y += delta.y;
-		currCell.y += step.y;
-	}
-
-	auto SolidGridCheck = ray.y > 0 ? &MapGrid::IsSolidAtGridCellIgnorePlatform : &MapGrid::IsSolidAtGridCell;
-	if ((*this.*SolidGridCheck)(currCell.x, currCell.y))
-		return 0.f;
+	AEVec2	tMax{ (currCell - start + Vec2Int::Max(step, {0,0})) / ray },
+			delta{ AEExtras::Abs(1.f / ray) };
 
 	// When divide by 0
 	if (ray.x == 0.f)
@@ -271,7 +252,7 @@ float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 	bool isAxisX = true;
 	while (tMax.x <= 1.f + delta.x && tMax.y <= 1.f + delta.y)
 	{
-		if ((*this.*SolidGridCheck)(currCell.x, currCell.y))
+		if (IsSolidAtGridCell(currCell.x, currCell.y))
 		{
 			if (Editor::GetShowColliders())
 			{
@@ -321,9 +302,9 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 		return;
 
 	//float epsilon = EPSILON;
-	constexpr float epsilon = 0.001f;
+	constexpr float epsilon = 0.01f;
 
-	AEVec2 colliderSize = colliderSizeTmp;
+	AEVec2 colliderSize = colliderSizeTmp - AEVec2{ epsilon, epsilon };
 	AEVec2 halfColliderSize = colliderSize * 0.5f;
 
 	AEVec2 ray = nextPosition - currPosition;

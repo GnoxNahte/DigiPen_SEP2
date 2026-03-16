@@ -150,7 +150,6 @@ private:
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
     IDamageable* IfCollideEnemy(const Box& collider);
-    float GetSlamAttackScale();
 
     void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();

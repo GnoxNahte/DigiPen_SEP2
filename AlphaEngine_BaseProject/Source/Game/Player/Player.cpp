@@ -125,31 +125,29 @@ void Player::Render()
 
     if (Editor::GetShowColliders())
     {
-        RenderDebugCollider(stats.groundChecker);
-        RenderDebugCollider(stats.ceilingChecker);
-        RenderDebugCollider(stats.leftWallChecker);
-        RenderDebugCollider(stats.rightWallChecker);
+        //RenderDebugCollider(stats.groundChecker);
+        //RenderDebugCollider(stats.ceilingChecker);
+        //RenderDebugCollider(stats.leftWallChecker);
+        //RenderDebugCollider(stats.rightWallChecker);
         QuickGraphics::DrawRect(position, stats.playerSize, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
     }
 
-    if (AEInputCheckTriggered(AEVK_K))
-        std::cout << "A";
+    //if (AEInputCheckTriggered(AEVK_K))
+    //    std::cout << "A";
 
-    // Test dynamic collision
-    AEVec2 mousePos;
-    AEExtras::GetCursorWorldPosition(mousePos);
-    mousePos.y += 0.5f * stats.playerSize.y;
-    AEVec2 collidedPos = position;
-    AEVec2 vel = mousePos - position;
-    map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize, true);
-    QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
-    QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
+    //// Test dynamic collision
+    //AEVec2 mousePos;
+    //AEExtras::GetCursorWorldPosition(mousePos);
+    //mousePos.y += 0.5f * stats.playerSize.y;
+    //AEVec2 collidedPos = position;
+    //AEVec2 vel = mousePos - position;
+    //map->HandleBoxCollision(collidedPos, vel, mousePos, stats.playerSize, true);
+    //QuickGraphics::DrawRect(collidedPos, stats.playerSize, 0x4400FF00);
+    //QuickGraphics::DrawRect(mousePos, stats.playerSize, 0x44FF0000);
     //std::cout << position << "     " << collidedPos << vel << "\n";
 
-    if (AEInputCheckTriggered(AEVK_RBUTTON))
-        position = collidedPos;
-
-    QuickGraphics::DrawRect(position + AEVec2(0.f, -0.25f * (stats.playerSize.y + stats.groundChecker.size.y)), 0.2f * AEVec2{1.f, 1.f});
+    //if (AEInputCheckTriggered(AEVK_RBUTTON))
+    //    position = collidedPos;
 }
 
 void Player::Reset(const AEVec2& initialPos)
@@ -254,16 +252,15 @@ void Player::UpdateInput()
 void Player::UpdateTriggerColliders()
 {
     bool wasGroundCollided = isGroundCollided;
-    bool ifIncludePlatform = velocity.y <= 0 && !map->IsPlatform(static_cast<int>(position.x), static_cast<int>(position.y - 0.25f * (stats.playerSize.y + stats.groundChecker.size.y)));
-    isGroundCollided = map->CheckBoxCollision(position + stats.groundChecker.position, stats.groundChecker.size, ifIncludePlatform);
-    
+    isGroundCollided = map->CheckBoxCollision(position + stats.groundChecker.position, stats.groundChecker.size);
+
     // If in air -> grounded
     if (!wasGroundCollided && isGroundCollided)
         HandleLanding();
 
-    isCeilingCollided   = map->CheckBoxCollision(position + stats.ceilingChecker.position,  stats.ceilingChecker.size, false);
-    isLeftWallCollided  = map->CheckBoxCollision(position + stats.leftWallChecker.position, stats.leftWallChecker.size, false);
-    isRightWallCollided = map->CheckBoxCollision(position + stats.rightWallChecker.position,stats.rightWallChecker.size, false);
+    isCeilingCollided   = map->CheckBoxCollision(position + stats.ceilingChecker.position,  stats.ceilingChecker.size);
+    isLeftWallCollided  = map->CheckBoxCollision(position + stats.leftWallChecker.position, stats.leftWallChecker.size);
+    isRightWallCollided = map->CheckBoxCollision(position + stats.rightWallChecker.position,stats.rightWallChecker.size);
 }
 
 void Player::HorizontalMovement()
@@ -328,13 +325,11 @@ void Player::HandleLanding()
             .lifetimeRange  { 0.1f, 0.3f },
             .tint           { 0.56f, 0.49f, 0.77f, 1.f }
         };
-
-        int spawnCount = static_cast<int>(30 * GetSlamAttackScale());
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
+        particleSystem.SpawnParticleBurst(emitter, 25);
 
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
+        particleSystem.SpawnParticleBurst(emitter, 25);
     }
 
     // @todo: (Ethan) - Play sound
@@ -493,7 +488,10 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     int damage = attack.damage;
 
     if (!isGroundAttack)
-        damage = static_cast<int>(damage * GetSlamAttackScale());
+    {
+        float scale = AEClamp((slamStartHeight - position.y) / stats.slamAttackMaxHeight, 0.1f, 1.f);
+        damage = static_cast<int>(damage * scale);
+    }
 
     // 100% crit if low health
     // Else crit depending on chance
@@ -516,6 +514,8 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     {
         if (isGroundAttack)
             velocity.x += isFacingRight ? -attack.recoilSpeed : attack.recoilSpeed;
+        else
+            velocity.y += attack.recoilSpeed;
 
         hasAppliedRecoil = true;
     }
@@ -606,11 +606,6 @@ IDamageable* Player::IfCollideEnemy(const Box& collider)
     });
 
     return collidedEnemy;
-}
-
-float Player::GetSlamAttackScale()
-{
-    return AEClamp((slamStartHeight - position.y) / stats.slamAttackMaxHeight, 0.1f, 1.f);
 }
 
 // Update particle system
@@ -736,7 +731,7 @@ bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAn
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
-    if (IsInvincible() || IsDead())
+    if (IsInvincible())
     {
         //UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_MISS, position);
         return health > 0;
@@ -766,6 +761,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     hitDirection.y = max(hitDirection.y, 0.4f);
     velocity = hitDirection * knockbackStrength;
 
+
     sprite.SetState(AnimState::HURT);
 
     return true;
@@ -782,11 +778,6 @@ void Player::DrawInspector()
         ImGui::DragFloat2("Position", &position.x, 0.1f);
         ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
         ImGui::Checkbox("Is facing right", &isFacingRight);
-
-        ImGui::Checkbox("Is Ground Collided", &isGroundCollided);
-        ImGui::Checkbox("Is Ceiling Collided", &isCeilingCollided);
-        ImGui::Checkbox("Is Left Wall Collided", &isLeftWallCollided);
-        ImGui::Checkbox("Is Right Wall Collided", &isRightWallCollided);
 
         ImGui::SeparatorText("Stats");
         ImGui::SliderInt("Health", &health, 0, maxHealth);

@@ -18,13 +18,12 @@ public:
 
 	inline const MapTile* GetTile(int x, int y);
 	void SetTile(int x, int y, MapTile::Type type);
-	bool IsPlatform(int x, int y) const;
 
-	bool CheckPointCollision(float x, float y, bool includePlatforms = true);
-	bool CheckPointCollision(const AEVec2& worldPosition, bool includePlatforms = true);
+	bool CheckPointCollision(float x, float y);
+	bool CheckPointCollision(const AEVec2& worldPosition);
 
-	bool CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize, bool includePlatforms = true);
-	bool CheckBoxCollision(const Box& box, bool includePlatforms = true);
+	bool CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize);
+	bool CheckBoxCollision(const Box& box);
 
 	float Raycast(const AEVec2& start, const AEVec2& end);
 
@@ -32,7 +31,6 @@ public:
 
 private:
 	bool IsSolidAtGridCell(int x, int y) const;
-	bool IsSolidAtGridCellIgnorePlatform(int x, int y) const;
 
 private:
 	std::vector<MapTile> tiles;
