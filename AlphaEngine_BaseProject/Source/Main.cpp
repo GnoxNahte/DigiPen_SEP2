@@ -34,7 +34,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, WndProc);
 	
 	// Changing the window title
-	AESysSetWindowTitle("GAM 150"); // @todo: change name
+	AESysSetWindowTitle("Aetherfall"); // @todo: change name
 
 	// reset the system modules
 	AESysReset();
@@ -117,5 +117,5 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		::PostQuitMessage(0);
 		return 0;
 	}
-	return ::DefWindowProcW(hWnd, msg, wParam, lParam);
+	return ::DefWindowProcA(hWnd, msg, wParam, lParam);
 }

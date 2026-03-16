@@ -47,7 +47,8 @@ private:
 		None,
 		Menu,
 		Settings,
-		ConfirmQuit
+		ConfirmQuit,
+		ConfirmRestart
 	};
 
 	PausePage pausePage = PausePage::None;
@@ -71,6 +72,7 @@ private:
 	void TogglePause();
 	void UpdatePauseInput();
 	void RenderPauseOverlay();
+
 
 	// Draw helpers (no ImGui)
 	void DrawDimBackground(float alpha);

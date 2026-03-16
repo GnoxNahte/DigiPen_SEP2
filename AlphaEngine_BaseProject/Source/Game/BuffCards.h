@@ -70,6 +70,10 @@ struct BuffSelectedEvent {
 	const BuffCard& card;
 };
 
+struct OverlayFadeCompleteEvent {
+	int healAmt;
+};
+
 /*----------------------------------------------------------------------------
 The BuffCardManager is responsible for setting up cards to save to JSON,
 including the names and descriptions. The BuffCardScreen handles the actual
@@ -196,6 +200,8 @@ public:
 	static void DrawDeck(const std::vector<BuffCard> cards);
 	static void FlipCard(int cardIndex); // Trigger flip animation
 	//static void DrawCardDesc(const BuffCard& card); // Draw the description of the card when flipped.
+
+	inline static bool fadeCompleteFired = false; // Flag to ensure heal text only prints once.
 
 	// Reset flip states and timers to simulate a shuffle, allowing cards to be drawn again.
 	static void ResetFlipSequence();
