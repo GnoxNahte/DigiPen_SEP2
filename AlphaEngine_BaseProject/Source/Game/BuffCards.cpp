@@ -401,12 +401,22 @@ void BuffCardScreen::Update() {
 
 	for (int i = 0; i < NUM_CARDS; ++i) {
 		if (cardFlipping[i]) {
-			// Animate from -1.0 (back) to 1.0 (front)
-			cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * AEFrameRateControllerGetFrameTime())	;
+			// Determine flip speed based on rarity
+			const auto& cards = BuffCardManager::GetRandomizedCards();
+			float raritySpeedMultiplier = 1.0f;
+			if (i < (int)cards.size()) {
+				switch (cards[i].rarity) {
+				case RARITY_UNCOMMON:  raritySpeedMultiplier = 1.0f;  break;
+				case RARITY_RARE:      raritySpeedMultiplier = 1.25f; break;
+				case RARITY_EPIC:      raritySpeedMultiplier = 1.5f;  break;
+				case RARITY_LEGENDARY: raritySpeedMultiplier = 2.0f;  break;
+				}
+			}
 
+			cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * raritySpeedMultiplier * Time::GetInstance().GetDeltaTime());
 			if (cardFlipStates[i] >= 1.0f) {
 				cardFlipStates[i] = 1.0f;
-				cardFlipping[i] = false; // Flip complete
+				cardFlipping[i] = false;
 			}
 		}
 	}
