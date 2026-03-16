@@ -27,7 +27,7 @@ public:
 	void Render();
 
 	DamageTextSpawner(int initialPoolSize);
-	void SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 position);
+	void SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVec2& position, const AEVec2& direction);
 private:
 	ObjectPool<DamageText> damageTextPool; // Object pool for damage text.
 };
