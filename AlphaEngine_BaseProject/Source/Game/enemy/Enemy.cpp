@@ -476,7 +476,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
 bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
 {
-    if (dead || dmg <= 0 || hurtTimeLeft > 0.f) return false;
+    if (dead || dmg <= 0 ) return false;
 
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
@@ -499,7 +499,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& )
         if (deathTimeLeft <= 0.f)
             deathTimeLeft = 0.5f;
     }
-    else
+    else if (hurtTimeLeft <= 0.f)
     {
         hurtTimeLeft = GetAnimDurationSec(sprite, cfg.animHurt);
         if (hurtTimeLeft <= 0.3f)
