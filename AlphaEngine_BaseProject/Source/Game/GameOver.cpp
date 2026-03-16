@@ -1,5 +1,4 @@
 #include "GameOver.h"
-#include "AEEngine.h"
 #include "../Game/Camera.h"
 
 // Number of discrete animation frames to prebake
@@ -187,8 +186,8 @@ void UpdateEyelidOpen(float dt)
     speed = AEClamp(speed, 80.0f, eyelidSpeed);
 
     eyelidProgress -= speed * dt;
-    if (maxP < 0.0f)
-        maxP = 0.0f;
+    if (eyelidProgress < 0.0f)
+        eyelidProgress = 0.0f;
 }
 
 void DrawEyelidAtProgress(float progressPx)
@@ -228,8 +227,8 @@ void DrawEyelidAtProgress(float progressPx)
 }*/
 
 bool EyelidFullyClosed()
-{
-    return eyelidProgress >= GetEyelidMaxProgress();
+{ 
+    return eyelidProgress >= GetEyelidMaxProgress() * 0.5;
 }
 
 bool EyelidFullyOpen()
