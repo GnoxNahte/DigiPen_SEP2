@@ -422,9 +422,13 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 pos
 			text.r = 1.0f, text.g = 1.0f, text.b = 1.0f;
 			text.scale = 1.0f;
 			break;
+		case DAMAGE_TYPE_HEAL:
+			text.r = 0.1f, text.g = 1.0f, text.b = 0.25f;
+			text.scale = 1.0f;
+			break;
 		case DAMAGE_TYPE_CRIT:
 			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
-			text.scale = 1.25f;
+			text.scale = 1.15f;
 			text.damageType = "CRT!";
 			break;
 		case DAMAGE_TYPE_RESIST:

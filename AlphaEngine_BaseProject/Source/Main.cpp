@@ -34,7 +34,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, WndProc);
 	
 	// Changing the window title
-	AESysSetWindowTitle("GAM 150"); // @todo: change name
+	AESysSetWindowTitle("Aetherfall"); // @todo: change name
 
 	// reset the system modules
 	AESysReset();

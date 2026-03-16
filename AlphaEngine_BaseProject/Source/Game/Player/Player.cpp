@@ -693,13 +693,19 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
     const BuffCard& card = ev.card;
 
     std::cout << "Player applying buff - " << BuffCardManager::CardTypeToString(card.type) << "(" << card.effectValue1 << "," << card.effectValue2 << ")" << "\n";
-
+    int healAmt{};
     switch (card.type)
     {
     case CARD_TYPE::HERMES_FAVOR:   buff_MoveSpeedMulti     *= PercentToScale(card.effectValue1); break;
     case CARD_TYPE::IRON_DEFENCE:   buff_DmgReduction       *= PercentToScaleInvert(card.effectValue1); break;
-    case CARD_TYPE::REVITALIZE:     
-        health = min(static_cast<int>(health + card.effectValue1 / 100.f * maxHealth), maxHealth); break;
+    case CARD_TYPE::REVITALIZE: {
+        healAmt = min(static_cast<int>(card.effectValue1 / 100.f * maxHealth), maxHealth - health);
+        EventSystem::Subscribe<OverlayFadeCompleteEvent>([this, healAmt](const OverlayFadeCompleteEvent& ev) {
+            (void)ev;
+            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position); });
+        health += healAmt; 
+        break;
+    }
     case CARD_TYPE::SHARPEN:        
         buff_critDmgMulti   *= PercentToScale(card.effectValue1);
         buff_critChance     += card.effectValue2 / 100.f; 
@@ -710,6 +716,11 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
     case CARD_TYPE::DEEP_VITALITY: {
         int newMaxHealth = static_cast<int>(maxHealth * PercentToScale(card.effectValue1));
         float percentage = static_cast<float>(health) / maxHealth;
+        healAmt = static_cast<int>(percentage * newMaxHealth - health);
+        EventSystem::Subscribe<OverlayFadeCompleteEvent>([this, healAmt](const OverlayFadeCompleteEvent& ev) {
+            (void)ev;
+            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position); });
+        health = static_cast<int>(percentage * newMaxHealth);
         health = static_cast<int>(percentage * newMaxHealth);
         maxHealth = newMaxHealth;
         break;

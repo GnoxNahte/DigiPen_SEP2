@@ -252,43 +252,50 @@ Called once per shuffle.
 --------------------------------------------------------------*/
 void BuffCardManager::RandomizeCards(int numCards) {
 	randomizedCards.clear();
-	for (int i = 0; i < numCards; ++i) {
+	std::vector<CARD_TYPE> usedTypes; // track already picked types
 
-		/*--------------------------------------------------------------------
-		Handling of card rarity. Rarity determines the strength of the buffs
-		and the pool of possible buffs.
-		----------------------------------------------------------------------*/
+	for (int i = 0; i < numCards; ++i) {
 		CARD_RARITY rarity{ DetermineRarity() };
 
 		const std::vector<BuffCard>* pool = nullptr;
 		switch (rarity) {
 		case RARITY_UNCOMMON: pool = &uncommonCards; break;
-		case RARITY_RARE: pool = &rareCards; break;
-		case RARITY_EPIC: pool = &epicCards; break;
+		case RARITY_RARE:     pool = &rareCards;     break;
+		case RARITY_EPIC:     pool = &epicCards;     break;
 		case RARITY_LEGENDARY: pool = &legendaryCards; break;
 		}
 
 		if (pool && !pool->empty()) {
-			// Get a float [0,1)
+			// Build a filtered pool excluding already used types
+			std::vector<const BuffCard*> availableCards;
+			for (const BuffCard& card : *pool) {
+				bool alreadyUsed = std::find(usedTypes.begin(), usedTypes.end(), card.type) != usedTypes.end();
+				if (!alreadyUsed)
+					availableCards.push_back(&card);
+			}
+
+			// Fallback to full pool if all cards of this rarity are exhausted
+			if (availableCards.empty()) {
+				for (const BuffCard& card : *pool)
+					availableCards.push_back(&card);
+			}
+
 			float roll = AEExtras::RandomRange({ 0.f, 1.f });
+			size_t index = static_cast<size_t>(roll * availableCards.size());
+			if (index >= availableCards.size()) index = availableCards.size() - 1;
 
-			// Convert to an index
-			size_t index = static_cast<size_t>(roll * pool->size());
-
-			// Clamp just in case roll == 1.0
-			if (index >= pool->size()) index = pool->size() - 1;
-
-			randomizedCards.push_back((*pool)[index]);
+			randomizedCards.push_back(*availableCards[index]);
+			usedTypes.push_back(availableCards[index]->type);
 		}
 	}
 	/*----------------------------------------------------------------------------------------------------
 	Checks if the randomization is working correctly by printing out the randomized cards to the console.
 	----------------------------------------------------------------------------------------------------*/
-	for (int i = 0; i < numCards; ++i) {
-		//std::cout << "RANDOMIZED CARD " << i  << "  "  << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
-			//<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << "Desc: " << randomizedCards[i].cardDesc << "Effect: " 
-			//<< randomizedCards[i].cardEffect << std::endl;
-	}
+	//for (int i = 0; i < numCards; ++i) {
+	//	//std::cout << "RANDOMIZED CARD " << i  << "  "  << randomizedCards[i].cardName << " - Rarity: " << BuffCardManager::CardRarityToString(randomizedCards[i].rarity)
+	//		//<< ", Type: " << BuffCardManager::CardTypeToString(randomizedCards[i].type) << "Desc: " << randomizedCards[i].cardDesc << "Effect: " 
+	//		//<< randomizedCards[i].cardEffect << std::endl;
+	//}
 }
 
 CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
@@ -438,7 +445,7 @@ void BuffCardScreen::Update() {
 
 	if (BuffCardManager::IsCardSelectedThisUpdate())
 	{
-		// Fade OUT
+		fadeCompleteFired = false; // Reset fade complete flag.
 		overlayAlpha -= fadeSpeed * dt;
 	}
 	else
@@ -448,8 +455,18 @@ void BuffCardScreen::Update() {
 	}
 
 	// Clamp
-	if (overlayAlpha < 0.f) overlayAlpha = 0.f;
-	if (overlayAlpha > 0.85f) overlayAlpha = 0.85f;
+	if (overlayAlpha <= 0.f)
+	{
+		overlayAlpha = 0.f;
+		if (!fadeCompleteFired) {
+			EventSystem::Trigger<OverlayFadeCompleteEvent>({});
+			EventSystem::Clear<OverlayFadeCompleteEvent>(); // remove all listeners after firing
+			fadeCompleteFired = true;
+		}
+	}
+	if (overlayAlpha > 0.85f) {
+		overlayAlpha = 0.85f;
+	}
 }
 // This function resets the flip, simulating a shuffle.
 // TODO : The buff card type and rarity should be randomized during this function.
