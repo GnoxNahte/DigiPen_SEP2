@@ -1,8 +1,13 @@
 #include "AudioManager.h"
 #include <algorithm>
+#include <cmath>
+#include <iostream>
+#include "../Game/Time.h"
 
 namespace
 {
+    const f32 PI_2 = 1.57079632679f;
+
     bool gAudioInitialized = false;
     bool gAudioLoaded = false;
 
@@ -13,6 +18,9 @@ namespace
     AEAudioGroup gSFXGroup{};
     AEAudioGroup gMusicGroup{};
 
+    AEAudioGroup gFadeOutGroup{};
+    AEAudioGroup gFadeInGroup{};
+
     // SFX
     AEAudio gPlayerAttack1{};
     AEAudio gPlayerAttack2{};
@@ -21,8 +29,13 @@ namespace
     // Music
     AEAudio gMainMenuMusic{};
     AEAudio gGameSceneMusic{};
+    //AEAudio gBossIntroMusic{};
+    //AEAudio gBossCombatMusic{};
     AEAudio gVictoryMusic{};
     AEAudio gDeathMusic{};
+
+    Audio gBossIntroMusic{};
+    Audio gBossCombatMusic{};
 
     int gNextAttackIndex = 0;
 
@@ -31,6 +44,15 @@ namespace
     float gCurrentMusicVolumeScale = 1.0f;
     float gCurrentMusicPitch = 1.0f;
     int gCurrentMusicLoopCount = 0;
+
+    // Crossfade variables
+    // Static pointers to track which channels are currently fading
+    Audio* gFromChannel = nullptr;
+    Audio* gToChannel = nullptr;
+
+    f32 gFadeTimer = 0.0f;
+    f32 gFadeDuration = 0.0f;
+    bool gIsCrossfading = false;
 
     float Clamp01(float v)
     {
@@ -76,9 +98,45 @@ void AudioManager::Init()
 
     gSFXGroup = AEAudioCreateGroup();
     gMusicGroup = AEAudioCreateGroup();
+
+    gFadeOutGroup = AEAudioCreateGroup();
+    gFadeInGroup = AEAudioCreateGroup();
+
     gAudioInitialized = true;
 
     ApplyGroupVolumes();
+}
+
+void AudioManager::Update() {
+    // Trigger check
+    if (AEInputCheckTriggered(AEVK_1)) {
+        Crossfade(gBossIntroMusic, gBossCombatMusic, 5.f);
+    }
+    if (AEInputCheckTriggered(AEVK_2)) {
+        Crossfade(gBossCombatMusic, gBossIntroMusic, 4.5f);
+    }
+
+    if (gIsCrossfading) {
+        gFadeTimer += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+
+        // Safety check for duration to avoid division by zero
+        f32 t = (gFadeDuration > 0.0f) ? Clamp01(gFadeTimer / gFadeDuration) : 1.0f;
+
+        if (t >= 1.0f) {
+            AEAudioStopGroup(gFadeOutGroup);
+            // Set final volume to be precise
+            AEAudioSetGroupVolume(gFadeInGroup, 1.0f * gMusicVolume * gMasterVolume);
+            gIsCrossfading = false;
+        }
+        else {
+            // Apply curves
+            f32 outVol = std::cos(t * PI_2) * gMusicVolume * gMasterVolume;
+            f32 inVol = std::sin(t * PI_2) * gMusicVolume * gMasterVolume;
+            std::cout << inVol << "    " << outVol << '\n';
+            AEAudioSetGroupVolume(gFadeOutGroup, outVol);
+            AEAudioSetGroupVolume(gFadeInGroup, inVol);
+        }
+    }
 }
 
 void AudioManager::LoadAll()
@@ -99,6 +157,8 @@ void AudioManager::LoadAll()
     gMainMenuMusic = AEAudioLoadMusic("Assets/music/MenuBGM.mp3");
     gDeathMusic = AEAudioLoadMusic("Assets/music/Defeat.mp3");
     gGameSceneMusic = AEAudioLoadMusic("Assets/music/GameBGM.mp3");
+    gBossIntroMusic.audioFile = AEAudioLoadMusic("Assets/music/BossIntro.mp3");
+    gBossCombatMusic.audioFile = AEAudioLoadMusic("Assets/music/BossFight.mp3");
     gVictoryMusic = AEAudioLoadMusic("Assets/music/victory.mp3");
 
     gAudioLoaded = true;
@@ -112,6 +172,11 @@ void AudioManager::Exit()
 
     if (AEAudioIsValidGroup(gMusicGroup))
         AEAudioStopGroup(gMusicGroup);
+
+    if (AEAudioIsValidGroup(gFadeOutGroup)) 
+        AEAudioUnloadAudioGroup(gFadeOutGroup);
+    if (AEAudioIsValidGroup(gFadeInGroup)) 
+        AEAudioUnloadAudioGroup(gFadeInGroup);
 
 	// unload SFX
     if (AEAudioIsValidAudio(gPlayerAttack1))
@@ -128,6 +193,10 @@ void AudioManager::Exit()
         AEAudioUnloadAudio(gDeathMusic);
     if (AEAudioIsValidAudio(gGameSceneMusic))
         AEAudioUnloadAudio(gGameSceneMusic);
+    if (AEAudioIsValidAudio(gBossIntroMusic.audioFile))
+        AEAudioUnloadAudio(gBossIntroMusic.audioFile);
+    if (AEAudioIsValidAudio(gBossCombatMusic.audioFile))
+        AEAudioUnloadAudio(gBossCombatMusic.audioFile);
     if (AEAudioIsValidAudio(gVictoryMusic))
         AEAudioUnloadAudio(gVictoryMusic);
 
@@ -145,6 +214,8 @@ void AudioManager::Exit()
     gMainMenuMusic = AEAudio{};
     gDeathMusic = AEAudio{};
     gGameSceneMusic = AEAudio{};
+    gBossIntroMusic.audioFile = AEAudio{};
+    gBossCombatMusic.audioFile = AEAudio{};
     gVictoryMusic = AEAudio{};
 
     gSFXGroup = AEAudioGroup{};
@@ -272,4 +343,23 @@ void AudioManager::PlayNextAttackSFX()
     }
 
     gNextAttackIndex = (gNextAttackIndex + 1) % 3;
+}
+void AudioManager::Crossfade(Audio& from, Audio& to, f32 duration) {
+    if (!gAudioLoaded) LoadAll();
+
+    // 1. Reset everything
+    gFadeTimer = 0.0f;
+    gFadeDuration = duration;
+    gFromChannel = &from;
+    gToChannel = &to;
+    gIsCrossfading = true;
+
+    // 2. Set INITIAL volumes immediately (t = 0)
+    // cos(0) = 1.0, sin(0) = 0.0
+    AEAudioSetGroupVolume(gFadeOutGroup, 1.0f * gMusicVolume * gMasterVolume);
+    AEAudioSetGroupVolume(gFadeInGroup, 0.0f);
+
+    // 3. Play
+    AEAudioPlay(from.audioFile, gFadeOutGroup, 1.0f, 1.0f, -1);
+    AEAudioPlay(to.audioFile, gFadeInGroup, 1.0f, 1.0f, -1);
 }

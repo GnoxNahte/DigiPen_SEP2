@@ -459,7 +459,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
-	AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
+	//AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
 		<< "\n";
@@ -554,6 +554,7 @@ void GameScene::Update()
 
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
+	AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
