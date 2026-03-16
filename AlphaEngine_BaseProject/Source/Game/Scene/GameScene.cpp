@@ -492,7 +492,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
-	AudioManager::PlayMusic(MusicId::GameSense, 1.0f, 1.0f, -1);
+	AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
 		<< "\n";
@@ -565,8 +565,8 @@ void GameScene::Update()
 	}
 
 	AEVec2 p = player.GetPosition();
-	enemyMgr.UpdateAll(p, player.IsFacingRight(), map);
-	//enemyBoss.Update(p, player.IsFacingRight());
+	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
+	//enemyBoss.Update(p, player.GetIsFacingRight());
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;

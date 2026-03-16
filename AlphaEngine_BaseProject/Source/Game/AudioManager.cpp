@@ -20,7 +20,7 @@ namespace
 
     // Music
     AEAudio gMainMenuMusic{};
-    AEAudio gGameSenseMusic{};
+    AEAudio gGameSceneMusic{};
     AEAudio gVictoryMusic{};
     AEAudio gDeathMusic{};
 
@@ -95,9 +95,10 @@ void AudioManager::LoadAll()
     gPlayerAttack3 = AEAudioLoadSound("Assets/music/player_attack3.mp3");
 
     // Music
-    gMainMenuMusic = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
-    gDeathMusic = AEAudioLoadMusic("Assets/music/death.mp3");
-    gGameSenseMusic = AEAudioLoadMusic("Assets/music/gamesense.mp3");
+    //gMainMenuMusic = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
+    gMainMenuMusic = AEAudioLoadMusic("Assets/music/MenuBGM.mp3");
+    gDeathMusic = AEAudioLoadMusic("Assets/music/Defeat.mp3");
+    gGameSceneMusic = AEAudioLoadMusic("Assets/music/GameBGM.mp3");
     gVictoryMusic = AEAudioLoadMusic("Assets/music/victory.mp3");
 
     gAudioLoaded = true;
@@ -125,8 +126,8 @@ void AudioManager::Exit()
         AEAudioUnloadAudio(gMainMenuMusic);
     if (AEAudioIsValidAudio(gDeathMusic))
         AEAudioUnloadAudio(gDeathMusic);
-    if (AEAudioIsValidAudio(gGameSenseMusic))
-        AEAudioUnloadAudio(gGameSenseMusic);
+    if (AEAudioIsValidAudio(gGameSceneMusic))
+        AEAudioUnloadAudio(gGameSceneMusic);
     if (AEAudioIsValidAudio(gVictoryMusic))
         AEAudioUnloadAudio(gVictoryMusic);
 
@@ -143,7 +144,7 @@ void AudioManager::Exit()
 
     gMainMenuMusic = AEAudio{};
     gDeathMusic = AEAudio{};
-    gGameSenseMusic = AEAudio{};
+    gGameSceneMusic = AEAudio{};
     gVictoryMusic = AEAudio{};
 
     gSFXGroup = AEAudioGroup{};
@@ -239,8 +240,8 @@ void AudioManager::PlayMusic(MusicId id, float volumeScale, float pitch, int loo
     case MusicId::Death:
         audio = gDeathMusic;
         break;
-    case MusicId::GameSense:
-        audio = gGameSenseMusic;
+    case MusicId::GameScene:
+        audio = gGameSceneMusic;
         break;
     case MusicId::Victory:
         audio = gVictoryMusic;

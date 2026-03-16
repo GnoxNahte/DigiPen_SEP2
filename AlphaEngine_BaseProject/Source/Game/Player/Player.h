@@ -62,13 +62,14 @@ public:
     const AEVec2& GetHurtboxPos() const override;
     const AEVec2& GetHurtboxSize() const override;
     bool IsDead() const override;
-    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin) override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_ENEMY_ATTACK) override;
 
     // === Getters ===
     const AEVec2&       GetPosition() const;
     const PlayerStats&  GetStats()    const;
+    float   GetDashCooldownPercentage() const;
     int     GetHealth()     const;
-    bool    IsFacingRight() const;
+    bool    GetIsFacingRight() const;
     AnimState GetAnimState() const;
 
 private:
@@ -88,7 +89,7 @@ private:
     // === Movement data ===
     AEVec2 position;
     AEVec2 velocity;
-    AEVec2 facingDirection;
+    bool isFacingRight;
     f64 lastJumpTime = -1.f;
     f64 lastGroundedTime = -1.f;
     f64 dashStartTime = -1.f;
@@ -103,16 +104,22 @@ private:
     std::vector<IDamageable*> attackedEnemies;
 
     // === Combat ===
+    int maxHealth;
     int health;
     bool hasAppliedRecoil; // For current attack
     f64 lastDamagedTime;
+    f64 lastAttackEndTime;
+    AnimState lastAttackCombo;
+    float slamStartHeight;
 
     // === Buffs ===
     float buff_MoveSpeedMulti;
     float buff_DmgReduction;
+    float buff_TrapDmgReduction;
     float buff_critChance;
     float buff_critDmgMulti;
     float buff_DmgMultiLowHP;
+    float buff_DashCooldownMulti;
     
     EventId buffEventId;
 
@@ -143,6 +150,7 @@ private:
     void UpdateAttacks();
     void OnAttackAnimEnd(int spriteStateIndex);
     IDamageable* IfCollideEnemy(const Box& collider);
+    float GetSlamAttackScale();
 
     void UpdateTrails(); // Might remove, now just for testing
     void UpdateAnimation();
@@ -150,7 +158,6 @@ private:
     void RenderDebugCollider(Box& box);
 
     void OnBuffSelected(const BuffSelectedEvent& ev);
-    static float PercentToScale(int percentage); // Helper to calcualte buffs
 };
 
 // ===== Events =====

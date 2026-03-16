@@ -715,7 +715,7 @@ static void PlayMode_Update(float dt)
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
 
-    gPlayEnemies->UpdateAll(pPos, gPlayPlayer->IsFacingRight(), *gMap);
+    gPlayEnemies->UpdateAll(pPos, gPlayPlayer->GetIsFacingRight(), *gMap);
 
     attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
 

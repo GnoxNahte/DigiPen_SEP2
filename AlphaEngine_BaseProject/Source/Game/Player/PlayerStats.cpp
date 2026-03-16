@@ -9,47 +9,47 @@
 
 namespace
 {
+    void LoadVec2(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AEVec2& v)
+    {
+        v.x = obj["x"].GetFloat();
+        v.y = obj["y"].GetFloat();
+    }
+
 	// doc - can be rapidjson::Document or rapidjson::GenericObject
 	void LoadBox(const rapidjson::GenericObject<false, rapidjson::Value>& obj, Box& box)
 	{
-		auto positionObj = obj["position"].GetObj();
-		box.position.x = positionObj["x"].GetFloat();
-		box.position.y = positionObj["y"].GetFloat();
-        
-		auto sizeObj = obj["size"].GetObj();
-		box.size.x = sizeObj["x"].GetFloat();
-		box.size.y = sizeObj["y"].GetFloat();
+        LoadVec2(obj["position"].GetObj(), box.position);
+        LoadVec2(obj["size"].GetObj(), box.size);
 	}
 
 	void LoadAttack(const rapidjson::GenericObject<false, rapidjson::Value>& obj, AttackStats& attack)
 	{
 		attack.damage = obj["damage"].GetInt();
 		attack.recoilSpeed = obj["recoilSpeed"].GetFloat();
-		attack.knockbackForce = obj["knockbackForce"].GetFloat();
 		
 		LoadBox(obj["collider"].GetObj(), attack.collider);
 	}
 
+    void SaveVec2(rapidjson::Value& obj, const AEVec2& v, rapidjson::Document::AllocatorType& allocator)
+    {
+        obj.AddMember("x", v.x, allocator);
+        obj.AddMember("y", v.y, allocator);
+    }
+
     void SaveBox(rapidjson::Value& obj, const Box& box, rapidjson::Document::AllocatorType& allocator)
     {
-        obj.SetObject();
-
         rapidjson::Value position(rapidjson::kObjectType);
-        position.AddMember("x", box.position.x, allocator);
-        position.AddMember("y", box.position.y, allocator);
+        SaveVec2(position, box.position, allocator);
         obj.AddMember("position", position, allocator);
 
         rapidjson::Value size(rapidjson::kObjectType);
-        size.AddMember("x", box.size.x, allocator);
-        size.AddMember("y", box.size.y, allocator);
+        SaveVec2(size, box.size, allocator);
         obj.AddMember("size", size, allocator);
     }
 
     void SaveAttack(rapidjson::Value& obj, const AttackStats& attack, rapidjson::Document::AllocatorType& allocator)
     {
-        obj.SetObject();
         obj.AddMember("damage", attack.damage, allocator);
-        obj.AddMember("knockbackForce", attack.knockbackForce, allocator);
         obj.AddMember("recoilSpeed", attack.recoilSpeed, allocator);
 
         rapidjson::Value collider(rapidjson::kObjectType);
@@ -81,7 +81,6 @@ namespace
         ImGui::Indent();
         {
             ifChanged = ImGui::DragInt(("Damage##" + str).c_str(), &attack.damage, 0.1f) || ifChanged;
-            ifChanged = ImGui::DragFloat(("Knockback Force##" + str).c_str(), &attack.knockbackForce, 0.01f) || ifChanged;
             ifChanged = ImGui::DragFloat(("Recoil Speed##" + str).c_str(), &attack.recoilSpeed, 0.01f) || ifChanged;
             ifChanged = DrawInspectorBox(("Collider##" + str).c_str(), attack.collider) || ifChanged; // causing double ID... not fixing for now. Need to make another function that doesnt add id?
         }
@@ -117,7 +116,7 @@ void PlayerStats::LoadFileData()
 	turnTime = doc["turnTime"].GetFloat();
 	inAirTurnTime = doc["inAirTurnTime"].GetFloat();
 
-	dashSpeed = doc["dashSpeed"].GetFloat();
+    LoadVec2(doc["dashSpeed"].GetObj(), dashSpeed);
 	dashCooldown = doc["dashCooldown"].GetFloat();
 	dashTime = doc["dashTime"].GetFloat();
 
@@ -149,9 +148,11 @@ void PlayerStats::LoadFileData()
 	maxHealth = doc["maxHealth"].GetInt();
     invincibleTime = doc["invincibleTime"].GetFloat();
 	attackBuffer = doc["attackBuffer"].GetFloat();
+    attackComboBuffer = doc["attackComboBuffer"].GetFloat();
     knockbackAmt = doc["knockbackAmt"].GetFloat();
     maxKnockbackDmg = doc["maxKnockbackDmg"].GetFloat();
-    downAirAttackFallSpeed = doc["downAirAttackFallSpeed"].GetFloat();
+    slamAttackFallSpeed = doc["slamAttackFallSpeed"].GetFloat();
+    slamAttackMaxHeight = doc["slamAttackMaxHeight"].GetFloat();
 
 	auto groundAttackArr = doc["groundAttacks"].GetArray();
 	for (int i = 0; i < groundAttacks.size(); i++)
@@ -180,7 +181,9 @@ void PlayerStats::SaveFileData()
     doc.AddMember("inAirTurnTime", inAirTurnTime, allocator);
 
     // Dash / Gravity
-    doc.AddMember("dashSpeed", dashSpeed, allocator);
+    rapidjson::Value dashSpeedObj(rapidjson::kObjectType);
+    SaveVec2(dashSpeedObj, dashSpeed, allocator);
+    doc.AddMember("dashSpeed", dashSpeedObj, allocator);
     doc.AddMember("dashCooldown", dashCooldown, allocator);
     doc.AddMember("dashTime", dashTime, allocator);
     doc.AddMember("maxFallVelocity", maxFallVelocity, allocator);
@@ -225,9 +228,11 @@ void PlayerStats::SaveFileData()
     doc.AddMember("maxHealth", maxHealth, allocator);
     doc.AddMember("invincibleTime", invincibleTime, allocator);
     doc.AddMember("attackBuffer", attackBuffer, allocator);
+    doc.AddMember("attackComboBuffer", attackBuffer, allocator);
     doc.AddMember("knockbackAmt", knockbackAmt, allocator);
     doc.AddMember("maxKnockbackDmg", maxKnockbackDmg, allocator);
-    doc.AddMember("downAirAttackFallSpeed", downAirAttackFallSpeed, allocator);
+    doc.AddMember("slamAttackFallSpeed", slamAttackFallSpeed, allocator);
+    doc.AddMember("slamAttackMaxHeight", slamAttackMaxHeight, allocator);
 
     // Attack Arrays
     rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
@@ -278,7 +283,7 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Stop Time", &stopTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Turn Time", &turnTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("In Air Turn Time", &inAirTurnTime, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat("Dash Speed", &dashSpeed, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat2("Dash Speed", &dashSpeed.x, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Cooldown", &dashCooldown, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Dash Time", &dashTime, 0.01f) || ifChanged;
 
@@ -357,9 +362,11 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragInt("Max Health", &maxHealth, 1.0f, 1, 1000) || ifChanged;
         ifChanged = ImGui::DragFloat("Invincible Time", &invincibleTime, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Attack Buffer", &attackBuffer, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Attack Combo Buffer", &attackComboBuffer, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Knockback Amount", &knockbackAmt, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Max Knockback Damage", &maxKnockbackDmg, 0.01f) || ifChanged;
-        ifChanged = ImGui::DragFloat("Down Air Attack Fall Speed", &downAirAttackFallSpeed, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Slam Attack Fall Speed", &slamAttackFallSpeed, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Slam Attack Max Height", &slamAttackMaxHeight, 0.01f) || ifChanged;
 
         for (size_t i = 0; i < groundAttacks.size(); i++)
             DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);

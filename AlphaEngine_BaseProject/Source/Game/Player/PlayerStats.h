@@ -7,7 +7,6 @@
 struct AttackStats
 {
     int damage;
-    float knockbackForce;
     float recoilSpeed;
     Box collider;
 };
@@ -39,7 +38,7 @@ struct PlayerStats
     float turnTime;
     float inAirTurnTime;
 
-    float dashSpeed;
+    AEVec2 dashSpeed;
     float dashCooldown;
     float dashTime;
 
@@ -54,11 +53,11 @@ struct PlayerStats
     float minJumpHeight;
     float timeToMaxHeight;
     float timeToGround;
-    float gravityMultiplierWhenRelease;
-    float coyoteTime;
-    float jumpBuffer;
-    float wallJumpHorizontalVelocity;
-    float wallJumpHorizontalVelocityTowardsWall;
+    float gravityMultiplierWhenRelease; // Multiple gravity if jump button is released
+    float coyoteTime;                   // Allows player to jump for some time after leaving the platform
+    float jumpBuffer;                   // Allows the player to jump if they press and release 'Jump' before reaching the ground
+    float wallJumpHorizontalVelocity;   // Default Wall jump horizontal velocity 
+    float wallJumpHorizontalVelocityTowardsWall; //Wall jump horizontal velocity when horizontal input is towards wall
 
     // === Colliders ===
     Box groundChecker;
@@ -85,16 +84,18 @@ struct PlayerStats
     float jumpVelocity;
     float minJumpTime;
 
-	// === Combat stats ===
+	// ===== Combat stats =====
 	int maxHealth;
-    float invincibleTime; // After taking damage
-    float knockbackAmt;
-    float maxKnockbackDmg; // At max dmg, apply full knockback
-    float attackBuffer;
-    float downAirAttackFallSpeed;
+    float invincibleTime;       // After taking damage
+    float knockbackAmt;         // Knockback when taking damage
+    float maxKnockbackDmg;      // At max dmg, apply full knockback
+    float attackBuffer;         // Input attack buffer
+    float attackComboBuffer;    // Input attack buffer for combos
+    float slamAttackFallSpeed;  
+    float slamAttackMaxHeight;  // Applies max damage at max height
 
     std::array<AttackStats, 3> groundAttacks;
-    std::array<AttackStats, 3> airAttacks;
+    std::array<AttackStats, 3> airAttacks; // Currently only using last attack as ground slam
 
     const std::string file;
 

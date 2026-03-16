@@ -1,0 +1,12 @@
+#pragma once
+
+// Enumeration types for the incoming damage type.
+enum DAMAGE_TYPE
+{
+	DAMAGE_TYPE_NORMAL,
+	DAMAGE_TYPE_CRIT,
+	DAMAGE_TYPE_RESIST,
+	DAMAGE_TYPE_MISS,
+	DAMAGE_TYPE_ENEMY_ATTACK,
+	DAMAGE_TYPE_ENEMY_MISS
+};

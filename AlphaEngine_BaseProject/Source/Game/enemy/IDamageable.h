@@ -1,5 +1,6 @@
 #pragma once
 #include <AEVec2.h>
+#include "../../CommonTypes.h"
 
 class IDamageable
 {
@@ -12,5 +13,5 @@ public:
     virtual bool IsDead() const = 0;
 
     // Return true if damage was applied (not invuln, not already hit, etc.)
-    virtual bool   TryTakeDamage(int dmg, const AEVec2& hitOrigin) = 0;
+    virtual bool   TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) = 0;
 };

@@ -12,7 +12,7 @@ enum class MusicId
 {
     MainMenu,
     Death,
-    GameSense,
+    GameScene,
     Victory
 };
 

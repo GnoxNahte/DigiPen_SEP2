@@ -13,6 +13,7 @@ public:
 	struct EditorPrefs
 	{
 		SceneState lastOpenedScene = SceneState::GS_GAME;
+		bool showColliders = false;
 	};
 
 	// Inspectable automatically registers and unregisters in constructor
