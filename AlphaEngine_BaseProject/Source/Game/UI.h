@@ -3,7 +3,6 @@
 #include <string>
 #include "../Utils/ObjectPool.h"
 #include "Player/Player.h"
-#include "../Game/enemy/EnemyBoss.h"
 #include "../CommonTypes.h"
 struct DamageText : public ObjectPoolItem {
 	std::string damageType{}; // Type of damage to be printed. Crit, resist, normal etc.
@@ -98,8 +97,6 @@ public:
 	//boss intro screen
 	static void StartBossIntro();
 	static bool IsBossIntroActive();
-	static void UpdateBossIntro();
-	static void RenderBossIntro();
 
 private:
 	// Damage text variables
@@ -122,14 +119,6 @@ private:
 	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
 	// Cooldown meshes
 	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
-	// Black overlay attributes.
-	inline static f32 overlayAlpha = 0.75f;
-	inline static f32 fadeSpeed = 3.5f;
-	// boss intros attributes
-	inline static bool bossIntroActive = false;
-	inline static BossIntroPhase bossIntroPhase = BossIntroPhase::None;
-	inline static float bossIntroTimer = 0.0f;
-	inline static float bossIntroTextAlpha = 0.0f;
-	//inline static std::string bossIntroText = "What an ominous feeling....";
+
 
 };
