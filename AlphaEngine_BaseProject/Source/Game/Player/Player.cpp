@@ -702,7 +702,7 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         healAmt = min(static_cast<int>(card.effectValue1 / 100.f * maxHealth), maxHealth - health);
         EventSystem::Subscribe<OverlayFadeCompleteEvent>([this, healAmt](const OverlayFadeCompleteEvent& ev) {
             (void)ev;
-            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position); });
+            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f }); });
         health += healAmt; 
         break;
     }
@@ -719,7 +719,7 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         healAmt = static_cast<int>(percentage * newMaxHealth - health);
         EventSystem::Subscribe<OverlayFadeCompleteEvent>([this, healAmt](const OverlayFadeCompleteEvent& ev) {
             (void)ev;
-            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position); });
+            UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f }); });
         health = static_cast<int>(percentage * newMaxHealth);
         health = static_cast<int>(percentage * newMaxHealth);
         maxHealth = newMaxHealth;
@@ -745,13 +745,10 @@ bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAn
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
     if (IsInvincible())
-    {
-        //UI::GetDamageTextSpawner().SpawnDamageText(dmg, DAMAGE_TYPE_ENEMY_MISS, position);
         return health > 0;
-    }
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
-    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position);
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
     if (health < dmg)
     {

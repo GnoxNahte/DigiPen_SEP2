@@ -422,10 +422,14 @@ void DamageTextSpawner::Render() {
 		damageTextPool.pool[i].Render();
 	}
 }
-void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, AEVec2 position) {
+void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVec2& position, const AEVec2& velocity) {
 	if (damageTextPool.GetSize() > UI::GetMaxDamageTextInstances()) {
 		return;
 	}
+
+	AEVec2 direction{ AEExtras::GetNormalise(velocity) };
+	std::cout << direction << "\n";
+
 	DamageText& text = damageTextPool.Get();
 	text.damageNumber = std::to_string(damage);
 	text.damageType = "";
