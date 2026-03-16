@@ -266,6 +266,7 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 	}
 
 	enemyMgr.SetBoss(&enemyBoss);
+	enemyMgr.SetCurrentRoomID(room.id);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
 
@@ -514,6 +515,12 @@ void GameScene::Update()
 	if (IsPaused())
 	{
 		UpdatePauseInput();
+		return;
+	}
+
+	if (UI::IsBossIntroActive())
+	{
+		UI::Update();
 		return;
 	}
 
