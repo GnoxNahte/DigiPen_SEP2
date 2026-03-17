@@ -9,7 +9,7 @@ struct DamageText : public ObjectPoolItem {
 	std::string damageNumber{}; // Numerical value of damage to be printed.
 	f32 r{}, g{}, b{}; // RGB values of text.
 	AEVec2 position{}; // Position of text.
-	AEVec2 velocity{};
+	AEVec2 velocity{}; // Velocity of the text.
 	f32 alpha{}, scale{}, initialScale{}; // Alpha and scale values of text.
 	f64 lifetime{}; // Lifetime of text, excluding neutral time.
 	f64 maxLifetime{}; // Maximum lifetime of text to compute percentage of completion.

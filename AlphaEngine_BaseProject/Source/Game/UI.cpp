@@ -403,6 +403,17 @@ void DamageTextSpawner::Update()
 	for (int i = static_cast<int>(damageTextPool.GetSize()) - 1; i >= 0; --i)
 	{
 		DamageText& text = damageTextPool.pool[i];
+
+		text.position.x += text.velocity.x * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+		text.position.y += text.velocity.y * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+
+
+		float gravity = -15.f; // To adjust this for fall of damage text
+		text.velocity.y += gravity * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+
+
+		text.velocity.x *= 0.95f; // Slight slow in movement
+
 		text.neutralTime -= AEFrameRateControllerGetFrameTime();
 		if (text.neutralTime <= 0.f) {
 			text.lifetime -= AEFrameRateControllerGetFrameTime();
@@ -429,6 +440,22 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 
 	AEVec2 direction{ AEExtras::GetNormalise(velocity) };
 	std::cout << direction << "\n";
+
+	if (direction.x == -1.0f) // If player is attacking enemy
+	{
+		direction.y = static_cast<float>(AEExtras::RandomRange({ 50, 80 })) / 100.0f;
+	}
+
+	direction.x *= 1.0f; // If need to alter horizontal movement
+	direction.y *= 1.5f; // Multiplier for vertical movement
+	direction.y += 0.4f; // Fixed movement of going up
+
+
+	direction = AEExtras::GetNormalise(direction); // Normalize the direction
+
+
+	float speed = static_cast<float>(AEExtras::RandomRange({ 5, 10 })); // Variation in dmg text speed.
+
 
 	DamageText& text = damageTextPool.Get();
 	text.damageNumber = std::to_string(damage);
@@ -470,6 +497,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 			text.damageNumber = "";
 			break;
 	}
+	text.velocity = { direction.x * speed, direction.y * speed * 1.25f }; // Add a multiplier to y so it rises up more.
 	text.initialScale = text.scale;
 	text.position = position;
 	text.alpha = 1.0f;
