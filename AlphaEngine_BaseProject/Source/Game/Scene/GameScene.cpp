@@ -554,9 +554,9 @@ void GameScene::Update()
 
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
-	std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
-			  << "BGM VOL : " << AudioManager::GetMusicVolume()
-			  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
+	//std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
+	//		  << "BGM VOL : " << AudioManager::GetMusicVolume()
+	//		  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
 	//AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;

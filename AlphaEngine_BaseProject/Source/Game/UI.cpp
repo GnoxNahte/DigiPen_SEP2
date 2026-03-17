@@ -460,22 +460,32 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 	DamageText& text = damageTextPool.Get();
 	text.damageNumber = std::to_string(damage);
 	text.damageType = "";
+	AEVec2 damageRange = { 1, 100 };
+	AEVec2 scaleRange{};
+	f32 remappedScale{};
 	// Account for damage type and change their colors accordingly.
 	switch (type) {
 		case DAMAGE_TYPE_NORMAL:
 			text.r = 1.0f, text.g = 1.0f, text.b = 1.0f;
-			text.scale = 1.0f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
 			break;
 		case DAMAGE_TYPE_HEAL:
 			text.r = 0.1f, text.g = 1.0f, text.b = 0.25f;
-			text.scale = 1.0f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
 			break;
 		case DAMAGE_TYPE_CRIT:
 			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
-			text.scale = 1.15f;
+			//damageRange = { 1, 100 };
+			scaleRange = { 0.85f, 1.65f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
 			text.damageType = "CRT!";
 			break;
-		case DAMAGE_TYPE_RESIST:
+		case DAMAGE_TYPE_RESIST: // Not used
 			text.r = 0.5f, text.g = 0.85f, text.b = 1.0f;
 			text.scale = 0.75f;
 			text.damageType = "RES!";
@@ -488,7 +498,9 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 			break;
 		case DAMAGE_TYPE_ENEMY_ATTACK:
 			text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
-			text.scale = 1.0f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
 			break;
 		case DAMAGE_TYPE_ENEMY_MISS:
 			text.r = 0.8f, text.g = 0.35f, text.b = 0.65f;
