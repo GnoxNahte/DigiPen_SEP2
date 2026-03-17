@@ -26,7 +26,7 @@ public:
     BGMAudio() = delete;
     BGMAudio(char const* filename);
     ~BGMAudio();
-    void Play(f32 const& vol);
+    void Play(f32 const& initialGroupVol);
     void Stop();
     void SetVolume(f32 const& vol);
     const f32& GetVolume() const { return volume; }

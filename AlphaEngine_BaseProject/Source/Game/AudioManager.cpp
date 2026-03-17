@@ -99,10 +99,16 @@ namespace
             AEAudioSetGroupVolume(gMusicGroup, musicGroupVol);
     }
 }
-void BGMAudio::Play(f32 const& vol) {
-    volume = vol;
+void BGMAudio::Play(f32 const& initialGroupVol) {
+    // 1. Set the internal volume state (the group multiplier)
+    volume = initialGroupVol;
+
+    // 2. Set the Group Volume immediately
     AEAudioSetGroupVolume(ownGroup, volume * gMusicVolume * gMasterVolume);
-    AEAudioPlay(audioFile, ownGroup, vol, pitch, -1);
+
+    // 3. CRITICAL: Set the instance volume to 1.0f 
+    // This way the sound is "full strength" but muted by its parent group
+    AEAudioPlay(audioFile, ownGroup, 1.0f, pitch, -1);
 }
 void BGMAudio::Stop() {
     if (AEAudioIsValidGroup(ownGroup))
@@ -114,18 +120,16 @@ void BGMAudio::SetVolume(f32 const& vol) {
         AEAudioSetGroupVolume(ownGroup, vol * gMusicVolume * gMasterVolume);
 }
 void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
+    // Stop any existing crossfade to prevent timer glitches
+    gIsCrossfading = false;
+
     gFadeOutTrack = this;
     gFadeInTrack = &other;
     gFadeTimer = 0.0f;
     gFadeDuration = duration;
     gIsCrossfading = true;
 
-    // Only play if it's not already running silently
-    // Note: You may need a bool "isPlaying" inside BGMAudio to track this
-    if (!other.active) {
-        AEAudioPlay(other.audioFile, other.ownGroup, 1.0f, other.pitch, -1);
-        other.active = true;
-    }
+    // No AEAudioPlay here! They are already running.
 }
 void AudioManager::Init() {
     if (!AEAudioIsValidGroup(gMusicGroup)) {
@@ -144,6 +148,7 @@ void AudioManager::Init() {
     bossIntroMusic->Play(bossIntroMusic->GetVolume());
     bossIntroMusic->SetActive(true);
     bossFightMusic->Play(0.0f);
+    bossFightMusic->SetActive(true);
 }
 
 void AudioManager::Update() {
@@ -151,7 +156,7 @@ void AudioManager::Update() {
         bossFightMusic->CrossfadeTo(*bossIntroMusic, 0.8f);
     }
     if (AEInputCheckTriggered(AEVK_2)) {
-        bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.8f);
+        bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.45f);
     }
     if (gIsCrossfading && gFadeOutTrack && gFadeInTrack) {
         gFadeTimer += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
