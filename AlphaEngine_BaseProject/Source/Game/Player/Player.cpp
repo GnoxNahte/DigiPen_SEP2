@@ -478,7 +478,7 @@ void Player::SetAttack(AnimState toState)
     if (toState == AIR_ATTACK_SMASH)
         slamStartHeight = position.y;
     
-    AudioManager::PlayNextAttackSFX();
+    //AudioManager::PlayNextAttackSFX();
 
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
@@ -756,7 +756,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
         sprite.SetState(AnimState::DEATH, false, [&](int) {
             sprite.SetState(AnimState::DEATH_LOOP); 
-            AudioManager::PlayMusic(MusicId::Death);
+            //AudioManager::PlayMusic(MusicId::Death);
         });
         return false;
     }

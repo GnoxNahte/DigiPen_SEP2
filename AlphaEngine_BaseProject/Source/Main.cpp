@@ -38,7 +38,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// reset the system modules
 	AESysReset();
-	AudioManager::Init();
+	//AudioManager::Init();
 
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
@@ -81,7 +81,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ImGui::DestroyContext();
 
 	// free the system
-	AudioManager::Exit();
+	//AudioManager::Exit();
 	AESysExit();
 }
 

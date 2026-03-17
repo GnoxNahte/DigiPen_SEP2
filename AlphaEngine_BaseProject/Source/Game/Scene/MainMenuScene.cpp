@@ -68,7 +68,7 @@ void MainMenuScene::Init()
 {
     // ensure relative texture paths work
     SetCurrentDirectoryA(ExeDir().c_str());
-    AudioManager::LoadAll();
+    //AudioManager::LoadAll();
 
     if (uiFont < 0)
     {
@@ -187,7 +187,7 @@ void MainMenuScene::Init()
     camera.smoothTime = 0.4f;
 
     UI::Init(&player);
-    AudioManager::PlayMusic(MusicId::MainMenu);
+    //AudioManager::PlayMusic(MusicId::MainMenu);
 }
 
 void MainMenuScene::Update()

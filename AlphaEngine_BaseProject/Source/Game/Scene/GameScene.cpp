@@ -554,7 +554,10 @@ void GameScene::Update()
 
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
-	AudioManager::Update();
+	std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
+			  << "BGM VOL : " << AudioManager::GetMusicVolume()
+			  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
+	//AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
@@ -882,6 +885,7 @@ void GameScene::UpdatePauseInput()
 		const float sliderWidth = 330.0f;
 		const float knobSize = 28.0f;
 		const float hitboxHeight = 36.0f;
+		const float masterY = 240.f;
 		const float bgmY = 350.0f;
 		const float sfxY = 460.0f;
 
@@ -897,14 +901,18 @@ void GameScene::UpdatePauseInput()
 		auto MakeKnobRect = [&](float value, float y) -> UIRect {
 			return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
 			};
-
+		UIRect masterTrack = MakeTrackRect(masterY);
 		UIRect bgmTrack = MakeTrackRect(bgmY);
 		UIRect sfxTrack = MakeTrackRect(sfxY);
+		UIRect masterKnob = MakeKnobRect(AudioManager::GetMasterVolume(), masterY);
 		UIRect bgmKnob = MakeKnobRect(AudioManager::GetMusicVolume(), bgmY);
 		UIRect sfxKnob = MakeKnobRect(AudioManager::GetSFXVolume(), sfxY);
 
 		if (mousePressed)
 		{
+			if (PointInRectPx((float)mx, (float)my, masterTrack) || PointInRectPx((float)mx, (float)my, masterKnob))
+				draggingMasterSlider = true;
+
 			if (PointInRectPx((float)mx, (float)my, bgmTrack) || PointInRectPx((float)mx, (float)my, bgmKnob))
 				draggingBgmSlider = true;
 
@@ -914,13 +922,14 @@ void GameScene::UpdatePauseInput()
 
 		if (!mouseHeld)
 		{
+			draggingMasterSlider = false;
 			draggingBgmSlider = false;
 			draggingSfxSlider = false;
 		}
-
+		if (draggingMasterSlider)
+			AudioManager::SetMasterVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
 		if (draggingBgmSlider)
 			AudioManager::SetMusicVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
-
 		if (draggingSfxSlider)
 			AudioManager::SetSFXVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
 	}
@@ -969,6 +978,7 @@ void GameScene::RenderPauseOverlay()
 		const float sliderLeft = 860.0f;
 		const float sliderWidth = 330.0f;
 		const float percentX = 1230.0f;
+		const float masterY = 240.f;
 		const float bgmY = 350.0f;
 		const float sfxY = 460.0f;
 		const float trackH = 8.0f;
@@ -995,7 +1005,7 @@ void GameScene::RenderPauseOverlay()
 
 				DrawTextPx(pauseFontRuntime, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, 1.0f);
 			};
-
+		DrawSlider("Master Volume", AudioManager::GetMasterVolume(), masterY, draggingMasterSlider);
 		DrawSlider("BGM Volume", AudioManager::GetMusicVolume(), bgmY, draggingBgmSlider);
 		DrawSlider("SFX Volume", AudioManager::GetSFXVolume(), sfxY, draggingSfxSlider);
 	}

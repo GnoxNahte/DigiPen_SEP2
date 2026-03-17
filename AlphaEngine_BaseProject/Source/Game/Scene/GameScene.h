@@ -38,6 +38,7 @@ private:
 	AttackSystem attackSystem;
 	RoomManager roomMgr;
 	bool roomTransitionLocked = false;
+	bool draggingMasterSlider = false;
 	bool draggingBgmSlider = false;
 	bool draggingSfxSlider = false;
 
