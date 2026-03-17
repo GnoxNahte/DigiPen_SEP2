@@ -4,13 +4,22 @@
 #include <iostream>
 #include "../Game/Time.h"
 
-
-BGMAudio::BGMAudio(char const* filename) :  // Ctor for BGMAudio. Default ctor is disallowed.
-    volume{ 1.0f }, pitch{ 1.0f }, active{ false } // Initialize variables
+BGMAudio::BGMAudio(char const* filename)  // Ctor for BGMAudio. Default ctor is disallowed.
+    : volume{ 1.0f }, pitch{ 1.0f }, active{ false } // Initialize variables
 {
     audioFile = AEAudioLoadMusic(filename); // Load file
+    ownGroup = AEAudioCreateGroup();  // own group, so we can SetVolume independently
+    if (!AEAudioIsValidAudio(audioFile)) {
+        std::cout << "Failed to load audio: " << filename << "\n";
 }
-BGMAudio::~BGMAudio() {
+
+}
+BGMAudio::~BGMAudio() { // Dtor for automatic cleanup
+    if (AEAudioIsValidGroup(ownGroup)) {
+        AEAudioStopGroup(ownGroup);
+        AEAudioUnloadAudioGroup(ownGroup);
+        ownGroup = {};
+    }
     if (AEAudioIsValidAudio(audioFile)) {
         AEAudioUnloadAudio(audioFile);
         audioFile = {};
@@ -20,10 +29,9 @@ BGMAudio::~BGMAudio() {
 
 
 
-
 namespace
 {
-    //const f32 PI_2 = 1.57079632679f;
+    const f32 PI_2 = 1.57079632679f;
 
     //bool gAudioInitialized = false;
     //bool gAudioLoaded = false;
@@ -35,20 +43,25 @@ namespace
     AEAudioGroup gSFXGroup{};
     AEAudioGroup gMusicGroup{};
 
+    std::unique_ptr<BGMAudio> bossIntroMusic;
+    std::unique_ptr<BGMAudio> bossFightMusic;
+
     //bool gHasCurrentMusic = false;
     //MusicId gCurrentMusicId = MusicId::MainMenu;
     //float gCurrentMusicVolumeScale = 1.0f;
     //float gCurrentMusicPitch = 1.0f;
     //int gCurrentMusicLoopCount = 0;
 
-    //// Crossfade variables
     //// Static pointers to track which channels are currently fading
     //Audio* gFromChannel = nullptr;
     //Audio* gToChannel = nullptr;
 
-    //f32 gFadeTimer = 0.0f;
-    //f32 gFadeDuration = 0.0f;
-    //bool gIsCrossfading = false;
+        //// Crossfade variables
+    f32 gFadeTimer = 0.0f;
+    f32 gFadeDuration = 0.0f;
+    bool gIsCrossfading = false;
+    BGMAudio* gFadeOutTrack = nullptr;
+    BGMAudio* gFadeInTrack = nullptr;
 
     float Clamp01(float v)
     {
@@ -86,7 +99,84 @@ namespace
             AEAudioSetGroupVolume(gMusicGroup, musicGroupVol);
     }
 }
+void BGMAudio::Play(f32 const& vol) {
+    volume = vol;
+    AEAudioSetGroupVolume(ownGroup, volume * gMusicVolume * gMasterVolume);
+    AEAudioPlay(audioFile, ownGroup, vol, pitch, -1);
+}
+void BGMAudio::Stop() {
+    if (AEAudioIsValidGroup(ownGroup))
+        AEAudioStopGroup(ownGroup);
+}
+void BGMAudio::SetVolume(f32 const& vol) {
+    volume = vol;
+    if (AEAudioIsValidGroup(ownGroup))
+        AEAudioSetGroupVolume(ownGroup, vol * gMusicVolume * gMasterVolume);
+}
+void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
+    gFadeOutTrack = this;
+    gFadeInTrack = &other;
+    gFadeTimer = 0.0f;
+    gFadeDuration = duration;
+    gIsCrossfading = true;
 
+    // Only play if it's not already running silently
+    // Note: You may need a bool "isPlaying" inside BGMAudio to track this
+    if (!other.active) {
+        AEAudioPlay(other.audioFile, other.ownGroup, 1.0f, other.pitch, -1);
+        other.active = true;
+    }
+}
+void AudioManager::Init() {
+    if (!AEAudioIsValidGroup(gMusicGroup)) {
+        gMusicGroup = AEAudioCreateGroup();
+    }
+    if (!AEAudioIsValidGroup(gSFXGroup)) {
+        gSFXGroup = AEAudioCreateGroup();
+    }
+    ApplyGroupVolumes(); // Ensure the group volume is applied
+
+    // Load BGMs here.
+    if (!bossIntroMusic)
+        bossIntroMusic = std::make_unique<BGMAudio>("Assets/music/BossIntro.mp3");
+    if (!bossFightMusic)
+        bossFightMusic = std::make_unique<BGMAudio>("Assets/music/BossFight.mp3");
+    bossIntroMusic->Play(bossIntroMusic->GetVolume());
+    bossIntroMusic->SetActive(true);
+    bossFightMusic->Play(0.0f);
+}
+
+void AudioManager::Update() {
+    if (AEInputCheckTriggered(AEVK_1)) {
+        bossFightMusic->CrossfadeTo(*bossIntroMusic, 0.8f);
+    }
+    if (AEInputCheckTriggered(AEVK_2)) {
+        bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.8f);
+    }
+    if (gIsCrossfading && gFadeOutTrack && gFadeInTrack) {
+        gFadeTimer += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+        f32 t = (gFadeDuration > 0.0f) ? Clamp01(gFadeTimer / gFadeDuration) : 1.0f;
+
+        std::cout << "t=" << t << " out=" << std::cos(t * PI_2) << " in=" << std::sin(t * PI_2) << "\n";
+
+        if (t >= 1.0f) {
+            //gFadeOutTrack->Stop();
+            gFadeOutTrack->SetVolume(0.0f);
+            gFadeInTrack->SetVolume(1.0f);
+            gIsCrossfading = false;
+            gFadeOutTrack = nullptr;
+            gFadeInTrack = nullptr;
+        }
+        else {
+            gFadeOutTrack->SetVolume(std::cos(t * PI_2));
+            gFadeInTrack->SetVolume(std::sin(t * PI_2));
+        }
+    }
+}
+void AudioManager::Exit() {
+    bossIntroMusic.reset();
+    bossFightMusic.reset();
+}
 
 //void AudioManager::Init()
 //{

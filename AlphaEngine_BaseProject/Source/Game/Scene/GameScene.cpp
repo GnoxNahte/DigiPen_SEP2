@@ -305,6 +305,7 @@ GameScene::GameScene() :
 {
 	UI::Init(&player);
 	Background::Init();
+	AudioManager::Init();
 	// Init pause overlay resources 
 	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
@@ -396,6 +397,7 @@ GameScene::~GameScene()
 		AEGfxDestroyFont(pauseFontDesc);
 		pauseFontDesc = -1;
 	}
+	AudioManager::Exit();
 }
 
 void GameScene::Init()
@@ -557,7 +559,7 @@ void GameScene::Update()
 	//std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
 	//		  << "BGM VOL : " << AudioManager::GetMusicVolume()
 	//		  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
-	//AudioManager::Update();
+	AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;

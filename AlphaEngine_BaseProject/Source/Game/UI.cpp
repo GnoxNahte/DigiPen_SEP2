@@ -439,7 +439,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 	}
 
 	AEVec2 direction{ AEExtras::GetNormalise(velocity) };
-	std::cout << direction << "\n";
+	//std::cout << direction << "\n";
 
 	if (direction.x == -1.0f) // If player is attacking enemy
 	{
@@ -479,7 +479,7 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 			break;
 		case DAMAGE_TYPE_CRIT:
 			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
-			//damageRange = { 1, 100 };
+			//damageRange = { 1, 100 }; // if need to remap damage for crit if its too big
 			scaleRange = { 0.85f, 1.65f };
 			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
 			text.scale = remappedScale;

@@ -23,17 +23,21 @@
 
 class BGMAudio {
 public:
-    BGMAudio() = delete; // Disallow default ctor
+    BGMAudio() = delete;
     BGMAudio(char const* filename);
     ~BGMAudio();
-    void SetVolume(f32 const& vol) { volume = vol; }
+    void Play(f32 const& vol);
+    void Stop();
+    void SetVolume(f32 const& vol);
     const f32& GetVolume() const { return volume; }
     const f32& GetPitch() const { return pitch; }
     const bool& IsActive() const { return active; }
     void SetActive(bool activeState) { active = activeState; }
+    void CrossfadeTo(BGMAudio& other, f32 duration);
 
 private:
     AEAudio audioFile{};
+    AEAudioGroup ownGroup{};  // each instance owns its group
     f32 volume{}, pitch{};
     bool active{};
 };
@@ -51,9 +55,9 @@ class AudioManager
 {
 public:
     static void Init();
-    //static void Update();
+    static void Update();
     //static void LoadAll();
-    //static void Exit();
+    static void Exit();
 
     static void SetMasterVolume(float v);
     static void SetSFXVolume(float v);
