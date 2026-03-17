@@ -4,37 +4,21 @@
 #include <iostream>
 #include "../Game/Time.h"
 
-
+// Declare background music.
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::bossFightMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::gameMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::bossInstrMusic = nullptr;
 
-BGMAudio::BGMAudio(char const* filename)  // Ctor for BGMAudio. Default ctor is disallowed.
-    : baseVolume{ 1.0f }, fadeVolume{ 1.0f }, pitch {1.0f}, active{ false } // Initialize variables
-{
-    audioFile = AEAudioLoadMusic(filename); // Load file
-    ownGroup = AEAudioCreateGroup();  // own group, so we can SetVolume independently
-    if (!AEAudioIsValidAudio(audioFile)) {
-        std::cout << "Failed to load audio: " << filename << "\n";
-}
-
-}
-BGMAudio::~BGMAudio() { // Dtor for automatic cleanup
-    if (AEAudioIsValidGroup(ownGroup)) {
-        AEAudioStopGroup(ownGroup);
-        AEAudioUnloadAudioGroup(ownGroup);
-        ownGroup = {};
-    }
-    if (AEAudioIsValidAudio(audioFile)) {
-        AEAudioUnloadAudio(audioFile);
-        audioFile = {};
-    }
-}
+// Declare sound effects.
+//std::unique_ptr<SFXAudio> AudioManager::buffFlipSFX = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::buffRevealSFX = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::buffHoverOnceSFX = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
 namespace
 {
     const f32 PI_2 = 1.57079632679f;
-
-    //bool gAudioInitialized = false;
-    //bool gAudioLoaded = false;
+    bool gIsMuffled = false;
 
     float gMasterVolume = 1.0f;
     float gSFXVolume = 1.0f;
@@ -43,20 +27,10 @@ namespace
     AEAudioGroup gSFXGroup{};
     AEAudioGroup gMusicGroup{};
 
-
-    //bool gHasCurrentMusic = false;
-    //MusicId gCurrentMusicId = MusicId::MainMenu;
-    //float gCurrentMusicVolumeScale = 1.0f;
-    //float gCurrentMusicPitch = 1.0f;
-    //int gCurrentMusicLoopCount = 0;
-
-    //// Static pointers to track which channels are currently fading
-    //Audio* gFromChannel = nullptr;
-    //Audio* gToChannel = nullptr;
-
-        //// Crossfade variables
+    // Crossfade variables
     f32 gFadeTimer = 0.0f;
     f32 gFadeDuration = 0.0f;
+    f32 preservedGameVol{};
     bool gIsCrossfading = false;
     BGMAudio* gFadeOutTrack = nullptr;
     BGMAudio* gFadeInTrack = nullptr;
@@ -75,16 +49,6 @@ namespace
     {
         return Clamp01(scale);
     }
-
-    //void RefreshCurrentMusicState(MusicId id, float volumeScale, float pitch, int loopCount)
-    //{
-    //    gCurrentMusicId = id;
-    //    gCurrentMusicVolumeScale = volumeScale;
-    //    gCurrentMusicPitch = pitch;
-    //    gCurrentMusicLoopCount = loopCount;
-    //    gHasCurrentMusic = true;
-    //}
-
     void ApplyGroupVolumes()
     {
         const float sfxGroupVol = Clamp01(gMasterVolume) * Clamp01(gSFXVolume);
@@ -95,6 +59,32 @@ namespace
 
         if (AEAudioIsValidGroup(gMusicGroup))
             AEAudioSetGroupVolume(gMusicGroup, musicGroupVol);
+    }
+}
+/*--------------------------------------------------
+|                                                  |
+|                   Background Music               |
+|                                                  |
+--------------------------------------------------*/
+BGMAudio::BGMAudio(char const* filename)  // Ctor for BGMAudio. Default ctor is disallowed.
+    : baseVolume{ 1.0f }, fadeVolume{ 1.0f }, pitch{ 1.0f }, active{ false } // Initialize variables
+{
+    audioFile = AEAudioLoadMusic(filename); // Load file
+    ownGroup = AEAudioCreateGroup();  // own group, so we can SetVolume independently
+    if (!AEAudioIsValidAudio(audioFile)) {
+        std::cout << "Failed to load audio: " << filename << "\n";
+    }
+
+}
+BGMAudio::~BGMAudio() { // Dtor for automatic cleanup
+    if (AEAudioIsValidGroup(ownGroup)) {
+        AEAudioStopGroup(ownGroup);
+        AEAudioUnloadAudioGroup(ownGroup);
+        ownGroup = {};
+    }
+    if (AEAudioIsValidAudio(audioFile)) {
+        AEAudioUnloadAudio(audioFile);
+        audioFile = {};
     }
 }
 void BGMAudio::Play(f32 const& initialGroupVol) {
@@ -121,6 +111,7 @@ void BGMAudio::ApplyFinalVolume() {
 
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioSetGroupVolume(ownGroup, finalVol);
+    AudioManager::RefreshAllMusicVolumes();
 }
 void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
     // Stop any existing crossfade to prevent timer glitches
@@ -133,7 +124,24 @@ void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
     gIsCrossfading = true;
 
 }
-void AudioManager::InitializeBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr) {
+/*--------------------------------------------------
+|                                                  |
+|                   Sound Effects                  |
+|                                                  |
+--------------------------------------------------*/
+SFXAudio::SFXAudio(char const* filename) {
+    audioFile = AEAudioLoadSound(filename); // Load sfx file
+    if (!AEAudioIsValidAudio(audioFile)) {
+        std::cout << "Failed to load SFX: " << filename << "\n";
+    }
+}
+SFXAudio::~SFXAudio() { // Dtor for automatic cleanup
+    if (AEAudioIsValidAudio(audioFile)) {
+        AEAudioUnloadAudio(audioFile);
+        audioFile = {};
+    }
+}
+void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr) {
     // For the first time, play both tracks together so they sync perfectly and align
     // with crossfade effect.
     if (!bossIntroMusic->IsActive()) {
@@ -144,12 +152,26 @@ void AudioManager::InitializeBossMusic(EnemyBoss const& boss, RoomManager const&
     }
     // Triggered aggro
     if (boss.bossEngaged || AEInputCheckTriggered(AEVK_2)) { // To remove check triggered when rooms are spawned properly.
-       bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.45f);
+       bossIntroMusic->CrossfadeTo(*bossFightMusic, 1.2f);
     }
     // Lose aggro but still in boss room
     else if (!boss.bossEngaged && (roomMgr.GetCurrentRoomID() == ROOM_10) || AEInputCheckTriggered(AEVK_1)) { // To remove check triggered when rooms are spawned properly.
-        bossFightMusic->CrossfadeTo(*bossIntroMusic, 0.45f);
+        bossFightMusic->CrossfadeTo(*bossIntroMusic, 1.2f);
     }
+}
+void AudioManager::MuffleGameMusic() {
+    if (!gIsMuffled) {
+        preservedGameVol = gameMusic->GetVolume();
+        gIsMuffled = true;
+    }
+    gameMusic->SetVolume(preservedGameVol * 0.55f);
+    gameMusic->ApplyFinalVolume();
+    RefreshAllMusicVolumes();
+}
+void AudioManager::UnmuffleGameMusic() {
+    gameMusic->SetVolume(preservedGameVol);
+    gIsMuffled = false;
+    RefreshAllMusicVolumes();
 }
 void AudioManager::RefreshAllMusicVolumes()
 {
@@ -158,7 +180,25 @@ void AudioManager::RefreshAllMusicVolumes()
 
     if (bossFightMusic && bossFightMusic->IsActive())
         bossFightMusic->ApplyFinalVolume();
+
+    if (bossInstrMusic && bossInstrMusic->IsActive())
+        bossInstrMusic->ApplyFinalVolume();
+
+    if (gameMusic && gameMusic->IsActive())
+        gameMusic->ApplyFinalVolume();
 }
+void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& pitch) {
+    const AEAudio& audio = sfx.GetAudio();
+    if (AEAudioIsValidAudio(audio))
+    {
+        AEAudioPlay(audio, gSFXGroup, 1.0f, pitch, 0);
+    }
+}
+/*--------------------------------------------------
+|                                                  |
+|                   AudioMgr Init                  |
+|                                                  |
+--------------------------------------------------*/
 void AudioManager::Init() {
     if (!AEAudioIsValidGroup(gMusicGroup)) {
         gMusicGroup = AEAudioCreateGroup();
@@ -173,6 +213,21 @@ void AudioManager::Init() {
         bossIntroMusic = std::make_unique<BGMAudio>("Assets/music/BossIntro.mp3");
     if (!bossFightMusic)
         bossFightMusic = std::make_unique<BGMAudio>("Assets/music/BossFight.mp3");
+    if (!gameMusic)
+        gameMusic = std::make_unique<BGMAudio>("Assets/music/GameBGM.mp3");
+    if (!bossInstrMusic)
+        bossInstrMusic = std::make_unique<BGMAudio>("Assets/music/BossInstrumental.mp3");
+
+    // Load sound effects here.
+    //if (!buffFlipSFX)
+    //    buffFlipSFX = std::make_unique<SFXAudio>("Assets/music/BuffFlipSFX.mp3");
+    if (!buffRevealSFX)
+        buffRevealSFX = std::make_unique<SFXAudio>("Assets/music/BuffRevealSFX.mp3");
+    if (!buffHoverOnceSFX)
+        buffHoverOnceSFX = std::make_unique<SFXAudio>("Assets/music/BuffHoverOnceSFX.mp3");
+    if (!buffConfirmSFX)
+        buffConfirmSFX = std::make_unique<SFXAudio>("Assets/music/BuffConfirmSFX.mp3");
+
     //if (!menuMusic)
     //    menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
     //bossIntroMusic->Play(bossIntroMusic->GetVolume());
@@ -182,16 +237,9 @@ void AudioManager::Init() {
 }
 
 void AudioManager::Update() {
-    //if (AEInputCheckTriggered(AEVK_1)) {
-    //    bossFightMusic->CrossfadeTo(*bossIntroMusic, 0.8f);
-    //}
-    //if (AEInputCheckTriggered(AEVK_2)) {
-    //    bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.45f);
-    //}
-
     // Update crossfade variables for volumes of fadein and fadeout track.
     if (gIsCrossfading && gFadeOutTrack && gFadeInTrack) {
-        gFadeTimer += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+        gFadeTimer += static_cast<f32>(Time::GetInstance().GetDeltaTime());
         f32 t = (gFadeDuration > 0.0f) ? Clamp01(gFadeTimer / gFadeDuration) : 1.0f;
 
         std::cout << "t=" << t << " out=" << std::cos(t * PI_2) << " in=" << std::sin(t * PI_2) << "\n";
@@ -213,156 +261,22 @@ void AudioManager::Update() {
     }
 }
 void AudioManager::Exit() {
+    // Call BGMAudio dtor by reset.
     bossIntroMusic.reset();
     bossFightMusic.reset();
-}
+    bossInstrMusic.reset();
+    gameMusic.reset();
 
-//void AudioManager::Init()
-//{
-//    if (gAudioInitialized)
-//        return;
-//
-//    gSFXGroup = AEAudioCreateGroup();
-//    gMusicGroup = AEAudioCreateGroup();
-//
-//    gFadeOutGroup = AEAudioCreateGroup();
-//    gFadeInGroup = AEAudioCreateGroup();
-//
-//    gAudioInitialized = true;
-//
-//    ApplyGroupVolumes();
-//}
-//
-//void AudioManager::Update() {
-//    //// Trigger check
-//    //if (AEInputCheckTriggered(AEVK_1)) {
-//    //    Crossfade(gBossIntroMusic, gBossCombatMusic, 5.f);
-//    //}
-//    //if (AEInputCheckTriggered(AEVK_2)) {
-//    //    Crossfade(gBossCombatMusic, gBossIntroMusic, 4.5f);
-//    //}
-//
-//    //if (gIsCrossfading) {
-//    //    gFadeTimer += static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
-//
-//    //    // Safety check for duration to avoid division by zero
-//    //    f32 t = (gFadeDuration > 0.0f) ? Clamp01(gFadeTimer / gFadeDuration) : 1.0f;
-//
-//    //    if (t >= 1.0f) {
-//    //        AEAudioStopGroup(gFadeOutGroup);
-//    //        // Set final volume to be precise
-//    //        AEAudioSetGroupVolume(gFadeInGroup, 1.0f * gMusicVolume * gMasterVolume);
-//    //        gIsCrossfading = false;
-//    //    }
-//    //    else {
-//    //        // Apply curves
-//    //        f32 outVol = std::cos(t * PI_2) * gMusicVolume * gMasterVolume;
-//    //        f32 inVol = std::sin(t * PI_2) * gMusicVolume * gMasterVolume;
-//    //        std::cout << inVol << "    " << outVol << '\n';
-//    //        AEAudioSetGroupVolume(gFadeOutGroup, outVol);
-//    //        AEAudioSetGroupVolume(gFadeInGroup, inVol);
-//    //    }
-//    //}
-//}
-//
-//void AudioManager::LoadAll()
-//{
-//    if (!gAudioInitialized)
-//        Init();
-//
-//    if (gAudioLoaded)
-//        return;
-//
-//    // SFX
-//    gPlayerAttack1 = AEAudioLoadSound("Assets/music/player_attack1.mp3");
-//    gPlayerAttack2 = AEAudioLoadSound("Assets/music/player_attack2.mp3");
-//    gPlayerAttack3 = AEAudioLoadSound("Assets/music/player_attack3.mp3");
-//
-//    // Music
-//    //gMainMenuMusic = AEAudioLoadMusic("Assets/music/mainmenu.mp3");
-//    gMainMenuMusic = AEAudioLoadMusic("Assets/music/MenuBGM.mp3");
-//    gDeathMusic = AEAudioLoadMusic("Assets/music/Defeat.mp3");
-//    gGameSceneMusic = AEAudioLoadMusic("Assets/music/GameBGM.mp3");
-//    //gBossIntroMusic.audioFile = AEAudioLoadMusic("Assets/music/BossIntro.mp3");
-//    //gBossCombatMusic.audioFile = AEAudioLoadMusic("Assets/music/BossFight.mp3");
-//    gVictoryMusic = AEAudioLoadMusic("Assets/music/victory.mp3");
-//
-//    gAudioLoaded = true;
-//}
-//
-//void AudioManager::Exit()
-//{
-//	// stop all audio first
-//    if (AEAudioIsValidGroup(gSFXGroup))
-//        AEAudioStopGroup(gSFXGroup);
-//
-//    if (AEAudioIsValidGroup(gMusicGroup))
-//        AEAudioStopGroup(gMusicGroup);
-//
-//    if (AEAudioIsValidGroup(gFadeOutGroup)) 
-//        AEAudioUnloadAudioGroup(gFadeOutGroup);
-//    if (AEAudioIsValidGroup(gFadeInGroup)) 
-//        AEAudioUnloadAudioGroup(gFadeInGroup);
-//
-//	// unload SFX
-//    if (AEAudioIsValidAudio(gPlayerAttack1))
-//        AEAudioUnloadAudio(gPlayerAttack1);
-//    if (AEAudioIsValidAudio(gPlayerAttack2))
-//        AEAudioUnloadAudio(gPlayerAttack2);
-//    if (AEAudioIsValidAudio(gPlayerAttack3))
-//        AEAudioUnloadAudio(gPlayerAttack3);
-//
-//    // unload Music
-//    if (AEAudioIsValidAudio(gMainMenuMusic))
-//        AEAudioUnloadAudio(gMainMenuMusic);
-//    if (AEAudioIsValidAudio(gDeathMusic))
-//        AEAudioUnloadAudio(gDeathMusic);
-//    if (AEAudioIsValidAudio(gGameSceneMusic))
-//        AEAudioUnloadAudio(gGameSceneMusic);
-//    //if (AEAudioIsValidAudio(gBossIntroMusic.audioFile))
-//    //    AEAudioUnloadAudio(gBossIntroMusic.audioFile);
-//    //if (AEAudioIsValidAudio(gBossCombatMusic.audioFile))
-//    //    AEAudioUnloadAudio(gBossCombatMusic.audioFile);
-//    if (AEAudioIsValidAudio(gVictoryMusic))
-//        AEAudioUnloadAudio(gVictoryMusic);
-//
-//    // unload group
-//    if (AEAudioIsValidGroup(gSFXGroup))
-//        AEAudioUnloadAudioGroup(gSFXGroup);
-//    if (AEAudioIsValidGroup(gMusicGroup))
-//        AEAudioUnloadAudioGroup(gMusicGroup);
-//
-//	// cleaning up state
-//    gPlayerAttack1 = AEAudio{};
-//    gPlayerAttack2 = AEAudio{};
-//    gPlayerAttack3 = AEAudio{};
-//
-//    gMainMenuMusic = AEAudio{};
-//    gDeathMusic = AEAudio{};
-//    gGameSceneMusic = AEAudio{};
-//    gBossIntroMusic.audioFile = AEAudio{};
-//    gBossCombatMusic.audioFile = AEAudio{};
-//    gVictoryMusic = AEAudio{};
-//
-//    gSFXGroup = AEAudioGroup{};
-//    gMusicGroup = AEAudioGroup{};
-//
-//    gNextAttackIndex = 0;
-//
-//    gHasCurrentMusic = false;
-//    gCurrentMusicId = MusicId::MainMenu;
-//    gCurrentMusicVolumeScale = 1.0f;
-//    gCurrentMusicPitch = 1.0f;
-//    gCurrentMusicLoopCount = 0;
-//
-//    gAudioLoaded = false;
-//    gAudioInitialized = false;
-//
-//    gMasterVolume = 1.0f;
-//    gSFXVolume = 1.0f;
-//    gMusicVolume = 1.0f;
-//}
-//
+    // Call SFXAudio dtor by reset.
+    //buffFlipSFX.reset();
+    buffRevealSFX.reset();
+    buffHoverOnceSFX.reset();
+    buffConfirmSFX.reset();
+
+    // Unload both music groups.
+    AEAudioUnloadAudioGroup(gMusicGroup);
+    AEAudioUnloadAudioGroup(gSFXGroup);
+}
 void AudioManager::SetMasterVolume(float v)
 {
     gMasterVolume = Clamp01(v);
@@ -396,97 +310,3 @@ float AudioManager::GetMusicVolume()
 {
     return gMusicVolume;
 }
-
-//void AudioManager::PlaySFX(SoundId id, float volumeScale, float pitch, int loopCount)
-//{
-//    if (!gAudioLoaded)
-//        LoadAll();
-//
-//    AEAudio audio{};
-//
-//    switch (id)
-//    {
-//    case SoundId::PlayerAttack1:
-//        audio = gPlayerAttack1;
-//        break;
-//    case SoundId::PlayerAttack2:
-//        audio = gPlayerAttack2;
-//        break;
-//    case SoundId::PlayerAttack3:
-//        audio = gPlayerAttack3;
-//        break;
-//    default:
-//        return;
-//    }
-//
-//    ApplyGroupVolumes();
-//    AEAudioPlay(audio, gSFXGroup, FinalSFXVolume(volumeScale), pitch, loopCount);
-//}
-//
-//void AudioManager::PlayMusic(MusicId id, float volumeScale, float pitch, int loopCount)
-//{
-//    if (!gAudioLoaded)
-//        LoadAll();
-//
-//    AEAudio audio{};
-//
-//    switch (id)
-//    {
-//    case MusicId::MainMenu:
-//        audio = gMainMenuMusic;
-//        break;
-//    case MusicId::Death:
-//        audio = gDeathMusic;
-//        break;
-//    case MusicId::GameScene:
-//        audio = gGameSceneMusic;
-//        break;
-//    case MusicId::Victory:
-//        audio = gVictoryMusic;
-//        break;
-//    default:
-//        return;
-//    }
-//
-//    RefreshCurrentMusicState(id, volumeScale, pitch, loopCount);
-//    AEAudioPlay(audio, gMusicGroup, FinalMusicVolume(volumeScale), pitch, loopCount);
-//}
-//
-//void AudioManager::PlayNextAttackSFX()
-//{
-//    switch (gNextAttackIndex)
-//    {
-//    case 0:
-//        PlaySFX(SoundId::PlayerAttack1);
-//        break;
-//    case 1:
-//        PlaySFX(SoundId::PlayerAttack2);
-//        break;
-//    case 2:
-//        PlaySFX(SoundId::PlayerAttack3);
-//        break;
-//    default:
-//        break;
-//    }
-//
-//    gNextAttackIndex = (gNextAttackIndex + 1) % 3;
-//}
-////void AudioManager::Crossfade(Audio& from, Audio& to, f32 duration) {
-////    if (!gAudioLoaded) LoadAll();
-////
-////    // 1. Reset everything
-////    gFadeTimer = 0.0f;
-////    gFadeDuration = duration;
-////    gFromChannel = &from;
-////    gToChannel = &to;
-////    gIsCrossfading = true;
-////
-////    // 2. Set INITIAL volumes immediately (t = 0)
-////    // cos(0) = 1.0, sin(0) = 0.0
-////    AEAudioSetGroupVolume(gFadeOutGroup, 1.0f * gMusicVolume * gMasterVolume);
-////    AEAudioSetGroupVolume(gFadeInGroup, 0.0f);
-////
-////    // 3. Play
-////    AEAudioPlay(from.audioFile, gFadeOutGroup, 1.0f, 1.0f, -1);
-////    AEAudioPlay(to.audioFile, gFadeInGroup, 1.0f, 1.0f, -1);
-////}

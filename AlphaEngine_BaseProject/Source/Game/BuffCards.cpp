@@ -11,6 +11,7 @@
 #include "BuffCards.h"
 #include "Camera.h"
 #include "Timer.h"
+#include "../Game/AudioManager.h"
 
 BuffCard::BuffCard( // Constructor
 	CARD_RARITY cr,
@@ -113,11 +114,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		// --- KEYBOARD INPUT ---
 		if (AEInputCheckTriggered(AEVK_RIGHT) || AEInputCheckTriggered(AEVK_D)) {
 			//std::cout << "Hovered RIGHT once - play hover once sound\n";
+			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
 			cardSelected = static_cast<int>((cardSelected + 1) % cards.size());
 			keyboardInputDetected = true;
 		}
 		else if (AEInputCheckTriggered(AEVK_LEFT) || AEInputCheckTriggered(AEVK_A)) {
 			//std::cout << "Hovered LEFT once - play hover once sound\n";
+			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
 			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size());
 			keyboardInputDetected = true;
 		}
@@ -160,6 +163,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 						for (BuffCard& c : cards) c.selected = false;
 						cardSelected = i;
 						cards[cardSelected].selected = true;
+						AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
 						//std::cout << "Hovered MOUSE once - play hover once sound\n";
 					}
 					break;
@@ -183,6 +187,8 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			//	<< '\n' << "Effect: "
 			//	<< cards[cardSelected].cardEffect << std::endl;
 			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+			AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
+			AudioManager::UnmuffleGameMusic();
 			Time::GetInstance().SetTimeScale(1.0f);
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
@@ -196,6 +202,8 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					cards[cardSelected].type != REVITALIZE) {
 					AddBuff(cards[cardSelected]);
 				}
+				AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
+				AudioManager::UnmuffleGameMusic();
 				//std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
 				//	<< '\n' << "Rarity: "
 				//	<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
@@ -251,6 +259,7 @@ Randomize card types and rarities for the current set of cards.
 Called once per shuffle.
 --------------------------------------------------------------*/
 void BuffCardManager::RandomizeCards(int numCards) {
+	AudioManager::MuffleGameMusic();
 	randomizedCards.clear();
 	std::vector<CARD_TYPE> usedTypes; // track already picked types
 
@@ -415,6 +424,16 @@ void BuffCardScreen::Update() {
 
 			cardFlipStates[i] += static_cast<f32>(FLIP_SPEED * raritySpeedMultiplier * Time::GetInstance().GetDeltaTime());
 			if (cardFlipStates[i] >= 1.0f) {
+				f32 pitch{};
+				switch (cards[i].rarity)
+				{
+				case RARITY_UNCOMMON:  pitch = 1.0f; break;
+				case RARITY_RARE:      pitch = 1.2f; break;
+				case RARITY_EPIC:      pitch = 1.35f; break;
+				case RARITY_LEGENDARY: pitch = 1.5f; break;
+				}
+
+				AudioManager::PlaySFX(*AudioManager::buffRevealSFX, pitch);
 				cardFlipStates[i] = 1.0f;
 				cardFlipping[i] = false;
 			}
@@ -509,6 +528,24 @@ void BuffCardScreen::FlipCard(int cardIndex) {
 	if (cardIndex >= 0 && cardIndex < NUM_CARDS) {
 		cardFlipStates[cardIndex] = -1.0f; // Start from back
 		cardFlipping[cardIndex] = true;
+
+		// kiv sounds weird
+
+		//const auto& cards = BuffCardManager::GetRandomizedCards();
+		//if (cardIndex < (int)cards.size())
+		//{
+		//	float pitch = 1.0f;
+
+		//	switch (cards[cardIndex].rarity)
+		//	{
+		//	case RARITY_UNCOMMON:  pitch = 1.0f; break;
+		//	case RARITY_RARE:      pitch = 1.05f; break;
+		//	case RARITY_EPIC:      pitch = 1.1f; break;
+		//	case RARITY_LEGENDARY: pitch = 1.15f; break;
+		//	}
+
+		//	AudioManager::PlaySFX(*AudioManager::buffFlipSFX, pitch);
+		//}
 	}
 }
 // Draw a black overlay when drawing cards.
@@ -655,7 +692,7 @@ void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 	for (int i = 0; i < cards.size(); ++i) {
 		float cardFlipProgress = cardFlipStates[i]; // -1.0 to 1.0
 		static float t = 0.f;
-		t += static_cast<float>(AEFrameRateControllerGetFrameTime()) * 0.5f;
+		t += static_cast<float>(Time::GetInstance().GetDeltaTime()) * 0.5f;
 
 		// Calculate how "active" the wobble should be.
 		// (1.0f - abs(cardFlipProgress)) will be 1.0 when mid-flip (scaleX is 0)

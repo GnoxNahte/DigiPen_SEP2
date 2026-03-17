@@ -464,6 +464,10 @@ void GameScene::Init()
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
 		<< "\n";
+	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
+		if (AudioManager::gameMusic)   // make sure the pointer is initialized
+			AudioManager::gameMusic->Play(1.0f);  // pass volume
+	}
 }
 
 void GameScene::Update()
@@ -472,10 +476,15 @@ void GameScene::Update()
 	if (AEInputCheckTriggered(AEVK_ESCAPE))
 	{
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
-		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart)
+		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart) {
 			pausePage = PausePage::Menu;
+			AudioManager::UnmuffleGameMusic();
+		}
 		else
+		{
+			AudioManager::MuffleGameMusic();
 			TogglePause();
+		}
 	}
 
 	// When paused, skip gameplay update and only handle pause input
@@ -559,9 +568,9 @@ void GameScene::Update()
 	//		  << "BGM VOL : " << AudioManager::GetMusicVolume()
 	//		  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
 
-	if (roomMgr.GetCurrentRoomID() == ROOM_1) { // To change to ROOM_10 after spawning is done
-		AudioManager::InitializeBossMusic(enemyBoss, roomMgr);
-	}
+	//if (roomMgr.GetCurrentRoomID() == ROOM_1) { // To change to ROOM_10 after spawning is done
+	//	AudioManager::PlayBossMusic(enemyBoss, roomMgr);
+	//}
 	AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
@@ -793,6 +802,7 @@ void GameScene::UpdatePauseInput()
 		if (IsClicked(btnResume))
 		{
 			TogglePause();
+			AudioManager::UnmuffleGameMusic();
 			return;
 		}
 		if (IsClicked(btnRestart))

@@ -3,26 +3,6 @@
 #include "../Game/enemy/EnemyBoss.h"
 #include "../Game/Rooms/RoomManager.h"
 
-
-// Sound Effects.
-//enum class SoundId
-//{
-//    PlayerAttack1,
-//    PlayerAttack2,
-//    PlayerAttack3
-//};
-
-// MusicId KIV whether to be used.
-//enum class MusicId
-//{
-//    MainMenu,
-//    Death,
-//    GameScene,
-//    BossIntro,
-//    BossCombat,
-//    Victory
-//};
-
 class BGMAudio {
 public:
     BGMAudio() = delete;
@@ -45,6 +25,16 @@ private:
     bool active{};
 };
 
+class SFXAudio {
+public:
+    SFXAudio() = delete;
+    SFXAudio(char const* filename);
+    ~SFXAudio();
+    AEAudio const& GetAudio() const { return audioFile; }
+private:
+    AEAudio audioFile{};
+};
+
 //struct MusicChannel
 //{
 //    MusicId id;
@@ -59,7 +49,6 @@ class AudioManager
 public:
     static void Init();
     static void Update();
-    //static void LoadAll();
     static void Exit();
 
     static void SetMasterVolume(float v);
@@ -70,16 +59,23 @@ public:
     static float GetSFXVolume();
     static float GetMusicVolume();
 
-    static void InitializeBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
+    static void PlaySFX(SFXAudio const& sfx, f32 const& pitch = 1.0f);
+    static void PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
+    static void MuffleGameMusic();
+    static void UnmuffleGameMusic();
     static void RefreshAllMusicVolumes();
 
+
+    // Background Music
     static std::unique_ptr<BGMAudio> bossIntroMusic;
     static std::unique_ptr<BGMAudio> bossFightMusic;
+    static std::unique_ptr<BGMAudio> gameMusic;
+    static std::unique_ptr<BGMAudio> bossInstrMusic;
     //static std::unique_ptr<BGMAudio> menuMusic;
 
-    //static void PlaySFX(SoundId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
-    //static void PlayMusic(MusicId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
-
-    //static void PlayNextAttackSFX();
-    //static void Crossfade(Audio& from, Audio& to, f32 duration);
+    // Sound Effects
+    //static std::unique_ptr<SFXAudio> buffFlipSFX;
+    static std::unique_ptr<SFXAudio> buffRevealSFX;
+    static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
+    static std::unique_ptr<SFXAudio> buffConfirmSFX;
 };
