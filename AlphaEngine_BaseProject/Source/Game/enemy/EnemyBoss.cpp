@@ -384,11 +384,14 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
     const float dx = playerPos.x - position.x;
     const float absDx = std::fabs(dx);
 
+    //const float dy = playerPos.y - position.y;
+    const float YaggroRange = 5.f;
     const float dy = std::fabs(playerPos.y - position.y);
+    const float absDy = std::fabs(dy);
     //const bool yAggroOk = (dy <= aggroYRange);
     const bool yAttackOk = (dy <= attackYRange);
 
-    const bool inAggroRange = (absDx <= aggroRange);
+    const bool inAggroRange = (absDx <= aggroRange && absDy <= YaggroRange);
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     const float effectiveDist = yAttackOk ? absDx : 9999.0f;
 
