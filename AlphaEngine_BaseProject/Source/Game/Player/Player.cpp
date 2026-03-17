@@ -404,7 +404,7 @@ void Player::HandleJump()
     if (!isJumpBufferActive)
         return;
 
-    if (isLeftWallCollided || isRightWallCollided)
+    if ((isLeftWallCollided || isRightWallCollided) && inputDirection.x != 0)
     {
         PerformJump();
 
@@ -448,7 +448,7 @@ void Player::UpdateCollisions(const AEVec2& nextPosition)
 bool Player::IsDashing()
 {
     f64 currTime = Time::GetInstance().GetScaledElapsedTime();
-    return currTime - dashStartTime < stats.dashTime;
+    return !IsAnimAirAttack() && (currTime - dashStartTime < stats.dashTime);
 }
 
 bool Player::IsAnimGroundAttack()

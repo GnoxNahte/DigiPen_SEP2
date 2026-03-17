@@ -310,6 +310,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	AEVec2 ray = nextPosition - currPosition;
 	float rayDist = AEExtras::Dist(ray);
 	AEVec2 rayDir = ray / rayDist;
+	AEVec2 epsilonDir{ Sign(rayDir.x) * epsilon, Sign(rayDir.y) * epsilon };
 
 	Vec2Int raySign{ Sign_NoZero(rayDir.x), Sign_NoZero(rayDir.y) };
 
@@ -325,7 +326,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 	dist = std::min(dist, Raycast(corner, corner + ray));
 
 	// EPSILON to prevent clipping into the tile
-	currPosition += rayDir * dist - Vec2Int{ Sign(rayDir.x), Sign(rayDir.y) } * epsilon;
+	currPosition += rayDir * dist - epsilonDir;
 
 	// ===== Sliding =====
 	if (!ifSlide || dist == rayDist)
@@ -341,7 +342,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 		point.y -= colliderSize.y * raySign.y;
 		float x2 = Raycast(point, { point.x + remainingRay.x, point.y });
 
-		remainingRay.x = std::min(x1, x2) * raySign.x;
+		remainingRay.x = std::min(x1, x2) * raySign.x - epsilonDir.x;
 	}
 
 	// Check raycast for y (on the leading side and in that direction)
@@ -353,7 +354,7 @@ void MapGrid::HandleBoxCollision(AEVec2& currPosition, AEVec2& , const AEVec2& n
 		point.x -= colliderSize.x * raySign.x;
 		float y2 = Raycast(point, { point.x, point.y + remainingRay.y });
 
-		remainingRay.y = std::min(y1, y2) * raySign.y;
+		remainingRay.y = std::min(y1, y2) * raySign.y - epsilonDir.y;
 	}
 
 	currPosition += remainingRay;
