@@ -559,6 +559,10 @@ void GameScene::Update()
 	//std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
 	//		  << "BGM VOL : " << AudioManager::GetMusicVolume()
 	//		  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
+
+	if (roomMgr.GetCurrentRoomID() == ROOM_1) { // To change to ROOM_10 after spawning is done
+		AudioManager::InitializeBossMusic(enemyBoss, roomMgr);
+	}
 	AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;

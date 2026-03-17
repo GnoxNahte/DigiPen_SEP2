@@ -1,5 +1,7 @@
 #pragma once
 #include "AEEngine.h"
+#include "../Game/enemy/EnemyBoss.h"
+#include "../Game/Rooms/RoomManager.h"
 
 
 // Sound Effects.
@@ -29,7 +31,8 @@ public:
     void Play(f32 const& initialGroupVol);
     void Stop();
     void SetVolume(f32 const& vol);
-    const f32& GetVolume() const { return volume; }
+    const f32& GetVolume() const { return baseVolume; }
+    void ApplyFinalVolume();
     const f32& GetPitch() const { return pitch; }
     const bool& IsActive() const { return active; }
     void SetActive(bool activeState) { active = activeState; }
@@ -38,7 +41,7 @@ public:
 private:
     AEAudio audioFile{};
     AEAudioGroup ownGroup{};  // each instance owns its group
-    f32 volume{}, pitch{};
+    f32 baseVolume{}, fadeVolume{}, pitch{};
     bool active{};
 };
 
@@ -66,6 +69,12 @@ public:
     static float GetMasterVolume();
     static float GetSFXVolume();
     static float GetMusicVolume();
+
+    static void InitializeBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
+    static void RefreshAllMusicVolumes();
+
+    static std::unique_ptr<BGMAudio> bossIntroMusic;
+    static std::unique_ptr<BGMAudio> bossFightMusic;
 
     //static void PlaySFX(SoundId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
     //static void PlayMusic(MusicId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
