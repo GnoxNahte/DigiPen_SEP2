@@ -111,7 +111,6 @@ void BGMAudio::ApplyFinalVolume() {
 
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioSetGroupVolume(ownGroup, finalVol);
-    AudioManager::RefreshAllMusicVolumes();
 }
 void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
     // Stop any existing crossfade to prevent timer glitches
