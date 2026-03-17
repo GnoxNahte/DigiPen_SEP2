@@ -593,7 +593,8 @@ static void PlayMode_Enter()
     gPlayPlayer = new Player(gMap, gPlayEnemies);
     gPlayPlayer->Reset(gSpawn);
     UI::Init(gPlayPlayer);
-    if (hasBossSpawn)
+    //CHANGE BOSS INTRO CONDITION, LATER ON, WHEN ROOM is sync
+    if (AEInputCheckTriggered(AEVK_8))
     {
         UI::StartBossIntro();
     }
@@ -712,6 +713,11 @@ static void PlayMode_Exit()
 static void PlayMode_Update(float dt)
 {
     if (!gPlayPlayer || !gPlayCamera) return;
+
+    if (AEInputCheckTriggered(AEVK_8))
+    {
+        UI::StartBossIntro();
+    }
 
     if (UI::IsBossIntroActive())
     {
