@@ -308,24 +308,23 @@ GameScene::GameScene() :
 	AudioManager::Init();
 	// Init pause overlay resources 
 	pauseRectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	pauseCardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
+	pauseCardBackTex = AEGfxTextureLoad("Assets/Art/0_CardBack.png");
 
 	// Load buff icon textures for pause overlay (same assets as BuffCardScreen)
 	for (int i = 0; i < kPauseBuffTexCount; ++i) pauseBuffTex[i] = nullptr;
 
 	// NOTE: These indices assume CARD_TYPE enum values are 0..N in this order.
-	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
-	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
-	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
-	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
-	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
-	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	pauseBuffTex[(int)FLEETING_STEP] = AEGfxTextureLoad("Assets/Fleeting_Step.png");
-	pauseBuffTex[(int)SUREFOOTED] = AEGfxTextureLoad("Assets/Surefooted.png");
-	pauseBuffTex[(int)DEEP_VITALITY] = AEGfxTextureLoad("Assets/Deep_Vitality.png");
-	pauseBuffTex[(int)HAND_OF_FATE] = AEGfxTextureLoad("Assets/Hand_Of_Fate.png");
-	pauseBuffTex[(int)SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Sundering_Blow.png");
-
+	pauseBuffTex[(int)HERMES_FAVOR] = AEGfxTextureLoad("Assets/Art/Hermes_Favor.png");
+	pauseBuffTex[(int)IRON_DEFENCE] = AEGfxTextureLoad("Assets/Art/Iron_Defence.png");
+	pauseBuffTex[(int)SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Art/Switch_It_Up.png");
+	pauseBuffTex[(int)REVITALIZE] = AEGfxTextureLoad("Assets/Art/Revitalize.png");
+	pauseBuffTex[(int)SHARPEN] = AEGfxTextureLoad("Assets/Art/Sharpen.png");
+	pauseBuffTex[(int)BERSERKER] = AEGfxTextureLoad("Assets/Art/Berserker.png");
+	pauseBuffTex[(int)FLEETING_STEP] = AEGfxTextureLoad("Assets/Art/Fleeting_Step.png");
+	pauseBuffTex[(int)SUREFOOTED] = AEGfxTextureLoad("Assets/Art/Surefooted.png");
+	pauseBuffTex[(int)DEEP_VITALITY] = AEGfxTextureLoad("Assets/Art/Deep_Vitality.png");
+	pauseBuffTex[(int)HAND_OF_FATE] = AEGfxTextureLoad("Assets/Art/Hand_Of_Fate.png");
+	pauseBuffTex[(int)SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Art/Sundering_Blow.png");
 	// Fonts for pause overlay
 	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
 	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
@@ -333,10 +332,10 @@ GameScene::GameScene() :
 
 	// Glow / emission textures (same as BuffCardScreen)
 	for (int i = 0; i < kPauseRarityTexCount; ++i) pauseRarityTex[i] = nullptr;
-	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
-	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
-	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
-	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+	pauseRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Art/Uncommon_Emission.png");
+	pauseRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Art/Rare_Emission.png");
+	pauseRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Art/Epic_Emission.png");
+	pauseRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Art/Legendary_Emission.png");
 
 	// Pixellari for description (match BuffCardScreen)
 	pauseFontDesc = AEGfxCreateFont("Assets/Pixellari.ttf", 30);
@@ -1057,4 +1056,120 @@ void GameScene::RenderPauseOverlay()
 		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
 		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
+	// ============================== Active Buffs (top-right) ==============================
+	// Draw only existing buffs. 1 row max, 4 cards per row. No placeholders.
+	const auto& buffs = BuffCardManager::GetCurrentBuffs();
+	if (!buffs.empty())
+	{
+		const int cols = 3;
+
+		// Bigger cards
+		const float cardW = 180.0f;
+		const float cardH = 255.0f;
+		const float gapX = 20.0f;   // horizontal gap 
+		const float gapY = 20.0f;   // vertical gap between rows 
+
+		// Anchor: move this block to the right & top area (match your red mark)
+		// (0,0) is top-left in pixel coordinates
+		const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
+		const float anchorY = 110.0f;      // increase => move down, decrease => move up
+
+		// Title position (aligned with cards)
+		DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 80.0f, 0.75f, 1, 1, 1, 1);
+
+		const int count = (int)buffs.size();
+		const int drawCount = count;
+
+
+		for (int i = 0; i < drawCount; ++i)
+		{
+			const BuffCard& b = buffs[i];
+
+			UIRect card;
+			card.size = { cardW, cardH };
+
+			// UIRect.pos is center-based (pixel coords)
+			const int cx = i % cols;   // column index: 0,1,2
+			const int cy = i / cols;   // row index: 0,0,0,1,1,1,...
+
+			const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
+			const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
+			card.pos = { centerX, centerY };
+
+			// Pick buff front texture by card type; fallback to card back if missing
+			AEGfxTexture* tex = nullptr;
+			int typeIdx = (int)b.type;
+			if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
+				tex = pauseBuffTex[typeIdx];
+			if (!tex)
+				tex = pauseCardBackTex;
+
+			DrawTexturePanel(tex, card, 1.0f);
+
+			// --- draw glow (rarity emission) ---
+			AEGfxTexture* glow = nullptr;
+			int r = (int)b.rarity;
+			if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
+
+			if (glow)
+			{
+				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen
+				UIRect glowRect = card;
+				glowRect.size.x *= EMISSION_SCALE;
+				glowRect.size.y *= EMISSION_SCALE;
+				// pos same as card center, so glow is centered on card
+				DrawTexturePanel(glow, glowRect, 1.0f);
+			}
+
+			// Hover tooltip (text only)
+			if (IsMouseOver(card))
+			{
+				// tooltip panel
+				DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
+
+				f32 red{}, green{}, blue{};
+				switch (b.rarity) { // Match sprite hex colors
+				case (RARITY_UNCOMMON):
+					red = 0.015f;
+					green = 1.0f;
+					blue = 0.0f;
+					break;
+				case(RARITY_RARE):
+					red = 0.0f;
+					green = 0.384f;
+					blue = 1.0f;
+					break;
+				case(RARITY_EPIC):
+					red = 0.584f;
+					green = 0.0f;
+					blue = 1.0f;
+					break;
+				case(RARITY_LEGENDARY):
+					red = 1.0f;
+					green = 0.733f;
+					blue = 0.0f;
+					break;
+				}
+
+				// Title (m04)
+				DrawTextPx(
+					pauseFontSmall,
+					b.cardName,
+					120.0f, h - 125.0f, 1.0f,
+					red, green, blue, 1
+				);
+
+				// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
+				const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
+
+				DrawTextPx(
+					pauseFontDesc,
+					desc,
+					120.0f, h - 65.0f, 1.0f,
+					0.9f, 0.9f, 0.9f, 1.0f
+				);
+			}
+		}
+	}
+	// ======================================================================================
 }

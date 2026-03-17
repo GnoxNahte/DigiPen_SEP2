@@ -31,7 +31,7 @@ namespace {
 void UI::Init(Player* _player) {
 	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
 	gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
-	healthVignette = AEGfxTextureLoad("Assets/Health_Vignette.png");
+	healthVignette = AEGfxTextureLoad("Assets/Art/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	BuffCardManager::Init();
 	BuffCardScreen::Init();

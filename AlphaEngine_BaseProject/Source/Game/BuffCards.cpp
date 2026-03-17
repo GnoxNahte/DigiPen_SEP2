@@ -35,23 +35,23 @@ void BuffCardScreen::Init() {
 	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 
 	// Card assets
-	cardBackTex = AEGfxTextureLoad("Assets/0_CardBack.png");
-	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Hermes_Favor.png");
-	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Iron_Defence.png");
-	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Switch_It_Up.png");
-	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Revitalize.png");
-	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Sharpen.png");
-	cardFrontTex[BERSERKER] = AEGfxTextureLoad("Assets/Berserker.png");
-	cardFrontTex[FLEETING_STEP] = AEGfxTextureLoad("Assets/Fleeting_Step.png");
-	cardFrontTex[SUREFOOTED] = AEGfxTextureLoad("Assets/Surefooted.png");
-	cardFrontTex[DEEP_VITALITY] = AEGfxTextureLoad("Assets/Deep_Vitality.png");
-	cardFrontTex[HAND_OF_FATE] = AEGfxTextureLoad("Assets/Hand_Of_Fate.png");
-	cardFrontTex[SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Sundering_Blow.png");
+	cardBackTex = AEGfxTextureLoad("Assets/Art/0_CardBack.png");
+	cardFrontTex[HERMES_FAVOR] = AEGfxTextureLoad("Assets/Art/Hermes_Favor.png");
+	cardFrontTex[IRON_DEFENCE] = AEGfxTextureLoad("Assets/Art/Iron_Defence.png");
+	cardFrontTex[SWITCH_IT_UP] = AEGfxTextureLoad("Assets/Art/Switch_It_Up.png");
+	cardFrontTex[REVITALIZE] = AEGfxTextureLoad("Assets/Art/Revitalize.png");
+	cardFrontTex[SHARPEN] = AEGfxTextureLoad("Assets/Art/Sharpen.png");
+	cardFrontTex[BERSERKER] = AEGfxTextureLoad("Assets/Art/Berserker.png");
+	cardFrontTex[FLEETING_STEP] = AEGfxTextureLoad("Assets/Art/Fleeting_Step.png");
+	cardFrontTex[SUREFOOTED] = AEGfxTextureLoad("Assets/Art/Surefooted.png");
+	cardFrontTex[DEEP_VITALITY] = AEGfxTextureLoad("Assets/Art/Deep_Vitality.png");
+	cardFrontTex[HAND_OF_FATE] = AEGfxTextureLoad("Assets/Art/Hand_Of_Fate.png");
+	cardFrontTex[SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Art/Sundering_Blow.png");
 
-	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Uncommon_Emission.png");
-	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Rare_Emission.png");
-	cardRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Epic_Emission.png");
-	cardRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Legendary_Emission.png");
+	cardRarityTex[RARITY_UNCOMMON] = AEGfxTextureLoad("Assets/Art/Uncommon_Emission.png");
+	cardRarityTex[RARITY_RARE] = AEGfxTextureLoad("Assets/Art/Rare_Emission.png");
+	cardRarityTex[RARITY_EPIC] = AEGfxTextureLoad("Assets/Art/Epic_Emission.png");
+	cardRarityTex[RARITY_LEGENDARY] = AEGfxTextureLoad("Assets/Art/Legendary_Emission.png");
 
 	buffPromptFont = AEGfxCreateFont("Assets/m04.ttf", BUFF_PROMPT_FONT_SIZE);
 	cardBuffFont = AEGfxCreateFont("Assets/Pixellari.ttf", CARD_BUFF_FONT_SIZE);
@@ -585,12 +585,35 @@ void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int sele
 		// 3. Draw "Choose a buff" Header
 		// (Your existing code for this is fine as a global prompt)
 
+		f32 red{}, green{}, blue{};
 		if (allCardsFlipped) {
+			switch (selected.rarity) { // Match sprite hex colors
+			case (RARITY_UNCOMMON):
+				red = 0.015f;
+				green = 1.0f;
+				blue = 0.0f;
+				break;
+			case(RARITY_RARE):
+				red = 0.0f;
+				green = 0.384f;
+				blue = 1.0f;
+				break;
+			case(RARITY_EPIC):
+				red = 0.584f;
+				green = 0.0f;
+				blue = 1.0f;
+				break;
+			case(RARITY_LEGENDARY):
+				red = 1.0f;
+				green = 0.733f;
+				blue = 0.0f;
+				break;
+			}
 			AEGfxPrint(buffPromptFont,
 				selected.cardName.c_str(),
 				baseTextX, titleY,
 				1.0f,               // Scale
-				1.0f, 1.0f, 1.0f,   // Color
+				red, green, blue,   // Color
 				1.0f);              // Alpha
 
 			AEGfxPrint(cardBuffFont,

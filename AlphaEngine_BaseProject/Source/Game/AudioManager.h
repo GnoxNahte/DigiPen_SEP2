@@ -75,6 +75,7 @@ public:
 
     static std::unique_ptr<BGMAudio> bossIntroMusic;
     static std::unique_ptr<BGMAudio> bossFightMusic;
+    //static std::unique_ptr<BGMAudio> menuMusic;
 
     //static void PlaySFX(SoundId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);
     //static void PlayMusic(MusicId id, float volumeScale = 1.0f, float pitch = 1.0f, int loopCount = 0);

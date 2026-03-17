@@ -143,11 +143,11 @@ void AudioManager::InitializeBossMusic(EnemyBoss const& boss, RoomManager const&
         bossFightMusic->SetActive(true);
     }
     // Triggered aggro
-    if (boss.bossEngaged || AEInputCheckTriggered(AEVK_2)) {
+    if (boss.bossEngaged || AEInputCheckTriggered(AEVK_2)) { // To remove check triggered when rooms are spawned properly.
        bossIntroMusic->CrossfadeTo(*bossFightMusic, 0.45f);
     }
     // Lose aggro but still in boss room
-    else if (!boss.bossEngaged && (roomMgr.GetCurrentRoomID() == ROOM_10) || AEInputCheckTriggered(AEVK_1)) {
+    else if (!boss.bossEngaged && (roomMgr.GetCurrentRoomID() == ROOM_10) || AEInputCheckTriggered(AEVK_1)) { // To remove check triggered when rooms are spawned properly.
         bossFightMusic->CrossfadeTo(*bossIntroMusic, 0.45f);
     }
 }
@@ -173,6 +173,8 @@ void AudioManager::Init() {
         bossIntroMusic = std::make_unique<BGMAudio>("Assets/music/BossIntro.mp3");
     if (!bossFightMusic)
         bossFightMusic = std::make_unique<BGMAudio>("Assets/music/BossFight.mp3");
+    //if (!menuMusic)
+    //    menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
     //bossIntroMusic->Play(bossIntroMusic->GetVolume());
     //bossIntroMusic->SetActive(true);
     //bossFightMusic->Play(0.0f);
