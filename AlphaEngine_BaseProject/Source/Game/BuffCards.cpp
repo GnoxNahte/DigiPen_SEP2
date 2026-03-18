@@ -416,9 +416,9 @@ void BuffCardScreen::Update() {
 			if (i < (int)cards.size()) {
 				switch (cards[i].rarity) {
 				case RARITY_UNCOMMON:  raritySpeedMultiplier = 1.0f;  break;
-				case RARITY_RARE:      raritySpeedMultiplier = 1.25f; break;
-				case RARITY_EPIC:      raritySpeedMultiplier = 1.5f;  break;
-				case RARITY_LEGENDARY: raritySpeedMultiplier = 2.0f;  break;
+				case RARITY_RARE:      raritySpeedMultiplier = 0.9f; break;
+				case RARITY_EPIC:      raritySpeedMultiplier = 0.5f;  break;
+				case RARITY_LEGENDARY: raritySpeedMultiplier = 0.35f;  break;
 				}
 			}
 
