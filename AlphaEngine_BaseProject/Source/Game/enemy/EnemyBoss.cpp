@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <imgui.h>
 #include "../../Utils/AEExtras.h"
+#include "../Environment/MapGrid.h"
 
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
@@ -89,7 +90,6 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE )
         if (deathTimeLeft <= 0.f)
             deathTimeLeft = 0.5f; // fallback
         attack.Reset();
-        attack.Reset();
         velocity = AEVec2{ 0.f, 0.f };
         chasing = false;
 
@@ -161,19 +161,44 @@ EnemyBoss::EnemyBoss()
 
 }
 
+struct TeleportArea
+{
+    float minX;   // leftmost allowed boss center
+    float maxX;   // rightmost allowed boss center
+    float y;      // boss teleport row, if fixed
+};
+
+
 EnemyBoss::EnemyBoss(float initialPosX, float initialPosY) : EnemyBoss()
 {
 
     position = AEVec2{ initialPosX, initialPosY };
+    RebuildTeleportBounds();
+  
   
 
-
-    
 }
 
 EnemyBoss::~EnemyBoss()
 {
     AEGfxDestroyFont(bossFont);
+}
+
+void EnemyBoss::SetSpawnPosition(const AEVec2& spawnPos)
+{
+    position = spawnPos;
+    RebuildTeleportBounds();
+
+    teleportActive = false;
+    teleportTimer = 0.f;
+    teleportMoved = false;
+    teleportCooldownTimer = 0.f;
+
+    velocity = AEVec2{ 0.f, 0.f };
+    chasing = false;
+    facingDirection = AEVec2{ 1.f, 0.f };
+
+    sprite.SetState(IDLE, false, nullptr);
 }
 
 // Spawns "charge" particles around the boss that drift inward.
@@ -236,9 +261,85 @@ void EnemyBoss::SpawnSpellChargeVfx(float dt)
 
 }
 
+//helper function to build teleport range base on boss spawn location/point
+void EnemyBoss::RebuildTeleportBounds()
+{
+    spawnAnchorX = position.x;
 
+    const float bossHalfW = size.x * 0.5f;
 
-void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
+    teleportMinX = spawnAnchorX - teleportHalfRange + bossHalfW + teleportWallPadding;
+    teleportMaxX = spawnAnchorX + teleportHalfRange - bossHalfW - teleportWallPadding;
+
+    if (teleportMinX > teleportMaxX)
+        std::swap(teleportMinX, teleportMaxX);
+}
+
+bool EnemyBoss::IsTeleportXValid(float targetX,
+    const AEVec2& playerPos,
+    MapGrid& map) const
+{
+    if (targetX < teleportMinX || targetX > teleportMaxX)
+        return false;
+
+    if (std::fabs(targetX - playerPos.x) < teleportMinPlayerGap)
+        return false;
+
+    AEVec2 testPos = position;
+    testPos.x = targetX;
+
+    //only reject this teleport if the boss is meaningfully inside the wall, not just barely touching the edge. so boss size - a padding, creates a more lenient check
+    AEVec2 testSize = size;
+    testSize.x = max(0.05f, testSize.x - teleportWallPadding);
+    testSize.y = max(0.05f, testSize.y - teleportWallPadding);
+
+    if (map.CheckBoxCollision(testPos, testSize))
+        return false;
+
+    return true;
+}
+
+float EnemyBoss::FindTeleportTarget(const AEVec2& playerPos,
+    bool playerFacingRight,
+    MapGrid& map) const
+{
+    const float behindDir = playerFacingRight ? -1.0f : 1.0f;
+    const float frontDir = -behindDir;
+
+    //create a few potential position the boss can telport to
+    const float d1 = teleportBehindOffset;
+    const float d2 = teleportBehindOffset * 0.75f;
+    const float d3 = teleportBehindOffset * 0.50f;
+
+    const float candidates[] =
+    {
+        playerPos.x + behindDir * d1,
+        playerPos.x + frontDir * d1,
+        playerPos.x + behindDir * d2,
+        playerPos.x + frontDir * d2,
+        playerPos.x + behindDir * d3,
+        playerPos.x + frontDir * d3
+    };
+
+    for (float x : candidates)
+    {
+        if (IsTeleportXValid(x, playerPos, map))
+            return x;
+    }
+
+    //if potential teleport position is too far, will just teleport to the nearest X that is inside the allowed rnage
+    const float clampedBehind = std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
+    if (IsTeleportXValid(clampedBehind, playerPos, map))
+        return clampedBehind;
+
+    const float clampedFront = std::clamp(playerPos.x + frontDir * d1, teleportMinX, teleportMaxX);
+    if (IsTeleportXValid(clampedFront, playerPos, map))
+        return clampedFront;
+
+    return position.x;
+}
+
+void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid& map)
 {
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
@@ -426,13 +527,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
         // Snap behind player once, mid-animation
         if (!teleportMoved && teleportTimer >= snapTime)
         {
-            // If player faces right, behind is left (negative). If faces left, behind is right (positive).
-            const float behindDir = playerFacingRight ? -1.f : 1.f;
+            const float targetX = FindTeleportTarget(playerPos, playerFacingRight, map);
 
-            position.x = playerPos.x + behindDir * teleportBehindOffset;
+            position.x = targetX;
 
-            // Boss should face the player after teleport (same direction as player facing)
-            facingDirection = AEVec2{ playerFacingRight ? 1.f : -1.f, 0.f };
+            facingDirection = AEVec2{ (playerPos.x >= position.x) ? 1.f : -1.f, 0.f };
 
             teleportMoved = true;
         }
@@ -452,7 +551,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight)
 
             attack.Reset();                 // clears cooldownTimer too
            // const float effectiveDist = yAttackOk ? absDx : 9999.0f;
-            attack.Update(dt, effectiveDist, attackDur);
+
+            const float postDx = std::fabs(playerPos.x - position.x);
+            const float postDy = std::fabs(playerPos.y - position.y);
+            const bool postYAttackOk = (postDy <= attackYRange);
+            const float postEffectiveDist = postYAttackOk ? postDx : 9999.0f;
+
+            attack.Update(dt, postEffectiveDist, attackDur);
         }
 
         // Don't let normal animation/movement override TELEPORT this frame.
@@ -959,6 +1064,7 @@ void EnemyBoss::Render()
 void EnemyBoss::Reset(const AEVec2& spawnPos)
 {
     position = spawnPos;
+    RebuildTeleportBounds();
     velocity = AEVec2{ 0.f, 0.f };
     facingDirection = AEVec2{ 1.f, 0.f };
 
@@ -975,6 +1081,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
     invulnTimer = 0.f;
 
     attack.Reset();
+
 
     teleportActive = false;
     teleportTimer = 0.f;

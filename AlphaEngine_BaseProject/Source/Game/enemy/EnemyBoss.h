@@ -8,6 +8,9 @@
 #include "../../Utils/Box.h"
 #include "../Camera.h"
 
+class MapGrid; // forward declaration to avoid circular dependency
+
+
 struct SpecialAttack
 {
     AEVec2 pos{ 0.f, 0.f };
@@ -64,8 +67,10 @@ public:
     EnemyBoss();
     ~EnemyBoss();
 
-    void Update(const AEVec2& playerPos, bool playerFacingRight);
+    void Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid& map);
     void Reset(const AEVec2& spawnPos);
+
+    void SetSpawnPosition(const AEVec2& spawnPos);
 
     void Render();
     
@@ -131,11 +136,15 @@ public:
     const Box& GetMeleeHitbox() const { return meleeHitbox; }
     void UpdateMeleeHitbox(const AEVec2& playerPos); // call each frame (or during attack
 
-  
+    void RebuildTeleportBounds();
 
+    bool IsTeleportXValid(float targetX,
+        const AEVec2& playerPos,
+        MapGrid& map) const;
 
-  
-
+    float FindTeleportTarget(const AEVec2& playerPos,
+        bool playerFacingRight,
+        MapGrid& map) const;
 
 private:
 
@@ -174,6 +183,14 @@ private:
 
     float teleportBehindOffset{ 0.9f };    // how far behind player (tune)
     float teleportMoveNormalized{ 0.5f };  // when to snap (0..1 of teleport anim)
+
+    // spawn-anchor teleport limits
+    float spawnAnchorX{ 0.0f };
+    float teleportHalfRange{ 4.0f };      // tune to cage
+    float teleportMinX{ 0.0f };
+    float teleportMaxX{ 0.0f };
+    float teleportWallPadding{ 0.10f };
+    float teleportMinPlayerGap{ 0.30f };
 
 
 
@@ -225,5 +242,7 @@ private:
     float barFillDuration = 1.5f;    // then bar fills
 
     Box meleeHitbox{ AEVec2{0,0}, AEVec2{1.4f, 0.9f} }; // size tuned later
+
+  
 };
 
