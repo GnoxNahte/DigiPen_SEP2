@@ -11,183 +11,10 @@
 #include <sstream>
 #include <cmath>
 #include "../AudioManager.h"
+#include "../Rooms/RoomBuilder.h"
 
 std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
-
-namespace
-{
-	// squared-distance check (no sqrt)
-	bool IsNear(const AEVec2& a, const AEVec2& b, float range)
-	{
-		float dx = b.x - a.x;
-		float dy = b.y - a.y;
-		return (dx * dx + dy * dy) <= (range * range);
-	}
-
-	RoomID RoomIdFromIndex(int idx)
-	{
-		if (idx < 0 || idx >= ROOM_COUNT)
-			return ROOM_NONE;
-		return static_cast<RoomID>(idx);
-	}
-
-	bool PointInRoom(const AEVec2& p, int roomX, int roomY)
-	{
-		const float minX = (float)(roomX * ROOM_COLS);
-		const float minY = (float)(roomY * ROOM_ROWS);
-		const float maxX = minX + (float)ROOM_COLS;
-		const float maxY = minY + (float)ROOM_ROWS;
-
-		return p.x >= minX && p.x < maxX &&
-			p.y >= minY && p.y < maxY;
-	}
-
-	void BuildRoomsFromLevelData(const LevelData& lvl, RoomManager& roomMgr, RoomID& outStartRoom)
-	{
-		roomMgr.Clear();
-		outStartRoom = ROOM_1;
-
-		if (lvl.cols <= 0 || lvl.rows <= 0)
-			return;
-
-		const int roomsX = lvl.cols / ROOM_COLS;
-		const int roomsY = lvl.rows / ROOM_ROWS;
-
-
-
-		if (roomsX <= 0 || roomsY <= 0)
-			return;
-
-		const int totalRooms = roomsX * roomsY;
-		const int roomCountToUse = (totalRooms < ROOM_COUNT) ? totalRooms : ROOM_COUNT;
-
-		for (int i = 0; i < roomCountToUse; ++i)
-		{
-			const int rx = i % roomsX;
-			const int ry = i / roomsX;
-
-			RoomData room{};
-			room.id = RoomIdFromIndex(i);
-			std::cout << "lvl.cols=" << lvl.cols
-				<< " lvl.rows=" << lvl.rows
-				<< " roomsX=" << roomsX
-				<< " roomsY=" << roomsY
-				<< " totalRooms=" << (roomsX * roomsY)
-				<< "\n";
-
-			// neighbors
-			if (ry - 1 >= 0)
-				room.topRoom = RoomIdFromIndex(i - roomsX);
-			if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
-				room.bottomRoom = RoomIdFromIndex(i + roomsX);
-			if (rx - 1 >= 0)
-				room.leftRoom = RoomIdFromIndex(i - 1);
-			if (rx + 1 < roomsX && i + 1 < roomCountToUse)
-				room.rightRoom = RoomIdFromIndex(i + 1);
-
-			// tiles
-			for (int y = 0; y < ROOM_ROWS; ++y)
-			{
-				for (int x = 0; x < ROOM_COLS; ++x)
-				{
-					const int globalX = rx * ROOM_COLS + x;
-					const int globalY = ry * ROOM_ROWS + y;
-
-					int v = (int)MapTile::Type::NONE;
-					if (globalX >= 0 && globalX < lvl.cols &&
-						globalY >= 0 && globalY < lvl.rows)
-					{
-						v = lvl.tiles[(size_t)globalY * (size_t)lvl.cols + (size_t)globalX];
-					}
-
-					if (v < 0 || v >= MapTile::typeCount)
-						v = (int)MapTile::Type::NONE;
-
-					room.tiles[y][x] = (MapTile::Type)v;
-				}
-			}
-
-			// default entry points
-			room.entryFromLeft = { 3.0f, 3.0f };
-			room.entryFromRight = { (float)ROOM_COLS - 4.0f, 3.0f };
-			room.entryFromTop = { ROOM_COLS * 0.5f, (float)ROOM_ROWS - 4.0f };
-			room.entryFromBottom = { ROOM_COLS * 0.5f, 3.0f };
-
-			// default start spawn
-			room.startSpawn = { 2.5f, 3.0f };
-
-			// spawn belongs to this room?
-			if (PointInRoom(lvl.spawn, rx, ry))
-			{
-				room.startSpawn = {
-					lvl.spawn.x - rx * (float)ROOM_COLS,
-					lvl.spawn.y - ry * (float)ROOM_ROWS
-				};
-				outStartRoom = room.id;
-			}
-
-			// enemies in this room
-			for (const auto& e : lvl.enemies)
-			{
-				if (!PointInRoom(e.pos, rx, ry))
-					continue;
-
-				if (room.enemyCount >= MAX_ROOM_ENEMIES)
-					continue;
-
-				room.enemies[room.enemyCount].preset = e.preset;
-				room.enemies[room.enemyCount].pos = {
-					e.pos.x - rx * (float)ROOM_COLS,
-					e.pos.y - ry * (float)ROOM_ROWS
-				};
-				++room.enemyCount;
-			}
-
-			// traps in this room
-			for (const auto& t : lvl.traps)
-			{
-				if (!PointInRoom(t.pos, rx, ry))
-					continue;
-
-				if (room.trapCount >= MAX_ROOM_TRAPS)
-					continue;
-
-				room.traps[room.trapCount].type = t.type;
-				room.traps[room.trapCount].pos = {
-					t.pos.x - rx * (float)ROOM_COLS,
-					t.pos.y - ry * (float)ROOM_ROWS
-				};
-				room.traps[room.trapCount].size = t.size;
-				room.traps[room.trapCount].upTime = t.upTime;
-				room.traps[room.trapCount].downTime = t.downTime;
-				room.traps[room.trapCount].damageOnHit = t.damageOnHit;
-				room.traps[room.trapCount].startDisabled = t.startDisabled;
-				room.traps[room.trapCount].damagePerTick = t.damagePerTick;
-				room.traps[room.trapCount].tickInterval = t.tickInterval;
-				++room.trapCount;
-			}
-
-			roomMgr.SetRoom(room.id, room);
-			std::cout << "room " << (int)room.id
-				<< " rx=" << rx << " ry=" << ry
-				<< " L=" << (int)room.leftRoom
-				<< " R=" << (int)room.rightRoom
-				<< " T=" << (int)room.topRoom
-				<< " B=" << (int)room.bottomRoom
-				<< "\n";
-		}
-	}
-}
-
-void GameScene::ClearRuntimeRoomObjects()
-{
-	// rebuild managers by assignment/reset so we do not disturb other scene systems
-	trapMgr = TrapManager{};
-
-	enemyMgr = EnemyManager{};
-	enemyMgr.SetBoss(&enemyBoss);
-}
 
 void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 {
@@ -217,6 +44,17 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 	// clear and rebuild runtime room objects
 	ClearRuntimeRoomObjects();
 
+	struct PendingPlateBinding
+	{
+		PressurePlate* plate = nullptr;
+		const RoomTrapSpawn* def = nullptr;
+	};
+
+	std::vector<PendingPlateBinding> pendingPlates;
+	std::vector<std::pair<int, Trap*>> spawnedById;
+	std::vector<Trap*> spawnedSpikes;
+	bool hasExplicitLinks = false;
+
 	// rebuild traps
 	for (int i = 0; i < room.trapCount; ++i)
 	{
@@ -229,19 +67,75 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 			td.pos.y - td.size.y * 0.5f
 		};
 
+		Trap* spawnedTrap = nullptr;
 		const Trap::Type tt = static_cast<Trap::Type>(td.type);
 
 		if (tt == Trap::Type::SpikePlate)
 		{
-			trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+			SpikePlate& spikeRef =
+				trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+
+			spawnedTrap = &spikeRef;
+			spawnedSpikes.push_back(&spikeRef);
 		}
 		else if (tt == Trap::Type::PressurePlate)
 		{
-			trapMgr.Spawn<PressurePlate>(box);
+			PressurePlate& plateRef = trapMgr.Spawn<PressurePlate>(box);
+			spawnedTrap = &plateRef;
+
+			pendingPlates.push_back({ &plateRef, &td });
+			if (!td.links.empty())
+				hasExplicitLinks = true;
 		}
 		else if (tt == Trap::Type::LavaPool)
 		{
-			trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+			LavaPool& lavaRef = trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+			spawnedTrap = &lavaRef;
+		}
+
+		if (spawnedTrap && td.id >= 0)
+			spawnedById.push_back({ td.id, spawnedTrap });
+	}
+
+	auto FindSpawnedTrapById = [&spawnedById](int id) -> Trap*
+		{
+			for (const auto& entry : spawnedById)
+			{
+				if (entry.first == id)
+					return entry.second;
+			}
+			return nullptr;
+		};
+
+	if (hasExplicitLinks)
+	{
+		for (const auto& pending : pendingPlates)
+		{
+			if (!pending.plate || !pending.def)
+				continue;
+
+			for (int linkId : pending.def->links)
+			{
+				Trap* target = FindSpawnedTrapById(linkId);
+				if (target)
+					pending.plate->AddLinkedTrap(target);
+			}
+		}
+	}
+	else
+	{
+		// fallback for older levels / no explicit links:
+		// link every pressure plate to every spike in this room
+		for (const auto& pending : pendingPlates)
+		{
+			if (!pending.plate)
+				continue;
+
+			for (Trap* spike : spawnedSpikes)
+			{
+				if (spike)
+					pending.plate->AddLinkedTrap(spike);
+			}
 		}
 	}
 
@@ -272,6 +166,16 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 	Camera::position = camera.position;
 	AEGfxSetCamPosition(camera.position.x * Camera::scale, camera.position.y * Camera::scale);
 }
+
+void GameScene::ClearRuntimeRoomObjects()
+{
+	// rebuild managers by assignment/reset so we do not disturb other scene systems
+	trapMgr = TrapManager{};
+
+	enemyMgr = EnemyManager{};
+	enemyMgr.SetBoss(&enemyBoss);
+}
+
 
 RoomDirection GameScene::CheckRoomExit() const
 {

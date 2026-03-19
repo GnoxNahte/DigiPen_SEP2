@@ -10,6 +10,7 @@
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
 #include "../../Game/Rooms/RoomManager.h"
+#include "../Rooms/RoomBuilder.h"
 
 class GameScene : public BaseScene
 {

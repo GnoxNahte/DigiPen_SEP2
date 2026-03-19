@@ -15,6 +15,8 @@
 
 #include "../Time.h"
 #include "../UI.h"
+#include "../rooms/RoomManager.h"
+#include "../rooms/roomBuilder.h"
 
 #include <iostream>
 #include <vector>
@@ -41,6 +43,10 @@ static constexpr float ZOOM_MAX = 128.0f;
 
 static MapGrid* gMap = nullptr;
 static Camera* gCamera = nullptr;
+
+static RoomManager  gPlayRoomMgr;
+static RoomID       gPlayStartRoom = ROOM_1;
+static bool         gPlayRoomTransitionLocked = false;
 
 static EditorUIState gUI{};
 static EditorUIIO    gUIIO{};
@@ -118,6 +124,9 @@ static TrapManager* gPlayTraps = nullptr;
 static EnemyManager* gPlayEnemies = nullptr;
 static Camera* gPlayCamera = nullptr;
 static EnemyBoss* gPlayBoss = nullptr;
+
+
+
 
 AttackSystem attackSystem;
 
@@ -263,7 +272,7 @@ static void PlaceTrapAtCell(int tx, int ty, Trap::Type trapType)
     t.upTime = 1.0f;
     t.downTime = 1.0f;
     t.damageOnHit = 10;
-	t.damagePerTick = 10;
+    t.damagePerTick = 10;
     t.tickInterval = 0.2f;
     t.startDisabled = (trapType == Trap::Type::SpikePlate);
     t.id = AllocateTrapId();
@@ -559,48 +568,127 @@ static void Prompt_Draw()
     play mode
 ========================================================*/
 
-static void PlayMode_Enter()
+static void PlayMode_ClearRuntimeRoomObjects()
 {
-    gPlayCamera = new Camera(
-        { 0.f, 0.f },
-        { (float)GRID_COLS, (float)GRID_ROWS },
-        CAMERA_SCALE
-    );
-
-    gPlayEnemies = new EnemyManager();
-    gPlayEnemies->SetBoss(gPlayBoss);
-
-    std::vector<EnemyManager::SpawnInfo> spawns;
-    bool hasBossSpawn = false;
-    for (const auto& ed : gEnemyDefs)
-    {
-        spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
-        EnemySpawnType type = (EnemySpawnType)ed.preset;
-        if (type == EnemySpawnType::Boss)
-            hasBossSpawn = true;
-    }
-
-    if (hasBossSpawn)
-    {
-        gPlayBoss = new EnemyBoss();
-        gPlayEnemies->SetBoss(gPlayBoss);
-       
-    }
-
-    gPlayEnemies->SetSpawns(spawns);
-    gPlayEnemies->SpawnAll();
-
-    gPlayPlayer = new Player(gMap, gPlayEnemies);
-    gPlayPlayer->Reset(gSpawn);
-    UI::Init(gPlayPlayer);
-    //CHANGE BOSS INTRO CONDITION, LATER ON, WHEN ROOM is sync
-    if (AEInputCheckTriggered(AEVK_8))
-    {
-        UI::StartBossIntro();
-    }
-    gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0, 0, true);
-
+    delete gPlayTraps;
     gPlayTraps = new TrapManager();
+
+    gSpikeAnims.clear();
+    gSpikeTraps.clear();
+
+    if (gPlayEnemies)
+    {
+        *gPlayEnemies = EnemyManager{};
+        gPlayEnemies->SetBoss(gPlayBoss);
+    }
+}
+
+static int PlayMode_GetRoomsPerRow()
+{
+    return max(1, GRID_COLS / ROOM_COLS);
+}
+
+static AEVec2 PlayMode_GetRoomOrigin(RoomID id)
+{
+    if (id == ROOM_NONE)
+        return AEVec2{ 0.f, 0.f };
+
+    const int roomsPerRow = PlayMode_GetRoomsPerRow();
+    const int idx = static_cast<int>(id);
+    const int rx = idx % roomsPerRow;
+    const int ry = idx / roomsPerRow;
+
+    return AEVec2{
+        rx * static_cast<float>(ROOM_COLS),
+        ry * static_cast<float>(ROOM_ROWS)
+    };
+}
+
+static bool PlayMode_PointInRoom(const AEVec2& p, RoomID id)
+{
+    if (id == ROOM_NONE)
+        return false;
+
+    const AEVec2 origin = PlayMode_GetRoomOrigin(id);
+    return p.x >= origin.x && p.x < origin.x + static_cast<float>(ROOM_COLS) &&
+        p.y >= origin.y && p.y < origin.y + static_cast<float>(ROOM_ROWS);
+}
+
+static RoomDirection PlayMode_CheckRoomExit()
+{
+    if (!gPlayPlayer) return DIR_NONE;
+    if (gPlayRoomMgr.GetCurrentRoomID() == ROOM_NONE) return DIR_NONE;
+
+    const AEVec2 p = gPlayPlayer->GetPosition();
+    const AEVec2 origin = PlayMode_GetRoomOrigin(gPlayRoomMgr.GetCurrentRoomID());
+
+    if (p.y < origin.y) return DIR_BOTTOM;
+    if (p.y >= origin.y + static_cast<float>(ROOM_ROWS)) return DIR_TOP;
+    if (p.x < origin.x) return DIR_LEFT;
+    if (p.x >= origin.x + static_cast<float>(ROOM_COLS)) return DIR_RIGHT;
+
+    return DIR_NONE;
+}
+
+static AEVec2 PlayMode_ComputeTransitionSpawn(RoomID previousRoom, RoomID nextRoom, const AEVec2& previousPos)
+{
+    static constexpr float kInset = 0.35f;
+
+    const AEVec2 prevOrigin = PlayMode_GetRoomOrigin(previousRoom);
+    const AEVec2 nextOrigin = PlayMode_GetRoomOrigin(nextRoom);
+
+    AEVec2 spawn = previousPos;
+
+    auto ClampFloat = [](float v, float lo, float hi) -> float
+        {
+            return (v < lo) ? lo : ((v > hi) ? hi : v);
+        };
+
+    const float nextMinX = nextOrigin.x + kInset;
+    const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - kInset;
+    const float nextMinY = nextOrigin.y + kInset;
+    const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - kInset;
+
+    if (nextOrigin.x > prevOrigin.x)
+    {
+        spawn.x = nextMinX;
+        spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+    }
+    else if (nextOrigin.x < prevOrigin.x)
+    {
+        spawn.x = nextMaxX;
+        spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+    }
+    else if (nextOrigin.y > prevOrigin.y)
+    {
+        spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+        spawn.y = nextMinY;
+    }
+    else if (nextOrigin.y < prevOrigin.y)
+    {
+        spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+        spawn.y = nextMaxY;
+    }
+    else
+    {
+        spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+        spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+    }
+
+    return spawn;
+}
+
+static void PlayMode_BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSpawn = nullptr)
+{
+    if (!gPlayPlayer || !gPlayEnemies || !gPlayCamera)
+        return;
+    if (gPlayRoomMgr.GetCurrentRoomID() == ROOM_NONE)
+        return;
+
+    const RoomData& room = gPlayRoomMgr.GetCurrentRoom();
+    const AEVec2 roomOrigin = PlayMode_GetRoomOrigin(room.id);
+
+    PlayMode_ClearRuntimeRoomObjects();
 
     struct PendingPlateBinding
     {
@@ -615,6 +703,9 @@ static void PlayMode_Enter()
 
     for (const auto& td : gTrapDefs)
     {
+        if (!PlayMode_PointInRoom(td.pos, room.id))
+            continue;
+
         Box box{};
         box.size = td.size;
         box.position = AEVec2{
@@ -665,8 +756,6 @@ static void PlayMode_Enter()
             return nullptr;
         };
 
-    // new behavior: if any pressure plate has explicit links defined,
-    // only link those specified traps
     if (hasExplicitLinks)
     {
         for (const auto& pending : pendingPlates)
@@ -681,8 +770,6 @@ static void PlayMode_Enter()
             }
         }
     }
-    // old behavior (legacy): if no explicit links defined,
-    // link all spike plates to all pressure plates by default
     else
     {
         for (const auto& pending : pendingPlates)
@@ -694,6 +781,156 @@ static void PlayMode_Enter()
             }
         }
     }
+
+    bool hasBoss = false;
+    std::vector<EnemyManager::SpawnInfo> spawns;
+    for (int i = 0; i < room.enemyCount; ++i)
+    {
+        EnemySpawnType type = (EnemySpawnType)room.enemies[i].preset;
+        AEVec2 worldPos{
+            roomOrigin.x + room.enemies[i].pos.x,
+            roomOrigin.y + room.enemies[i].pos.y
+        };
+        spawns.push_back({ type, worldPos });
+        if (type == EnemySpawnType::Boss)
+            hasBoss = true;
+    }
+
+    if (hasBoss)
+    {
+        if (!gPlayBoss)
+            gPlayBoss = new EnemyBoss();
+    }
+    else
+    {
+        delete gPlayBoss;
+        gPlayBoss = nullptr;
+    }
+
+    gPlayEnemies->SetBoss(gPlayBoss);
+    gPlayEnemies->SetCurrentRoomID(room.id);
+    gPlayEnemies->SetSpawns(spawns);
+    gPlayEnemies->SpawnAll();
+
+    AEVec2 spawn = gSpawn;
+    if (forcedSpawn)
+        spawn = *forcedSpawn;
+    else if (cameFrom != DIR_NONE)
+    {
+        const AEVec2 roomOriginMin{
+            roomOrigin.x + 0.35f,
+            roomOrigin.y + 0.35f
+        };
+        const AEVec2 roomOriginMax{
+            roomOrigin.x + static_cast<float>(ROOM_COLS) - 0.35f,
+            roomOrigin.y + static_cast<float>(ROOM_ROWS) - 0.35f
+        };
+
+        spawn = AEVec2{
+            std::clamp(gSpawn.x, roomOriginMin.x, roomOriginMax.x),
+            std::clamp(gSpawn.y, roomOriginMin.y, roomOriginMax.y)
+        };
+    }
+
+    gPlayPlayer->Reset(spawn);
+
+    const bool snapCamera = (cameFrom == DIR_NONE);
+    gPlayCamera->SetFollow(&gPlayPlayer->GetPosition(), 0.f, 0.f, snapCamera);
+    if (snapCamera)
+        gPlayCamera->Update();
+
+    //not sure where to call this from?? will put this here for now??.....
+    if ((gPlayRoomMgr.GetCurrentRoomID() == ROOM_9))
+        UI::StartBossIntro();
+}
+
+static void PlayMode_RenderRoomTraps()
+{
+    if (gPlayRoomMgr.GetCurrentRoomID() == ROOM_NONE)
+        return;
+
+    const RoomID roomId = gPlayRoomMgr.GetCurrentRoomID();
+    int spikeIdx = 0;
+
+    for (const auto& td : gTrapDefs)
+    {
+        if (!PlayMode_PointInRoom(td.pos, roomId))
+            continue;
+
+        const float wx = td.pos.x - td.size.x * 0.5f;
+        const float wy = td.pos.y - td.size.y * 0.5f;
+
+        if (td.type == (int)Trap::Type::LavaPool)
+        {
+            DrawWorldRect(wx, wy, td.size.x, td.size.y, 1.0f, 0.35f, 0.05f, 0.70f);
+        }
+        else if (td.type == (int)Trap::Type::PressurePlate)
+        {
+            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+        }
+        else if (td.type == (int)Trap::Type::SpikePlate)
+        {
+            const int frame = (spikeIdx < (int)gSpikeAnims.size()) ? gSpikeAnims[spikeIdx].frame : 0;
+            ++spikeIdx;
+
+            AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.f, 0.f, 0.f, 1.f);
+
+            AEMtx33 m;
+            AEMtx33Trans(&m, wx + td.size.x * 0.5f, wy + td.size.y * 0.5f);
+            AEMtx33ScaleApply(&m, &m, td.size.x * Camera::scale, td.size.y * Camera::scale);
+            AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+            AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+            AEGfxSetTransparency(1.f);
+            AEGfxSetTransform(m.m);
+            AEGfxTextureSet(gSpikeTexture, 0.f, 0.f);
+            AEGfxMeshDraw(gSpikeMeshes[frame], AE_GFX_MDM_TRIANGLES);
+        }
+    }
+}
+
+static void PlayMode_Enter()
+{
+    LevelData lvl;
+    BuildLevelDataFromEditor(*gMap, GRID_COLS, GRID_ROWS,
+        gTrapDefs, gEnemyDefs, gVinePositions, gSpawn, lvl);
+
+    gPlayRoomMgr.Clear();
+    gPlayStartRoom = ROOM_1;
+    BuildRoomsFromLevelData(lvl, gPlayRoomMgr, gPlayStartRoom);
+    if (!gPlayRoomMgr.HasRoom(gPlayStartRoom))
+        gPlayStartRoom = ROOM_1;
+
+    delete gPlayBoss;
+    gPlayBoss = nullptr;
+
+    delete gPlayEnemies;
+    gPlayEnemies = new EnemyManager();
+
+    delete gPlayTraps;
+    gPlayTraps = new TrapManager();
+
+    delete gPlayPlayer;
+    gPlayPlayer = new Player(gMap, gPlayEnemies);
+
+    delete gPlayCamera;
+    gPlayCamera = new Camera(
+        { 0.f, 0.f },
+        { (float)GRID_COLS, (float)GRID_ROWS },
+        CAMERA_SCALE
+    );
+
+    gPlayRoomMgr.SetCurrentRoom(gPlayStartRoom);
+    gPlayRoomTransitionLocked = false;
+
+    PlayMode_BuildCurrentRoom(DIR_NONE);
+
+    UI::Init(gPlayPlayer);
+    
 }
 
 static void PlayMode_Exit()
@@ -707,36 +944,80 @@ static void PlayMode_Exit()
     gSpikeAnims.clear();
     gSpikeTraps.clear();
 
+    gPlayRoomMgr.Clear();
+    gPlayRoomTransitionLocked = false;
+    gPlayStartRoom = ROOM_1;
+
     ApplyWorldCamera();
 }
 
 static void PlayMode_Update(float dt)
 {
-    if (!gPlayPlayer || !gPlayCamera) return;
+    if (!gPlayPlayer || !gPlayCamera || !gPlayEnemies || !gPlayTraps) return;
 
-    if (AEInputCheckTriggered(AEVK_8))
-    {
-        UI::StartBossIntro();
-    }
+  
 
     if (UI::IsBossIntroActive())
     {
         UI::Update();
-        gPlayCamera->Update(); // optional if you still want camera follow
+        gPlayCamera->Update();
         return;
     }
 
     gPlayPlayer->Update();
+
+    if (gPlayRoomTransitionLocked)
+    {
+        if (PlayMode_CheckRoomExit() == DIR_NONE)
+            gPlayRoomTransitionLocked = false;
+    }
+
+    if (!gPlayRoomTransitionLocked)
+    {
+        RoomDirection exitDir = PlayMode_CheckRoomExit();
+        if (exitDir != DIR_NONE)
+        {
+            RoomID previousRoom = gPlayRoomMgr.GetCurrentRoomID();
+            AEVec2 previousPos = gPlayPlayer->GetPosition();
+
+            if (gPlayRoomMgr.ChangeRoom(exitDir))
+            {
+                RoomDirection cameFrom = DIR_NONE;
+                switch (exitDir)
+                {
+                case DIR_TOP:    cameFrom = DIR_BOTTOM; break;
+                case DIR_LEFT:   cameFrom = DIR_RIGHT;  break;
+                case DIR_BOTTOM: cameFrom = DIR_TOP;    break;
+                case DIR_RIGHT:  cameFrom = DIR_LEFT;   break;
+                default: break;
+                }
+
+                const RoomID nextRoom = gPlayRoomMgr.GetCurrentRoomID();
+                const AEVec2 transitionSpawn =
+                    PlayMode_ComputeTransitionSpawn(previousRoom, nextRoom, previousPos);
+
+                PlayMode_BuildCurrentRoom(cameFrom, &transitionSpawn);
+                gPlayRoomTransitionLocked = true;
+            }
+            else
+            {
+                const AEVec2 origin = PlayMode_GetRoomOrigin(gPlayRoomMgr.GetCurrentRoomID());
+                AEVec2 p = gPlayPlayer->GetPosition();
+                if (p.x < origin.x) p.x = origin.x;
+                if (p.x > origin.x + (float)ROOM_COLS - 0.1f) p.x = origin.x + (float)ROOM_COLS - 0.1f;
+                if (p.y < origin.y) p.y = origin.y;
+                if (p.y > origin.y + (float)ROOM_ROWS - 0.1f) p.y = origin.y + (float)ROOM_ROWS - 0.1f;
+                gPlayPlayer->Reset(p);
+            }
+        }
+    }
+
     gPlayCamera->Update();
 
     const AEVec2 pPos = gPlayPlayer->GetPosition();
 
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->GetIsFacingRight(), *gMap);
-
-
     attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
-   
-
     gPlayTraps->Update(dt, *gPlayPlayer);
 
     for (int i = 0; i < (int)gSpikeTraps.size(); ++i)
@@ -757,7 +1038,6 @@ static void PlayMode_Update(float dt)
     }
 
     UI::GetDamageTextSpawner().Update();
-   
     UI::Update();
 }
 
@@ -768,51 +1048,7 @@ static void PlayMode_Render()
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     gMap->Render();
 
-    // lava + pressure plate overlays
-    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-    AEGfxSetColorToAdd(0, 0, 0, 0);
-    for (const auto& td : gTrapDefs)
-    {
-        float wx = td.pos.x - td.size.x * 0.5f;
-        float wy = td.pos.y - td.size.y * 0.5f;
-
-        if (td.type == (int)Trap::Type::LavaPool)
-        {
-            DrawWorldRect(wx, wy, td.size.x, td.size.y, 1.0f, 0.35f, 0.05f, 0.70f);
-        }
-        else if (td.type == (int)Trap::Type::PressurePlate)
-        {
-            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
-        }
-    }
-
-    // spike animated sprites
-    int spikeIdx = 0;
-    for (const auto& td : gTrapDefs)
-    {
-        if (td.type != (int)Trap::Type::SpikePlate) continue;
-
-        const SpikeAnim& a = gSpikeAnims[spikeIdx++];
-        float wx = td.pos.x - td.size.x * 0.5f;
-        float wy = td.pos.y - td.size.y * 0.5f;
-
-        AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
-        DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.f, 0.f, 0.f, 1.f);
-
-        AEMtx33 m;
-        AEMtx33Trans(&m, wx + 0.5f, wy + 0.5f);
-        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
-        AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
-        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
-        AEGfxSetTransparency(1.f);
-        AEGfxSetTransform(m.m);
-        AEGfxTextureSet(gSpikeTexture, 0.f, 0.f);
-        AEGfxMeshDraw(gSpikeMeshes[a.frame], AE_GFX_MDM_TRIANGLES);
-    }
+    PlayMode_RenderRoomTraps();
 
     gPlayPlayer->Render();
     gPlayEnemies->RenderAll();
