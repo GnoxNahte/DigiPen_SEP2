@@ -18,7 +18,7 @@ void RoomManager::Clear()
 
 bool RoomManager::HasRoom(RoomID id) const
 {
-	if (id < ROOM_1 || id > ROOM_10)
+	if (id < ROOM_1 || (int)id >= ROOM_COUNT)
 		return false;
 
 	return roomUsed[(int)id];
@@ -26,7 +26,7 @@ bool RoomManager::HasRoom(RoomID id) const
 
 void RoomManager::SetRoom(RoomID id, const RoomData& data)
 {
-	if (id < ROOM_1 || id > ROOM_10)
+	if (id < ROOM_1 || (int)id >= ROOM_COUNT)
 		return;
 
 	rooms[(int)id] = data;
@@ -36,13 +36,13 @@ void RoomManager::SetRoom(RoomID id, const RoomData& data)
 
 RoomData& RoomManager::GetRoom(RoomID id)
 {
-	assert(id >= ROOM_1 && id <= ROOM_10);
+	assert(id >= ROOM_1 && (int)id < ROOM_COUNT);
 	return rooms[(int)id];
 }
 
 const RoomData& RoomManager::GetRoom(RoomID id) const
 {
-	assert(id >= ROOM_1 && id <= ROOM_10);
+	assert(id >= ROOM_1 && (int)id < ROOM_COUNT);
 	return rooms[(int)id];
 }
 

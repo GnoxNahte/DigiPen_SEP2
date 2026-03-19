@@ -2,6 +2,7 @@
 
 #include "../Environment/MapTile.h"
 #include "AEEngine.h"
+#include <vector>
 
 static constexpr int ROOM_COLS = 25;
 static constexpr int ROOM_ROWS = 14;
@@ -21,7 +22,17 @@ enum RoomID
 	ROOM_7,
 	ROOM_8,
 	ROOM_9,
-	ROOM_10
+	ROOM_10,
+	ROOM_11,
+	ROOM_12,
+	ROOM_13,
+	ROOM_14,
+	ROOM_15,
+	ROOM_16,
+	ROOM_17,
+	ROOM_18,
+	ROOM_19, 
+	ROOM_20
 };
 
 enum RoomDirection
@@ -41,6 +52,7 @@ struct RoomEnemySpawn
 
 struct RoomTrapSpawn
 {
+	int id = -1;
 	int type = 0;
 	AEVec2 pos{ 0.f, 0.f };
 	AEVec2 size{ 1.f, 1.f };
@@ -52,6 +64,8 @@ struct RoomTrapSpawn
 
 	int damagePerTick = 1;
 	float tickInterval = 0.2f;
+
+	std::vector<int> links;
 };
 
 struct RoomData
@@ -76,4 +90,6 @@ struct RoomData
 
 	RoomTrapSpawn traps[MAX_ROOM_TRAPS]{};
 	int trapCount = 0;
+
+
 };

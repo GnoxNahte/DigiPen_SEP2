@@ -32,6 +32,8 @@ public:
 	void SetFollow(const AEVec2* follow, float xOffset, float yOffset, bool setPosToFollow);
 
 	void Update();
+	
+	void SetRoomTarget(const AEVec2& target) { roomTarget = target; }
 
 	// Inherited via Inspectable
 	void DrawInspector() override;
