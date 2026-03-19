@@ -130,6 +130,20 @@ bool EnemyBoss::TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitS
 
     return TryTakeDamage(dmg, {});
 }
+
+static inline float Clamp01(float t)
+{
+    if (t < 0.f) return 0.f;
+    if (t > 1.f) return 1.f;
+    return t;
+}
+
+static inline float Lerp(float a, float b, float t)
+{
+    return a + (b - a) * Clamp01(t);
+}
+
+
 EnemyBoss::EnemyBoss()
     : sprite("Assets/Craftpix/Bringer_of_Death3.png")
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
@@ -390,6 +404,20 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     float hpTarget = (maxHP > 0) ? (float)hp / (float)maxHP : 0.f;
     hpTarget = max(0.f, min(1.f, hpTarget));
 
+    const float hpRatio = hpTarget;          // 1.0 at full HP, 0.0 at death
+    const float pressure = 1.0f - hpRatio;   // 0.0 at full HP, 1.0 near death
+
+    // Runtime tuning derived from HP
+    const float runtimeTeleportInterval = Lerp(3.0f, 1.6f, pressure);
+    const float runtimeTeleportSnapNorm = Lerp(0.58f, 0.32f, pressure);
+    const float runtimeSpecialCooldown = Lerp(5.0f, 3.2f, pressure);
+    const float runtimeSpecialSpawnGap = Lerp(1.0f, 0.55f, pressure);
+    const float runtimeProjectileSpeed = Lerp(7.0f, 9.0f, pressure);
+   // const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);
+    const float runtimeMeleeHitTimeNorm = Lerp(0.72f, 0.60f, pressure);
+
+    attack.hitTimeNormalized = runtimeMeleeHitTimeNorm;
+
     // Trigger chip delay ONLY when HP drops this frame
     if (hpTarget < prevHpTarget)
         hpChipDelay = 0.15f;
@@ -522,7 +550,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
         teleportTimer += dt;
 
         const float teleDur = GetAnimDurationSec(sprite, TELEPORT);
-        const float snapTime = (teleDur > 0.f) ? teleDur * teleportMoveNormalized : 0.f;
+        const float snapTime = (teleDur > 0.f) ? teleDur * runtimeTeleportSnapNorm : 0.f;
 
         // Snap behind player once, mid-animation
         if (!teleportMoved && teleportTimer >= snapTime)
@@ -582,7 +610,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     {
         teleportCooldownTimer += dt;
 
-        if (teleportCooldownTimer >= teleportInterval)
+        if (teleportCooldownTimer >= runtimeTeleportInterval)
         {
             teleportActive = true;
             teleportTimer = 0.f;
@@ -619,8 +647,8 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     }
 
     // --- Special sequence ---
-    static constexpr float kSpecialCooldown = 5.0f;
-    static constexpr float kSpecialSpawnGap = 1.0f;   // 0.5s between spawns
+    //static constexpr float kSpecialCooldown = 5.0f;
+    //static constexpr float kSpecialSpawnGap = 1.0f;   // 0.5s between spawns
     static constexpr int   kSpecialSpawnCount = 5;
 
     if (specialUnlocked)
@@ -649,7 +677,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 
                 SpecialAttack specialAttack;
                 specialAttack.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
-                specialAttack.vel = AEVec2{ dir * 7.0f, 0.f };
+                specialAttack.vel = AEVec2{ dir * runtimeProjectileSpeed, 0.f };
                 specialAttack.radius = 0.14f;
                 specialAttack.life = 1.6f;
                 specialAttack.color = 0xFFAA66FF;
@@ -659,7 +687,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
                 --specialSpawnsRemaining;
                 if (specialSpawnsRemaining <= 0) g_spellcastUntil5thSpawn = false; // ? stop spellcast as soon as 5th is spawned
 
-                specialSpawnTimer += kSpecialSpawnGap;
+                specialSpawnTimer += runtimeSpecialSpawnGap;
             }
 
             if (specialSpawnsRemaining <= 0)
@@ -672,7 +700,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
         {
             SpecialElapsed += dt;
 
-            if (SpecialElapsed >= kSpecialCooldown)
+            if (SpecialElapsed >= runtimeSpecialCooldown)
             {
                 // Start special
                 specialBurstActive = true;
@@ -680,7 +708,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
                 SpecialElapsed = 0.0f;
                 g_spellcastUntil5thSpawn = true;
 
-                static constexpr float kChargeUpExtra = 1.0f;
+                static constexpr float kChargeUpExtra = 0.67f;
                 // Start SPELLCAST now
                 sprite.SetState(SPELLCAST);
 
