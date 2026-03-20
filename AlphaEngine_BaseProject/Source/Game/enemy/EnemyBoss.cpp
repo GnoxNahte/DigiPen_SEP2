@@ -533,11 +533,23 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     const float effectiveDist = yAttackOk ? absDx : 9999.0f;
 
-    if (inAggroRange && !bossEngaged)
+    if (inAggroRange)
     {
-        bossEngaged = true;
-        hudIntroStarted = true;
-        hudIntroTimer = 0.0f;
+        if (!bossEngaged)
+            bossEngaged = true;
+
+        // Only trigger HUD intro the first time it ever appears
+        if (!bossHudVisible)
+        {
+            bossHudVisible = true;
+            hudIntroStarted = true;
+            hudIntroTimer = 0.0f;
+        }
+    }
+    else
+    {
+        // Boss can disengage logically, but HUD stays visible
+        bossEngaged = false;
     }
 
     if (hudIntroStarted)
@@ -1123,6 +1135,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
     g_spellcastUntil5thSpawn = false;
     g_specialAttacks.clear();
 
+    bossHudVisible = false;
     bossEngaged = false;
     hudIntroStarted = false;
     hudIntroTimer = 0.f;
@@ -1196,7 +1209,7 @@ void EnemyBoss::RenderHealthbar() const
 {
 	if (!showHealthbar) return;
     if (hideAfterDeath) return;
-    if (!bossEngaged) return;
+    if (!bossHudVisible) return;
 
     float t = hudIntroStarted ? hudIntroTimer : 999.0f;
 

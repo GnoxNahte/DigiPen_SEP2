@@ -238,6 +238,7 @@ private:
     //UI transitions ----
     s8 bossFont = -1;
     bool hudIntroStarted = false;
+    bool bossHudVisible = false;
     float hudIntroTimer = 0.0f;
     float nameFadeDuration = 1.5f;   // first: name fades in
     float barStartDelay = 0.35f;    // wait before bar starts
