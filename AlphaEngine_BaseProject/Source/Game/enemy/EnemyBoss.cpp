@@ -76,14 +76,14 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
 
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE )
 {
-    if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
+    if (isDead || dmg <= 0 || teleportActive || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;
 
     hp -= dmg;
 
     if (hp <= 0)
     {
-        hp = 0;
+        hp = 0; 
         isDead = true;
         sprite.SetState(DEATH, false, nullptr);
         deathTimeLeft = GetAnimDurationSec(sprite, DEATH);
@@ -417,13 +417,13 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     const float pressure = 1.0f - hpRatio;   // 0.0 at full HP, 1.0 near death
 
     // Runtime tuning derived from HP
-    const float runtimeTeleportInterval = Lerp(3.0f, 1.6f, pressure);
-    const float runtimeTeleportSnapNorm = Lerp(0.58f, 0.32f, pressure);
+    const float runtimeTeleportInterval = Lerp(2.2f, 1.0f, pressure);
+    const float runtimeTeleportSnapNorm = Lerp(0.28f, 0.10f, pressure);
     const float runtimeSpecialCooldown = Lerp(5.0f, 3.2f, pressure);
     const float runtimeSpecialSpawnGap = Lerp(1.0f, 0.55f, pressure);
     const float runtimeProjectileSpeed = Lerp(7.0f, 9.0f, pressure);
-   // const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);
-    const float runtimeMeleeHitTimeNorm = Lerp(0.72f, 0.60f, pressure);
+    const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);
+    const float runtimeMeleeHitTimeNorm = Lerp(0.72f, 0.45f, pressure);
 
     attack.hitTimeNormalized = runtimeMeleeHitTimeNorm;
 
@@ -627,20 +627,24 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     }
 
     // Not teleporting: build up teleport timer
-    if (inAggroRange && !attack.IsAttacking() && !teleportBlockedBySpecial && !specialBurstActive)
+    if (inAggroRange)
     {
         teleportCooldownTimer += dt;
 
-        if (teleportCooldownTimer >= runtimeTeleportInterval)
+        const bool canStartTeleport =
+            !attack.IsAttacking() &&
+            !teleportBlockedBySpecial &&
+            !specialBurstActive &&
+            !teleportActive;
+
+        if (canStartTeleport && teleportCooldownTimer >= runtimeTeleportInterval)
         {
             teleportActive = true;
             teleportTimer = 0.f;
             teleportMoved = false;
+            teleportCooldownTimer = 0.f;
 
-            // Start teleport animation now
             sprite.SetState(TELEPORT);
-
-            // Freeze immediately
             attack.Reset();
             chasing = false;
             velocity = AEVec2{ 0.f, 0.f };
@@ -648,7 +652,6 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     }
     else
     {
-        // Optional: reset if player leaves aggro / boss is busy
         teleportCooldownTimer = 0.f;
     }
 
@@ -765,7 +768,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
-                velocity.x = dirX * moveSpeed;
+                velocity.x = dirX * runtimeMoveSpeed;
             }
             else
             {
