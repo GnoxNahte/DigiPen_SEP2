@@ -12,36 +12,23 @@
 #include <cmath>
 #include "../AudioManager.h"
 #include "../Rooms/RoomBuilder.h"
+#include "../enemy/AttackSystem.h"
+#include <algorithm>
 
-std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
+std::string gPendingLevelPath = "Assets/Levels/gamescene.lvl";   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
 
-void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
+void GameScene::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSpawn)
 {
 	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
 		return;
 
 	const RoomData& room = roomMgr.GetCurrentRoom();
+	const AEVec2 roomOrigin = GetRoomOrigin(room.id);
 
-	// clear current map
-	for (int y = 0; y < ROOM_ROWS; ++y)
-	{
-		for (int x = 0; x < ROOM_COLS; ++x)
-		{
-			map.SetTile(x, y, MapTile::Type::NONE);
-		}
-	}
+	// Do NOT rebuild the map tiles here anymore.
+	// The full level map is built once in Init().
 
-	// apply room tiles into active map
-	for (int y = 0; y < ROOM_ROWS; ++y)
-	{
-		for (int x = 0; x < ROOM_COLS; ++x)
-		{
-			map.SetTile(x, y, room.tiles[y][x]);
-		}
-	}
-
-	// clear and rebuild runtime room objects
 	ClearRuntimeRoomObjects();
 
 	struct PendingPlateBinding
@@ -55,7 +42,6 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 	std::vector<Trap*> spawnedSpikes;
 	bool hasExplicitLinks = false;
 
-	// rebuild traps
 	for (int i = 0; i < room.trapCount; ++i)
 	{
 		const RoomTrapSpawn& td = room.traps[i];
@@ -63,8 +49,8 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 		Box box{};
 		box.size = td.size;
 		box.position = AEVec2{
-			td.pos.x - td.size.x * 0.5f,
-			td.pos.y - td.size.y * 0.5f
+			roomOrigin.x + td.pos.x - td.size.x * 0.5f,
+			roomOrigin.y + td.pos.y - td.size.y * 0.5f
 		};
 
 		Trap* spawnedTrap = nullptr;
@@ -124,8 +110,6 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 	}
 	else
 	{
-		// fallback for older levels / no explicit links:
-		// link every pressure plate to every spike in this room
 		for (const auto& pending : pendingPlates)
 		{
 			if (!pending.plate)
@@ -139,32 +123,74 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
 		}
 	}
 
-	// rebuild enemies
 	std::vector<EnemyManager::SpawnInfo> spawns;
+	bool hasBoss = false;
+
 	for (int i = 0; i < room.enemyCount; ++i)
 	{
+		EnemySpawnType type = (EnemySpawnType)room.enemies[i].preset;
+
+		AEVec2 worldPos{
+			roomOrigin.x + room.enemies[i].pos.x,
+			roomOrigin.y + room.enemies[i].pos.y
+		};
+
 		spawns.push_back({
-			(EnemySpawnType)room.enemies[i].preset,
-			room.enemies[i].pos
+			type,
+			worldPos
 			});
+
+		if (type == EnemySpawnType::Boss)
+			hasBoss = true;
 	}
 
-	enemyMgr.SetBoss(&enemyBoss);
+	activeBoss = hasBoss ? &enemyBoss : nullptr;
+
+	enemyMgr.SetBoss(activeBoss);
 	enemyMgr.SetCurrentRoomID(room.id);
 	enemyMgr.SetSpawns(spawns);
 	enemyMgr.SpawnAll();
 
-	// spawn player
-	AEVec2 spawn = room.startSpawn;
-	if (cameFrom != DIR_NONE)
-		spawn = roomMgr.GetEntrySpawn(room.id, cameFrom);
 
-	player.Reset(spawn);
+	AEVec2 spawn{
+		roomOrigin.x + room.startSpawn.x,
+		roomOrigin.y + room.startSpawn.y
+	};
 
-	// fixed room camera (Celeste-style)
-	camera.position = { ROOM_COLS * 0.5f, ROOM_ROWS * 0.5f };
-	Camera::position = camera.position;
-	AEGfxSetCamPosition(camera.position.x * Camera::scale, camera.position.y * Camera::scale);
+	if (forcedSpawn)
+	{
+		spawn = *forcedSpawn;
+	}
+	else if (cameFrom != DIR_NONE)
+	{
+		const AEVec2 roomMin{
+			roomOrigin.x + 0.35f,
+			roomOrigin.y + 0.35f
+		};
+		const AEVec2 roomMax{
+			roomOrigin.x + static_cast<float>(ROOM_COLS) - 0.35f,
+			roomOrigin.y + static_cast<float>(ROOM_ROWS) - 0.35f
+		};
+
+		spawn = AEVec2{
+			std::clamp(spawn.x, roomMin.x, roomMax.x),
+			std::clamp(spawn.y, roomMin.y, roomMax.y)
+		};
+	}
+
+	/*if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
+		player.Reset(spawn);      // first load into GameScene
+	else
+		player.SetPosition(spawn); // room transition*/
+	
+
+	const bool snapCamera = (cameFrom == DIR_NONE);
+	camera.SetFollow(&player.GetPosition(), 0.f, 0.f, snapCamera);
+	if (snapCamera)
+		camera.Update();
+
+	if (roomMgr.GetCurrentRoomID() == ROOM_9)
+		UI::StartBossIntro();
 }
 
 void GameScene::ClearRuntimeRoomObjects()
@@ -173,21 +199,98 @@ void GameScene::ClearRuntimeRoomObjects()
 	trapMgr = TrapManager{};
 
 	enemyMgr = EnemyManager{};
-	enemyMgr.SetBoss(&enemyBoss);
+	activeBoss = nullptr;
+	enemyMgr.SetBoss(nullptr);
+}
+
+int GameScene::GetRoomsPerRow() const
+{
+	return max(1, mapCols / ROOM_COLS);
+}
+
+AEVec2 GameScene::GetRoomOrigin(RoomID id) const
+{
+	if (id == ROOM_NONE)
+		return AEVec2{ 0.f, 0.f };
+
+	const int roomsPerRow = GetRoomsPerRow();
+	const int idx = static_cast<int>(id);
+	const int rx = idx % roomsPerRow;
+	const int ry = idx / roomsPerRow;
+
+	return AEVec2{
+		rx * static_cast<float>(ROOM_COLS),
+		ry * static_cast<float>(ROOM_ROWS)
+	};
+}
+
+AEVec2 GameScene::ComputeTransitionSpawn(
+	RoomID previousRoom,
+	RoomID nextRoom,
+	const AEVec2& previousPos) const
+{
+	static constexpr float kInset = 0.35f;
+
+	const AEVec2 prevOrigin = GetRoomOrigin(previousRoom);
+	const AEVec2 nextOrigin = GetRoomOrigin(nextRoom);
+
+	AEVec2 spawn = previousPos;
+
+	auto ClampFloat = [](float v, float lo, float hi) -> float
+		{
+			return (v < lo) ? lo : ((v > hi) ? hi : v);
+		};
+
+	const float nextMinX = nextOrigin.x + kInset;
+	const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - kInset;
+	const float nextMinY = nextOrigin.y + kInset;
+	const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - kInset;
+
+	if (nextOrigin.x > prevOrigin.x)
+	{
+		spawn.x = nextMinX;
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+	else if (nextOrigin.x < prevOrigin.x)
+	{
+		spawn.x = nextMaxX;
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+	else if (nextOrigin.y > prevOrigin.y)
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = nextMinY;
+	}
+	else if (nextOrigin.y < prevOrigin.y)
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = nextMaxY;
+	}
+	else
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+
+	return spawn;
 }
 
 
 RoomDirection GameScene::CheckRoomExit() const
 {
-	const AEVec2 p = player.GetPosition();
+	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return DIR_NONE;
 
-	if (p.y < 0.0f)
+	const AEVec2 p = player.GetPosition();
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+
+	if (p.y < origin.y)
 		return DIR_BOTTOM;
-	if (p.y >= (float)ROOM_ROWS)
+	if (p.y >= origin.y + static_cast<float>(ROOM_ROWS))
 		return DIR_TOP;
-	if (p.x < 0.0f)
+	if (p.x < origin.x)
 		return DIR_LEFT;
-	if (p.x >= (float)ROOM_COLS)
+	if (p.x >= origin.x + static_cast<float>(ROOM_COLS))
 		return DIR_RIGHT;
 
 	return DIR_NONE;
@@ -341,7 +444,6 @@ void GameScene::Init()
 
 	if (!loadedFromFile)
 	{
-		// fallback: build a single empty-ish room if no file was loaded
 		LevelData lvl{};
 		lvl.rows = ROOM_ROWS;
 		lvl.cols = ROOM_COLS;
@@ -351,8 +453,36 @@ void GameScene::Init()
 		for (int x = 0; x < ROOM_COLS; ++x)
 			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
 
-		BuildRoomsFromLevelData(lvl, roomMgr, startRoom);
+		loadedLevel = lvl;
+		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
+
+	mapCols = loadedLevel.cols;
+	mapRows = loadedLevel.rows;
+
+	// Rebuild full level map
+	map.~MapGrid();
+	new (&map) MapGrid(mapCols, mapRows);
+
+	for (int y = 0; y < mapRows; ++y)
+	{
+		for (int x = 0; x < mapCols; ++x)
+		{
+			int v = loadedLevel.tiles[(size_t)y * (size_t)mapCols + (size_t)x];
+			if (v < 0 || v >= MapTile::typeCount)
+				v = (int)MapTile::Type::NONE;
+
+			map.SetTile(x, y, (MapTile::Type)v);
+		}
+	}
+
+	// Rebuild camera with full level bounds
+	camera.~Camera();
+	new (&camera) Camera(
+		{ 0.f, 0.f },
+		{ (float)mapCols, (float)mapRows },
+		64.0f
+	);
 
 	roomMgr.SetCurrentRoom(startRoom);
 	const RoomData& r = roomMgr.GetCurrentRoom();
@@ -372,6 +502,9 @@ void GameScene::Init()
 		if (AudioManager::gameMusic)   // make sure the pointer is initialized
 			AudioManager::gameMusic->Play(1.0f);  // pass volume
 	}
+
+
+	player.Reset({ 1, 7.5 });
 }
 
 void GameScene::Update()
@@ -391,6 +524,12 @@ void GameScene::Update()
 		}
 	}
 
+	if (AEInputCheckTriggered(AEVK_9))
+	{
+		GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
+		return;
+	}
+
 	// When paused, skip gameplay update and only handle pause input
 	if (IsPaused())
 	{
@@ -401,6 +540,7 @@ void GameScene::Update()
 	if (UI::IsBossIntroActive())
 	{
 		UI::Update();
+		camera.Update();
 		return;
 	}
 
@@ -420,6 +560,9 @@ void GameScene::Update()
 		RoomDirection exitDir = CheckRoomExit();
 		if (exitDir != DIR_NONE)
 		{
+			const RoomID previousRoom = roomMgr.GetCurrentRoomID();
+			const AEVec2 previousPos = player.GetPosition();
+
 			if (roomMgr.ChangeRoom(exitDir))
 			{
 				RoomDirection cameFrom = DIR_NONE;
@@ -433,23 +576,28 @@ void GameScene::Update()
 				default: break;
 				}
 
-				BuildCurrentRoom(cameFrom);
+				const RoomID nextRoom = roomMgr.GetCurrentRoomID();
+				const AEVec2 transitionSpawn =
+					ComputeTransitionSpawn(previousRoom, nextRoom, previousPos);
+
+				BuildCurrentRoom(cameFrom, &transitionSpawn);
 				roomTransitionLocked = true;
-				return;
 			}
 			else
 			{
+				const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
 				AEVec2 p = player.GetPosition();
 
-				if (p.x < 0.0f) p.x = 0.0f;
-				if (p.x > (float)ROOM_COLS - 0.1f) p.x = (float)ROOM_COLS - 0.1f;
-				if (p.y < 0.0f) p.y = 0.0f;
-				if (p.y > (float)ROOM_ROWS - 0.1f) p.y = (float)ROOM_ROWS - 0.1f;
+				if (p.x < origin.x) p.x = origin.x;
+				if (p.x > origin.x + (float)ROOM_COLS - 0.1f) p.x = origin.x + (float)ROOM_COLS - 0.1f;
+				if (p.y < origin.y) p.y = origin.y;
+				if (p.y > origin.y + (float)ROOM_ROWS - 0.1f) p.y = origin.y + (float)ROOM_ROWS - 0.1f;
 
 				player.Reset(p);
 			}
 		}
 	}
+	camera.Update();
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
@@ -457,7 +605,7 @@ void GameScene::Update()
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-	attackSystem.UpdateEnemyAttack(player, enemyMgr, &enemyBoss, map);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, activeBoss, map);
 
 	trapMgr.Update(dt, player);
 
@@ -506,8 +654,11 @@ void GameScene::Render()
 	map.Render();
 	testParticleSystem.Render();
 	player.Render();
-	enemyBoss.Render();
+	if (activeBoss)
+		activeBoss->Render();
+	//enemyBoss.Render();
 	enemyMgr.RenderAll();
+	attackSystem.Render();
 	UI::Render();
 
 	if (IsPaused())

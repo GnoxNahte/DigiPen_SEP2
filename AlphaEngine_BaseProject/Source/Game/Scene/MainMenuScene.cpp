@@ -193,6 +193,7 @@ void MainMenuScene::Init()
 void MainMenuScene::Update()
 {
     player.Update();
+  
 
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     trapMgr.Update(dt, player);

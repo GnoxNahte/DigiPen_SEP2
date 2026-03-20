@@ -68,11 +68,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ImGui_ImplOpenGL3_Init();
 
 #if _DEBUG
-	GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
+	//GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
+	GSM::Init(SceneState::GS_GAME);
 #else
 	GSM::Init(SceneState::GS_SPLASH_SCREEN);
 #endif
-
 	GSM::Update();
 	GSM::Exit();
 

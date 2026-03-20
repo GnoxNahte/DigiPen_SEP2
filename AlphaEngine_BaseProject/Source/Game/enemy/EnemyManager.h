@@ -188,6 +188,7 @@ public:
     {
         for (auto& e : enemies)
             e->Render();
+
     }
 
     // --- Collision / queries ---
