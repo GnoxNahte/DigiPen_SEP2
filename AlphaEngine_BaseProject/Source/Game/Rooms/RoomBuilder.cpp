@@ -5,12 +5,23 @@
 
 namespace
 {
-    RoomID RoomIdFromIndex(int idx)
-    {
-        if (idx < 0 || idx >= ROOM_COUNT)
-            return ROOM_NONE;
 
-        return static_cast<RoomID>(idx);
+
+    RoomID RoomIdFromGrid(int rx, int ry)
+    {
+        if (rx == 0 && ry == 0) return ROOM_1;
+        if (rx == 1 && ry == 0) return ROOM_2;
+        if (rx == 2 && ry == 0) return ROOM_3;
+        if (rx == 2 && ry == 1) return ROOM_4;
+        if (rx == 1 && ry == 1) return ROOM_5;
+        if (rx == 0 && ry == 1) return ROOM_6;
+        if (rx == 0 && ry == 2) return ROOM_7;
+        if (rx == 1 && ry == 2) return ROOM_8;
+        if (rx == 2 && ry == 2) return ROOM_9;
+        if (rx == 3 && ry == 2) return ROOM_10;
+        if (rx == 3 && ry == 1) return ROOM_11;
+
+        return ROOM_NONE;
     }
 
     bool PointInRoom(const AEVec2& p, int roomX, int roomY)
@@ -48,20 +59,18 @@ void BuildRoomsFromLevelData(const LevelData& lvl, RoomManager& roomMgr, RoomID&
         const int ry = i / roomsX;
 
         RoomData room{};
-        room.id = RoomIdFromIndex(i);
+        room.id = RoomIdFromGrid(rx, ry);
 
-       // Neighbors
-        if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
-            room.topRoom = RoomIdFromIndex(i + roomsX);
+        if (room.id == ROOM_NONE)
+            continue;
 
-        if (rx - 1 >= 0)
-            room.leftRoom = RoomIdFromIndex(i - 1);
+        room.gridX = rx;
+        room.gridY = ry;
 
-        if (ry - 1 >= 0)
-            room.bottomRoom = RoomIdFromIndex(i - roomsX);
-
-        if (rx + 1 < roomsX && i + 1 < roomCountToUse)
-            room.rightRoom = RoomIdFromIndex(i + 1);
+        room.topRoom = RoomIdFromGrid(rx, ry + 1);
+        room.leftRoom = RoomIdFromGrid(rx - 1, ry);
+        room.bottomRoom = RoomIdFromGrid(rx, ry - 1);
+        room.rightRoom = RoomIdFromGrid(rx + 1, ry);
 
         // Tiles
         for (int y = 0; y < ROOM_ROWS; ++y)

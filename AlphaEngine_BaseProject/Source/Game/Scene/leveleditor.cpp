@@ -840,8 +840,8 @@ static void PlayMode_BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forc
         gPlayCamera->Update();
 
     //not sure where to call this from?? will put this here for now??.....
-    if ((gPlayRoomMgr.GetCurrentRoomID() == ROOM_9))
-        UI::StartBossIntro();
+    /*//f((gPlayRoomMgr.GetCurrentRoomID() == ROOM_9))
+        UI::StartBossIntro();*/
 }
 
 static void PlayMode_RenderRoomTraps()
