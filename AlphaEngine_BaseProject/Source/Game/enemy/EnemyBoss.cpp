@@ -405,6 +405,15 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     hpTarget = max(0.f, min(1.f, hpTarget));
 
     const float hpRatio = hpTarget;          // 1.0 at full HP, 0.0 at death
+
+    if (!phase2 && hpRatio <= phase2HpThreshold)
+    {
+        phase2 = true;
+        SpecialElapsed = 0.0f;          // start phase 2 cooldown fresh
+        specialBurstActive = false;
+        specialSpawnsRemaining = 0;
+        specialSpawnTimer = 0.0f;
+    }
     const float pressure = 1.0f - hpRatio;   // 0.0 at full HP, 1.0 near death
 
     // Runtime tuning derived from HP
@@ -635,23 +644,12 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // Update attack component
     attack.Update(dt, effectiveDist, attackDur);
 
-
-    // Unlock special sequence after boss performs its first normal attack
-    if (attack.JustStarted() && !specialUnlocked)
-    {
-        specialUnlocked = true;
-        SpecialElapsed = 0.0f;
-        specialBurstActive = false;
-        specialSpawnsRemaining = 0;
-        specialSpawnTimer = 0.0f;
-    }
-
     // --- Special sequence ---
     //static constexpr float kSpecialCooldown = 5.0f;
     //static constexpr float kSpecialSpawnGap = 1.0f;   // 0.5s between spawns
     static constexpr int   kSpecialSpawnCount = 5;
 
-    if (specialUnlocked)
+    if (phase2)
     {
         if (specialBurstActive)
         {

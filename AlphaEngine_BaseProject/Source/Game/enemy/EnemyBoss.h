@@ -89,6 +89,8 @@ public:
     float attackYRange = 0.6f;
 
     bool bossEngaged{ false }; // becomes true once player enters aggro range
+    bool phase2 = false;
+    float phase2HpThreshold = 0.60f;
 
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
