@@ -291,18 +291,18 @@ void EnemyBoss::RebuildTeleportBounds()
 
 bool EnemyBoss::IsTeleportXValid(float targetX,
     const AEVec2& playerPos,
-    MapGrid& map) const
+    MapGrid& map,
+    bool allowOnPlayer) const
 {
     if (targetX < teleportMinX || targetX > teleportMaxX)
         return false;
 
-    if (std::fabs(targetX - playerPos.x) < teleportMinPlayerGap)
+    if (!allowOnPlayer && std::fabs(targetX - playerPos.x) < teleportMinPlayerGap)
         return false;
 
     AEVec2 testPos = position;
     testPos.x = targetX;
 
-    //only reject this teleport if the boss is meaningfully inside the wall, not just barely touching the edge. so boss size - a padding, creates a more lenient check
     AEVec2 testSize = size;
     testSize.x = max(0.05f, testSize.x - teleportWallPadding);
     testSize.y = max(0.05f, testSize.y - teleportWallPadding);
@@ -318,37 +318,38 @@ float EnemyBoss::FindTeleportTarget(const AEVec2& playerPos,
     MapGrid& map) const
 {
     const float behindDir = playerFacingRight ? -1.0f : 1.0f;
-    const float frontDir = -behindDir;
 
-    //create a few potential position the boss can telport to
     const float d1 = teleportBehindOffset;
     const float d2 = teleportBehindOffset * 0.75f;
     const float d3 = teleportBehindOffset * 0.50f;
 
-    const float candidates[] =
+    const float behindCandidates[] =
     {
         playerPos.x + behindDir * d1,
-        playerPos.x + frontDir * d1,
         playerPos.x + behindDir * d2,
-        playerPos.x + frontDir * d2,
-        playerPos.x + behindDir * d3,
-        playerPos.x + frontDir * d3
+        playerPos.x + behindDir * d3
     };
 
-    for (float x : candidates)
+    // Prefer valid positions behind the player only
+    for (float x : behindCandidates)
     {
         if (IsTeleportXValid(x, playerPos, map))
             return x;
     }
 
-    //if potential teleport position is too far, will just teleport to the nearest X that is inside the allowed rnage
-    const float clampedBehind = std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
+    // Then try a clamped behind position, still behind-only
+    const float clampedBehind =
+        std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
+
     if (IsTeleportXValid(clampedBehind, playerPos, map))
         return clampedBehind;
 
-    const float clampedFront = std::clamp(playerPos.x + frontDir * d1, teleportMinX, teleportMaxX);
-    if (IsTeleportXValid(clampedFront, playerPos, map))
-        return clampedFront;
+    // Final fallback: teleport on the player if behind is blocked by wall/space
+    /*const float onPlayerX =
+        std::clamp(playerPos.x, teleportMinX, teleportMaxX);*/
+
+    if (IsTeleportXValid(playerPos.x, playerPos, map, true))
+        return playerPos.x;
 
     return position.x;
 }

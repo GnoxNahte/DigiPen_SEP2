@@ -142,7 +142,8 @@ public:
 
     bool IsTeleportXValid(float targetX,
         const AEVec2& playerPos,
-        MapGrid& map) const;
+        MapGrid& map,
+        bool allowOnPlayer = false) const;
 
     float FindTeleportTarget(const AEVec2& playerPos,
         bool playerFacingRight,
