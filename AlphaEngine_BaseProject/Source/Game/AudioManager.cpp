@@ -34,6 +34,7 @@ namespace
     bool gIsCrossfading = false;
     BGMAudio* gFadeOutTrack = nullptr;
     BGMAudio* gFadeInTrack = nullptr;
+    bool gIsPlaying = false;
 
     float Clamp01(float v)
     {
@@ -150,12 +151,15 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
         bossFightMusic->SetActive(true);
     }
     // Triggered aggro
-    if (boss.bossEngaged || AEInputCheckTriggered(AEVK_2)) { // To remove check triggered when rooms are spawned properly.
+    if (boss.bossEngaged && !gIsPlaying) { // To remove check triggered when rooms are spawned properly.
        bossIntroMusic->CrossfadeTo(*bossFightMusic, 1.2f);
+       gIsPlaying = true;
     }
     // Lose aggro but still in boss room
-    else if (!boss.bossEngaged && (roomMgr.GetCurrentRoomID() == ROOM_10) || AEInputCheckTriggered(AEVK_1)) { // To remove check triggered when rooms are spawned properly.
+    else if (!boss.bossEngaged && roomMgr.GetCurrentRoomID() == ROOM_9 && gIsPlaying) { // To remove check triggered when rooms are spawned properly.
+        std::cout << "LOST BOSS AGGRO!!!";
         bossFightMusic->CrossfadeTo(*bossIntroMusic, 1.2f);
+        gIsPlaying = false;
     }
 }
 void AudioManager::MuffleGameMusic() {

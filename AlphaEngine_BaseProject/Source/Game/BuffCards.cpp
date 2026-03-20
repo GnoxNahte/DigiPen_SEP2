@@ -75,7 +75,7 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 		// If the card effect is "Switch It Up", trigger a shuffle by resetting the flip sequence and allowing new cards to be drawn.
 		BuffCardScreen::ResetFlipSequence();
 		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
-		break;
+		return; // Disallow effects to trigger whilst shuffling.
 	}
 
 	EventSystem::Trigger<BuffSelectedEvent>({ card });
