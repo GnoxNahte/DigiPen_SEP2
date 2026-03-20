@@ -191,7 +191,7 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSpa
 
 	ApplyBlockedReturnBarrier();
 
-	if (roomMgr.GetCurrentRoomID() == ROOM_9)
+	if (roomMgr.GetCurrentRoomID() == ROOM_2)
 		UI::StartBossIntro();
 }
 
@@ -212,17 +212,14 @@ int GameScene::GetRoomsPerRow() const
 
 AEVec2 GameScene::GetRoomOrigin(RoomID id) const
 {
-	if (id == ROOM_NONE)
+	if (id == ROOM_NONE || !roomMgr.HasRoom(id))
 		return AEVec2{ 0.f, 0.f };
 
-	const int roomsPerRow = GetRoomsPerRow();
-	const int idx = static_cast<int>(id);
-	const int rx = idx % roomsPerRow;
-	const int ry = idx / roomsPerRow;
+	const RoomData& room = roomMgr.GetRoom(id);
 
 	return AEVec2{
-		rx * static_cast<float>(ROOM_COLS),
-		ry * static_cast<float>(ROOM_ROWS)
+		room.gridX * static_cast<float>(ROOM_COLS),
+		room.gridY * static_cast<float>(ROOM_ROWS)
 	};
 }
 

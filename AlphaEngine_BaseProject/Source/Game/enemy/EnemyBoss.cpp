@@ -76,14 +76,14 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
 
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE )
 {
-    if (isDead || dmg <= 0 || invulnTimer > 0.f || hurtTimeLeft > 0.f)
+    if (isDead || dmg <= 0 || teleportActive || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;
 
     hp -= dmg;
 
     if (hp <= 0)
     {
-        hp = 0;
+        hp = 0; 
         isDead = true;
         sprite.SetState(DEATH, false, nullptr);
         deathTimeLeft = GetAnimDurationSec(sprite, DEATH);
@@ -291,18 +291,18 @@ void EnemyBoss::RebuildTeleportBounds()
 
 bool EnemyBoss::IsTeleportXValid(float targetX,
     const AEVec2& playerPos,
-    MapGrid& map) const
+    MapGrid& map,
+    bool allowOnPlayer) const
 {
     if (targetX < teleportMinX || targetX > teleportMaxX)
         return false;
 
-    if (std::fabs(targetX - playerPos.x) < teleportMinPlayerGap)
+    if (!allowOnPlayer && std::fabs(targetX - playerPos.x) < teleportMinPlayerGap)
         return false;
 
     AEVec2 testPos = position;
     testPos.x = targetX;
 
-    //only reject this teleport if the boss is meaningfully inside the wall, not just barely touching the edge. so boss size - a padding, creates a more lenient check
     AEVec2 testSize = size;
     testSize.x = max(0.05f, testSize.x - teleportWallPadding);
     testSize.y = max(0.05f, testSize.y - teleportWallPadding);
@@ -318,37 +318,38 @@ float EnemyBoss::FindTeleportTarget(const AEVec2& playerPos,
     MapGrid& map) const
 {
     const float behindDir = playerFacingRight ? -1.0f : 1.0f;
-    const float frontDir = -behindDir;
 
-    //create a few potential position the boss can telport to
     const float d1 = teleportBehindOffset;
     const float d2 = teleportBehindOffset * 0.75f;
     const float d3 = teleportBehindOffset * 0.50f;
 
-    const float candidates[] =
+    const float behindCandidates[] =
     {
         playerPos.x + behindDir * d1,
-        playerPos.x + frontDir * d1,
         playerPos.x + behindDir * d2,
-        playerPos.x + frontDir * d2,
-        playerPos.x + behindDir * d3,
-        playerPos.x + frontDir * d3
+        playerPos.x + behindDir * d3
     };
 
-    for (float x : candidates)
+    // Prefer valid positions behind the player only
+    for (float x : behindCandidates)
     {
         if (IsTeleportXValid(x, playerPos, map))
             return x;
     }
 
-    //if potential teleport position is too far, will just teleport to the nearest X that is inside the allowed rnage
-    const float clampedBehind = std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
+    // Then try a clamped behind position, still behind-only
+    const float clampedBehind =
+        std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
+
     if (IsTeleportXValid(clampedBehind, playerPos, map))
         return clampedBehind;
 
-    const float clampedFront = std::clamp(playerPos.x + frontDir * d1, teleportMinX, teleportMaxX);
-    if (IsTeleportXValid(clampedFront, playerPos, map))
-        return clampedFront;
+    // Final fallback: teleport on the player if behind is blocked by wall/space
+    /*const float onPlayerX =
+        std::clamp(playerPos.x, teleportMinX, teleportMaxX);*/
+
+    if (IsTeleportXValid(playerPos.x, playerPos, map, true))
+        return playerPos.x;
 
     return position.x;
 }
@@ -405,16 +406,25 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     hpTarget = max(0.f, min(1.f, hpTarget));
 
     const float hpRatio = hpTarget;          // 1.0 at full HP, 0.0 at death
+
+    if (!phase2 && hpRatio <= phase2HpThreshold)
+    {
+        phase2 = true;
+        SpecialElapsed = 0.0f;          // start phase 2 cooldown fresh
+        specialBurstActive = false;
+        specialSpawnsRemaining = 0;
+        specialSpawnTimer = 0.0f;
+    }
     const float pressure = 1.0f - hpRatio;   // 0.0 at full HP, 1.0 near death
 
     // Runtime tuning derived from HP
-    const float runtimeTeleportInterval = Lerp(3.0f, 1.6f, pressure);
-    const float runtimeTeleportSnapNorm = Lerp(0.58f, 0.32f, pressure);
+    const float runtimeTeleportInterval = Lerp(2.2f, 1.0f, pressure);
+    const float runtimeTeleportSnapNorm = Lerp(0.28f, 0.10f, pressure);
     const float runtimeSpecialCooldown = Lerp(5.0f, 3.2f, pressure);
     const float runtimeSpecialSpawnGap = Lerp(1.0f, 0.55f, pressure);
     const float runtimeProjectileSpeed = Lerp(7.0f, 9.0f, pressure);
-   // const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);
-    const float runtimeMeleeHitTimeNorm = Lerp(0.72f, 0.60f, pressure);
+    const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);
+    const float runtimeMeleeHitTimeNorm = Lerp(0.72f, 0.45f, pressure);
 
     attack.hitTimeNormalized = runtimeMeleeHitTimeNorm;
 
@@ -524,11 +534,23 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     const float attackDur = GetAnimDurationSec(sprite, ATTACK);
     const float effectiveDist = yAttackOk ? absDx : 9999.0f;
 
-    if (inAggroRange && !bossEngaged)
+    if (inAggroRange)
     {
-        bossEngaged = true;
-        hudIntroStarted = true;
-        hudIntroTimer = 0.0f;
+        if (!bossEngaged)
+            bossEngaged = true;
+
+        // Only trigger HUD intro the first time it ever appears
+        if (!bossHudVisible)
+        {
+            bossHudVisible = true;
+            hudIntroStarted = true;
+            hudIntroTimer = 0.0f;
+        }
+    }
+    else
+    {
+        // Boss can disengage logically, but HUD stays visible
+        bossEngaged = false;
     }
 
     if (hudIntroStarted)
@@ -606,20 +628,24 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     }
 
     // Not teleporting: build up teleport timer
-    if (inAggroRange && !attack.IsAttacking() && !teleportBlockedBySpecial && !specialBurstActive)
+    if (inAggroRange)
     {
         teleportCooldownTimer += dt;
 
-        if (teleportCooldownTimer >= runtimeTeleportInterval)
+        const bool canStartTeleport =
+            !attack.IsAttacking() &&
+            !teleportBlockedBySpecial &&
+            !specialBurstActive &&
+            !teleportActive;
+
+        if (canStartTeleport && teleportCooldownTimer >= runtimeTeleportInterval)
         {
             teleportActive = true;
             teleportTimer = 0.f;
             teleportMoved = false;
+            teleportCooldownTimer = 0.f;
 
-            // Start teleport animation now
             sprite.SetState(TELEPORT);
-
-            // Freeze immediately
             attack.Reset();
             chasing = false;
             velocity = AEVec2{ 0.f, 0.f };
@@ -627,7 +653,6 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     }
     else
     {
-        // Optional: reset if player leaves aggro / boss is busy
         teleportCooldownTimer = 0.f;
     }
 
@@ -635,23 +660,12 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // Update attack component
     attack.Update(dt, effectiveDist, attackDur);
 
-
-    // Unlock special sequence after boss performs its first normal attack
-    if (attack.JustStarted() && !specialUnlocked)
-    {
-        specialUnlocked = true;
-        SpecialElapsed = 0.0f;
-        specialBurstActive = false;
-        specialSpawnsRemaining = 0;
-        specialSpawnTimer = 0.0f;
-    }
-
     // --- Special sequence ---
     //static constexpr float kSpecialCooldown = 5.0f;
     //static constexpr float kSpecialSpawnGap = 1.0f;   // 0.5s between spawns
     static constexpr int   kSpecialSpawnCount = 5;
 
-    if (specialUnlocked)
+    if (phase2)
     {
         if (specialBurstActive)
         {
@@ -755,7 +769,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
-                velocity.x = dirX * moveSpeed;
+                velocity.x = dirX * runtimeMoveSpeed;
             }
             else
             {
@@ -1125,6 +1139,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
     g_spellcastUntil5thSpawn = false;
     g_specialAttacks.clear();
 
+    bossHudVisible = false;
     bossEngaged = false;
     hudIntroStarted = false;
     hudIntroTimer = 0.f;
@@ -1198,7 +1213,7 @@ void EnemyBoss::RenderHealthbar() const
 {
 	if (!showHealthbar) return;
     if (hideAfterDeath) return;
-    if (!bossEngaged) return;
+    if (!bossHudVisible) return;
 
     float t = hudIntroStarted ? hudIntroTimer : 999.0f;
 

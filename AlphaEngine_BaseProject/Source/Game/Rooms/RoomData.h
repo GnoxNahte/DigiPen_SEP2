@@ -71,7 +71,8 @@ struct RoomTrapSpawn
 struct RoomData
 {
 	RoomID id = ROOM_NONE;
-
+	int gridX = 0;
+	int gridY = 0;
 	MapTile::Type tiles[ROOM_ROWS][ROOM_COLS]{};
 
 	RoomID topRoom = ROOM_NONE;

@@ -89,6 +89,8 @@ public:
     float attackYRange = 0.6f;
 
     bool bossEngaged{ false }; // becomes true once player enters aggro range
+    bool phase2 = false;
+    float phase2HpThreshold = 0.60f;
 
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
@@ -140,7 +142,8 @@ public:
 
     bool IsTeleportXValid(float targetX,
         const AEVec2& playerPos,
-        MapGrid& map) const;
+        MapGrid& map,
+        bool allowOnPlayer = false) const;
 
     float FindTeleportTarget(const AEVec2& playerPos,
         bool playerFacingRight,
@@ -209,8 +212,8 @@ private:
     bool debugDraw{ false };
 
     // --- Health / damage ---
-    int   maxHP{ 50 };
-    int   hp{ 50 };
+    int   maxHP{ 1000 };
+    int   hp{ 1000 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };
@@ -236,6 +239,7 @@ private:
     //UI transitions ----
     s8 bossFont = -1;
     bool hudIntroStarted = false;
+    bool bossHudVisible = false;
     float hudIntroTimer = 0.0f;
     float nameFadeDuration = 1.5f;   // first: name fades in
     float barStartDelay = 0.35f;    // wait before bar starts
