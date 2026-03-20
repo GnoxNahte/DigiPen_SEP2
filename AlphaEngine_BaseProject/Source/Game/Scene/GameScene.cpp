@@ -189,6 +189,8 @@ void GameScene::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSpa
 	if (snapCamera)
 		camera.Update();
 
+	ApplyBlockedReturnBarrier();
+
 	if (roomMgr.GetCurrentRoomID() == ROOM_9)
 		UI::StartBossIntro();
 }
@@ -294,6 +296,76 @@ RoomDirection GameScene::CheckRoomExit() const
 		return DIR_RIGHT;
 
 	return DIR_NONE;
+}
+
+/*void GameScene::ClampPlayerInsideCurrentRoom()
+{
+	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return;
+
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+	AEVec2 p = player.GetPosition();
+
+	// tune these values
+	static constexpr float kLeftInset = 0.25f;
+	static constexpr float kRightInset = 0.25f;
+	static constexpr float kBottomInset = 1.f;
+	static constexpr float kTopInset = 2.5f;
+
+	const float minX = origin.x + kLeftInset;
+	const float maxX = origin.x + (float)ROOM_COLS - 0.1f - kRightInset;
+	const float minY = origin.y + kBottomInset;
+	const float maxY = origin.y + (float)ROOM_ROWS - 0.1f - kTopInset;
+
+	if (p.x < minX) p.x = minX;
+	if (p.x > maxX) p.x = maxX;
+	if (p.y < minY) p.y = minY;
+	if (p.y > maxY) p.y = maxY;
+
+	player.SetPosition(p);
+}*/
+
+void GameScene::ApplyBlockedReturnBarrier()
+{
+	if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return;
+
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+	const int ox = static_cast<int>(origin.x);
+	const int oy = static_cast<int>(origin.y);
+
+	// use a tile type that is definitely solid in your collision
+	const MapTile::Type kBlockTile = MapTile::Type::GROUND_BODY;
+
+	switch (blockedReturnDir)
+	{
+	case DIR_BOTTOM:
+		// solid floor row at the room's bottom edge
+		for (int x = 0; x < ROOM_COLS; ++x)
+			map.SetTile(ox + x, oy - 1, kBlockTile);
+		break;
+
+	case DIR_TOP:
+		// solid ceiling row at the room's top edge
+		for (int x = 0; x < ROOM_COLS; ++x)
+			map.SetTile(ox + x, oy + 1 + ROOM_ROWS - 1, kBlockTile);
+		break;
+
+	case DIR_LEFT:
+		// solid wall column at the room's left edge
+		for (int y = 0; y < ROOM_ROWS; ++y)
+			map.SetTile(ox - 1, oy + y, kBlockTile);
+		break;
+
+	case DIR_RIGHT:
+		// solid wall column at the room's right edge
+		for (int y = 0; y < ROOM_ROWS; ++y)
+			map.SetTile(ox + 1 + ROOM_COLS - 1, oy + y, kBlockTile);
+		break;
+
+	default:
+		break;
+	}
 }
 
 GameScene::GameScene() :
@@ -494,6 +566,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
+	blockedReturnDir = DIR_NONE;
 	//AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
@@ -560,6 +633,12 @@ void GameScene::Update()
 		RoomDirection exitDir = CheckRoomExit();
 		if (exitDir != DIR_NONE)
 		{
+			// Block going back through the side we just entered from
+			if (exitDir == blockedReturnDir)
+			{
+				return;
+			}
+
 			const RoomID previousRoom = roomMgr.GetCurrentRoomID();
 			const AEVec2 previousPos = player.GetPosition();
 
@@ -580,20 +659,17 @@ void GameScene::Update()
 				const AEVec2 transitionSpawn =
 					ComputeTransitionSpawn(previousRoom, nextRoom, previousPos);
 
+				blockedReturnDir = cameFrom;
 				BuildCurrentRoom(cameFrom, &transitionSpawn);
+
 				roomTransitionLocked = true;
+				return;
 			}
 			else
 			{
-				const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
-				AEVec2 p = player.GetPosition();
-
-				if (p.x < origin.x) p.x = origin.x;
-				if (p.x > origin.x + (float)ROOM_COLS - 0.1f) p.x = origin.x + (float)ROOM_COLS - 0.1f;
-				if (p.y < origin.y) p.y = origin.y;
-				if (p.y > origin.y + (float)ROOM_ROWS - 0.1f) p.y = origin.y + (float)ROOM_ROWS - 0.1f;
-
-				player.Reset(p);
+				//ClampPlayerInsideCurrentRoom();
+				roomTransitionLocked = true;
+				return;
 			}
 		}
 	}

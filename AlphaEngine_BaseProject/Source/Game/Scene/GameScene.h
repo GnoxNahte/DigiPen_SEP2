@@ -107,4 +107,7 @@ private:
 	AEVec2 ComputeTransitionSpawn(RoomID previousRoom, RoomID nextRoom, const AEVec2& previousPos) const;
 
 	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE, const AEVec2* forcedSpawn = nullptr);
+	RoomDirection blockedReturnDir = DIR_NONE;
+	//void ClampPlayerInsideCurrentRoom();
+	void ApplyBlockedReturnBarrier();
 };
