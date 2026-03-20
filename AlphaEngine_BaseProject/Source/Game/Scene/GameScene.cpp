@@ -11,173 +11,188 @@
 #include <sstream>
 #include <cmath>
 #include "../AudioManager.h"
+#include "../Rooms/RoomBuilder.h"
+#include "../enemy/AttackSystem.h"
+#include <algorithm>
 
-std::string gPendingLevelPath;   // defined here, extern'd in MainMenuScene.cpp
+std::string gPendingLevelPath = "Assets/Levels/gamescene.lvl";   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
 
-namespace
+void GameScene::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSpawn)
 {
-	// squared-distance check (no sqrt)
-	bool IsNear(const AEVec2& a, const AEVec2& b, float range)
+	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return;
+
+	const RoomData& room = roomMgr.GetCurrentRoom();
+	const AEVec2 roomOrigin = GetRoomOrigin(room.id);
+
+	// Do NOT rebuild the map tiles here anymore.
+	// The full level map is built once in Init().
+
+	ClearRuntimeRoomObjects();
+
+	struct PendingPlateBinding
 	{
-		float dx = b.x - a.x;
-		float dy = b.y - a.y;
-		return (dx * dx + dy * dy) <= (range * range);
-	}
+		PressurePlate* plate = nullptr;
+		const RoomTrapSpawn* def = nullptr;
+	};
 
-	RoomID RoomIdFromIndex(int idx)
+	std::vector<PendingPlateBinding> pendingPlates;
+	std::vector<std::pair<int, Trap*>> spawnedById;
+	std::vector<Trap*> spawnedSpikes;
+	bool hasExplicitLinks = false;
+
+	for (int i = 0; i < room.trapCount; ++i)
 	{
-		if (idx < 0 || idx >= ROOM_COUNT)
-			return ROOM_NONE;
-		return static_cast<RoomID>(idx);
-	}
+		const RoomTrapSpawn& td = room.traps[i];
 
-	bool PointInRoom(const AEVec2& p, int roomX, int roomY)
-	{
-		const float minX = (float)(roomX * ROOM_COLS);
-		const float minY = (float)(roomY * ROOM_ROWS);
-		const float maxX = minX + (float)ROOM_COLS;
-		const float maxY = minY + (float)ROOM_ROWS;
+		Box box{};
+		box.size = td.size;
+		box.position = AEVec2{
+			roomOrigin.x + td.pos.x - td.size.x * 0.5f,
+			roomOrigin.y + td.pos.y - td.size.y * 0.5f
+		};
 
-		return p.x >= minX && p.x < maxX &&
-			p.y >= minY && p.y < maxY;
-	}
+		Trap* spawnedTrap = nullptr;
+		const Trap::Type tt = static_cast<Trap::Type>(td.type);
 
-	void BuildRoomsFromLevelData(const LevelData& lvl, RoomManager& roomMgr, RoomID& outStartRoom)
-	{
-		roomMgr.Clear();
-		outStartRoom = ROOM_1;
-
-		if (lvl.cols <= 0 || lvl.rows <= 0)
-			return;
-
-		const int roomsX = lvl.cols / ROOM_COLS;
-		const int roomsY = lvl.rows / ROOM_ROWS;
-
-
-
-		if (roomsX <= 0 || roomsY <= 0)
-			return;
-
-		const int totalRooms = roomsX * roomsY;
-		const int roomCountToUse = (totalRooms < ROOM_COUNT) ? totalRooms : ROOM_COUNT;
-
-		for (int i = 0; i < roomCountToUse; ++i)
+		if (tt == Trap::Type::SpikePlate)
 		{
-			const int rx = i % roomsX;
-			const int ry = i / roomsX;
+			SpikePlate& spikeRef =
+				trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
 
-			RoomData room{};
-			room.id = RoomIdFromIndex(i);
-			std::cout << "lvl.cols=" << lvl.cols
-				<< " lvl.rows=" << lvl.rows
-				<< " roomsX=" << roomsX
-				<< " roomsY=" << roomsY
-				<< " totalRooms=" << (roomsX * roomsY)
-				<< "\n";
+			spawnedTrap = &spikeRef;
+			spawnedSpikes.push_back(&spikeRef);
+		}
+		else if (tt == Trap::Type::PressurePlate)
+		{
+			PressurePlate& plateRef = trapMgr.Spawn<PressurePlate>(box);
+			spawnedTrap = &plateRef;
 
-			// neighbors
-			if (ry - 1 >= 0)
-				room.topRoom = RoomIdFromIndex(i - roomsX);
-			if (ry + 1 < roomsY && i + roomsX < roomCountToUse)
-				room.bottomRoom = RoomIdFromIndex(i + roomsX);
-			if (rx - 1 >= 0)
-				room.leftRoom = RoomIdFromIndex(i - 1);
-			if (rx + 1 < roomsX && i + 1 < roomCountToUse)
-				room.rightRoom = RoomIdFromIndex(i + 1);
+			pendingPlates.push_back({ &plateRef, &td });
+			if (!td.links.empty())
+				hasExplicitLinks = true;
+		}
+		else if (tt == Trap::Type::LavaPool)
+		{
+			LavaPool& lavaRef = trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
+			spawnedTrap = &lavaRef;
+		}
 
-			// tiles
-			for (int y = 0; y < ROOM_ROWS; ++y)
+		if (spawnedTrap && td.id >= 0)
+			spawnedById.push_back({ td.id, spawnedTrap });
+	}
+
+	auto FindSpawnedTrapById = [&spawnedById](int id) -> Trap*
+		{
+			for (const auto& entry : spawnedById)
 			{
-				for (int x = 0; x < ROOM_COLS; ++x)
-				{
-					const int globalX = rx * ROOM_COLS + x;
-					const int globalY = ry * ROOM_ROWS + y;
-
-					int v = (int)MapTile::Type::NONE;
-					if (globalX >= 0 && globalX < lvl.cols &&
-						globalY >= 0 && globalY < lvl.rows)
-					{
-						v = lvl.tiles[(size_t)globalY * (size_t)lvl.cols + (size_t)globalX];
-					}
-
-					if (v < 0 || v >= MapTile::typeCount)
-						v = (int)MapTile::Type::NONE;
-
-					room.tiles[y][x] = (MapTile::Type)v;
-				}
+				if (entry.first == id)
+					return entry.second;
 			}
+			return nullptr;
+		};
 
-			// default entry points
-			room.entryFromLeft = { 3.0f, 3.0f };
-			room.entryFromRight = { (float)ROOM_COLS - 4.0f, 3.0f };
-			room.entryFromTop = { ROOM_COLS * 0.5f, (float)ROOM_ROWS - 4.0f };
-			room.entryFromBottom = { ROOM_COLS * 0.5f, 3.0f };
+	if (hasExplicitLinks)
+	{
+		for (const auto& pending : pendingPlates)
+		{
+			if (!pending.plate || !pending.def)
+				continue;
 
-			// default start spawn
-			room.startSpawn = { 2.5f, 3.0f };
-
-			// spawn belongs to this room?
-			if (PointInRoom(lvl.spawn, rx, ry))
+			for (int linkId : pending.def->links)
 			{
-				room.startSpawn = {
-					lvl.spawn.x - rx * (float)ROOM_COLS,
-					lvl.spawn.y - ry * (float)ROOM_ROWS
-				};
-				outStartRoom = room.id;
+				Trap* target = FindSpawnedTrapById(linkId);
+				if (target)
+					pending.plate->AddLinkedTrap(target);
 			}
-
-			// enemies in this room
-			for (const auto& e : lvl.enemies)
-			{
-				if (!PointInRoom(e.pos, rx, ry))
-					continue;
-
-				if (room.enemyCount >= MAX_ROOM_ENEMIES)
-					continue;
-
-				room.enemies[room.enemyCount].preset = e.preset;
-				room.enemies[room.enemyCount].pos = {
-					e.pos.x - rx * (float)ROOM_COLS,
-					e.pos.y - ry * (float)ROOM_ROWS
-				};
-				++room.enemyCount;
-			}
-
-			// traps in this room
-			for (const auto& t : lvl.traps)
-			{
-				if (!PointInRoom(t.pos, rx, ry))
-					continue;
-
-				if (room.trapCount >= MAX_ROOM_TRAPS)
-					continue;
-
-				room.traps[room.trapCount].type = t.type;
-				room.traps[room.trapCount].pos = {
-					t.pos.x - rx * (float)ROOM_COLS,
-					t.pos.y - ry * (float)ROOM_ROWS
-				};
-				room.traps[room.trapCount].size = t.size;
-				room.traps[room.trapCount].upTime = t.upTime;
-				room.traps[room.trapCount].downTime = t.downTime;
-				room.traps[room.trapCount].damageOnHit = t.damageOnHit;
-				room.traps[room.trapCount].startDisabled = t.startDisabled;
-				room.traps[room.trapCount].damagePerTick = t.damagePerTick;
-				room.traps[room.trapCount].tickInterval = t.tickInterval;
-				++room.trapCount;
-			}
-
-			roomMgr.SetRoom(room.id, room);
-			std::cout << "room " << (int)room.id
-				<< " rx=" << rx << " ry=" << ry
-				<< " L=" << (int)room.leftRoom
-				<< " R=" << (int)room.rightRoom
-				<< " T=" << (int)room.topRoom
-				<< " B=" << (int)room.bottomRoom
-				<< "\n";
 		}
 	}
+	else
+	{
+		for (const auto& pending : pendingPlates)
+		{
+			if (!pending.plate)
+				continue;
+
+			for (Trap* spike : spawnedSpikes)
+			{
+				if (spike)
+					pending.plate->AddLinkedTrap(spike);
+			}
+		}
+	}
+
+	std::vector<EnemyManager::SpawnInfo> spawns;
+	bool hasBoss = false;
+
+	for (int i = 0; i < room.enemyCount; ++i)
+	{
+		EnemySpawnType type = (EnemySpawnType)room.enemies[i].preset;
+
+		AEVec2 worldPos{
+			roomOrigin.x + room.enemies[i].pos.x,
+			roomOrigin.y + room.enemies[i].pos.y
+		};
+
+		spawns.push_back({
+			type,
+			worldPos
+			});
+
+		if (type == EnemySpawnType::Boss)
+			hasBoss = true;
+	}
+
+	activeBoss = hasBoss ? &enemyBoss : nullptr;
+
+	enemyMgr.SetBoss(activeBoss);
+	enemyMgr.SetCurrentRoomID(room.id);
+	enemyMgr.SetSpawns(spawns);
+	enemyMgr.SpawnAll();
+
+
+	AEVec2 spawn{
+		roomOrigin.x + room.startSpawn.x,
+		roomOrigin.y + room.startSpawn.y
+	};
+
+	if (forcedSpawn)
+	{
+		spawn = *forcedSpawn;
+	}
+	else if (cameFrom != DIR_NONE)
+	{
+		const AEVec2 roomMin{
+			roomOrigin.x + 0.35f,
+			roomOrigin.y + 0.35f
+		};
+		const AEVec2 roomMax{
+			roomOrigin.x + static_cast<float>(ROOM_COLS) - 0.35f,
+			roomOrigin.y + static_cast<float>(ROOM_ROWS) - 0.35f
+		};
+
+		spawn = AEVec2{
+			std::clamp(spawn.x, roomMin.x, roomMax.x),
+			std::clamp(spawn.y, roomMin.y, roomMax.y)
+		};
+	}
+
+	/*if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
+		player.Reset(spawn);      // first load into GameScene
+	else
+		player.SetPosition(spawn); // room transition*/
+	
+
+	const bool snapCamera = (cameFrom == DIR_NONE);
+	camera.SetFollow(&player.GetPosition(), 0.f, 0.f, snapCamera);
+	if (snapCamera)
+		camera.Update();
+
+	ApplyBlockedReturnBarrier();
+
+	if (roomMgr.GetCurrentRoomID() == ROOM_9)
+		UI::StartBossIntro();
 }
 
 void GameScene::ClearRuntimeRoomObjects()
@@ -186,107 +201,171 @@ void GameScene::ClearRuntimeRoomObjects()
 	trapMgr = TrapManager{};
 
 	enemyMgr = EnemyManager{};
-	enemyMgr.SetBoss(&enemyBoss);
+	activeBoss = nullptr;
+	enemyMgr.SetBoss(nullptr);
 }
 
-void GameScene::BuildCurrentRoom(RoomDirection cameFrom)
+int GameScene::GetRoomsPerRow() const
+{
+	return max(1, mapCols / ROOM_COLS);
+}
+
+AEVec2 GameScene::GetRoomOrigin(RoomID id) const
+{
+	if (id == ROOM_NONE)
+		return AEVec2{ 0.f, 0.f };
+
+	const int roomsPerRow = GetRoomsPerRow();
+	const int idx = static_cast<int>(id);
+	const int rx = idx % roomsPerRow;
+	const int ry = idx / roomsPerRow;
+
+	return AEVec2{
+		rx * static_cast<float>(ROOM_COLS),
+		ry * static_cast<float>(ROOM_ROWS)
+	};
+}
+
+AEVec2 GameScene::ComputeTransitionSpawn(
+	RoomID previousRoom,
+	RoomID nextRoom,
+	const AEVec2& previousPos) const
+{
+	static constexpr float kInset = 0.35f;
+
+	const AEVec2 prevOrigin = GetRoomOrigin(previousRoom);
+	const AEVec2 nextOrigin = GetRoomOrigin(nextRoom);
+
+	AEVec2 spawn = previousPos;
+
+	auto ClampFloat = [](float v, float lo, float hi) -> float
+		{
+			return (v < lo) ? lo : ((v > hi) ? hi : v);
+		};
+
+	const float nextMinX = nextOrigin.x + kInset;
+	const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - kInset;
+	const float nextMinY = nextOrigin.y + kInset;
+	const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - kInset;
+
+	if (nextOrigin.x > prevOrigin.x)
+	{
+		spawn.x = nextMinX;
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+	else if (nextOrigin.x < prevOrigin.x)
+	{
+		spawn.x = nextMaxX;
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+	else if (nextOrigin.y > prevOrigin.y)
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = nextMinY;
+	}
+	else if (nextOrigin.y < prevOrigin.y)
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = nextMaxY;
+	}
+	else
+	{
+		spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
+		spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
+	}
+
+	return spawn;
+}
+
+
+RoomDirection GameScene::CheckRoomExit() const
+{
+	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return DIR_NONE;
+
+	const AEVec2 p = player.GetPosition();
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+
+	if (p.y < origin.y)
+		return DIR_BOTTOM;
+	if (p.y >= origin.y + static_cast<float>(ROOM_ROWS))
+		return DIR_TOP;
+	if (p.x < origin.x)
+		return DIR_LEFT;
+	if (p.x >= origin.x + static_cast<float>(ROOM_COLS))
+		return DIR_RIGHT;
+
+	return DIR_NONE;
+}
+
+/*void GameScene::ClampPlayerInsideCurrentRoom()
 {
 	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
 		return;
 
-	const RoomData& room = roomMgr.GetCurrentRoom();
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+	AEVec2 p = player.GetPosition();
 
-	// clear current map
-	for (int y = 0; y < ROOM_ROWS; ++y)
-	{
-		for (int x = 0; x < ROOM_COLS; ++x)
-		{
-			map.SetTile(x, y, MapTile::Type::NONE);
-		}
-	}
+	// tune these values
+	static constexpr float kLeftInset = 0.25f;
+	static constexpr float kRightInset = 0.25f;
+	static constexpr float kBottomInset = 1.f;
+	static constexpr float kTopInset = 2.5f;
 
-	// apply room tiles into active map
-	for (int y = 0; y < ROOM_ROWS; ++y)
-	{
-		for (int x = 0; x < ROOM_COLS; ++x)
-		{
-			map.SetTile(x, y, room.tiles[y][x]);
-		}
-	}
+	const float minX = origin.x + kLeftInset;
+	const float maxX = origin.x + (float)ROOM_COLS - 0.1f - kRightInset;
+	const float minY = origin.y + kBottomInset;
+	const float maxY = origin.y + (float)ROOM_ROWS - 0.1f - kTopInset;
 
-	// clear and rebuild runtime room objects
-	ClearRuntimeRoomObjects();
+	if (p.x < minX) p.x = minX;
+	if (p.x > maxX) p.x = maxX;
+	if (p.y < minY) p.y = minY;
+	if (p.y > maxY) p.y = maxY;
 
-	// rebuild traps
-	for (int i = 0; i < room.trapCount; ++i)
-	{
-		const RoomTrapSpawn& td = room.traps[i];
+	player.SetPosition(p);
+}*/
 
-		Box box{};
-		box.size = td.size;
-		box.position = AEVec2{
-			td.pos.x - td.size.x * 0.5f,
-			td.pos.y - td.size.y * 0.5f
-		};
-
-		const Trap::Type tt = static_cast<Trap::Type>(td.type);
-
-		if (tt == Trap::Type::SpikePlate)
-		{
-			trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
-		}
-		else if (tt == Trap::Type::PressurePlate)
-		{
-			trapMgr.Spawn<PressurePlate>(box);
-		}
-		else if (tt == Trap::Type::LavaPool)
-		{
-			trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
-		}
-	}
-
-	// rebuild enemies
-	std::vector<EnemyManager::SpawnInfo> spawns;
-	for (int i = 0; i < room.enemyCount; ++i)
-	{
-		spawns.push_back({
-			(EnemySpawnType)room.enemies[i].preset,
-			room.enemies[i].pos
-			});
-	}
-
-	enemyMgr.SetBoss(&enemyBoss);
-	enemyMgr.SetCurrentRoomID(room.id);
-	enemyMgr.SetSpawns(spawns);
-	enemyMgr.SpawnAll();
-
-	// spawn player
-	AEVec2 spawn = room.startSpawn;
-	if (cameFrom != DIR_NONE)
-		spawn = roomMgr.GetEntrySpawn(room.id, cameFrom);
-
-	player.Reset(spawn);
-
-	// fixed room camera (Celeste-style)
-	camera.position = { ROOM_COLS * 0.5f, ROOM_ROWS * 0.5f };
-	Camera::position = camera.position;
-	AEGfxSetCamPosition(camera.position.x * Camera::scale, camera.position.y * Camera::scale);
-}
-
-RoomDirection GameScene::CheckRoomExit() const
+void GameScene::ApplyBlockedReturnBarrier()
 {
-	const AEVec2 p = player.GetPosition();
+	if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
+		return;
 
-	if (p.y < 0.0f)
-		return DIR_BOTTOM;
-	if (p.y >= (float)ROOM_ROWS)
-		return DIR_TOP;
-	if (p.x < 0.0f)
-		return DIR_LEFT;
-	if (p.x >= (float)ROOM_COLS)
-		return DIR_RIGHT;
+	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+	const int ox = static_cast<int>(origin.x);
+	const int oy = static_cast<int>(origin.y);
 
-	return DIR_NONE;
+	// use a tile type that is definitely solid in your collision
+	const MapTile::Type kBlockTile = MapTile::Type::GROUND_BODY;
+
+	switch (blockedReturnDir)
+	{
+	case DIR_BOTTOM:
+		// solid floor row at the room's bottom edge
+		for (int x = 0; x < ROOM_COLS; ++x)
+			map.SetTile(ox + x, oy - 1, kBlockTile);
+		break;
+
+	case DIR_TOP:
+		// solid ceiling row at the room's top edge
+		for (int x = 0; x < ROOM_COLS; ++x)
+			map.SetTile(ox + x, oy + 1 + ROOM_ROWS - 1, kBlockTile);
+		break;
+
+	case DIR_LEFT:
+		// solid wall column at the room's left edge
+		for (int y = 0; y < ROOM_ROWS; ++y)
+			map.SetTile(ox - 1, oy + y, kBlockTile);
+		break;
+
+	case DIR_RIGHT:
+		// solid wall column at the room's right edge
+		for (int y = 0; y < ROOM_ROWS; ++y)
+			map.SetTile(ox + 1 + ROOM_COLS - 1, oy + y, kBlockTile);
+		break;
+
+	default:
+		break;
+	}
 }
 
 GameScene::GameScene() :
@@ -437,7 +516,6 @@ void GameScene::Init()
 
 	if (!loadedFromFile)
 	{
-		// fallback: build a single empty-ish room if no file was loaded
 		LevelData lvl{};
 		lvl.rows = ROOM_ROWS;
 		lvl.cols = ROOM_COLS;
@@ -447,8 +525,36 @@ void GameScene::Init()
 		for (int x = 0; x < ROOM_COLS; ++x)
 			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
 
-		BuildRoomsFromLevelData(lvl, roomMgr, startRoom);
+		loadedLevel = lvl;
+		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
+
+	mapCols = loadedLevel.cols;
+	mapRows = loadedLevel.rows;
+
+	// Rebuild full level map
+	map.~MapGrid();
+	new (&map) MapGrid(mapCols, mapRows);
+
+	for (int y = 0; y < mapRows; ++y)
+	{
+		for (int x = 0; x < mapCols; ++x)
+		{
+			int v = loadedLevel.tiles[(size_t)y * (size_t)mapCols + (size_t)x];
+			if (v < 0 || v >= MapTile::typeCount)
+				v = (int)MapTile::Type::NONE;
+
+			map.SetTile(x, y, (MapTile::Type)v);
+		}
+	}
+
+	// Rebuild camera with full level bounds
+	camera.~Camera();
+	new (&camera) Camera(
+		{ 0.f, 0.f },
+		{ (float)mapCols, (float)mapRows },
+		64.0f
+	);
 
 	roomMgr.SetCurrentRoom(startRoom);
 	const RoomData& r = roomMgr.GetCurrentRoom();
@@ -460,6 +566,7 @@ void GameScene::Init()
 		<< "\n";
 	BuildCurrentRoom();
 	roomTransitionLocked = false;
+	blockedReturnDir = DIR_NONE;
 	//AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
 	std::cout << "lvl.cols=" << loadedLevel.cols
 		<< " lvl.rows=" << loadedLevel.rows
@@ -468,6 +575,9 @@ void GameScene::Init()
 		if (AudioManager::gameMusic)   // make sure the pointer is initialized
 			AudioManager::gameMusic->Play(1.0f);  // pass volume
 	}
+
+
+	player.Reset({ 1, 7.5 });
 }
 
 void GameScene::Update()
@@ -487,6 +597,12 @@ void GameScene::Update()
 		}
 	}
 
+	if (AEInputCheckTriggered(AEVK_9))
+	{
+		GSM::ChangeScene(SceneState::GS_LEVEL_EDITOR);
+		return;
+	}
+
 	// When paused, skip gameplay update and only handle pause input
 	if (IsPaused())
 	{
@@ -497,6 +613,7 @@ void GameScene::Update()
 	if (UI::IsBossIntroActive())
 	{
 		UI::Update();
+		camera.Update();
 		return;
 	}
 
@@ -516,6 +633,15 @@ void GameScene::Update()
 		RoomDirection exitDir = CheckRoomExit();
 		if (exitDir != DIR_NONE)
 		{
+			// Block going back through the side we just entered from
+			if (exitDir == blockedReturnDir)
+			{
+				return;
+			}
+
+			const RoomID previousRoom = roomMgr.GetCurrentRoomID();
+			const AEVec2 previousPos = player.GetPosition();
+
 			if (roomMgr.ChangeRoom(exitDir))
 			{
 				RoomDirection cameFrom = DIR_NONE;
@@ -529,23 +655,25 @@ void GameScene::Update()
 				default: break;
 				}
 
-				BuildCurrentRoom(cameFrom);
+				const RoomID nextRoom = roomMgr.GetCurrentRoomID();
+				const AEVec2 transitionSpawn =
+					ComputeTransitionSpawn(previousRoom, nextRoom, previousPos);
+
+				blockedReturnDir = cameFrom;
+				BuildCurrentRoom(cameFrom, &transitionSpawn);
+
 				roomTransitionLocked = true;
 				return;
 			}
 			else
 			{
-				AEVec2 p = player.GetPosition();
-
-				if (p.x < 0.0f) p.x = 0.0f;
-				if (p.x > (float)ROOM_COLS - 0.1f) p.x = (float)ROOM_COLS - 0.1f;
-				if (p.y < 0.0f) p.y = 0.0f;
-				if (p.y > (float)ROOM_ROWS - 0.1f) p.y = (float)ROOM_ROWS - 0.1f;
-
-				player.Reset(p);
+				//ClampPlayerInsideCurrentRoom();
+				roomTransitionLocked = true;
+				return;
 			}
 		}
 	}
+	camera.Update();
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
@@ -553,7 +681,7 @@ void GameScene::Update()
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-	attackSystem.UpdateEnemyAttack(player, enemyMgr, &enemyBoss, map);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, activeBoss, map);
 
 	trapMgr.Update(dt, player);
 
@@ -602,8 +730,11 @@ void GameScene::Render()
 	map.Render();
 	testParticleSystem.Render();
 	player.Render();
-	enemyBoss.Render();
+	if (activeBoss)
+		activeBoss->Render();
+	//enemyBoss.Render();
 	enemyMgr.RenderAll();
+	attackSystem.Render();
 	UI::Render();
 
 	if (IsPaused())

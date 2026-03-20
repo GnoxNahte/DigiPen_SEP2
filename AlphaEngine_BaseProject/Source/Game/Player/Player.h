@@ -70,6 +70,7 @@ public:
     float   GetDashCooldownPercentage() const;
     int     GetHealth()     const;
     bool    GetIsFacingRight() const;
+
     AnimState GetAnimState() const;
 
 private:

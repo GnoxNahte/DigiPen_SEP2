@@ -94,7 +94,7 @@ public:
         case EnemySpawnType::Boss:
             if (boss)
             {
-                boss->position = s.pos;
+                boss->SetSpawnPosition(s.pos);
             }
             break;
         }
@@ -131,7 +131,7 @@ public:
 
         // update boss (if present)
         if (boss)
-            boss->Update(playerpos, playerFacingRight); // or whatever your Player exposes
+            boss->Update(playerpos, playerFacingRight, map); // or whatever your Player exposes
     }
 
     void UpdateAll(const AEVec2& playerPos, MapGrid& map)
@@ -188,6 +188,7 @@ public:
     {
         for (auto& e : enemies)
             e->Render();
+
     }
 
     // --- Collision / queries ---

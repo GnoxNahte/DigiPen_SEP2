@@ -213,6 +213,7 @@ bool Player::GetIsFacingRight() const
     return isFacingRight;
 }
 
+
 float Player::GetDashCooldownPercentage() const
 {
     float timeSinceDash = static_cast<float>(Time::GetInstance().GetScaledElapsedTime() - dashStartTime);

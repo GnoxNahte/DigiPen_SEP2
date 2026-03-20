@@ -67,6 +67,12 @@
     <Filter Include="Header Files\Utils\Event">
       <UniqueIdentifier>{cffcf4df-4c71-4f5a-babf-27cf5d409130}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game\Rooms">
+      <UniqueIdentifier>{ea433814-fb40-4b63-b5c2-f0aed51b985e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Rooms">
+      <UniqueIdentifier>{16c578c2-0257-4947-add8-9927274a27e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -212,6 +218,12 @@
     </ClCompile>
     <ClCompile Include="Source\Game\AudioManager.cpp">
       <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\BossIntroOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomBuilder.cpp">
+      <Filter>Source Files\Game\Rooms</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -382,6 +394,15 @@
     </ClInclude>
     <ClInclude Include="Source\Game\AudioManager.h">
       <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\CommonTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\BossIntroOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomBuilder.h">
+      <Filter>Header Files\Game\Rooms</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

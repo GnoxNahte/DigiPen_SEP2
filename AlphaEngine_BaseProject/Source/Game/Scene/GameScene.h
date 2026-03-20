@@ -10,6 +10,7 @@
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
 #include "../../Game/Rooms/RoomManager.h"
+#include "../Rooms/RoomBuilder.h"
 
 class GameScene : public BaseScene
 {
@@ -27,6 +28,7 @@ private:
 	//EnemyA enemyA;
 	//EnemyB enemyB;
 	EnemyBoss enemyBoss;
+	EnemyBoss* activeBoss = nullptr;
 
 	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
@@ -95,6 +97,17 @@ private:
 	s8 pauseFontDesc = -1; // Pixellari
 
 	void ClearRuntimeRoomObjects();
-	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE);
 	RoomDirection CheckRoomExit() const;
+
+	int mapCols = ROOM_COLS;
+	int mapRows = ROOM_ROWS;
+
+	int GetRoomsPerRow() const;
+	AEVec2 GetRoomOrigin(RoomID id) const;
+	AEVec2 ComputeTransitionSpawn(RoomID previousRoom, RoomID nextRoom, const AEVec2& previousPos) const;
+
+	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE, const AEVec2* forcedSpawn = nullptr);
+	RoomDirection blockedReturnDir = DIR_NONE;
+	//void ClampPlayerInsideCurrentRoom();
+	void ApplyBlockedReturnBarrier();
 };
