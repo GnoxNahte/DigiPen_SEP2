@@ -11,6 +11,7 @@
 #include "../enemy/AttackSystem.h"
 #include "../../Game/Rooms/RoomManager.h"
 #include "../Rooms/RoomBuilder.h"
+#include "../Rooms/RoomSystem.h"
 
 class GameScene : public BaseScene
 {
@@ -39,6 +40,7 @@ private:
 	EnemyManager enemyMgr;
 	AttackSystem attackSystem;
 	RoomManager roomMgr;
+	RoomSystem roomSystem;
 	bool roomTransitionLocked = false;
 	bool draggingMasterSlider = false;
 	bool draggingBgmSlider = false;
@@ -96,18 +98,8 @@ private:
 	AEGfxTexture* pauseRarityTex[kPauseRarityTexCount] = { nullptr };
 	s8 pauseFontDesc = -1; // Pixellari
 
-	void ClearRuntimeRoomObjects();
-	RoomDirection CheckRoomExit() const;
-
 	int mapCols = ROOM_COLS;
 	int mapRows = ROOM_ROWS;
 
-	int GetRoomsPerRow() const;
-	AEVec2 GetRoomOrigin(RoomID id) const;
-	AEVec2 ComputeTransitionSpawn(RoomID previousRoom, RoomID nextRoom, const AEVec2& previousPos) const;
-
-	void BuildCurrentRoom(RoomDirection cameFrom = DIR_NONE, const AEVec2* forcedSpawn = nullptr);
-	RoomDirection blockedReturnDir = DIR_NONE;
-	//void ClampPlayerInsideCurrentRoom();
-	void ApplyBlockedReturnBarrier();
+	
 };

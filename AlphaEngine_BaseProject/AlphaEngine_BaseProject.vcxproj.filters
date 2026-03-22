@@ -225,6 +225,9 @@
     <ClCompile Include="Source\Game\Rooms\RoomBuilder.cpp">
       <Filter>Source Files\Game\Rooms</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomSystem.cpp">
+      <Filter>Source Files\Game\Rooms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -402,6 +405,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\Rooms\RoomBuilder.h">
+      <Filter>Header Files\Game\Rooms</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomSystem.h">
       <Filter>Header Files\Game\Rooms</Filter>
     </ClInclude>
   </ItemGroup>
