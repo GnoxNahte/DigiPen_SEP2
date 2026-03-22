@@ -93,6 +93,7 @@ struct PlayerStats
     float attackComboBuffer;    // Input attack buffer for combos
     float slamAttackFallSpeed;  
     float slamAttackMaxHeight;  // Applies max damage at max height
+    float baseCritDmgMultiplier;
 
     std::array<AttackStats, 3> groundAttacks;
     std::array<AttackStats, 3> airAttacks; // Currently only using last attack as ground slam

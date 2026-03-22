@@ -76,6 +76,7 @@
     "maxKnockbackDmg": 20.0,
     "slamAttackFallSpeed": -100.0,
     "slamAttackMaxHeight": 7.5,
+    "baseCritDmgMultiplier": 1.2,
     "groundAttacks": [
         {
             "damage": 10,

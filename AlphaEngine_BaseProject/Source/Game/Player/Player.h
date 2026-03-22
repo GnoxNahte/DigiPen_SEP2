@@ -69,6 +69,7 @@ public:
     const PlayerStats&  GetStats()    const;
     float   GetDashCooldownPercentage() const;
     int     GetHealth()     const;
+    int     GetMaxHealth()     const;
     bool    GetIsFacingRight() const;
 
     AnimState GetAnimState() const;

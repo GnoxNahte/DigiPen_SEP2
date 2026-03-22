@@ -153,6 +153,7 @@ void PlayerStats::LoadFileData()
     maxKnockbackDmg = doc["maxKnockbackDmg"].GetFloat();
     slamAttackFallSpeed = doc["slamAttackFallSpeed"].GetFloat();
     slamAttackMaxHeight = doc["slamAttackMaxHeight"].GetFloat();
+    baseCritDmgMultiplier = doc["baseCritDmgMultiplier"].GetFloat();
 
 	auto groundAttackArr = doc["groundAttacks"].GetArray();
 	for (int i = 0; i < groundAttacks.size(); i++)
@@ -233,6 +234,7 @@ void PlayerStats::SaveFileData()
     doc.AddMember("maxKnockbackDmg", maxKnockbackDmg, allocator);
     doc.AddMember("slamAttackFallSpeed", slamAttackFallSpeed, allocator);
     doc.AddMember("slamAttackMaxHeight", slamAttackMaxHeight, allocator);
+    doc.AddMember("baseCritDmgMultiplier", baseCritDmgMultiplier, allocator);
 
     // Attack Arrays
     rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
@@ -367,6 +369,7 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Max Knockback Damage", &maxKnockbackDmg, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Slam Attack Fall Speed", &slamAttackFallSpeed, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Slam Attack Max Height", &slamAttackMaxHeight, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Base Crit Dmg Multiplier", &baseCritDmgMultiplier, 0.01f) || ifChanged;
 
         for (size_t i = 0; i < groundAttacks.size(); i++)
             DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);

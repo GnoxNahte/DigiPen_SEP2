@@ -203,6 +203,11 @@ int Player::GetHealth() const
     return health;
 }
 
+int Player::GetMaxHealth() const
+{
+    return maxHealth;
+}
+
 const PlayerStats& Player::GetStats() const
 {
     return stats;
@@ -500,7 +505,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
     // Crit
     if (isCrit)
     {
-        damage = static_cast<int>(damage * buff_critDmgMulti);
+        damage = static_cast<int>(damage * buff_critDmgMulti * stats.baseCritDmgMultiplier);
         damageable.TryTakeDamage(damage, position, DAMAGE_TYPE_CRIT);
     }
     else
@@ -740,17 +745,19 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
 
 const AEVec2& Player::GetHurtboxPos()  const { return position; }
 const AEVec2& Player::GetHurtboxSize() const { return stats.playerSize; }
-bool Player::IsDead() const { return GetAnimState() == AnimState::DEATH || GetAnimState() == AnimState::DEATH_LOOP; }
+bool Player::IsDead() const { return health <= 0; }
 
 bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
-    if (IsInvincible())
+    if (IsInvincible() || health <= 0)
         return health > 0;
+
+    dmg = static_cast<int>(dmg * buff_DmgReduction);
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
-    if (health < dmg)
+    if (health <= dmg)
     {
         health = 0;
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
