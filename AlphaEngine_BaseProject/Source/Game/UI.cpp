@@ -119,7 +119,9 @@ void UI::DrawHealthVignette() {
 	// --- Health values ---
 	int playerHealth = player->GetHealth();
 	int maxHealth = player->GetStats().maxHealth;
-	float healthFraction = static_cast<float>(playerHealth) / static_cast<float>(maxHealth);
+	float healthFraction = static_cast<float>(playerHealth) / (maxHealth);
+	//std::cout << "HEALTH FRACTION : " << healthFraction << '\n';
+	//std::cout << "MAX HEALTH : " << maxHealth << '\n';
 
 	float baseAlpha = 0.0f;
 

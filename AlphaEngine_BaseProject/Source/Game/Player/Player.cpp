@@ -184,7 +184,7 @@ void Player::Reset(const AEVec2& initialPos)
     buff_DmgReduction = 1.f;
     buff_TrapDmgReduction = 1.f;
     buff_critChance = 0.f;
-    buff_critDmgMulti = 1.f;
+    buff_critDmgMulti = 1.5f;
     buff_DmgMultiLowHP = 1.f;
     buff_DashCooldownMulti = 1.f;
 
@@ -721,7 +721,6 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         EventSystem::Subscribe<OverlayFadeCompleteEvent>([this, healAmt](const OverlayFadeCompleteEvent& ev) {
             (void)ev;
             UI::GetDamageTextSpawner().SpawnDamageText(healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f }); });
-        health = static_cast<int>(percentage * newMaxHealth);
         health = static_cast<int>(percentage * newMaxHealth);
         maxHealth = newMaxHealth;
         break;
