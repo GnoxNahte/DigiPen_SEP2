@@ -147,7 +147,7 @@ private:
     bool chasing{ false };
     bool returningHome{ false };
     bool hadAggro = false;
-    bool debugDraw{ true };
+    bool debugDraw{ false };
 
     float idleWalkLeft = 0.f;     // seconds left to keep walking
     float idlePauseLeft = 0.f;    // seconds left to pause
