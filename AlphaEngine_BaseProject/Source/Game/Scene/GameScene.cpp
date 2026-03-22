@@ -417,6 +417,7 @@ void GameScene::Render()
 	//enemyBoss.Render();
 	enemyMgr.RenderAll();
 	attackSystem.Render();
+	trapMgr.Render();
 	UI::Render();
 
 	if (IsPaused())
