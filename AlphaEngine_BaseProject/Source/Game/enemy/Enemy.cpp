@@ -48,6 +48,21 @@ bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
     return map.CheckPointCollision(probeX, probeY);
 }
 
+static bool FindGroundBelowForDruidEffect(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
+{
+    for (float y = startY; y >= minY; y -= step)
+    {
+        if (map.CheckPointCollision(x, y))
+        {
+            outGroundY = y;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 
 Enemy::Config Enemy::MakePreset(Preset preset)
 {
@@ -129,6 +144,18 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+    //for druid long range spell
+    castParticleSystem.Init();
+    castParticleSystem.SetSpawnRate(0.f);
+    // shorter + chunkier + more "earth"
+    castParticleSystem.emitter.lifetimeRange = { 0.08f, 0.14f };
+    castParticleSystem.emitter.sizeRange = { 0.15f, 0.25f };
+    castParticleSystem.emitter.tint = { 0.50f, 0.24f, 0.10f, 0.95f };
+
+    // make particles pop upward then fall back down
+    castParticleSystem.emitter.behavior = ParticleBehavior::Gravity;
+    castParticleSystem.emitter.behaviorParams.pull = 7.5f;
+
 
 
     particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
@@ -177,6 +204,66 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
             particleSystem.Update();
         };
+    auto StopDruidCastEffect = [&]()
+        {
+            castParticleSystem.SetSpawnRate(0.f);
+            castParticleSystem.ReleaseAll();
+            wasDruidCasting = false;
+        };
+
+    auto UpdateDruidCastEffect = [&]()
+        {
+            if (!IsDruid())
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            // Start exactly when attack starts
+            if (attack.JustStarted())
+            {
+                druidCastFxTimer = 0.5f;
+                castParticleSystem.ReleaseAll();
+                castParticleSystem.SpawnParticleBurst(18);
+            }
+
+            if (druidCastFxTimer <= 0.f)
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.ReleaseAll(); // exact hard stop at 0.5s
+                castParticleSystem.Update();
+                return;
+            }
+
+            druidCastFxTimer -= dt;
+
+            float groundY = 0.f;
+            const float searchStartY = playerPos.y + 0.5f;
+            const float searchMinY = playerPos.y - 5.0f;
+
+            if (!FindGroundBelowForDruidEffect(map, playerPos.x, searchStartY, searchMinY, 0.1f, groundY))
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            // raise the effect slightly above the ground so it doesn't look buried
+            const float effectY = groundY + 0.14f;
+
+            // keep it tight and low to the ground, but not too low
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeX, playerPos.x - 0.25f, playerPos.x + 1.f);
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeY, effectY, effectY + 0.25f);
+
+            // upward fan, not straight vertical
+            castParticleSystem.emitter.angleRange = { 0.96f, 2.18f }; // 55° to 125°
+            castParticleSystem.emitter.speedRange = { 0.9f, 2.2f };
+
+            // short, sharp warning only
+            castParticleSystem.SetSpawnRate(42.f);
+            castParticleSystem.Update();
+        };
     if (dead)
     {
         // Advance animation until the final frame starts, then stop updating so it doesn't loop.
@@ -194,7 +281,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         }
         if (deathTimeLeft <= 0.f && cfg.hideAfterDeath)
             hidden = true;
-
+        StopDruidCastEffect();
         return;
     }
 
@@ -213,6 +300,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
  
         sprite.Update();
+        StopDruidCastEffect();
         return;
     }
 
@@ -283,6 +371,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 velocity = AEVec2{ 0.f, 0.f };
                 UpdateAnimation();
                 sprite.Update();
+                UpdateDruidCastEffect();
                 return;
             }
         }
@@ -335,6 +424,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         UpdateAnimation();
         sprite.Update();
         UpdateEnemyParticles();
+        UpdateDruidCastEffect();
         return;
     }
 
@@ -472,6 +562,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     UpdateAnimation();
     sprite.Update();
     UpdateEnemyParticles();
+    UpdateDruidCastEffect();
 }
 
 bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
@@ -506,6 +597,9 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
             hurtTimeLeft = 0.3f;
 
         attack.Reset();
+        castParticleSystem.SetSpawnRate(0.f);
+        castParticleSystem.ReleaseAll();
+        wasDruidCasting = false;
         sprite.SetState(cfg.animHurt);
     }
 
@@ -608,6 +702,7 @@ void Enemy::Render()
     if (hidden) return;
 
     particleSystem.Render();
+    castParticleSystem.Render();
 
     AEMtx33 transform;
 

@@ -125,6 +125,10 @@ public:
 
     ParticleSystem particleSystem{ 30, {} }; // pool size 30 is enough for small bursts
 
+    ParticleSystem castParticleSystem{ 40, {} }; //for the long range attack of the druid
+    bool wasDruidCasting = false;
+    float druidCastFxTimer = 0.f;
+
 private:
     void UpdateAnimation();
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
@@ -164,6 +168,8 @@ private:
   // NEW internal helper
     bool HasGroundAhead(MapGrid& map, float dirX) const;
     bool HasWallAhead(MapGrid& map, float dirX) const;
+
+
 
 
 
