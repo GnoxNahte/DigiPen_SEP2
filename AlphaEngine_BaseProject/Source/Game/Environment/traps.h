@@ -82,11 +82,16 @@ public:
     void Update(float dt, Player& player) override;
     void ActivateFromPlate();
     void OnPlayerEnter(Player& player) override;
+    void Render() const override;
+
+    static void LoadSharedRenderResources();
+    static void UnloadSharedRenderResources();
 
 protected:
     void OnPlayerStay(float dt, Player& player) override;
 
 private:
+    static AEGfxVertexList* MakeSpikeMesh(int frame);
     float m_upTime = 1.f;
     float m_downTime = 1.f;
     int   m_damageOnHit = 10;
@@ -97,6 +102,13 @@ private:
     float m_hitCooldown = 0.5f;
     float m_hitTimer = 0.f;
     bool m_lockedOn = false;
+
+    int   m_animFrame = 0;   // 0~3
+    float m_animTimer = 0.f;
+
+    static AEGfxTexture* s_spikeTexture;
+    static AEGfxVertexList* s_spikeMeshes[4];
+    static bool s_resourcesLoaded;
 };
 
 class TrapManager

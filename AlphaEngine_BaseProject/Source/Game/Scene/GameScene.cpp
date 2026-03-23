@@ -160,6 +160,7 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+	SpikePlate::LoadSharedRenderResources();
 	roomMgr.Clear();
 
 	bool loadedFromFile = false;
@@ -412,13 +413,13 @@ void GameScene::Render()
 	Background::Render();
 	map.Render();
 	testParticleSystem.Render();
+	trapMgr.Render();
 	player.Render();
 	if (roomSystem.GetActiveBoss())
 		roomSystem.GetActiveBoss()->Render();
 	//enemyBoss.Render();
 	enemyMgr.RenderAll();
 	attackSystem.Render();
-	trapMgr.Render();
 	UI::Render();
 
 	if (IsPaused())

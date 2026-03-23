@@ -1,4 +1,5 @@
 ﻿#include "traps.h"
+#include "../Camera.h"
 
 #include <algorithm>
 #include <iostream>
@@ -12,6 +13,10 @@ static inline float MinX(const Box& b) { return b.position.x; }
 static inline float MinY(const Box& b) { return b.position.y; }
 static inline float MaxX(const Box& b) { return b.position.x + b.size.x; }
 static inline float MaxY(const Box& b) { return b.position.y + b.size.y; }
+
+AEGfxTexture* SpikePlate::s_spikeTexture = nullptr;
+AEGfxVertexList* SpikePlate::s_spikeMeshes[4] = { nullptr, nullptr, nullptr, nullptr };
+bool SpikePlate::s_resourcesLoaded = false;
 
 bool IntersectsBox(const Box& a, const Box& b)
 {
@@ -60,7 +65,57 @@ Box MakePlayerBodyBox(const Player& p)
     return b;
 }
 
+AEGfxVertexList* SpikePlate::MakeSpikeMesh(int frame)
+{
+    const float uMin = frame * 0.25f;
+    const float uMax = (frame + 1) * 0.25f;
 
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+
+    return AEGfxMeshEnd();
+}
+
+void SpikePlate::LoadSharedRenderResources()
+{
+    if (s_resourcesLoaded)
+        return;
+
+    s_spikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
+    for (int i = 0; i < 4; ++i)
+        s_spikeMeshes[i] = MakeSpikeMesh(i);
+
+    s_resourcesLoaded = true;
+}
+
+void SpikePlate::UnloadSharedRenderResources()
+{
+    if (!s_resourcesLoaded)
+        return;
+
+    if (s_spikeTexture)
+    {
+        AEGfxTextureUnload(s_spikeTexture);
+        s_spikeTexture = nullptr;
+    }
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (s_spikeMeshes[i])
+        {
+            AEGfxMeshFree(s_spikeMeshes[i]);
+            s_spikeMeshes[i] = nullptr;
+        }
+    }
+
+    s_resourcesLoaded = false;
+}
 
 // ---------------- Trap ----------------
 Trap::Trap(Type type, const Box& box) : m_type(type), m_box(box) {}
@@ -174,13 +229,20 @@ SpikePlate::SpikePlate(const Box& box, float upTime, float downTime, int damageO
 {
     SetEnabled(!startDisabled);
 
-	// if starting enabled, start with spikes up. otherwise, start with spikes down and timer at 0 so that it will switch to up after downTime.
     if (IsEnabled())
     {
         m_spikesUp = true;
         m_phaseTimer = 0.f;
+        m_animFrame = 3;   // always on
+    }
+    else
+    {
+        m_spikesUp = false;
+        m_phaseTimer = 0.f;
+        m_animFrame = 0;   // ini off
     }
 
+    m_animTimer = 0.f;
 }
 
 void SpikePlate::ActivateFromPlate()
@@ -190,39 +252,65 @@ void SpikePlate::ActivateFromPlate()
     m_lockedOn = true;
     m_phaseTimer = 0.f;
     m_hitTimer = 0.f;
+    m_animTimer = 0.f;
 }
 
 void SpikePlate::Update(float dt, Player& player)
 {
-    if (!IsEnabled()) return;
-
-	// update hit cooldown timer regardless of spike state, so that it will be ready to hit immediately when spikes come up
-    if (m_hitTimer > 0.f)
-        m_hitTimer = (std::max)(0.f, m_hitTimer - dt);
-
-	// if locked on by pressure plate, stay up indefinitely and skip normal timing logic
-    if (m_lockedOn)
+    if (!IsEnabled())
     {
-        m_spikesUp = true;
-        Trap::Update(dt, player);
+        m_spikesUp = false;
+        m_animFrame = 0;
+        m_animTimer = 0.f;
         return;
     }
 
-    m_phaseTimer += dt;
-    if (m_spikesUp)
+    // cooldown
+    if (m_hitTimer > 0.f)
+        m_hitTimer = (std::max)(0.f, m_hitTimer - dt);
+
+    // 逻辑状态机
+    if (m_lockedOn)
     {
-        if (m_phaseTimer >= m_upTime)
-        {
-            m_spikesUp = false;
-            m_phaseTimer = 0.f;
-        }
+        m_spikesUp = true;
     }
     else
     {
-        if (m_phaseTimer >= m_downTime)
+        m_phaseTimer += dt;
+
+        if (m_spikesUp)
         {
-            m_spikesUp = true;
-            m_phaseTimer = 0.f;
+            if (m_phaseTimer >= m_upTime)
+            {
+                m_spikesUp = false;
+                m_phaseTimer = 0.f;
+            }
+        }
+        else
+        {
+            if (m_phaseTimer >= m_downTime)
+            {
+                m_spikesUp = true;
+                m_phaseTimer = 0.f;
+            }
+        }
+    }
+
+    // ===== sprite animation =====
+    m_animTimer += dt;
+    while (m_animTimer >= 0.08f)
+    {
+        m_animTimer -= 0.08f;
+
+        if (m_spikesUp)
+        {
+            if (m_animFrame < 3)
+                ++m_animFrame;
+        }
+        else
+        {
+            if (m_animFrame > 0)
+                --m_animFrame;
         }
     }
 
@@ -252,6 +340,37 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     m_hitTimer = m_hitCooldown;;
 }
 
+
+void SpikePlate::Render() const
+{
+    if (!s_resourcesLoaded || !s_spikeTexture)
+        return;
+
+    int frame = m_animFrame;
+    if (frame < 0) frame = 0;
+    if (frame > 3) frame = 3;
+
+    const Box& box = GetBox();
+    const float centerX = box.position.x + box.size.x * 0.5f;
+    const float centerY = box.position.y + box.size.y * 0.5f;
+
+    AEMtx33 m;
+    AEMtx33Trans(&m, centerX, centerY);
+
+    // using box size
+    AEMtx33ScaleApply(&m, &m, box.size.x * Camera::scale, box.size.y * Camera::scale);
+
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+    AEGfxSetTransparency(1.f);
+    AEGfxTextureSet(s_spikeTexture, 0.f, 0.f);
+    AEGfxSetTransform(m.m);
+    AEGfxMeshDraw(s_spikeMeshes[frame], AE_GFX_MDM_TRIANGLES);
+}
+
+
 // ---------------- TrapManager ----------------
 void TrapManager::Update(float dt, Player& player)
 {
@@ -262,4 +381,6 @@ void TrapManager::Render() const
 {
     for (auto& t : m_traps) t->Render();
 }
+
+
 

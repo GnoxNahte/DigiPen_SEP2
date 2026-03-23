@@ -30,19 +30,7 @@ namespace
     }
 }
 
-AEGfxVertexList* MainMenuScene::MakeSpikeMesh(int frame)
-{
-    const float uMin = frame * 0.25f;
-    const float uMax = (frame + 1) * 0.25f;
-    AEGfxMeshStart();
-    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
-        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
-        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
-    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
-        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
-        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
-    return AEGfxMeshEnd();
-}
+
 
 std::string MainMenuScene::ExeDir()
 {
@@ -89,9 +77,7 @@ void MainMenuScene::Init()
     vineMesh = AEGfxMeshEnd();
 
     // load spike texture and per-frame meshes
-    spikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
-    for (int i = 0; i < 4; ++i)
-        spikeMeshes[i] = MakeSpikeMesh(i);
+    SpikePlate::LoadSharedRenderResources();
 
     std::string path = "..\\..\\Assets\\Levels\\gamewholelv.lvl";
 
@@ -135,11 +121,8 @@ void MainMenuScene::Init()
 
             if (tt == Trap::Type::SpikePlate)
             {
-                SpikePlate& s = trapMgr.Spawn<SpikePlate>(
-                    box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
+                SpikePlate& s = trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
                 spawnedSpikes.push_back(&s);
-                spikeTraps.push_back(&s);
-                spikeAnims.emplace_back();
             }
             else if (tt == Trap::Type::PressurePlate)
             {
@@ -198,23 +181,8 @@ void MainMenuScene::Update()
     float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     trapMgr.Update(dt, player);
 
-    // tick spike animators
-    for (int i = 0; i < (int)spikeTraps.size(); ++i)
-    {
-        SpikeAnim& a = spikeAnims[i];
 
-        if (!a.triggered && spikeTraps[i]->IsEnabled())
-            a.triggered = true;
 
-        if (!a.triggered || a.done) continue;
-
-        a.timer += dt;
-        if (a.timer >= 0.08f)
-        {
-            a.timer -= 0.08f;
-            if (++a.frame >= 3) { a.frame = 3; a.done = true; }
-        }
-    }
 
     enemyMgr.UpdateAll(player.GetPosition(), map);
 
@@ -271,33 +239,7 @@ void MainMenuScene::Render()
 
     trapMgr.Render();
 
-    // spike animated sprites
-    if (spikeTexture)
-    {
-        int idx = 0;
-        for (const auto& a : spikeAnims)
-        {
-            Trap* t = spikeTraps[idx++];
 
-            // 1. getting the center of the trap's box, so we can lock the spike sprite to it. This is important because some traps (like the lava pool) are larger than 1 tile, and we want the spike animation to be centered on the trap, not skewed to a corner.
-            float centerX = t->GetBox().position.x + t->GetBox().size.x * 0.5f;
-            float centerY = t->GetBox().position.y + t->GetBox().size.y * 0.5f;
-
-            AEMtx33 m;
-            // 2. pass in the center coordinates to the translation function, so the spike sprite will be drawn centered on the trap's box.
-            AEMtx33Trans(&m, centerX, centerY);
-            AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
-
-            AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-            AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
-            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
-            AEGfxSetTransparency(1.f);
-            AEGfxTextureSet(spikeTexture, 0.f, 0.f);
-            AEGfxSetTransform(m.m);
-            AEGfxMeshDraw(spikeMeshes[a.frame], AE_GFX_MDM_TRIANGLES);
-        }
-    }
     player.Render();
     enemyMgr.RenderAll();
 
@@ -353,11 +295,7 @@ void MainMenuScene::Exit()
     if (vineMesh) { AEGfxMeshFree(vineMesh);         vineMesh = nullptr; }
     vinePositions.clear();
 
-    if (spikeTexture) { AEGfxTextureUnload(spikeTexture); spikeTexture = nullptr; }
-    for (int i = 0; i < 4; ++i)
-        if (spikeMeshes[i]) { AEGfxMeshFree(spikeMeshes[i]); spikeMeshes[i] = nullptr; }
-    spikeTraps.clear();
-    spikeAnims.clear();
+    SpikePlate::UnloadSharedRenderResources();
 
     if (uiFont >= 0)
     {
