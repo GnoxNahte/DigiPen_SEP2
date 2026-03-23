@@ -376,11 +376,12 @@ void GameScene::Update()
 	//		  << "BGM VOL : " << AudioManager::GetMusicVolume()
 	//		  << "SFX VOL : " << AudioManager::GetSFXVolume() << '\n';
 	//std::cout << "CURRENT ROOM : " << static_cast<int>(roomMgr.GetCurrentRoomID()) << '\n';
-	if (roomMgr.GetCurrentRoomID() == ROOM_9) { // To change to ROOM_10 after spawning is done
+	if (roomMgr.GetCurrentRoomID() == ROOM_11) { // To change to ROOM_10 after spawning is done
 		//std::cout << " IN BOSS ROOM !!!";
 		AudioManager::gameMusic->Stop();
 		AudioManager::PlayBossMusic(enemyBoss, roomMgr);
 	}
+	//std::cout << "Current room : " << static_cast<int>(roomMgr.GetCurrentRoomID()) << '\n';
 	AudioManager::Update();
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;

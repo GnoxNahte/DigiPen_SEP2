@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include "../Game/Time.h"
+#include "../Game/Rooms/RoomData.h"
 
 // Declare background music.
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
@@ -144,22 +145,21 @@ SFXAudio::~SFXAudio() { // Dtor for automatic cleanup
 void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr) {
     // For the first time, play both tracks together so they sync perfectly and align
     // with crossfade effect.
+
+    // Default first track to vocal
     if (!bossIntroMusic->IsActive()) {
         bossIntroMusic->Play(bossIntroMusic->GetVolume());
         bossIntroMusic->SetActive(true);
         bossFightMusic->Play(0.0f);
         bossFightMusic->SetActive(true);
     }
-    // Triggered aggro
-    if (boss.bossEngaged && !gIsPlaying) { // To remove check triggered when rooms are spawned properly.
-       bossIntroMusic->CrossfadeTo(*bossFightMusic, 1.2f);
-       gIsPlaying = true;
-    }
-    // Lose aggro but still in boss room
-    else if (!boss.bossEngaged && roomMgr.GetCurrentRoomID() == ROOM_9 && gIsPlaying) { // To remove check triggered when rooms are spawned properly.
-        std::cout << "LOST BOSS AGGRO!!!";
-        bossFightMusic->CrossfadeTo(*bossIntroMusic, 1.2f);
-        gIsPlaying = false;
+    if (roomMgr.GetCurrentRoomID() == ROOM_11) {
+        // Triggered boss phase 2
+        if (boss.phase2 && !gIsPlaying) { // To remove check triggered when rooms are spawned properly.
+            std::cout << "2ND PHASE" << '\n';
+            bossIntroMusic->CrossfadeTo(*bossFightMusic, 1.2f);
+            gIsPlaying = true;
+        }
     }
 }
 void AudioManager::MuffleGameMusic() {

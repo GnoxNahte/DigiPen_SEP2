@@ -195,7 +195,7 @@ void RoomSystem::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSp
 
     ApplyBlockedReturnBarrier();
 
-    if (roomMgr.GetCurrentRoomID() == ROOM_10)
+    if (roomMgr.GetCurrentRoomID() == ROOM_11)
         UI::StartBossIntro();
 }
 void RoomSystem::ClearRuntimeRoomObjects()
