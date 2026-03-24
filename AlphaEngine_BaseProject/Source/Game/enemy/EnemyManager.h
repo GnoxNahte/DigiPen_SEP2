@@ -170,7 +170,7 @@ public:
                 if (currentRoomId != ROOM_NONE)
                     depth = static_cast<int>(currentRoomId) - static_cast<int>(ROOM_1);
 
-                e->ApplyRoomScaling(depth * 10, depth * 1);
+                e->ApplyRoomScaling(depth * 2, depth);
                 enemies.emplace_back(std::move(e));
             }
             break;
