@@ -299,18 +299,40 @@ void UI::DrawHealthBar()
 	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 
 	// === Draw health bar fill ===
-	float healthPercentage = player->GetHealthPercentage();
+	constexpr int healthPerBar = 50;
+	constexpr int barWidth = 25;
+	constexpr int barSpace = 3;
+	int health = player->GetHealth();
+	int fullBarCount = health / healthPerBar; // Intentionally truncate decimal pt
 	
 	// 119x21 is the size of the fill when health is at 100%
-	size.x = 119 * scale * healthPercentage;
+	size.x = barWidth * scale - barSpace;
 	size.y = 21 * scale;
 
 	// 36x6 is the number of pixels offset from the static sprite
 	pos += AEVec2{ 36 * scale, 6 * scale };
+
+	for (int i = 0; i < fullBarCount; i++)
+	{
+		AEMtx33Identity(&transform);
+		AEMtx33Scale(&transform, size.x, size.y);
+		AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+
+		AEGfxSetTransform(transform.m);
+
+		AEGfxTextureSet(healthBarFill, 0.f, 0.f);
+		AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+		pos.x += barWidth * scale + barSpace;
+	}
+
+	int remainingHealth = health - fullBarCount * healthPerBar;
+	size.x = size.x * (static_cast<float>(remainingHealth) / healthPerBar);
+
 	AEMtx33Identity(&transform);
 	AEMtx33Scale(&transform, size.x, size.y);
 	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
-	
+
 	AEGfxSetTransform(transform.m);
 
 	AEGfxTextureSet(healthBarFill, 0.f, 0.f);
