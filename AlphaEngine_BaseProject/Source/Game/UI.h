@@ -84,10 +84,21 @@ public:
 	static void DrawHealthVignette();
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
+	static void DrawHealthBar();
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();
 	static void DrawGameOverText();
 	inline static bool& GetRestartStatus() { return restartRun; }
+
+	// Tutorial functions
+	static void PlayPressurePlateTutorial();
+	static void PlayJumpOffLedgeTutorial();
+	static void PlaySlamAttackTutorial();
+
+	// Tutorial public variables to determine when to show tutorials.
+	static inline bool showPressurePlateTutorial = false;
+	static inline bool showJumpLedgeTutorial = false;
+	static inline bool showSlamAttackTutorial = false;
 
 	// Game over screen variables
 	inline static float gameOverTextFadeTimer; // For game over
@@ -99,12 +110,14 @@ public:
 	static void StartBossIntro();
 	static bool IsBossIntroActive();
 
+
 private:
 	// Damage text variables
 	static const int MAX_DAMAGE_TEXT_INSTANCES = 35;
 	static const int DAMAGE_TEXT_FONT_SIZE = 56;
 	inline static s8 damageTextFont;
 	inline static DamageTextSpawner damageTextSpawner{ MAX_DAMAGE_TEXT_INSTANCES };
+
 	// Game over screen variables
 	static const int GAME_OVER_TEXT_SIZE = 48;
 	inline static s8 gameOverFont;
@@ -114,12 +127,31 @@ private:
 	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
 	inline static bool deadTimerAdded = false;
 	inline static bool restartRun = false;
+
 	// Health vignette variables.
 	inline static Player* player = nullptr;
 	inline static AEGfxTexture* healthVignette;
 	inline static AEGfxVertexList* healthVignetteMesh = nullptr;
+
 	// Cooldown meshes
 	inline static std::vector<AEGfxVertexList*> cooldownMeshes;
 
+	// Tutorial mesh and textures.
+	inline static AEGfxVertexList* tutorialMesh = nullptr;
+	inline static AEGfxTexture* key_Z;
+	inline static AEGfxTexture* key_RIGHT;
+	inline static AEGfxTexture* key_SPACE;
+	inline static AEGfxTexture* key_DOWN;
+	inline static AEGfxTexture* key_X;
+
+	// Health bar
+	inline static AEGfxTexture* healthBarStatic; // Portrait + Outline and background
+	inline static AEGfxTexture* healthBarFill;   // Bar fill
+	inline static AEGfxVertexList* healthBarMesh;
+
+	// Tutorial private variables.
+	static inline bool pressurePlateTutorialDone = false;
+	static inline bool jumpOffLedgeTutorialDone = false;
+	static inline bool slamAttackTutorialDone = false;
 
 };

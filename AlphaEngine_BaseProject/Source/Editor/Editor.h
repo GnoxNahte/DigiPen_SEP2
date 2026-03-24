@@ -16,6 +16,17 @@ public:
 		bool showColliders = false;
 	};
 
+	// Some common variables to make debugging easier
+	// These shouldn't be used in release
+	struct DebugVariables
+	{
+		bool b1;
+		float f1;
+		int i1;
+
+		AEVec2 v1, v2;
+	};
+
 	// Inspectable automatically registers and unregisters in constructor
 	static void Register(Inspectable* obj);
 	static void Unregister(Inspectable* obj);
@@ -31,6 +42,8 @@ public:
 	static void DrawInspectors();
 
 	static bool GetShowColliders();
+
+	static inline DebugVariables debugVars;
 private:
 
 	inline static std::string editorPrefsPath = "Assets/Editor/prefs.json";

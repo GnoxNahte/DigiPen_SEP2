@@ -50,6 +50,7 @@ class LavaPool final : public Trap
 {
 public:
     LavaPool(const Box& box, int damagePerTick, float tickInterval);
+    void Render() const override;
 
 protected:
     void OnPlayerEnter(Player& player) override;
@@ -66,12 +67,26 @@ class PressurePlate final : public Trap
 public:
     PressurePlate(const Box& box);
     void AddLinkedTrap(Trap* t);
+    void Update(float dt, Player& player) override;
+    void Render() const override;
+
+    static void UnloadSharedRenderResources();
 
 protected:
     void OnPlayerEnter(Player& player) override;
 
 private:
+    static AEGfxTexture* s_plateTexture;
+    static AEGfxVertexList* s_plateMeshes[4];
+    static bool s_plateResourcesLoaded;
+
+    static AEGfxVertexList* MakePlateMesh(int frame);
+    static void LoadSharedRenderResources();
+
     std::vector<Trap*> m_linked;
+
+    int m_animFrame = 0;
+    float m_animTimer = 0.f;
 };
 
 class SpikePlate final : public Trap
@@ -114,6 +129,7 @@ private:
 class TrapManager
 {
 public:
+
     template<typename T, typename... Args>
     T& Spawn(Args&&... args)
     {
@@ -125,6 +141,8 @@ public:
 
     void Update(float dt, Player& player);
     void Render() const;
+
+    static void UnloadAllSharedRenderResources();
 
 private:
     std::vector<std::unique_ptr<Trap>> m_traps;

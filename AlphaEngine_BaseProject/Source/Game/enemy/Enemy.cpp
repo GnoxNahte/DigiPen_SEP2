@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include "../UI.h"
 #include "../Environment/MapGrid.h"
-#include "../Environment/MapTile.h"
+#include "../Time.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -47,6 +47,21 @@ bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
 
     return map.CheckPointCollision(probeX, probeY);
 }
+
+static bool FindGroundBelowForDruidEffect(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
+{
+    for (float y = startY; y >= minY; y -= step)
+    {
+        if (map.CheckPointCollision(x, y))
+        {
+            outGroundY = y;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 
 Enemy::Config Enemy::MakePreset(Preset preset)
@@ -129,6 +144,21 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
+    //for druid long range spell
+    castParticleSystem.Init();
+    castParticleSystem.SetSpawnRate(0.f);
+
+    // darker green magical warning
+    castParticleSystem.emitter.lifetimeRange = { 0.18f, 0.30f };
+    castParticleSystem.emitter.sizeRange = { 0.08f, 0.16f };
+    castParticleSystem.emitter.tint = { 0.18f, 0.70f, 0.30f, 0.90f };
+
+    // swirling spell effect instead of dirt/gravity
+    castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+    castParticleSystem.emitter.behaviorParams.center = { 0.f, 0.f };
+    castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+    castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
+
 
 
     particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
@@ -145,7 +175,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
 
 
-    const float dt = (float)AEFrameRateControllerGetFrameTime();
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+
     auto UpdateEnemyParticles = [&]()
         {
             // Trail only when moving; still updates existing particles either way
@@ -177,6 +208,73 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
             particleSystem.Update();
         };
+    auto StopDruidCastEffect = [&]()
+        {
+            castParticleSystem.SetSpawnRate(0.f);
+            castParticleSystem.ReleaseAll();
+            wasDruidCasting = false;
+        };
+
+    auto UpdateDruidCastEffect = [&]()
+        {
+            if (!IsDruid())
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            // Start exactly when attack starts
+            if (attack.JustStarted())
+            {
+                druidCastFxTimer = 0.5f;
+                castParticleSystem.ReleaseAll();
+                castParticleSystem.SpawnParticleBurst(18);
+            }
+
+            if (druidCastFxTimer <= 0.f)
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.ReleaseAll(); // exact hard stop at 0.5s
+                castParticleSystem.Update();
+                return;
+            }
+
+            druidCastFxTimer -= dt;
+
+            float groundY = 0.f;
+            const float searchStartY = playerPos.y + 0.5f;
+            const float searchMinY = playerPos.y - 5.0f;
+
+            if (!FindGroundBelowForDruidEffect(map, playerPos.x, searchStartY, searchMinY, 0.1f, groundY))
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            /// keep the spell low and flat to the ground
+            const float effectY = groundY + 0.5f;
+            const float radius = 0.45f;
+
+            // spawn around the target area, not biased to one side
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeX, playerPos.x - radius + 0.25f, playerPos.x + radius + 0.5f);
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeY, effectY - 0.08f, effectY + 0.08f);
+
+            // horizontal swirl around the target point
+            castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+            castParticleSystem.emitter.behaviorParams.center = { playerPos.x, effectY };
+            castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+            castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
+
+            // full direction range so particles can orbit
+            castParticleSystem.emitter.angleRange = { 0.0f, 6.2831853f }; // 0 to 360 degrees
+            castParticleSystem.emitter.speedRange = { 0.15f, 0.65f };
+
+            // calmer continuous warning
+            castParticleSystem.SetSpawnRate(24.f);
+            castParticleSystem.Update();
+        };
     if (dead)
     {
         // Advance animation until the final frame starts, then stop updating so it doesn't loop.
@@ -194,7 +292,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         }
         if (deathTimeLeft <= 0.f && cfg.hideAfterDeath)
             hidden = true;
-
+        StopDruidCastEffect();
         return;
     }
 
@@ -213,6 +311,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
  
         sprite.Update();
+        StopDruidCastEffect();
         return;
     }
 
@@ -283,6 +382,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 velocity = AEVec2{ 0.f, 0.f };
                 UpdateAnimation();
                 sprite.Update();
+                UpdateDruidCastEffect();
                 return;
             }
         }
@@ -335,6 +435,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         UpdateAnimation();
         sprite.Update();
         UpdateEnemyParticles();
+        UpdateDruidCastEffect();
         return;
     }
 
@@ -472,6 +573,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     UpdateAnimation();
     sprite.Update();
     UpdateEnemyParticles();
+    UpdateDruidCastEffect();
 }
 
 bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
@@ -506,6 +608,9 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
             hurtTimeLeft = 0.3f;
 
         attack.Reset();
+        castParticleSystem.SetSpawnRate(0.f);
+        castParticleSystem.ReleaseAll();
+        wasDruidCasting = false;
         sprite.SetState(cfg.animHurt);
     }
 
@@ -608,6 +713,7 @@ void Enemy::Render()
     if (hidden) return;
 
     particleSystem.Render();
+    castParticleSystem.Render();
 
     AEMtx33 transform;
 

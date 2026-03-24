@@ -208,6 +208,11 @@ int Player::GetMaxHealth() const
     return maxHealth;
 }
 
+float Player::GetHealthPercentage() const
+{
+    return static_cast<float>(health) / maxHealth;
+}
+
 const PlayerStats& Player::GetStats() const
 {
     return stats;
@@ -216,6 +221,11 @@ const PlayerStats& Player::GetStats() const
 bool Player::GetIsFacingRight() const
 {
     return isFacingRight;
+}
+
+bool Player::GetIsGrounded() const
+{
+    return isGroundCollided;
 }
 
 
@@ -229,6 +239,11 @@ float Player::GetDashCooldownPercentage() const
 Player::AnimState Player::GetAnimState() const
 {
     return static_cast<AnimState>(sprite.GetState());
+}
+
+void Player::SetPosition(const AEVec2& pos)
+{
+    position = pos;
 }
 
 void Player::UpdateInput()
@@ -338,8 +353,8 @@ void Player::HandleLanding()
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
+        Camera::StartShake(0.25f, 0.25f);
     }
-
     // @todo: (Ethan) - Play sound
 }
 
