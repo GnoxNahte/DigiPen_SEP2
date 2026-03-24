@@ -84,6 +84,7 @@ public:
 	static void DrawHealthVignette();
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
+	static void DrawHealthBar();
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();
 	static void DrawGameOverText();
@@ -142,6 +143,11 @@ private:
 	inline static AEGfxTexture* key_SPACE;
 	inline static AEGfxTexture* key_DOWN;
 	inline static AEGfxTexture* key_X;
+
+	// Health bar
+	inline static AEGfxTexture* healthBarStatic; // Portrait + Outline and background
+	inline static AEGfxTexture* healthBarFill;   // Bar fill
+	inline static AEGfxVertexList* healthBarMesh;
 
 	// Tutorial private variables.
 	static inline bool pressurePlateTutorialDone = false;
