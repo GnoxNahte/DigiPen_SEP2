@@ -35,6 +35,15 @@ public:
 	
 	void SetRoomTarget(const AEVec2& target) { roomTarget = target; }
 
+	static void StartShake(float duration, float magnitude, float frequency = 28.0f);
+
 	// Inherited via Inspectable
 	void DrawInspector() override;
+
+private:
+	static float shakeTimeLeft;
+	static float shakeDuration;
+	static float shakeMagnitude;
+	static float shakeFrequency;
+	static float shakePhase;
 };

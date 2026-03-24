@@ -343,8 +343,8 @@ void Player::HandleLanding()
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
+        Camera::StartShake(0.12f, 0.15f);
     }
-
     // @todo: (Ethan) - Play sound
 }
 

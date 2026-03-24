@@ -356,6 +356,7 @@ void GameScene::Update()
 			}
 		}
 	}
+
 	camera.Update();
 
 	AEVec2 p = player.GetPosition();
