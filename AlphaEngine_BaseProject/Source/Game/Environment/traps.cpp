@@ -17,6 +17,33 @@ static inline float MaxY(const Box& b) { return b.position.y + b.size.y; }
 AEGfxTexture* SpikePlate::s_spikeTexture = nullptr;
 AEGfxVertexList* SpikePlate::s_spikeMeshes[4] = { nullptr, nullptr, nullptr, nullptr };
 bool SpikePlate::s_resourcesLoaded = false;
+static AEGfxTexture* s_lavaTexture = nullptr;
+static AEGfxVertexList* s_lavaMesh = nullptr;
+
+AEGfxTexture* PressurePlate::s_plateTexture = nullptr;
+AEGfxVertexList* PressurePlate::s_plateMeshes[4] = { nullptr, nullptr, nullptr, nullptr };
+bool PressurePlate::s_plateResourcesLoaded = false;
+
+static void LoadLavaRenderResources()
+{
+    if (!s_lavaTexture)
+        s_lavaTexture = AEGfxTextureLoad("Assets/Tmp/lava.png");
+
+    if (!s_lavaMesh)
+    {
+        AEGfxMeshStart();
+
+        AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, 0.f, 1.f,
+            0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+            -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+
+        AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+            0.5f, 0.5f, 0xFFFFFFFF, 1.f, 0.f,
+            -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+
+        s_lavaMesh = AEGfxMeshEnd();
+    }
+}
 
 bool IntersectsBox(const Box& a, const Box& b)
 {
@@ -80,6 +107,60 @@ AEGfxVertexList* SpikePlate::MakeSpikeMesh(int frame)
         -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
 
     return AEGfxMeshEnd();
+}
+
+AEGfxVertexList* PressurePlate::MakePlateMesh(int frame)
+{
+    const float uMin = frame * 0.25f;
+    const float uMax = (frame + 1) * 0.25f;
+
+    AEGfxMeshStart();
+
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+
+    return AEGfxMeshEnd();
+}
+
+void PressurePlate::LoadSharedRenderResources()
+{
+    if (s_plateResourcesLoaded)
+        return;
+
+    s_plateTexture = AEGfxTextureLoad("Assets/Tmp/pressuregate2.png");
+
+    for (int i = 0; i < 4; ++i)
+        s_plateMeshes[i] = MakePlateMesh(i);
+
+    s_plateResourcesLoaded = true;
+}
+
+void PressurePlate::UnloadSharedRenderResources()
+{
+    if (!s_plateResourcesLoaded)
+        return;
+
+    if (s_plateTexture)
+    {
+        AEGfxTextureUnload(s_plateTexture);
+        s_plateTexture = nullptr;
+    }
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (s_plateMeshes[i])
+        {
+            AEGfxMeshFree(s_plateMeshes[i]);
+            s_plateMeshes[i] = nullptr;
+        }
+    }
+
+    s_plateResourcesLoaded = false;
 }
 
 void SpikePlate::LoadSharedRenderResources()
@@ -166,6 +247,7 @@ LavaPool::LavaPool(const Box& box, int damagePerTick, float tickInterval)
     m_damagePerTick((std::max)(1, damagePerTick)),
     m_tickInterval((std::max)(0.01f, tickInterval))
 {
+    LoadLavaRenderResources();
 }
 
 void LavaPool::OnPlayerEnter(Player& player)
@@ -188,8 +270,50 @@ void LavaPool::OnPlayerStay(float dt, Player& player)
     }
 }
 
+void LavaPool::Render() const
+{
+    if (!s_lavaTexture || !s_lavaMesh)
+        return;
+
+    const Box& box = GetBox();
+
+    // 假设 1 个地图格子 = 1.0f x 1.0f world unit
+    // 如果你的 tile size 不是 1.0f，就改这里
+    constexpr float tileW = 1.0f;
+    constexpr float tileH = 1.0f;
+
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+    AEGfxSetTransparency(1.f);
+
+    for (float y = box.position.y; y < box.position.y + box.size.y - 0.001f; y += tileH)
+    {
+        for (float x = box.position.x; x < box.position.x + box.size.x - 0.001f; x += tileW)
+        {
+            const float centerX = x + tileW * 0.5f;
+            const float centerY = y + tileH * 0.5f;
+
+            AEMtx33 m;
+            AEMtx33Trans(&m, centerX, centerY);
+            AEMtx33ScaleApply(&m, &m, tileW * Camera::scale, tileH * Camera::scale);
+
+            AEGfxTextureSet(s_lavaTexture, 0.f, 0.f);
+            AEGfxSetTransform(m.m);
+            AEGfxMeshDraw(s_lavaMesh, AE_GFX_MDM_TRIANGLES);
+        }
+    }
+}
+
 // ---------------- PressurePlate ----------------
-PressurePlate::PressurePlate(const Box& box) : Trap(Type::PressurePlate, box) {}
+PressurePlate::PressurePlate(const Box& box)
+    : Trap(Type::PressurePlate, box)
+{
+    LoadSharedRenderResources();
+    m_animFrame = 0;
+    m_animTimer = 0.f;
+}
 
 void PressurePlate::AddLinkedTrap(Trap* t)
 {
@@ -203,18 +327,24 @@ void PressurePlate::AddLinkedTrap(Trap* t)
 
 void PressurePlate::OnPlayerEnter(Player&)
 {
-    if (IsTriggered()) 
-    { 
+    if (IsTriggered())
+    {
         return;
     }
+
     std::cout << "[Plate] Triggered!\n";
+
+    m_animFrame = 0;
+    m_animTimer = 0.f;
+
     MarkTriggered();
+
     for (Trap* t : m_linked)
     {
         if (!t) continue;
 
         if (auto* spike = dynamic_cast<SpikePlate*>(t))
-			spike->ActivateFromPlate();   // raise spikes immediately if linked to a spike plate
+            spike->ActivateFromPlate();
         else
             t->SetEnabled(true);
     }
@@ -254,6 +384,52 @@ void SpikePlate::ActivateFromPlate()
     m_hitTimer = 0.f;
     m_animTimer = 0.f;
 }
+// ------------- pressure plate render -------------
+void PressurePlate::Render() const
+{
+    if (!s_plateResourcesLoaded || !s_plateTexture)
+        return;
+
+    int frame = m_animFrame;
+    if (frame < 0) frame = 0;
+    if (frame > 3) frame = 3;
+
+    const Box& box = GetBox();
+    const float centerX = box.position.x + box.size.x * 0.5f;
+    const float centerY = box.position.y + box.size.y * 0.5f;
+
+    AEMtx33 m;
+    AEMtx33Trans(&m, centerX, centerY);
+    AEMtx33ScaleApply(&m, &m, box.size.x * Camera::scale, box.size.y * Camera::scale);
+
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+    AEGfxSetTransparency(1.f);
+
+    AEGfxTextureSet(s_plateTexture, 0.f, 0.f);
+    AEGfxSetTransform(m.m);
+    AEGfxMeshDraw(s_plateMeshes[frame], AE_GFX_MDM_TRIANGLES);
+}
+
+void PressurePlate::Update(float dt, Player& player)
+{
+    if (IsTriggered() && m_animFrame < 3)
+    {
+        m_animTimer += dt;
+
+        while (m_animTimer >= 0.08f)
+        {
+            m_animTimer -= 0.08f;
+
+            if (m_animFrame < 3)
+                ++m_animFrame;
+        }
+    }
+
+    Trap::Update(dt, player);
+}
 
 void SpikePlate::Update(float dt, Player& player)
 {
@@ -269,7 +445,7 @@ void SpikePlate::Update(float dt, Player& player)
     if (m_hitTimer > 0.f)
         m_hitTimer = (std::max)(0.f, m_hitTimer - dt);
 
-    // 逻辑状态机
+	// logic for spike movement
     if (m_lockedOn)
     {
         m_spikesUp = true;
