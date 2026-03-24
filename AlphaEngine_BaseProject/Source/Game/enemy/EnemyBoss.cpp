@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include "../../Utils/AEExtras.h"
 #include "../Environment/MapGrid.h"
+#include "../UI.h"
 
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
@@ -74,12 +75,13 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
     meleeHitbox.position.y = bPos.y + 0.10f;
 }
 
-bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2&, DAMAGE_TYPE )
+bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
     if (isDead || dmg <= 0 || teleportActive || invulnTimer > 0.f || hurtTimeLeft > 0.f)
         return false;
 
     hp -= dmg;
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
     if (hp <= 0)
     {
