@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include "../UI.h"
 #include "../Environment/MapGrid.h"
-#include "../Environment/MapTile.h"
+#include "../Time.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -175,7 +175,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
 
 
-    const float dt = (float)AEFrameRateControllerGetFrameTime();
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+
     auto UpdateEnemyParticles = [&]()
         {
             // Trail only when moving; still updates existing particles either way
