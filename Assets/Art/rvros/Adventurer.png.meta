@@ -20,7 +20,7 @@
     { "name": "AIR_ATTACK_1",   "frameCount": 4 },
     { "name": "AIR_ATTACK_2",   "frameCount": 3 },
     { "name": "AIR_ATTACK_3",   "frameCount": 6 },
-    { "name": "RUN_W_SWORD",    "frameCount": 6 }
+    { "name": "RUN_W_SWORD",    "frameCount": 4 }
   ],
   "defaultSampleRate": 12,
   "pivot": {

@@ -160,6 +160,18 @@ void Editor::DrawMenus()
 			ImGui::MenuItem("Show colliders", "Ctrl", &instance.showColliders);
 			ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow);
 
+			if (ImGui::BeginMenu("Variables"))
+			{
+				ImGui::Checkbox("b1", &debugVars.b1);
+				ImGui::DragInt("i1", &debugVars.i1);
+				ImGui::DragFloat("f1", &debugVars.f1, 0.1f);
+
+				ImGui::DragFloat2("v1", &debugVars.v1.x, 0.1f);
+				ImGui::DragFloat2("v2", &debugVars.v2.x, 0.1f);
+
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndMenu();
 		}
 

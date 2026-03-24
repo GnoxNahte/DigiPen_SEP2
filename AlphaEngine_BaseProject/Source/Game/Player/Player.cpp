@@ -208,6 +208,11 @@ int Player::GetMaxHealth() const
     return maxHealth;
 }
 
+float Player::GetHealthPercentage() const
+{
+    return static_cast<float>(health) / maxHealth;
+}
+
 const PlayerStats& Player::GetStats() const
 {
     return stats;
@@ -234,6 +239,11 @@ float Player::GetDashCooldownPercentage() const
 Player::AnimState Player::GetAnimState() const
 {
     return static_cast<AnimState>(sprite.GetState());
+}
+
+void Player::SetPosition(const AEVec2& pos)
+{
+    position = pos;
 }
 
 void Player::UpdateInput()

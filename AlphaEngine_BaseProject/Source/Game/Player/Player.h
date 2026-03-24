@@ -65,15 +65,18 @@ public:
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_ENEMY_ATTACK) override;
 
     // === Getters ===
-    const AEVec2&       GetPosition() const;
-    const PlayerStats&  GetStats()    const;
+    const AEVec2&       GetPosition()   const;
+    const PlayerStats&  GetStats()      const;
     float   GetDashCooldownPercentage() const;
-    int     GetHealth()     const;
-    int     GetMaxHealth()     const;
-    bool    GetIsFacingRight() const;
-    bool    GetIsGrounded() const;
+    int     GetHealth()         const;
+    int     GetMaxHealth()      const;
+    float   GetHealthPercentage() const;
+    bool    GetIsFacingRight()  const;
+    bool    GetIsGrounded()     const;
+    AnimState GetAnimState()    const;
 
-    AnimState GetAnimState() const;
+    // === Setters ===
+    void SetPosition(const AEVec2& pos);
 
 private:
     PlayerStats stats;

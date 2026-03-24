@@ -50,14 +50,6 @@ GameScene::GameScene() :
 	map(ROOM_COLS, ROOM_ROWS),
 	player(&map, &enemyMgr),
 	camera({ 1,1 }, { (float)(ROOM_COLS - 1), (float)(ROOM_ROWS - 1) }, 64),
-	testParticleSystem(
-		20,
-		ParticleSystem::EmitterSettings{
-			.angleRange{ PI / 3, PI / 4 },
-			.speedRange{ 30.f, 50.f },
-			.lifetimeRange{1.f, 2.f},
-		}
-		),
 	enemyBoss(35, 2.90f),
 	roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
 
@@ -303,6 +295,13 @@ void GameScene::Update()
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
 	player.Update();
+#if _DEBUG
+	if (AEInputCheckTriggered(AEVK_T))
+	{
+		roomMgr.SetCurrentRoom(ROOM_10);
+		player.SetPosition({ 97, 30 });
+	}
+#endif
 
 	// unlock only when player is back inside room bounds
 	if (roomTransitionLocked)
@@ -382,11 +381,6 @@ void GameScene::Update()
 
 	trapMgr.Update(dt, player);
 
-	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
-	if (AEInputCheckTriggered(AEVK_G))
-		testParticleSystem.SpawnParticleBurst(300);
-	testParticleSystem.Update();
-
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
 	//std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
@@ -430,7 +424,6 @@ void GameScene::Render()
 
 	Background::Render();
 	map.Render();
-	testParticleSystem.Render();
 	trapMgr.Render();
 	player.Render();
 	if (roomSystem.GetActiveBoss())
