@@ -129,7 +129,7 @@ public:
     bool CheckIfClicked(const AEVec2& mousePos) override;
 
     int   GetAttackDamage() const { return attackDamage; }
-    bool IsInvulnerable() const { return invulnTimer > 0.f; }
+    bool IsInvulnerable() const { return teleportActive; }
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
@@ -219,8 +219,10 @@ private:
     float hurtTimeLeft{ 0.0f };
     float minHurtDuration{ 0.30f };
 
-    float invulnTimer{ 0.0f };
-    float invulnDuration{ 0.20f };
+    // How long since the boss last took damage.
+// A new hit only causes HURT if this has reached staggerResetDelay.
+    float timeSinceLastDamage{ 999.0f };
+    float staggerResetDelay{ 1.25f };
 
     float deathTimeLeft{ 0.0f };
 
