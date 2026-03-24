@@ -336,7 +336,7 @@ void RoomSystem::ApplyBlockedReturnBarrier()
 
     case DIR_TOP:
         for (int x = 0; x < ROOM_COLS; ++x)
-            map.SetTile(ox + x, oy + ROOM_ROWS, kBlockTile);
+            map.SetTile(ox + x, oy + ROOM_ROWS - 1, kBlockTile);
         break;
 
     case DIR_LEFT:
