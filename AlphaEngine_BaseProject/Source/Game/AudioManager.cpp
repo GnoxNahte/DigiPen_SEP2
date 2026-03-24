@@ -90,19 +90,15 @@ BGMAudio::~BGMAudio() { // Dtor for automatic cleanup
     }
 }
 void BGMAudio::Play(f32 const& initialGroupVol) {
-    // 1. Set the internal volume state (the group multiplier)
     baseVolume = initialGroupVol;
-
-    // 2. Set the Group Volume immediately
     ApplyFinalVolume();
-
-    // 3. CRITICAL: Set the instance volume to 1.0f 
-    // This way the sound is "full strength" but muted by its parent group
     AEAudioPlay(audioFile, ownGroup, 1.0f, pitch, -1);
+    active = true;
 }
 void BGMAudio::Stop() {
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioStopGroup(ownGroup);
+    active = false;
 }
 void BGMAudio::SetVolume(f32 const& vol) {
     baseVolume = vol;
@@ -264,19 +260,18 @@ void AudioManager::Update() {
     }
 }
 void AudioManager::Exit() {
-    // Call BGMAudio dtor by reset.
+    StopAllMusic();
+    ResetRuntimeState();
+
     bossIntroMusic.reset();
     bossFightMusic.reset();
     bossInstrMusic.reset();
     gameMusic.reset();
 
-    // Call SFXAudio dtor by reset.
-    //buffFlipSFX.reset();
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
     buffConfirmSFX.reset();
 
-    // Unload both music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
 }
@@ -313,3 +308,35 @@ float AudioManager::GetMusicVolume()
 {
     return gMusicVolume;
 }
+
+void AudioManager::StopAllMusic()
+{
+    if (gameMusic) gameMusic->Stop();
+    if (bossIntroMusic) bossIntroMusic->Stop();
+    if (bossFightMusic) bossFightMusic->Stop();
+    if (bossInstrMusic) bossInstrMusic->Stop();
+}
+
+void AudioManager::ResetRuntimeState()
+{
+    gIsMuffled = false;
+    gFadeTimer = 0.0f;
+    gFadeDuration = 0.0f;
+    preservedGameVol = 1.0f;
+    gIsCrossfading = false;
+    gFadeOutTrack = nullptr;
+    gFadeInTrack = nullptr;
+    gIsPlaying = false;
+}
+
+void AudioManager::ResetForRestart()
+{
+    StopAllMusic();
+    ResetRuntimeState();
+}
+
+
+
+
+
+

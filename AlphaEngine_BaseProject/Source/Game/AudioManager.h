@@ -78,4 +78,8 @@ public:
     static std::unique_ptr<SFXAudio> buffRevealSFX;
     static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
     static std::unique_ptr<SFXAudio> buffConfirmSFX;
+
+    static void StopAllMusic();
+    static void ResetRuntimeState();
+    static void ResetForRestart();
 };
