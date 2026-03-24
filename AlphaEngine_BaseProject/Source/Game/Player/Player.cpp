@@ -218,6 +218,11 @@ bool Player::GetIsFacingRight() const
     return isFacingRight;
 }
 
+bool Player::GetIsGrounded() const
+{
+    return isGroundCollided;
+}
+
 
 float Player::GetDashCooldownPercentage() const
 {

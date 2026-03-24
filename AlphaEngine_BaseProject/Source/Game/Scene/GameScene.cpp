@@ -126,9 +126,10 @@ GameScene::~GameScene()
 		AEGfxDestroyFont(pauseFontSmall);
 		pauseFontSmall = -1;
 	}
-	if (pauseFontRuntime)
+	if (pauseFontRuntime >= 0)
 	{
 		AEGfxDestroyFont(pauseFontRuntime);
+		pauseFontRuntime = -1;
 	}
 
 	// Free buff icon textures for pause overlay
@@ -156,6 +157,7 @@ GameScene::~GameScene()
 		pauseFontDesc = -1;
 	}
 	AudioManager::Exit();
+	SpikePlate::UnloadSharedRenderResources();
 }
 
 void GameScene::Init()
@@ -359,6 +361,20 @@ void GameScene::Update()
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
 
+	//std::cout << player.GetPosition() << '\n';
+
+	// Player lands on pressure plate in game scene tutorial level
+	if ((static_cast<int>(p.x) == 10 && static_cast<int>(p.y) == 9) && player.GetIsFacingRight()){
+		// std::cout << "play pressure plate tutorial..\n";
+		// std::cout << player.GetIsFacingRight();
+		UI::showPressurePlateTutorial = true;
+	}
+	// Player at edge of tutorial ledge
+	if (static_cast<int>(p.x) == 16 && static_cast<int>(p.y) == 8) {
+		//std::cout << "play jump >> and slam v + x tutorial\n";
+		UI::showJumpLedgeTutorial = true;
+	}
+
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
@@ -389,8 +405,10 @@ void GameScene::Update()
 		pausePage = PausePage::None;
 
 		Time::GetInstance().ResetElapsedTime();
+		Time::GetInstance().SetTimeScale(1.0f);
 		TimerSystem::GetInstance().Clear();
 		UI::Reset();
+		
 		if (!BuffCardManager::GetCurrentBuffs().empty()) {
 			BuffCardManager::ResetCurrentBuffs();
 		}

@@ -71,6 +71,7 @@ public:
     int     GetHealth()     const;
     int     GetMaxHealth()     const;
     bool    GetIsFacingRight() const;
+    bool    GetIsGrounded() const;
 
     AnimState GetAnimState() const;
 

@@ -40,6 +40,7 @@ f64 Time::GetScaledDeltaTime() const
 }
 
 void Time::SetTimeScale(f32 scale) {
+    if (scale == timeScale) return;
     // Clamp to reasonable values
     if (scale < 0.0f) scale = 0.0f;
     if (scale > 10.0f) scale = 10.0f;
