@@ -31,7 +31,6 @@ private:
 	EnemyBoss enemyBoss;
 	EnemyBoss* activeBoss = nullptr;
 
-	ParticleSystem testParticleSystem;
 	TrapManager trapMgr;
 
 	Enemy enemyA;

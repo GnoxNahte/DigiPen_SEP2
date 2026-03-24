@@ -50,14 +50,6 @@ GameScene::GameScene() :
 	map(ROOM_COLS, ROOM_ROWS),
 	player(&map, &enemyMgr),
 	camera({ 1,1 }, { (float)(ROOM_COLS - 1), (float)(ROOM_ROWS - 1) }, 64),
-	testParticleSystem(
-		20,
-		ParticleSystem::EmitterSettings{
-			.angleRange{ PI / 3, PI / 4 },
-			.speedRange{ 30.f, 50.f },
-			.lifetimeRange{1.f, 2.f},
-		}
-		),
 	enemyBoss(35, 2.90f),
 	roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
 
@@ -271,11 +263,11 @@ void GameScene::Update()
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
 		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart) {
 			pausePage = PausePage::Menu;
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 		}
 		else
 		{
-			AudioManager::MuffleGameMusic();
+			AudioManager::MuffleMusic();
 			TogglePause();
 		}
 	}
@@ -303,6 +295,13 @@ void GameScene::Update()
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
 	player.Update();
+#if _DEBUG
+	if (AEInputCheckTriggered(AEVK_T))
+	{
+		roomMgr.SetCurrentRoom(ROOM_10);
+		player.SetPosition({ 97, 30 });
+	}
+#endif
 
 	// unlock only when player is back inside room bounds
 	if (roomTransitionLocked)
@@ -383,11 +382,6 @@ void GameScene::Update()
 
 	trapMgr.Update(dt, player);
 
-	testParticleSystem.SetSpawnRate(AEInputCheckCurr(AEVK_F) ? 2000.f : 0.f);
-	if (AEInputCheckTriggered(AEVK_G))
-		testParticleSystem.SpawnParticleBurst(300);
-	testParticleSystem.Update();
-
 	UI::GetDamageTextSpawner().Update();
 	UI::Update();
 	//std::cout << "MASTER VOL : " << AudioManager::GetMasterVolume()
@@ -420,6 +414,9 @@ void GameScene::Update()
 		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
 	}
+	if (player.IsDead()) {
+		AudioManager::PlayGameOverMusic();
+	}
 }
 
 void GameScene::Render()
@@ -432,7 +429,6 @@ void GameScene::Render()
 
 	Background::Render();
 	map.Render();
-	testParticleSystem.Render();
 	trapMgr.Render();
 	player.Render();
 	if (roomSystem.GetActiveBoss())
@@ -452,14 +448,20 @@ void GameScene::Render()
 	AEExtras::GetCursorWorldPosition(worldMousePos);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
-	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
+
+	Vec2Int screenMousePos;
+	AEInputGetCursorPosition(&screenMousePos.x, &screenMousePos.y);
+	str = "Screen Mouse Pos:" + std::to_string(screenMousePos.x) + ", " + std::to_string(screenMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
+	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
+	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
+	QuickGraphics::PrintText(str.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+
 	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
-	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+	QuickGraphics::PrintText(ppos.c_str(), -1, 0.75f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R)) {
 		pausePage = PausePage::None;
@@ -639,7 +641,7 @@ void GameScene::UpdatePauseInput()
 		if (IsClicked(btnResume))
 		{
 			TogglePause();
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 			return;
 		}
 		if (IsClicked(btnRestart))

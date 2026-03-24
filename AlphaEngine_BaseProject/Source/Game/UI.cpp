@@ -11,6 +11,7 @@
 #include <iostream>
 #include "../Game/AudioManager.h"
 #include "../Game/enemy/BossIntroOverlay.h"
+#include "../Editor/Editor.h"
 
 namespace {
 	// To format time to MM:SS:MS format.
@@ -34,6 +35,10 @@ void UI::Init(Player* _player) {
 	gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
 	healthVignette = AEGfxTextureLoad("Assets/Art/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+
+	healthBarStatic = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar.png");
+	healthBarFill = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar_Fill.png");
+	healthBarMesh = MeshGenerator::GetSquareMesh(1.f);
 
 	tutorialMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	key_Z = AEGfxTextureLoad("Assets/Art/Key_Z.png");
@@ -70,6 +75,7 @@ void UI::Render() {
 	DrawPlayerCooldownMeter();
 	DrawHealthVignette();
 	damageTextSpawner.Render();
+	DrawHealthBar();
 	BossIntroOverlay::Render();
 	BuffCardScreen::Render();
 	if (player->IsDead()) {
@@ -83,9 +89,10 @@ void UI::Render() {
 	}
 	if (showJumpLedgeTutorial && !jumpOffLedgeTutorialDone && player->GetIsGrounded()) {
 		PlayJumpOffLedgeTutorial();
+		//std::cout << "Pos y : " << player->GetPosition().y << '\n';
 	}
-	if (jumpOffLedgeTutorialDone && !slamAttackTutorialDone 
-		&& static_cast<int>(player->GetPosition().x) == 17 && static_cast<int>(player->GetPosition().y) >= 9) {
+	if (!slamAttackTutorialDone 
+		&& player->GetPosition().x >= 17.5f && player->GetPosition().y >= 8.0f) {
 		PlaySlamAttackTutorial();
 	}
 }
@@ -127,6 +134,15 @@ void UI::Exit() {
 	}
 	if (key_X) {
 		AEGfxTextureUnload(key_X);
+	}
+	if (healthBarStatic) {
+		AEGfxTextureUnload(healthBarStatic);
+	}
+	if (healthBarFill) {
+		AEGfxTextureUnload(healthBarFill);
+	}
+	if (healthBarMesh) {
+		AEGfxMeshFree(healthBarMesh);
 	}
 	for (AEGfxVertexList*& mesh : cooldownMeshes) {
 		AEGfxMeshFree(mesh);
@@ -257,6 +273,49 @@ void UI::DrawPlayerCooldownMeter() {
 		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
 		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	}
+}
+void UI::DrawHealthBar()
+{
+	AEGfxSetTransparency(1.f);
+
+	constexpr float scale = 2.f;
+	AEVec2 size{ 160.f * scale, 32.f * scale };
+	AEVec2 pos{ 30.f, 30.f }; // Screen position
+	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale; // Offset by camera and shift to bottom left corner
+
+	// Test slight floating animation
+	float time = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+	pos.x += sinf(time * 1.5f) * 3.f;
+	pos.y += cosf(time * 2.f) * 3.f;
+
+	// === Draw static health bar (Portrait + Outline and background) ===
+	AEMtx33 transform;
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+
+	AEGfxSetTransform(transform.m);
+	
+	AEGfxTextureSet(healthBarStatic, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+	// === Draw health bar fill ===
+	float healthPercentage = player->GetHealthPercentage();
+	
+	// 119x21 is the size of the fill when health is at 100%
+	size.x = 119 * scale * healthPercentage;
+	size.y = 21 * scale;
+
+	// 36x6 is the number of pixels offset from the static sprite
+	pos += AEVec2{ 36 * scale, 6 * scale };
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+	
+	AEGfxSetTransform(transform.m);
+
+	AEGfxTextureSet(healthBarFill, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 }
 void UI::UpdateGameOverStatus() {
 	if (!player->IsDead()) {
@@ -603,25 +662,25 @@ void UI::PlayPressurePlateTutorial() {
 						 player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
 
 	// --- Combine ---
-	AEMtx33 transform;
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
+AEMtx33 transform;
+AEMtx33Concat(&transform, &rot, &scaleMtx);
+AEMtx33Concat(&transform, &trans, &transform);
 
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
+// --- Render ---
+AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+AEGfxSetTransparency(1.0f);
 
-	AEGfxTextureSet(key_Z, 0, 0);
-	AEGfxSetTransform(transform.m);
+AEGfxTextureSet(key_Z, 0, 0);
+AEGfxSetTransform(transform.m);
 
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-	//std::cout << "Froze time due to passing thru pressure plate\n";
-	Time::GetInstance().SetTimeScale(0.0f);
-	if (AEInputCheckTriggered(AEVK_Z)) {
-		Time::GetInstance().SetTimeScale(1.0f);
-		pressurePlateTutorialDone = true;
-	}
+AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
+//std::cout << "Froze time due to passing thru pressure plate\n";
+Time::GetInstance().SetTimeScale(0.0f);
+if (AEInputCheckTriggered(AEVK_Z)) {
+	Time::GetInstance().SetTimeScale(1.0f);
+	pressurePlateTutorialDone = true;
+}
 }
 void UI::PlayJumpOffLedgeTutorial() {
 	//std::cout << "PLAY LEDGE TUTORIAL!!!!!!!!!!\n";
@@ -655,14 +714,14 @@ void UI::PlayJumpOffLedgeTutorial() {
 	AEGfxSetTransform(transform.m);
 
 	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-	
+
 	// --- Scale ---
 	AEMtx33Scale(&scaleMtx, 125.0f, 50.0f);
 
 	xOffset = 70.0f;
 	yOffset = 60.0f;
 	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-						 player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
+		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
 
 	// --- Combine ---
 	AEMtx33Concat(&transform, &rot, &scaleMtx);
@@ -696,11 +755,14 @@ void UI::PlayJumpOffLedgeTutorial() {
 	AEGfxPrint(gameOverFont, "+",
 		viewportPos.x,
 		viewportPos.y,
-		1.0f, 
+		1.0f,
 		1.0f, 1.0f, 1.0f, 1.0f);
 
 	if ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) &&
 		(AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C))) {
+		jumpOffLedgeTutorialDone = true;
+	}
+	else if (static_cast<int>(player->GetPosition().x) >= 17 && static_cast<int>(player->GetPosition().y) >= 8){
 		jumpOffLedgeTutorialDone = true;
 	}
 }
