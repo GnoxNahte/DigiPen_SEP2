@@ -157,7 +157,7 @@ GameScene::~GameScene()
 		pauseFontDesc = -1;
 	}
 	AudioManager::Exit();
-	SpikePlate::UnloadSharedRenderResources();
+	TrapManager::UnloadAllSharedRenderResources();
 }
 
 void GameScene::Init()
@@ -416,6 +416,7 @@ void GameScene::Update()
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
 		}
+		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
 	}
 }
@@ -471,6 +472,7 @@ void GameScene::Render()
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
 		}
+		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
 	}
 #endif
@@ -705,6 +707,7 @@ void GameScene::UpdatePauseInput()
 			{
 				gPendingLevelPath = gLastLoadedLevelPath;
 			}
+			AudioManager::ResetForRestart();
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}

@@ -70,6 +70,8 @@ public:
     void Update(float dt, Player& player) override;
     void Render() const override;
 
+    static void UnloadSharedRenderResources();
+
 protected:
     void OnPlayerEnter(Player& player) override;
 
@@ -80,7 +82,6 @@ private:
 
     static AEGfxVertexList* MakePlateMesh(int frame);
     static void LoadSharedRenderResources();
-    static void UnloadSharedRenderResources();
 
     std::vector<Trap*> m_linked;
 
@@ -128,6 +129,7 @@ private:
 class TrapManager
 {
 public:
+
     template<typename T, typename... Args>
     T& Spawn(Args&&... args)
     {
@@ -139,6 +141,8 @@ public:
 
     void Update(float dt, Player& player);
     void Render() const;
+
+    static void UnloadAllSharedRenderResources();
 
 private:
     std::vector<std::unique_ptr<Trap>> m_traps;

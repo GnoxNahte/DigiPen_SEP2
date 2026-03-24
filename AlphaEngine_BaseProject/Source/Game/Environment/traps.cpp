@@ -45,6 +45,21 @@ static void LoadLavaRenderResources()
     }
 }
 
+static void UnloadLavaRenderResources()
+{
+    if (s_lavaTexture)
+    {
+        AEGfxTextureUnload(s_lavaTexture);
+        s_lavaTexture = nullptr;
+    }
+
+    if (s_lavaMesh)
+    {
+        AEGfxMeshFree(s_lavaMesh);
+        s_lavaMesh = nullptr;
+    }
+}
+
 bool IntersectsBox(const Box& a, const Box& b)
 {
     const float eps = 0.0001f;
@@ -357,6 +372,8 @@ SpikePlate::SpikePlate(const Box& box, float upTime, float downTime, int damageO
     m_downTime((std::max)(0.05f, downTime)),
     m_damageOnHit((std::max)(1, damageOnHit))
 {
+    LoadSharedRenderResources();
+
     SetEnabled(!startDisabled);
 
     if (IsEnabled())
@@ -559,4 +576,11 @@ void TrapManager::Render() const
 }
 
 
+
+void TrapManager::UnloadAllSharedRenderResources()
+{
+    PressurePlate::UnloadSharedRenderResources();
+    SpikePlate::UnloadSharedRenderResources();
+    UnloadLavaRenderResources();
+}
 
