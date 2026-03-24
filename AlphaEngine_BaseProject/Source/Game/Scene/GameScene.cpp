@@ -443,14 +443,20 @@ void GameScene::Render()
 	AEExtras::GetCursorWorldPosition(worldMousePos);
 	std::string str = "World Mouse Pos:" + std::to_string(worldMousePos.x) + ", " + std::to_string(worldMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.95f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
-	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
+
+	Vec2Int screenMousePos;
+	AEInputGetCursorPosition(&screenMousePos.x, &screenMousePos.y);
+	str = "Screen Mouse Pos:" + std::to_string(screenMousePos.x) + ", " + std::to_string(screenMousePos.y);
 	QuickGraphics::PrintText(str.c_str(), -1, 0.90f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
-	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
+	str = "FPS:" + std::to_string(AEFrameRateControllerGetFrameRate());
 	QuickGraphics::PrintText(str.c_str(), -1, 0.85f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
+	str = "Time:" + std::to_string(Time::GetInstance().GetScaledElapsedTime());
+	QuickGraphics::PrintText(str.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+
 	std::string ppos = "Player Pos: " + std::to_string(player.GetPosition().x) + ", " + std::to_string(player.GetPosition().y);
-	QuickGraphics::PrintText(ppos.c_str(), -1, 0.80f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
+	QuickGraphics::PrintText(ppos.c_str(), -1, 0.75f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R)) {
 		pausePage = PausePage::None;

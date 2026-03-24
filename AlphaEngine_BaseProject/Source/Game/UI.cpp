@@ -11,6 +11,7 @@
 #include <iostream>
 #include "../Game/AudioManager.h"
 #include "../Game/enemy/BossIntroOverlay.h"
+#include "../Editor/Editor.h"
 
 namespace {
 	// To format time to MM:SS:MS format.
@@ -34,6 +35,10 @@ void UI::Init(Player* _player) {
 	gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
 	healthVignette = AEGfxTextureLoad("Assets/Art/Health_Vignette.png");
 	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+
+	healthBarStatic = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar.png");
+	healthBarFill = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar_Fill.png");
+	healthBarMesh = MeshGenerator::GetSquareMesh(1.f);
 
 	tutorialMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	key_Z = AEGfxTextureLoad("Assets/Art/Key_Z.png");
@@ -70,6 +75,7 @@ void UI::Render() {
 	DrawPlayerCooldownMeter();
 	DrawHealthVignette();
 	damageTextSpawner.Render();
+	DrawHealthBar();
 	BossIntroOverlay::Render();
 	BuffCardScreen::Render();
 	if (player->IsDead()) {
@@ -127,6 +133,15 @@ void UI::Exit() {
 	}
 	if (key_X) {
 		AEGfxTextureUnload(key_X);
+	}
+	if (healthBarStatic) {
+		AEGfxTextureUnload(healthBarStatic);
+	}
+	if (healthBarFill) {
+		AEGfxTextureUnload(healthBarFill);
+	}
+	if (healthBarMesh) {
+		AEGfxMeshFree(healthBarMesh);
 	}
 	for (AEGfxVertexList*& mesh : cooldownMeshes) {
 		AEGfxMeshFree(mesh);
@@ -257,6 +272,49 @@ void UI::DrawPlayerCooldownMeter() {
 		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
 		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	}
+}
+void UI::DrawHealthBar()
+{
+	AEGfxSetTransparency(1.f);
+
+	constexpr float scale = 2.f;
+	AEVec2 size{ 160.f * scale, 32.f * scale };
+	AEVec2 pos{ 30.f, 30.f }; // Screen position
+	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale; // Offset by camera and shift to bottom left corner
+
+	// Test slight floating animation
+	float time = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+	pos.x += sinf(time * 1.5f) * 3.f;
+	pos.y += cosf(time * 2.f) * 3.f;
+
+	// === Draw static health bar (Portrait + Outline and background) ===
+	AEMtx33 transform;
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+
+	AEGfxSetTransform(transform.m);
+	
+	AEGfxTextureSet(healthBarStatic, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+	// === Draw health bar fill ===
+	float healthPercentage = player->GetHealthPercentage();
+	
+	// 119x21 is the size of the fill when health is at 100%
+	size.x = 119 * scale * healthPercentage;
+	size.y = 21 * scale;
+
+	// 36x6 is the number of pixels offset from the static sprite
+	pos += AEVec2{ 36 * scale, 6 * scale };
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+	
+	AEGfxSetTransform(transform.m);
+
+	AEGfxTextureSet(healthBarFill, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 }
 void UI::UpdateGameOverStatus() {
 	if (!player->IsDead()) {
