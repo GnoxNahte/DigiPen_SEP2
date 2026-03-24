@@ -157,7 +157,7 @@ GameScene::~GameScene()
 		pauseFontDesc = -1;
 	}
 	AudioManager::Exit();
-	SpikePlate::UnloadSharedRenderResources();
+	TrapManager::UnloadAllSharedRenderResources();
 }
 
 void GameScene::Init()
