@@ -61,8 +61,9 @@ public:
 
     static void PlaySFX(SFXAudio const& sfx, f32 const& pitch = 1.0f);
     static void PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
-    static void MuffleGameMusic();
-    static void UnmuffleGameMusic();
+    static void PlayGameOverMusic();
+    static void MuffleMusic();
+    static void UnmuffleMusic();
     static void RefreshAllMusicVolumes();
 
 
@@ -71,6 +72,7 @@ public:
     static std::unique_ptr<BGMAudio> bossFightMusic;
     static std::unique_ptr<BGMAudio> gameMusic;
     static std::unique_ptr<BGMAudio> bossInstrMusic;
+    static std::unique_ptr<BGMAudio> gameOverMusic;
     //static std::unique_ptr<BGMAudio> menuMusic;
 
     // Sound Effects

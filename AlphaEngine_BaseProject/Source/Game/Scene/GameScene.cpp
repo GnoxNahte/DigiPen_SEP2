@@ -271,11 +271,11 @@ void GameScene::Update()
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
 		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart) {
 			pausePage = PausePage::Menu;
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 		}
 		else
 		{
-			AudioManager::MuffleGameMusic();
+			AudioManager::MuffleMusic();
 			TogglePause();
 		}
 	}
@@ -418,6 +418,9 @@ void GameScene::Update()
 		}
 		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
+	}
+	if (player.IsDead()) {
+		AudioManager::PlayGameOverMusic();
 	}
 }
 
@@ -638,7 +641,7 @@ void GameScene::UpdatePauseInput()
 		if (IsClicked(btnResume))
 		{
 			TogglePause();
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 			return;
 		}
 		if (IsClicked(btnRestart))
