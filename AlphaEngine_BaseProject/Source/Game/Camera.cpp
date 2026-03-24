@@ -177,11 +177,11 @@ void Camera::Update()
 		shakePhase += dt * shakeFrequency * 6.2831853f; //2*pi
 
 		const float t = (shakeDuration > 0.0f) ? (shakeTimeLeft / shakeDuration) : 0.0f;
-		const float falloff = t * t;
+		const float falloff = t; //do t * t  for a more natural/softer fade
 		const float amp = shakeMagnitude * falloff;
 
-		finalPos.x += std::sin(shakePhase) * amp;
-		finalPos.y += std::cos(shakePhase * 1.37f) * amp * 0.45f;
+		finalPos.x += std::sin(shakePhase) * amp; 
+		finalPos.y += std::cos(shakePhase * 1.37f) * amp * 0.45f; //changes vertical shake
 
 		if (shakeTimeLeft <= 0.0f)
 		{
