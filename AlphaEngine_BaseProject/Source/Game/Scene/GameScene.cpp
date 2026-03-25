@@ -294,6 +294,7 @@ void GameScene::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
+	roomSystem.Update(dt);
 	player.Update();
 #if _DEBUG
 	if (AEInputCheckTriggered(AEVK_T))
