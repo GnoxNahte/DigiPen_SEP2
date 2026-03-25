@@ -17,9 +17,9 @@ class AttackSystem
 public:
 
     // Call this ONCE per frame from GameScene after UpdateAll() / boss.Update()
-    void ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemies, EnemyBoss* boss, MapGrid& map);
+    void ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemies, EnemyBoss* boss);
     void Render();
-    void UpdateEnemyAttack(Player& player, EnemyManager& enemies, EnemyBoss* boss, MapGrid& map);
+    void UpdateEnemyAttack(Player& player, EnemyManager& enemies, EnemyBoss* boss);
     //void SetDebugDraw(bool enabled) { debug = enabled; }
 
 private:

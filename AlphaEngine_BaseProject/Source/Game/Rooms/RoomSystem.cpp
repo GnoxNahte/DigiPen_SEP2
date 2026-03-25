@@ -259,7 +259,7 @@ AEVec2 RoomSystem::ComputeTransitionSpawn(
     RoomID nextRoom,
     const AEVec2& previousPos) const
 {
-    static constexpr float kEntryPadding = 1.f;
+    static constexpr float kEntryPadding = 1.5f;
 
     const AEVec2 prevOrigin = GetRoomOrigin(previousRoom);
     const AEVec2 nextOrigin = GetRoomOrigin(nextRoom);

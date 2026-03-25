@@ -382,7 +382,7 @@ void GameScene::Update()
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss(), map);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
 
 	trapMgr.Update(dt, player);
 
