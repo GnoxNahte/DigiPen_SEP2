@@ -1017,7 +1017,7 @@ static void PlayMode_Update(float dt)
     const AEVec2 pPos = gPlayPlayer->GetPosition();
 
     gPlayEnemies->UpdateAll(pPos, gPlayPlayer->GetIsFacingRight(), *gMap);
-    attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss, *gMap);
+    attackSystem.UpdateEnemyAttack(*gPlayPlayer, *gPlayEnemies, gPlayBoss);
     gPlayTraps->Update(dt, *gPlayPlayer);
 
     for (int i = 0; i < (int)gSpikeTraps.size(); ++i)

@@ -116,8 +116,6 @@ public:
     float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
     int   GetAttackDamage() const { return cfg.attackDamage; }  
 
-
-
     // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
     AEVec2 hurtboxOffset{ 0.f, 0.f }; // negative = lower
@@ -128,6 +126,10 @@ public:
     ParticleSystem castParticleSystem{ 40, {} }; //for the long range attack of the druid
     bool wasDruidCasting = false;
     float druidCastFxTimer = 0.f;
+
+    bool HasLockedDruidSpellTarget() const { return druidSpellTargetLocked; }
+    const AEVec2& GetLockedDruidSpellTarget() const { return druidSpellTargetPos; }
+    void ClearLockedDruidSpellTarget() { druidSpellTargetLocked = false; }
 
 private:
     void UpdateAnimation();
@@ -168,6 +170,9 @@ private:
   // NEW internal helper
     bool HasGroundAhead(MapGrid& map, float dirX) const;
     bool HasWallAhead(MapGrid& map, float dirX) const;
+
+    AEVec2 druidSpellTargetPos{ 0.f, 0.f };
+    bool druidSpellTargetLocked = false;
 
 
 

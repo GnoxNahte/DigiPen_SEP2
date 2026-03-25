@@ -18,7 +18,7 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
     return static_cast<float>(s.frameCount) * static_cast<float>(s.timePerFrame);
 }
 
-static bool FindGroundBelowPlayer(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
+/*static bool FindGroundBelowPlayer(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
 {
     for (float y = startY; y >= minY; y -= step)
     {
@@ -29,20 +29,20 @@ static bool FindGroundBelowPlayer(MapGrid& map, float x, float startY, float min
         }
     }
     return false;
-}
+}*/
 
 
 //PUBLIC APIIIII , to be called from gamescene and level editor
 
-void AttackSystem::UpdateEnemyAttack(Player& player, EnemyManager& enemies, EnemyBoss* boss, MapGrid& map)
+void AttackSystem::UpdateEnemyAttack(Player& player, EnemyManager& enemies, EnemyBoss* boss)
 {
-	ApplyEnemyAttacksToPlayer(player, enemies, boss, map);
+	ApplyEnemyAttacksToPlayer(player, enemies, boss);
     Render();
 
 }
 
 // This is the main function that applies all enemy attacks to the player each frame.
-void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemies, EnemyBoss* boss, MapGrid& map)
+void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemies, EnemyBoss* boss)
 {
     const float dt = (float)AEFrameRateControllerGetFrameTime();
 
@@ -81,27 +81,15 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
 
             if (e.IsDruid())
             {
+                if (!e.HasLockedDruidSpellTarget())
+                    return;
+
                 EnemySpawnedHitbox hb;
                 hb.size = { 1.2f, 0.45f };
-                hb.position.x = pPos.x;
-                hb.faceRight = (pPos.x >= e.GetPosition().x);
 
-                float groundY = 0.0f;
-
-                // start search from player's feet
-                const float feetY = pPos.y - (pSize.y * 0.5f);
-
-                // search downward for solid ground
-                if (FindGroundBelowPlayer(map, pPos.x, feetY, feetY - 5.0f, 0.1f, groundY))
-                {
-                    // place spell on top of ground
-                    hb.position.y = groundY + (hb.size.y * 0.5f);
-                }
-                else
-                {
-                    // fallback: don't spawn if no ground found
-                    return;
-                }
+                const AEVec2 target = e.GetLockedDruidSpellTarget();
+                hb.position = target;
+                hb.faceRight = (target.x >= e.GetPosition().x);
 
                 hb.damage = e.GetAttackDamage();
                 hb.alreadyHit = false;
@@ -128,6 +116,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
                 }
 
                 enemyHitboxes.push_back(std::move(hb));
+                e.ClearLockedDruidSpellTarget();
                 return;
             }
 
