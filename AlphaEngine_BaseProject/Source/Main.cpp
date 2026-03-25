@@ -71,7 +71,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
 	GSM::Init(SceneState::GS_GAME);
 #else
-	GSM::Init(SceneState::GS_SPLASH_SCREEN);
+	GSM::Init(SceneState::GS_MAIN_MENU);
 #endif
 	GSM::Update();
 	GSM::Exit();
