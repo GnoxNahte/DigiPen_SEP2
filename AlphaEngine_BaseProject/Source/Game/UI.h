@@ -94,11 +94,12 @@ public:
 	static void PlayPressurePlateTutorial();
 	static void PlayJumpOffLedgeTutorial();
 	static void PlaySlamAttackTutorial();
+	static void ShowAttackKeys();
 
 	// Tutorial public variables to determine when to show tutorials.
-	static inline bool showPressurePlateTutorial = false;
-	static inline bool showJumpLedgeTutorial = false;
-	static inline bool showSlamAttackTutorial = false;
+	inline static bool showPressurePlateTutorial = false;
+	inline static bool showJumpLedgeTutorial = false;
+	inline static bool showSlamAttackTutorial = false;
 
 	// Game over screen variables
 	inline static float gameOverTextFadeTimer; // For game over
