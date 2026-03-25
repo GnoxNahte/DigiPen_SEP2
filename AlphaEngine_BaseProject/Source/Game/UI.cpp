@@ -95,7 +95,7 @@ void UI::Render() {
 		&& player->GetPosition().x >= 17.5f && player->GetPosition().y >= 8.0f) {
 		PlaySlamAttackTutorial();
 	}
-	ShowAttackKeys();
+	//ShowAttackKeys();
 }
 void UI::Reset() {
 	deadTimerAdded = false;
