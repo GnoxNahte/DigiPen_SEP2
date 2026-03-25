@@ -277,46 +277,47 @@ void UI::DrawPlayerCooldownMeter() {
 }
 void UI::DrawHealthBar()
 {
-	AEGfxSetTransparency(1.f);
+	constexpr float bgAlpha = 0.55f;  // half transparent for the background
+	constexpr float fillAlpha = 0.60f;  // more clearer for the fill to show health status
 
 	constexpr float scale = 2.f;
 	AEVec2 size{ 160.f * scale, 32.f * scale };
-	AEVec2 pos{ 30.f, 30.f }; // Screen position
-	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale; // Offset by camera and shift to bottom left corner
+	AEVec2 pos{ 30.f, 30.f };
+	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
 
-	// Test slight floating animation
 	float time = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 	pos.x += sinf(time * 1.5f) * 3.f;
 	pos.y += cosf(time * 2.f) * 3.f;
 
-	// === Draw static health bar (Portrait + Outline and background) ===
+	// === Draw static health bar ===
 	AEMtx33 transform;
 	AEMtx33Identity(&transform);
 	AEMtx33Scale(&transform, size.x, size.y);
 	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
 
 	AEGfxSetTransform(transform.m);
-	
+	AEGfxSetTransparency(bgAlpha);
 	AEGfxTextureSet(healthBarStatic, 0.f, 0.f);
 	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 
 	// === Draw health bar fill ===
 	float healthPercentage = player->GetHealthPercentage();
-	
-	// 119x21 is the size of the fill when health is at 100%
+
 	size.x = 119 * scale * healthPercentage;
 	size.y = 21 * scale;
 
-	// 36x6 is the number of pixels offset from the static sprite
 	pos += AEVec2{ 36 * scale, 6 * scale };
+
 	AEMtx33Identity(&transform);
 	AEMtx33Scale(&transform, size.x, size.y);
 	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
-	
-	AEGfxSetTransform(transform.m);
 
+	AEGfxSetTransform(transform.m);
+	AEGfxSetTransparency(fillAlpha);
 	AEGfxTextureSet(healthBarFill, 0.f, 0.f);
 	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+	AEGfxSetTransparency(1.f); // 画完恢复，避免影响后面UI
 }
 void UI::UpdateGameOverStatus() {
 	if (!player->IsDead()) {
