@@ -19,6 +19,36 @@ public:
     ~Player();
     void Update();
     void Render();
+<<<<<<< Updated upstream
+=======
+    void Reset(const AEVec2& initialPos);
+    void ClearVelocity();
+
+    // === Inspectable ===
+    void DrawInspector() override;
+    bool CheckIfClicked(const AEVec2& mousePos) override;
+
+    // === IDamageable ===
+    const AEVec2& GetHurtboxPos() const override;
+    const AEVec2& GetHurtboxSize() const override;
+    bool IsDead() const override;
+    bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_ENEMY_ATTACK) override;
+
+    // === Getters ===
+    const AEVec2&       GetPosition()   const;
+    const PlayerStats&  GetStats()      const;
+    float   GetDashCooldownPercentage() const;
+    int     GetHealth()         const;
+    int     GetMaxHealth()      const;
+    float   GetHealthPercentage() const;
+    bool    GetIsFacingRight()  const;
+    bool    GetIsGrounded()     const;
+    AnimState GetAnimState()    const;
+
+    // === Setters ===
+    void SetPosition(const AEVec2& pos);
+
+>>>>>>> Stashed changes
 private:
     PlayerStats stats;
     Sprite sprite;
