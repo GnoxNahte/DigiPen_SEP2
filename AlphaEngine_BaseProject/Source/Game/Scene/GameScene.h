@@ -45,6 +45,10 @@ private:
 	bool draggingBgmSlider = false;
 	bool draggingSfxSlider = false;
 
+	// To prevent accidental double-transitioning when player hits a door, we lock input for a short duration after a room transition
+	static constexpr float kRoomInputLockDuration = 0.10f;
+	float roomInputLockTimer = 0.f;
+
 	// ======================= Pause Overlay (No ImGui) =======================
 	enum class PausePage
 	{

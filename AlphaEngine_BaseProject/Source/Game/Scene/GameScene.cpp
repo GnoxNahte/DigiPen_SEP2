@@ -232,6 +232,7 @@ void GameScene::Init()
 	roomSystem.BuildCurrentRoom();
 	roomTransitionLocked = false;
 	roomSystem.ClearBlockedReturnDir();
+	roomInputLockTimer = 0.f;
 
 	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
 		if (AudioManager::gameMusic)
@@ -278,9 +279,22 @@ void GameScene::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
-	
 	roomSystem.Update(dt);
-	player.Update();
+
+	// room transition input lock countdown
+	if (roomInputLockTimer > 0.f)
+	{
+		roomInputLockTimer -= dt;
+		if (roomInputLockTimer < 0.f)
+			roomInputLockTimer = 0.f;
+	}
+
+	// only allow player input/update when not locked
+	if (roomInputLockTimer <= 0.f)
+	{
+		player.Update();
+	}
+
 #if _DEBUG
 	if (AEInputCheckTriggered(AEVK_T))
 	{
@@ -289,10 +303,12 @@ void GameScene::Update()
 	}
 #endif
 
-	// unlock only when player is back inside room bounds
+	// unlock only when:
+	// 1) input lock finished
+	// 2) player is no longer standing on an exit boundary
 	if (roomTransitionLocked)
 	{
-		if (roomSystem.CheckRoomExit() == DIR_NONE)
+		if (roomInputLockTimer <= 0.f && roomSystem.CheckRoomExit() == DIR_NONE)
 			roomTransitionLocked = false;
 	}
 
@@ -331,12 +347,14 @@ void GameScene::Update()
 				roomSystem.BuildCurrentRoom(cameFrom, &transitionSpawn);
 
 				roomTransitionLocked = true;
+				roomInputLockTimer = kRoomInputLockDuration;
 				return;
 			}
 			else
 			{
 				//ClampPlayerInsideCurrentRoom();
 				roomTransitionLocked = true;
+				roomInputLockTimer = kRoomInputLockDuration;
 				return;
 			}
 		}
