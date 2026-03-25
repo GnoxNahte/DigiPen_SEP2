@@ -164,22 +164,6 @@ void RoomSystem::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSp
     {
         spawn = *forcedSpawn;
     }
-    else if (cameFrom != DIR_NONE)
-    {
-        const AEVec2 roomMin{
-            roomOrigin.x + 0.35f,
-            roomOrigin.y + 0.35f
-        };
-        const AEVec2 roomMax{
-            roomOrigin.x + static_cast<float>(ROOM_COLS) - 0.35f,
-            roomOrigin.y + static_cast<float>(ROOM_ROWS) - 0.35f
-        };
-
-        spawn = AEVec2{
-            std::clamp(spawn.x, roomMin.x, roomMax.x),
-            std::clamp(spawn.y, roomMin.y, roomMax.y)
-        };
-    }
     // First entry into the scene = full reset.
     // Room-to-room transition = just reposition.
     if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
@@ -275,39 +259,44 @@ AEVec2 RoomSystem::ComputeTransitionSpawn(
     RoomID nextRoom,
     const AEVec2& previousPos) const
 {
-    static constexpr float kInset = 0.35f;
+    static constexpr float kEntryPadding = 1.f;
 
     const AEVec2 prevOrigin = GetRoomOrigin(previousRoom);
     const AEVec2 nextOrigin = GetRoomOrigin(nextRoom);
 
-    AEVec2 spawn = previousPos;
+    const AEVec2 playerSize = player.GetStats().playerSize;
+    const float halfW = playerSize.x * 0.5f;
+    const float halfH = playerSize.y * 0.5f;
 
     auto ClampFloat = [](float v, float lo, float hi) -> float
         {
             return (v < lo) ? lo : ((v > hi) ? hi : v);
         };
 
-    const float nextMinX = nextOrigin.x + kInset;
-    const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - kInset;
-    const float nextMinY = nextOrigin.y + kInset;
-    const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - kInset;
+    // Safe playable interior for the PLAYER CENTER, not just a raw room inset
+    const float nextMinX = nextOrigin.x + halfW + kEntryPadding;
+    const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - halfW - kEntryPadding;
+    const float nextMinY = nextOrigin.y + halfH + kEntryPadding;
+    const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - halfH - kEntryPadding;
 
-    if (nextOrigin.x > prevOrigin.x)
+    AEVec2 spawn = previousPos;
+
+    if (nextOrigin.x > prevOrigin.x) // entered room on its left edge
     {
         spawn.x = nextMinX;
         spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
     }
-    else if (nextOrigin.x < prevOrigin.x)
+    else if (nextOrigin.x < prevOrigin.x) // entered room on its right edge
     {
         spawn.x = nextMaxX;
         spawn.y = ClampFloat(previousPos.y, nextMinY, nextMaxY);
     }
-    else if (nextOrigin.y > prevOrigin.y)
+    else if (nextOrigin.y > prevOrigin.y) // entered room on its bottom edge
     {
         spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
         spawn.y = nextMinY;
     }
-    else if (nextOrigin.y < prevOrigin.y)
+    else if (nextOrigin.y < prevOrigin.y) // entered room on its top edge
     {
         spawn.x = ClampFloat(previousPos.x, nextMinX, nextMaxX);
         spawn.y = nextMaxY;

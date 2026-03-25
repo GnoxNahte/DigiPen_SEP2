@@ -244,6 +244,14 @@ Player::AnimState Player::GetAnimState() const
 void Player::SetPosition(const AEVec2& pos)
 {
     position = pos;
+    // Important: do not carry movement from previous room
+    AEVec2Zero(&velocity);
+
+    // Let the next update recalculate fresh collision state
+    isGroundCollided = false;
+    isCeilingCollided = false;
+    isLeftWallCollided = false;
+    isRightWallCollided = false;
 }
 
 void Player::UpdateInput()
