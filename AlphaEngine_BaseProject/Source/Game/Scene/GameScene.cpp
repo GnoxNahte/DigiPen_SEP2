@@ -438,6 +438,23 @@ void GameScene::Render()
 	attackSystem.Render();
 	UI::Render();
 
+	UI::Render();
+
+	// in-game runtime HUD (top-right)
+	if (!IsPaused())
+	{
+		float w = (float)AEGfxGetWindowWidth();
+
+		DrawTextPx(
+			pauseFontRuntime,
+			FormatRunTime(),
+			w - 230.0f,   // top right corner with some margin
+			50.0f,        // leave some margin from the top edge
+			0.85f,        // smaller font size
+			1.f, 1.f, 1.f, 1.f
+		);
+	}
+
 	if (IsPaused())
 	{
 		RenderPauseOverlay();
