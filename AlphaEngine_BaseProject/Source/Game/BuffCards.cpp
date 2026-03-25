@@ -170,7 +170,8 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				}
 			}
 		}
-		if (AEInputCheckTriggered(AEVK_SPACE) || (AEInputCheckTriggered(AEVK_RETURN) && !cardSelectedThisUpdate)) {
+		if ((AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_RETURN))
+			&& !cardSelectedThisUpdate) {
 			cardSelectedThisUpdate = true;
 			if (cards[cardSelected].type != SWITCH_IT_UP &&
 				cards[cardSelected].type != REVITALIZE) {
@@ -179,17 +180,16 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				// instead of a buff application.
 				AddBuff(cards[cardSelected]); // Add the selected card to the current buffs for reference and UI display.
 			}
-			//std::cout << "Selected Card: " << cards[cardSelected].cardName
-			//	<< '\n' << "Rarity: "
-			//	<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
-			//	<< '\n' << "Type:"
-			//	<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
-			//	<< '\n' << "Effect: "
-			//	<< cards[cardSelected].cardEffect << std::endl;
+			CARD_TYPE selectedType = cards[cardSelected].type;
 			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
+			if (selectedType != SWITCH_IT_UP) {
+				Time::GetInstance().SetTimeScale(1.0f);
+			}
+			else {
+				Time::GetInstance().SetTimeScale(0.0f);
+			}
 			AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
 			AudioManager::UnmuffleMusic();
-			Time::GetInstance().SetTimeScale(1.0f);
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
 			// Perform the same rect check again for the click event
@@ -202,6 +202,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					cards[cardSelected].type != REVITALIZE) {
 					AddBuff(cards[cardSelected]);
 				}
+				CARD_TYPE selectedType = cards[cardSelected].type;
+				if (selectedType != SWITCH_IT_UP) {
+					Time::GetInstance().SetTimeScale(1.0f);
+				}
+				else {
+					Time::GetInstance().SetTimeScale(0.0f);
+				}
 				AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
 				AudioManager::UnmuffleMusic();
 				//std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
@@ -211,8 +218,6 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				//	<< BuffCardManager::CardTypeToString(cards[cardSelected].type)
 				//	<< '\n' << "Effect: "
 				//	<< cards[cardSelected].cardEffect << std::endl;
-				ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
-				Time::GetInstance().SetTimeScale(1.0f);
 			}
 		}
 	}
@@ -470,7 +475,7 @@ void BuffCardScreen::Update() {
 	if (AEInputCheckTriggered(AEVK_L)) {
 		ResetFlipSequence();
 	}
-	f32 dt = static_cast<f32>(AEFrameRateControllerGetFrameTime());
+	f32 dt = static_cast<f32>(Time::GetInstance().GetDeltaTime());
 
 	if (BuffCardManager::IsCardSelectedThisUpdate())
 	{
@@ -501,6 +506,7 @@ void BuffCardScreen::Update() {
 // TODO : The buff card type and rarity should be randomized during this function.
 void BuffCardScreen::ResetFlipSequence()
 {
+	BuffCardManager::IsCardSelected() = false;
 	BuffCardManager::IsRoomCleared() = true;
 	Time::GetInstance().SetTimeScale(0); // Pause time to prevent player interaction during shuffle
 	// Reset animation state
