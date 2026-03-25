@@ -101,4 +101,7 @@ public:
     static std::unique_ptr<SFXAudio> playerDash;
     static std::unique_ptr<SFXAudio> playerHurt;
     static std::unique_ptr<SFXAudio> playerDeath;
+
+    // Enemy SFXs
+    static std::unique_ptr<SFXAudio> enemyHurt;
 };

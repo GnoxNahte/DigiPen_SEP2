@@ -14,11 +14,13 @@ std::unique_ptr<BGMAudio> AudioManager::victoryMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::menuMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::creditsMusic = nullptr;
 
-// Declare sound effects.
-//std::unique_ptr<SFXAudio> AudioManager::buffFlipSFX = nullptr;
+// Declare sound effects. 
+// Buff SFXs
 std::unique_ptr<SFXAudio> AudioManager::buffRevealSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffHoverOnceSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
+
+// Player SFXs
 std::unique_ptr<SFXAudio> AudioManager::playerAttack1 = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack2 = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack3 = nullptr;
@@ -29,6 +31,9 @@ std::unique_ptr<SFXAudio> AudioManager::playerLand = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerDash = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerHurt = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
+
+// Enemy SFXs
+std::unique_ptr<SFXAudio> AudioManager::enemyHurt = nullptr;
 
 namespace
 {
@@ -314,6 +319,10 @@ void AudioManager::Init() {
         playerHurt = std::make_unique<SFXAudio>("Assets/music/PlayerHurt.mp3");
     if (!playerDeath)
         playerDeath = std::make_unique<SFXAudio>("Assets/music/PlayerDeath.mp3");
+
+    // Enemy SFXs
+    if (!enemyHurt)
+        enemyHurt = std::make_unique<SFXAudio>("Assets/music/EnemyHurt.mp3");
 }
 
 void AudioManager::Update() {
@@ -369,6 +378,9 @@ void AudioManager::Exit() {
     playerDash.reset();
     playerHurt.reset();
     playerDeath.reset();
+
+    // Reset enemy sfxs.
+    enemyHurt.reset();
 
     // Reset music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);

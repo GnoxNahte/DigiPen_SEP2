@@ -7,6 +7,8 @@
 #include "../UI.h"
 #include "../Environment/MapGrid.h"
 #include "../Time.h"
+#include "../AudioManager.h"
+#include "../../Utils/AEExtras.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -585,6 +587,22 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 
     // --- The rest is your existing ApplyDamage logic ---
     hp -= dmg;
+
+    float minPitch = 0.9f;
+    float maxPitch = 1.8f;
+
+    // Compress large values (log-like behavior without log)
+    float normalized = dmg / (dmg + 50.0f);
+
+    float pitch = minPitch + (maxPitch - minPitch) * normalized;
+
+    // Small randomness so hits don’t sound identical
+    pitch += AEExtras::RandomRange({ -0.15f, 0.15f });
+
+    // Clamp
+    pitch = std::clamp(pitch, minPitch, maxPitch);
+
+    AudioManager::PlaySFX(*AudioManager::enemyHurt, pitch);
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 

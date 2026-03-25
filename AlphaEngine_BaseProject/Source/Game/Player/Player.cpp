@@ -794,7 +794,8 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     }
 
     health -= dmg;
-    AudioManager::PlaySFX(*AudioManager::playerHurt);
+    float pitch = AEExtras::RandomRange({ 0.9f, 1.2f });
+    AudioManager::PlaySFX(*AudioManager::playerHurt, pitch);
     
     float knockbackStrength = max(dmg / stats.maxKnockbackDmg, 1.f) * stats.knockbackAmt;
 

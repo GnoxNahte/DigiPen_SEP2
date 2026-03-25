@@ -9,6 +9,8 @@
 #include "../../Utils/AEExtras.h"
 #include "../Environment/MapGrid.h"
 #include "../UI.h"
+#include "../AudioManager.h"
+#include "../../Utils/AEExtras.h"
 
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
@@ -79,6 +81,22 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
 {
     if (isDead || dmg <= 0 || teleportActive)
         return false;
+
+    float minPitch = 0.9f;
+    float maxPitch = 1.8f;
+
+    // Compress large values (log-like behavior without log)
+    float normalized = dmg / (dmg + 50.0f);
+
+    float pitch = minPitch + (maxPitch - minPitch) * normalized;
+
+    // Small randomness so hits don’t sound identical
+    pitch += AEExtras::RandomRange({ -0.05f, 0.05f });
+
+    // Clamp
+    pitch = std::clamp(pitch, minPitch, maxPitch);
+
+    AudioManager::PlaySFX(*AudioManager::enemyHurt, pitch);
 
     const bool shouldStagger = (timeSinceLastDamage >= staggerResetDelay);
 

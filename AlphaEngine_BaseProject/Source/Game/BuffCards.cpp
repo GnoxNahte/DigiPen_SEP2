@@ -203,6 +203,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					AddBuff(cards[cardSelected]);
 				}
 				CARD_TYPE selectedType = cards[cardSelected].type;
+				ApplyCardEffect(cards[cardSelected]);
 				if (selectedType != SWITCH_IT_UP) {
 					Time::GetInstance().SetTimeScale(1.0f);
 				}
@@ -506,6 +507,10 @@ void BuffCardScreen::Update() {
 // TODO : The buff card type and rarity should be randomized during this function.
 void BuffCardScreen::ResetFlipSequence()
 {
+	textLoading = false;
+	if (TimerSystem::GetInstance().GetTimerByName("Choose Buff Timer")) {
+		TimerSystem::GetInstance().RemoveTimer("Choose Buff Timer");
+	}
 	BuffCardManager::IsCardSelected() = false;
 	BuffCardManager::IsRoomCleared() = true;
 	Time::GetInstance().SetTimeScale(0); // Pause time to prevent player interaction during shuffle
