@@ -170,7 +170,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				}
 			}
 		}
-		if (AEInputCheckTriggered(AEVK_SPACE) && !cardSelectedThisUpdate) {
+		if (AEInputCheckTriggered(AEVK_SPACE) || (AEInputCheckTriggered(AEVK_RETURN) && !cardSelectedThisUpdate)) {
 			cardSelectedThisUpdate = true;
 			if (cards[cardSelected].type != SWITCH_IT_UP &&
 				cards[cardSelected].type != REVITALIZE) {

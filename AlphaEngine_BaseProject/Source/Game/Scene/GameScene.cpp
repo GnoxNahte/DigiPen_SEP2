@@ -154,6 +154,7 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+	Time::GetInstance().SetTimeScale(1.0f);
 	// clear room data from any prior run
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
@@ -421,8 +422,6 @@ void GameScene::Render()
 	//enemyBoss.Render();
 	enemyMgr.RenderAll();
 	attackSystem.Render();
-	UI::Render();
-
 	UI::Render();
 
 	// in-game runtime HUD (top-right)
