@@ -81,7 +81,7 @@ public:
     bool isAttacking = false;
     bool isGrounded = true;
     bool chasing = false;
-    int attackDamage = 10;
+    int attackDamage = 4;
 
     //raise to start chasing player
     float aggroRange = 10.0f;
@@ -90,7 +90,7 @@ public:
 
     bool bossEngaged{ false }; // becomes true once player enters aggro range
     bool phase2 = false;
-    float phase2HpThreshold = 0.60f;
+    float phase2HpThreshold = 0.50f;
 
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
@@ -212,8 +212,8 @@ private:
     bool debugDraw{ false };
 
     // --- Health / damage ---
-    int   maxHP{ 1000 };
-    int   hp{ 1000 };
+    int   maxHP{ 500 };
+    int   hp{ 500 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };

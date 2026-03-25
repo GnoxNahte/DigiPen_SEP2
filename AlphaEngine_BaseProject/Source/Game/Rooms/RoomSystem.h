@@ -26,6 +26,7 @@ public:
         const AEVec2* forcedSpawn = nullptr);
 
     void ClearRuntimeRoomObjects();
+    void Update(float dt);
 
     RoomDirection CheckRoomExit() const;
     AEVec2 GetRoomOrigin(RoomID id) const;
@@ -54,4 +55,7 @@ private:
 
     EnemyBoss* activeBoss = nullptr;
     RoomDirection blockedReturnDir = DIR_NONE;
+    bool wallSpawnPending = false;     // NEW
+    float wallTimer = 0.0f;            // NEW
+    static constexpr float kWallSpawnDelay = 0.25f; // NEW
 };
