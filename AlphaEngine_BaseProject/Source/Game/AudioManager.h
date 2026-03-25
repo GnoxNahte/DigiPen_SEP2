@@ -66,26 +66,37 @@ public:
     static void UnmuffleMusic();
     static void RefreshAllMusicVolumes();
 
-
-    // Background Music
-    static std::unique_ptr<BGMAudio> bossIntroMusic;
-    static std::unique_ptr<BGMAudio> bossFightMusic;
-    static std::unique_ptr<BGMAudio> gameMusic;
-    static std::unique_ptr<BGMAudio> bossInstrMusic;
-    static std::unique_ptr<BGMAudio> gameOverMusic;
-    static std::unique_ptr<BGMAudio> victoryMusic;
-    //static std::unique_ptr<BGMAudio> menuMusic;
-
-    // Sound Effects
-    //static std::unique_ptr<SFXAudio> buffFlipSFX;
-    static std::unique_ptr<SFXAudio> buffRevealSFX;
-    static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
-    static std::unique_ptr<SFXAudio> buffConfirmSFX;
-    static std::unique_ptr<SFXAudio> playerAttack1;
-    static std::unique_ptr<SFXAudio> playerAttack2;
-    static std::unique_ptr<SFXAudio> playerAttack3;
-
+    // Reset functions
     static void StopAllMusic();
     static void ResetRuntimeState();
     static void ResetForRestart();
+
+
+    /*=================================================
+    *                Background Music                 |
+    =================================================*/
+    static std::unique_ptr<BGMAudio> bossIntroMusic;
+    static std::unique_ptr<BGMAudio> bossFightMusic;
+    static std::unique_ptr<BGMAudio> gameMusic;
+    static std::unique_ptr<BGMAudio> gameOverMusic;
+    static std::unique_ptr<BGMAudio> victoryMusic;
+    static std::unique_ptr<BGMAudio> menuMusic;
+    static std::unique_ptr<BGMAudio> creditsMusic;
+
+    /*=================================================
+    *                 Sound Effects                   |
+    =================================================*/
+    // Buff SFXs
+    static std::unique_ptr<SFXAudio> buffRevealSFX;
+    static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
+    static std::unique_ptr<SFXAudio> buffConfirmSFX;
+
+    // Player SFXs
+    static std::unique_ptr<SFXAudio> playerAttack1;
+    static std::unique_ptr<SFXAudio> playerAttack2;
+    static std::unique_ptr<SFXAudio> playerAttack3;
+    static std::unique_ptr<SFXAudio> playerAirAttack;
+    static std::unique_ptr<SFXAudio> playerAirAttackImpact;
+    static std::unique_ptr<SFXAudio> playerJump;
+    static std::unique_ptr<SFXAudio> playerLand;
 };

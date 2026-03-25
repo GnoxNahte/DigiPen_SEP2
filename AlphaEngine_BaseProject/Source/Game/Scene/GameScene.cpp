@@ -248,11 +248,11 @@ void GameScene::Update()
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
 		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart) {
 			pausePage = PausePage::Menu;
-			AudioManager::UnmuffleMusic();
+			//AudioManager::UnmuffleMusic();
 		}
 		else
 		{
-			AudioManager::MuffleMusic();
+			//AudioManager::MuffleMusic();
 			TogglePause();
 		}
 	}

@@ -9,9 +9,10 @@
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::bossFightMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::gameMusic = nullptr;
-std::unique_ptr<BGMAudio> AudioManager::bossInstrMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::gameOverMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::victoryMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::menuMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::creditsMusic = nullptr;
 
 // Declare sound effects.
 //std::unique_ptr<SFXAudio> AudioManager::buffFlipSFX = nullptr;
@@ -21,6 +22,10 @@ std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack1 = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack2 = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack3 = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerAirAttack = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerAirAttackImpact = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerJump = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerLand = nullptr;
 
 namespace
 {
@@ -223,9 +228,6 @@ void AudioManager::RefreshAllMusicVolumes()
     if (bossFightMusic && bossFightMusic->IsActive())
         bossFightMusic->ApplyFinalVolume();
 
-    if (bossInstrMusic && bossInstrMusic->IsActive())
-        bossInstrMusic->ApplyFinalVolume();
-
     if (gameMusic && gameMusic->IsActive())
         gameMusic->ApplyFinalVolume();
 
@@ -234,6 +236,12 @@ void AudioManager::RefreshAllMusicVolumes()
     }
     if (victoryMusic && victoryMusic->IsActive()) {
         victoryMusic->ApplyFinalVolume();
+    }
+    if (menuMusic && menuMusic->IsActive()) {
+        menuMusic->ApplyFinalVolume();
+    }
+    if (creditsMusic && creditsMusic->IsActive()) {
+        creditsMusic->ApplyFinalVolume();
     }
 }
 void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& pitch) {
@@ -264,16 +272,16 @@ void AudioManager::Init() {
         bossFightMusic = std::make_unique<BGMAudio>("Assets/music/BossFight.mp3");
     if (!gameMusic)
         gameMusic = std::make_unique<BGMAudio>("Assets/music/GameBGM.mp3");
-    if (!bossInstrMusic)
-        bossInstrMusic = std::make_unique<BGMAudio>("Assets/music/BossInstrumental.mp3");
     if (!gameOverMusic)
         gameOverMusic = std::make_unique<BGMAudio>("Assets/music/Defeat.mp3");
     if (!victoryMusic)
         victoryMusic = std::make_unique<BGMAudio>("Assets/music/Victory.mp3");
+    if (!menuMusic)
+        menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
+    if (!creditsMusic)
+        creditsMusic = std::make_unique<BGMAudio>("Assets/music/Credits.mp3");
 
     // Load sound effects here.
-    //if (!buffFlipSFX)
-    //    buffFlipSFX = std::make_unique<SFXAudio>("Assets/music/BuffFlipSFX.mp3");
     if (!buffRevealSFX)
         buffRevealSFX = std::make_unique<SFXAudio>("Assets/music/BuffRevealSFX.mp3");
     if (!buffHoverOnceSFX)
@@ -281,18 +289,19 @@ void AudioManager::Init() {
     if (!buffConfirmSFX)
         buffConfirmSFX = std::make_unique<SFXAudio>("Assets/music/BuffConfirmSFX.mp3");
     if (!playerAttack1)
-        playerAttack1 = std::make_unique<SFXAudio>("Assets/music/Player_Attack1.mp3");
+        playerAttack1 = std::make_unique<SFXAudio>("Assets/music/PlayerAttack1.mp3");
     if (!playerAttack2)
-        playerAttack2 = std::make_unique<SFXAudio>("Assets/music/Player_Attack2.mp3");
+        playerAttack2 = std::make_unique<SFXAudio>("Assets/music/PlayerAttack2.mp3");
     if (!playerAttack3)
-        playerAttack3 = std::make_unique<SFXAudio>("Assets/music/Player_Attack3.mp3");
-
-    //if (!menuMusic)
-    //    menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
-    //bossIntroMusic->Play(bossIntroMusic->GetVolume());
-    //bossIntroMusic->SetActive(true);
-    //bossFightMusic->Play(0.0f);
-    //bossFightMusic->SetActive(true);
+        playerAttack3 = std::make_unique<SFXAudio>("Assets/music/PlayerAttack3.mp3");
+    if (!playerAirAttack)
+        playerAirAttack = std::make_unique<SFXAudio>("Assets/music/PlayerAirAttack.mp3");
+    if (!playerAirAttackImpact)
+        playerAirAttackImpact = std::make_unique<SFXAudio>("Assets/music/PlayerAirAttackImpact.mp3");
+    if (!playerJump)
+        playerJump = std::make_unique<SFXAudio>("Assets/music/PlayerJump.mp3");
+    if (!playerLand)
+        playerLand = std::make_unique<SFXAudio>("Assets/music/PlayerLand.mp3");
 }
 
 void AudioManager::Update() {
@@ -325,17 +334,23 @@ void AudioManager::Exit() {
 
     bossIntroMusic.reset();
     bossFightMusic.reset();
-    bossInstrMusic.reset();
     gameMusic.reset();
     gameOverMusic.reset();
     victoryMusic.reset();
+    menuMusic.reset();
+    creditsMusic.reset();
 
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
     buffConfirmSFX.reset();
+
     playerAttack1.reset();
     playerAttack2.reset();
     playerAttack3.reset();
+    playerAirAttack.reset();
+    playerAirAttackImpact.reset();
+    playerJump.reset();
+    playerLand.reset();
 
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
@@ -383,7 +398,6 @@ void AudioManager::StopAllMusic()
     if (gameMusic) gameMusic->Stop();
     if (bossIntroMusic) bossIntroMusic->Stop();
     if (bossFightMusic) bossFightMusic->Stop();
-    if (bossInstrMusic) bossInstrMusic->Stop();
     if (gameOverMusic) gameOverMusic->Stop();
     if (victoryMusic) victoryMusic->Stop();
 }
@@ -409,9 +423,3 @@ void AudioManager::ResetForRestart()
     ResetRuntimeState();
     gCurrTrack = nullptr;
 }
-
-
-
-
-
-
