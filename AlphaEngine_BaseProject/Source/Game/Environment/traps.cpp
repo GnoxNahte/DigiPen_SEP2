@@ -292,8 +292,7 @@ void LavaPool::Render() const
 
     const Box& box = GetBox();
 
-    // 假设 1 个地图格子 = 1.0f x 1.0f world unit
-    // 如果你的 tile size 不是 1.0f，就改这里
+
     constexpr float tileW = 1.0f;
     constexpr float tileH = 1.0f;
 
