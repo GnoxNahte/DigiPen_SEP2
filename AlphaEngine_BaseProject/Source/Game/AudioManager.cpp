@@ -400,12 +400,14 @@ void AudioManager::ResetRuntimeState()
     gIsPlayingBoss2ndPhase = false;
     gIsPlayingGOver = false;
     gIsPlayingVictory = false;
+    gCurrTrack = nullptr;
 }
 
 void AudioManager::ResetForRestart()
 {
     StopAllMusic();
     ResetRuntimeState();
+    gCurrTrack = nullptr;
 }
 
 

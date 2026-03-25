@@ -417,6 +417,7 @@ void GameScene::Update()
 		}
 		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
+		return; // << This return stops the music from playing for a clean restart.
 	}
 	if (player.IsDead()) {
 		AudioManager::PlayGameOverMusic();
