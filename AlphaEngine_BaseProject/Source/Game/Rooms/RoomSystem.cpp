@@ -194,7 +194,16 @@ void RoomSystem::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSp
     if (snapCamera)
         camera.Update();
 
-    ApplyBlockedReturnBarrier();
+    if (blockedReturnDir != DIR_NONE)
+    {
+        wallSpawnPending = true;
+        wallTimer = kWallSpawnDelay;
+    }
+    else
+    {
+        wallSpawnPending = false;
+        wallTimer = 0.0f;
+    }
 
     if (roomMgr.GetCurrentRoomID() == ROOM_11)
         UI::StartBossIntro();
@@ -206,6 +215,28 @@ void RoomSystem::ClearRuntimeRoomObjects()
     enemyMgr = EnemyManager{};
     activeBoss = nullptr;
     enemyMgr.SetBoss(nullptr);
+}
+
+void RoomSystem::Update(float dt)
+{
+    if (!wallSpawnPending)
+        return;
+
+    if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
+    {
+        wallSpawnPending = false;
+        wallTimer = 0.0f;
+        return;
+    }
+
+    wallTimer -= dt;
+
+    if (wallTimer > 0.0f)
+        return;
+
+    ApplyBlockedReturnBarrier();
+    wallSpawnPending = false;
+    wallTimer = 0.0f;
 }
 
 RoomDirection RoomSystem::CheckRoomExit() const
@@ -305,6 +336,8 @@ RoomDirection RoomSystem::GetBlockedReturnDir() const
 void RoomSystem::ClearBlockedReturnDir()
 {
     blockedReturnDir = DIR_NONE;
+    wallSpawnPending = false;
+    wallTimer = 0.0f;
 }
 
 EnemyBoss* RoomSystem::GetActiveBoss()
@@ -321,12 +354,7 @@ void RoomSystem::ApplyBlockedReturnBarrier()
 {
     if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
         return;
-    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-
-    if (wallTimer > 0.f)
-    {
-        wallTimer -= dt;
-    }
+    //const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
     const int ox = static_cast<int>(origin.x);
     const int oy = static_cast<int>(origin.y);
@@ -359,5 +387,5 @@ void RoomSystem::ApplyBlockedReturnBarrier()
         break;
     }
 
-    wallTimer = 0.5f;
+
 }
