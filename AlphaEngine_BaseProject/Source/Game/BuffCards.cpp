@@ -188,7 +188,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			//	<< cards[cardSelected].cardEffect << std::endl;
 			ApplyCardEffect(cards[cardSelected]); // This happens after to account for shuffle auto selecting the next card.
 			AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 			Time::GetInstance().SetTimeScale(1.0f);
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
@@ -203,7 +203,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 					AddBuff(cards[cardSelected]);
 				}
 				AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
-				AudioManager::UnmuffleGameMusic();
+				AudioManager::UnmuffleMusic();
 				//std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
 				//	<< '\n' << "Rarity: "
 				//	<< BuffCardManager::CardRarityToString(cards[cardSelected].rarity)
@@ -259,7 +259,7 @@ Randomize card types and rarities for the current set of cards.
 Called once per shuffle.
 --------------------------------------------------------------*/
 void BuffCardManager::RandomizeCards(int numCards) {
-	AudioManager::MuffleGameMusic();
+	AudioManager::MuffleMusic();
 	randomizedCards.clear();
 	std::vector<CARD_TYPE> usedTypes; // track already picked types
 

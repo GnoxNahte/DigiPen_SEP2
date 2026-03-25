@@ -4,6 +4,7 @@
 
 #include "../UI.h"
 #include <algorithm>
+#include "../Time.h"
 
 RoomSystem::RoomSystem(
     MapGrid& mapRef,
@@ -179,21 +180,28 @@ void RoomSystem::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSp
             std::clamp(spawn.y, roomMin.y, roomMax.y)
         };
     }
-
     // First entry into the scene = full reset.
     // Room-to-room transition = just reposition.
-   /* if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
+    if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
         player.Reset(spawn);
     else
         player.SetPosition(spawn);
-        */
 
     const bool snapCamera = (cameFrom == DIR_NONE);
     camera.SetFollow(&player.GetPosition(), 0.f, 0.f, snapCamera);
     if (snapCamera)
         camera.Update();
 
-    ApplyBlockedReturnBarrier();
+    if (blockedReturnDir != DIR_NONE)
+    {
+        wallSpawnPending = true;
+        wallTimer = kWallSpawnDelay;
+    }
+    else
+    {
+        wallSpawnPending = false;
+        wallTimer = 0.0f;
+    }
 
     if (roomMgr.GetCurrentRoomID() == ROOM_11)
         UI::StartBossIntro();
@@ -205,6 +213,28 @@ void RoomSystem::ClearRuntimeRoomObjects()
     enemyMgr = EnemyManager{};
     activeBoss = nullptr;
     enemyMgr.SetBoss(nullptr);
+}
+
+void RoomSystem::Update(float dt)
+{
+    if (!wallSpawnPending)
+        return;
+
+    if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
+    {
+        wallSpawnPending = false;
+        wallTimer = 0.0f;
+        return;
+    }
+
+    wallTimer -= dt;
+
+    if (wallTimer > 0.0f)
+        return;
+
+    ApplyBlockedReturnBarrier();
+    wallSpawnPending = false;
+    wallTimer = 0.0f;
 }
 
 RoomDirection RoomSystem::CheckRoomExit() const
@@ -304,6 +334,8 @@ RoomDirection RoomSystem::GetBlockedReturnDir() const
 void RoomSystem::ClearBlockedReturnDir()
 {
     blockedReturnDir = DIR_NONE;
+    wallSpawnPending = false;
+    wallTimer = 0.0f;
 }
 
 EnemyBoss* RoomSystem::GetActiveBoss()
@@ -320,7 +352,7 @@ void RoomSystem::ApplyBlockedReturnBarrier()
 {
     if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
         return;
-
+    //const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
     const int ox = static_cast<int>(origin.x);
     const int oy = static_cast<int>(origin.y);
@@ -352,4 +384,6 @@ void RoomSystem::ApplyBlockedReturnBarrier()
     default:
         break;
     }
+
+
 }

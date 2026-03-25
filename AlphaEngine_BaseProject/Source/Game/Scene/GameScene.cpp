@@ -1,4 +1,4 @@
-﻿#include "GameScene.h"
+#include "GameScene.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../../Utils/AEExtras.h"
 #include "../Time.h"
@@ -149,65 +149,61 @@ GameScene::~GameScene()
 		pauseFontDesc = -1;
 	}
 	AudioManager::Exit();
-	SpikePlate::UnloadSharedRenderResources();
+	TrapManager::UnloadAllSharedRenderResources();
 }
 
 void GameScene::Init()
 {
-	SpikePlate::LoadSharedRenderResources();
+	// clear room data from any prior run
 	roomMgr.Clear();
+	roomSystem.ClearBlockedReturnDir();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};
 	RoomID startRoom = ROOM_1;
 
-	if (!gPendingLevelPath.empty())
+	const std::string pathToLoad =
+		gPendingLevelPath.empty() ? "Assets/Levels/gamescene.lvl" : gPendingLevelPath;
+
+	std::cout << "pathToLoad: " << pathToLoad << "\n";
+
+	LevelData lvl;
+	if (LoadLevelFromFile(pathToLoad.c_str(), lvl))
 	{
-		std::cout << "pending path: " << gPendingLevelPath << "\n";
+		std::cout << "load success\n";
+		std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
 
-		LevelData lvl;
-		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
-		{
-			std::cout << "load success\n";
-			std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
-
-			loadedFromFile = true;
-			loadedLevel = lvl;
-			gLastLoadedLevelPath = gPendingLevelPath;
-			BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
-			gPendingLevelPath.clear();
-		}
-		else
-		{
-			std::cout << "load failed\n";
-		}
-
-		gPendingLevelPath.clear();
+		loadedFromFile = true;
+		loadedLevel = lvl;
+		gLastLoadedLevelPath = pathToLoad;
+		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
 	else
 	{
-		std::cout << "pending path empty\n";
+		std::cout << "load failed\n";
 	}
+
+	gPendingLevelPath.clear();
 
 	if (!loadedFromFile)
 	{
-		LevelData lvl{};
-		lvl.rows = ROOM_ROWS;
-		lvl.cols = ROOM_COLS;
-		lvl.spawn = { 2.5f, 3.0f };
-		lvl.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
+		LevelData fallback{};
+		fallback.rows = ROOM_ROWS;
+		fallback.cols = ROOM_COLS;
+		fallback.spawn = { 2.5f, 3.0f };
+		fallback.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
 
 		for (int x = 0; x < ROOM_COLS; ++x)
-			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
+			fallback.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
 
-		loadedLevel = lvl;
+		loadedLevel = fallback;
 		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
 
 	mapCols = loadedLevel.cols;
 	mapRows = loadedLevel.rows;
 
-	// Rebuild full level map
+	// rebuild full map from loaded level
 	map.~MapGrid();
 	new (&map) MapGrid(mapCols, mapRows);
 
@@ -215,44 +211,31 @@ void GameScene::Init()
 	{
 		for (int x = 0; x < mapCols; ++x)
 		{
-			int v = loadedLevel.tiles[(size_t)y * (size_t)mapCols + (size_t)x];
+			int v = loadedLevel.tiles[(size_t)y * mapCols + x];
 			if (v < 0 || v >= MapTile::typeCount)
-				v = (int)MapTile::Type::NONE;
+				v = 0;
 
 			map.SetTile(x, y, (MapTile::Type)v);
 		}
 	}
 
-	// Rebuild camera with full level bounds
+	// rebuild camera using full level bounds
 	camera.~Camera();
 	new (&camera) Camera(
 		{ 0.f, 0.f },
 		{ (float)mapCols, (float)mapRows },
 		64.0f
 	);
-	//may move roommgr away, for now room build functions is here =====
+
 	roomMgr.SetCurrentRoom(startRoom);
-	const RoomData& r = roomMgr.GetCurrentRoom();
-	std::cout << "startRoom=" << (int)startRoom
-		<< " L=" << (int)r.leftRoom
-		<< " R=" << (int)r.rightRoom
-		<< " T=" << (int)r.topRoom
-		<< " B=" << (int)r.bottomRoom
-		<< "\n";
 	roomSystem.BuildCurrentRoom();
 	roomTransitionLocked = false;
 	roomSystem.ClearBlockedReturnDir();
-	//AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
-	std::cout << "lvl.cols=" << loadedLevel.cols
-		<< " lvl.rows=" << loadedLevel.rows
-		<< "\n";
+
 	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
-		if (AudioManager::gameMusic)   // make sure the pointer is initialized
-			AudioManager::gameMusic->Play(1.0f);  // pass volume
+		if (AudioManager::gameMusic)
+			AudioManager::gameMusic->Play(1.0f);
 	}
-
-
-	player.Reset({ 1, 7.5 });
 }
 
 void GameScene::Update()
@@ -263,11 +246,11 @@ void GameScene::Update()
 		// If we are inside sub-pages, ESC returns to menu instead of unpausing
 		if (pausePage == PausePage::Settings || pausePage == PausePage::ConfirmQuit || pausePage == PausePage::ConfirmRestart) {
 			pausePage = PausePage::Menu;
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 		}
 		else
 		{
-			AudioManager::MuffleGameMusic();
+			AudioManager::MuffleMusic();
 			TogglePause();
 		}
 	}
@@ -294,6 +277,8 @@ void GameScene::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
+	
+	roomSystem.Update(dt);
 	player.Update();
 #if _DEBUG
 	if (AEInputCheckTriggered(AEVK_T))
@@ -355,7 +340,10 @@ void GameScene::Update()
 			}
 		}
 	}
+
 	camera.Update();
+
+	player.Update();
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
@@ -410,7 +398,11 @@ void GameScene::Update()
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
 		}
+		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
+	}
+	if (player.IsDead()) {
+		AudioManager::PlayGameOverMusic();
 	}
 }
 
@@ -432,6 +424,23 @@ void GameScene::Render()
 	enemyMgr.RenderAll();
 	attackSystem.Render();
 	UI::Render();
+
+	UI::Render();
+
+	// in-game runtime HUD (top-right)
+	if (!IsPaused())
+	{
+		float w = (float)AEGfxGetWindowWidth();
+
+		DrawTextPx(
+			pauseFontRuntime,
+			FormatRunTime(),
+			w - 230.0f,   // top right corner with some margin
+			50.0f,        // leave some margin from the top edge
+			0.85f,        // smaller font size
+			1.f, 1.f, 1.f, 1.f
+		);
+	}
 
 	if (IsPaused())
 	{
@@ -470,6 +479,7 @@ void GameScene::Render()
 		{
 			gPendingLevelPath = gLastLoadedLevelPath;
 		}
+		AudioManager::ResetForRestart();
 		GSM::ChangeScene(SceneState::GS_GAME);
 	}
 #endif
@@ -635,7 +645,7 @@ void GameScene::UpdatePauseInput()
 		if (IsClicked(btnResume))
 		{
 			TogglePause();
-			AudioManager::UnmuffleGameMusic();
+			AudioManager::UnmuffleMusic();
 			return;
 		}
 		if (IsClicked(btnRestart))
@@ -704,6 +714,7 @@ void GameScene::UpdatePauseInput()
 			{
 				gPendingLevelPath = gLastLoadedLevelPath;
 			}
+			AudioManager::ResetForRestart();
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
 		}
@@ -901,118 +912,121 @@ void GameScene::RenderPauseOverlay()
 	}
 	// ============================== Active Buffs (top-right) ==============================
 	// Draw only existing buffs. 1 row max, 4 cards per row. No placeholders.
-	const auto& buffs = BuffCardManager::GetCurrentBuffs();
-	if (!buffs.empty())
-	{
-		const int cols = 3;
-
-		// Bigger cards
-		const float cardW = 180.0f;
-		const float cardH = 255.0f;
-		const float gapX = 20.0f;   // horizontal gap 
-		const float gapY = 20.0f;   // vertical gap between rows 
-
-		// Anchor: move this block to the right & top area (match your red mark)
-		// (0,0) is top-left in pixel coordinates
-		const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
-		const float anchorY = 110.0f;      // increase => move down, decrease => move up
-
-		// Title position (aligned with cards)
-		DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 80.0f, 0.75f, 1, 1, 1, 1);
-
-		const int count = (int)buffs.size();
-		const int drawCount = count;
-
-
-		for (int i = 0; i < drawCount; ++i)
+	if (pausePage == PausePage::Menu) {
+		const auto& buffs = BuffCardManager::GetCurrentBuffs();
+		if (!buffs.empty())
 		{
-			const BuffCard& b = buffs[i];
+			const int cols = 3;
 
-			UIRect card;
-			card.size = { cardW, cardH };
+			// Bigger cards
+			const float cardW = 180.0f;
+			const float cardH = 255.0f;
+			const float gapX = 20.0f;   // horizontal gap 
+			const float gapY = 20.0f;   // vertical gap between rows 
 
-			// UIRect.pos is center-based (pixel coords)
-			const int cx = i % cols;   // column index: 0,1,2
-			const int cy = i / cols;   // row index: 0,0,0,1,1,1,...
+			// Anchor: move this block to the right & top area (match your red mark)
+			// (0,0) is top-left in pixel coordinates
+			const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
+			const float anchorY = 110.0f;      // increase => move down, decrease => move up
 
-			const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
-			const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
-			card.pos = { centerX, centerY };
+			// Title position (aligned with cards)
+			DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 80.0f, 0.75f, 1, 1, 1, 1);
 
-			// Pick buff front texture by card type; fallback to card back if missing
-			AEGfxTexture* tex = nullptr;
-			int typeIdx = (int)b.type;
-			if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
-				tex = pauseBuffTex[typeIdx];
-			if (!tex)
-				tex = pauseCardBackTex;
+			const int count = (int)buffs.size();
+			const int drawCount = count;
 
-			DrawTexturePanel(tex, card, 1.0f);
 
-			// --- draw glow (rarity emission) ---
-			AEGfxTexture* glow = nullptr;
-			int r = (int)b.rarity;
-			if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
-
-			if (glow)
+			for (int i = 0; i < drawCount; ++i)
 			{
-				const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen
-				UIRect glowRect = card;
-				glowRect.size.x *= EMISSION_SCALE;
-				glowRect.size.y *= EMISSION_SCALE;
-				// pos same as card center, so glow is centered on card
-				DrawTexturePanel(glow, glowRect, 1.0f);
-			}
+				const BuffCard& b = buffs[i];
 
-			// Hover tooltip (text only)
-			if (IsMouseOver(card))
-			{
-				// tooltip panel
-				DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
+				UIRect card;
+				card.size = { cardW, cardH };
 
-				f32 red{}, green{}, blue{};
-				switch (b.rarity) { // Match sprite hex colors
-				case (RARITY_UNCOMMON):
-					red = 0.015f;
-					green = 1.0f;
-					blue = 0.0f;
-					break;
-				case(RARITY_RARE):
-					red = 0.0f;
-					green = 0.384f;
-					blue = 1.0f;
-					break;
-				case(RARITY_EPIC):
-					red = 0.584f;
-					green = 0.0f;
-					blue = 1.0f;
-					break;
-				case(RARITY_LEGENDARY):
-					red = 1.0f;
-					green = 0.733f;
-					blue = 0.0f;
-					break;
+				// UIRect.pos is center-based (pixel coords)
+				const int cx = i % cols;   // column index: 0,1,2
+				const int cy = i / cols;   // row index: 0,0,0,1,1,1,...
+
+				const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
+				const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
+				card.pos = { centerX, centerY };
+
+				// Pick buff front texture by card type; fallback to card back if missing
+				AEGfxTexture* tex = nullptr;
+				int typeIdx = (int)b.type;
+				if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
+					tex = pauseBuffTex[typeIdx];
+				if (!tex)
+					tex = pauseCardBackTex;
+
+				DrawTexturePanel(tex, card, 1.0f);
+
+				// --- draw glow (rarity emission) ---
+				AEGfxTexture* glow = nullptr;
+				int r = (int)b.rarity;
+				if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
+
+				if (glow)
+				{
+					const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen
+					UIRect glowRect = card;
+					glowRect.size.x *= EMISSION_SCALE;
+					glowRect.size.y *= EMISSION_SCALE;
+					// pos same as card center, so glow is centered on card
+					DrawTexturePanel(glow, glowRect, 1.0f);
 				}
 
-				// Title (m04)
-				DrawTextPx(
-					pauseFontSmall,
-					b.cardName,
-					120.0f, h - 125.0f, 1.0f,
-					red, green, blue, 1
-				);
+				// Hover tooltip (text only)
+				if (IsMouseOver(card))
+				{
+					// tooltip panel
+					DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
 
-				// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
-				const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
+					f32 red{}, green{}, blue{};
+					switch (b.rarity) { // Match sprite hex colors
+					case (RARITY_UNCOMMON):
+						red = 0.015f;
+						green = 1.0f;
+						blue = 0.0f;
+						break;
+					case(RARITY_RARE):
+						red = 0.0f;
+						green = 0.384f;
+						blue = 1.0f;
+						break;
+					case(RARITY_EPIC):
+						red = 0.584f;
+						green = 0.0f;
+						blue = 1.0f;
+						break;
+					case(RARITY_LEGENDARY):
+						red = 1.0f;
+						green = 0.733f;
+						blue = 0.0f;
+						break;
+					}
 
-				DrawTextPx(
-					pauseFontDesc,
-					desc,
-					120.0f, h - 65.0f, 1.0f,
-					0.9f, 0.9f, 0.9f, 1.0f
-				);
+					// Title (m04)
+					DrawTextPx(
+						pauseFontSmall,
+						b.cardName,
+						120.0f, h - 125.0f, 1.0f,
+						red, green, blue, 1
+					);
+
+					// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
+					const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
+
+					DrawTextPx(
+						pauseFontDesc,
+						desc,
+						120.0f, h - 65.0f, 1.0f,
+						0.9f, 0.9f, 0.9f, 1.0f
+					);
+				}
 			}
 		}
 	}
 	// ======================================================================================
+
 }

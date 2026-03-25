@@ -77,20 +77,26 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
 
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 {
-    if (isDead || dmg <= 0 || teleportActive || invulnTimer > 0.f || hurtTimeLeft > 0.f)
+    if (isDead || dmg <= 0 || teleportActive)
         return false;
+
+    const bool shouldStagger = (timeSinceLastDamage >= staggerResetDelay);
 
     hp -= dmg;
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
+    // every successful hit resets the stagger rearm timer
+    timeSinceLastDamage = 0.f;
+
     if (hp <= 0)
     {
-        hp = 0; 
+        hp = 0;
         isDead = true;
         sprite.SetState(DEATH, false, nullptr);
         deathTimeLeft = GetAnimDurationSec(sprite, DEATH);
         if (deathTimeLeft <= 0.f)
             deathTimeLeft = 0.5f; // fallback
+
         attack.Reset();
         velocity = AEVec2{ 0.f, 0.f };
         chasing = false;
@@ -101,21 +107,23 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
         specialSpawnTimer = 0.f;
         g_spellcastUntil5thSpawn = false;
         g_specialAttacks.clear();
-        // (optional: stop specials/teleport etc)
         return true;
     }
 
-    // start hurt lock
-    hurtTimeLeft = GetAnimDurationSec(sprite, HURT);
-    if (hurtTimeLeft < minHurtDuration) hurtTimeLeft = minHurtDuration;
+    // Only the first hit after a quiet period causes stagger / hurt animation.
+    if (shouldStagger)
+    {
+        hurtTimeLeft = GetAnimDurationSec(sprite, HURT);
+        if (hurtTimeLeft < minHurtDuration)
+            hurtTimeLeft = minHurtDuration;
 
-    attack.Reset();
-    velocity = AEVec2{ 0.f, 0.f };
-    chasing = false;
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
 
-    sprite.SetState(HURT);
+        sprite.SetState(HURT);
+    }
 
-    invulnTimer = invulnDuration;
     return true;
 }
 
@@ -360,6 +368,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 {
 
 	float dt = (float)AEFrameRateControllerGetFrameTime();
+    timeSinceLastDamage += dt;
 
     auto UpdateBossParticles = [&]()
         {
@@ -394,6 +403,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 
             // Intimidating color (purple aura).
             particleSystem.emitter.tint = { 0.65f, 0.15f, 0.95f, 0.75f };
+
+            if (phase2)
+            {
+                particleSystem.emitter.tint = { 0.5f, 0.f, 0.f, 0.75f };
+            }
             //particleSystem.emitter.tint = { 0.18f, 0.09f, 0.20f, 0.8f };
 
             // Spawn even when idle; optionally increase when moving
@@ -479,13 +493,6 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 
 
         return;
-    }
-
-    // Tick invulnerability
-    if (invulnTimer > 0.f)
-    {
-        invulnTimer -= dt;
-        if (invulnTimer < 0.f) invulnTimer = 0.f;
     }
 
     if (hurtTimeLeft > 0.f)
@@ -1122,7 +1129,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
 
     deathTimeLeft = 0.f;
     hurtTimeLeft = 0.f;
-    invulnTimer = 0.f;
+    timeSinceLastDamage = staggerResetDelay;
 
     attack.Reset();
 

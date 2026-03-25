@@ -81,7 +81,7 @@ public:
     bool isAttacking = false;
     bool isGrounded = true;
     bool chasing = false;
-    int attackDamage = 10;
+    int attackDamage = 4;
 
     //raise to start chasing player
     float aggroRange = 10.0f;
@@ -90,7 +90,7 @@ public:
 
     bool bossEngaged{ false }; // becomes true once player enters aggro range
     bool phase2 = false;
-    float phase2HpThreshold = 0.60f;
+    float phase2HpThreshold = 0.50f;
 
     //particle systemmmmm
     ParticleSystem particleSystem{ 30, {} };
@@ -129,7 +129,7 @@ public:
     bool CheckIfClicked(const AEVec2& mousePos) override;
 
     int   GetAttackDamage() const { return attackDamage; }
-    bool IsInvulnerable() const { return invulnTimer > 0.f; }
+    bool IsInvulnerable() const { return teleportActive; }
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
@@ -212,15 +212,17 @@ private:
     bool debugDraw{ false };
 
     // --- Health / damage ---
-    int   maxHP{ 1000 };
-    int   hp{ 1000 };
+    int   maxHP{ 500 };
+    int   hp{ 500 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };
     float minHurtDuration{ 0.30f };
 
-    float invulnTimer{ 0.0f };
-    float invulnDuration{ 0.20f };
+    // How long since the boss last took damage.
+// A new hit only causes HURT if this has reached staggerResetDelay.
+    float timeSinceLastDamage{ 999.0f };
+    float staggerResetDelay{ 1.25f };
 
     float deathTimeLeft{ 0.0f };
 

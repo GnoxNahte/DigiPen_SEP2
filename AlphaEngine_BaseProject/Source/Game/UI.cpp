@@ -89,9 +89,10 @@ void UI::Render() {
 	}
 	if (showJumpLedgeTutorial && !jumpOffLedgeTutorialDone && player->GetIsGrounded()) {
 		PlayJumpOffLedgeTutorial();
+		//std::cout << "Pos y : " << player->GetPosition().y << '\n';
 	}
-	if (jumpOffLedgeTutorialDone && !slamAttackTutorialDone 
-		&& static_cast<int>(player->GetPosition().x) == 17 && static_cast<int>(player->GetPosition().y) >= 9) {
+	if (!slamAttackTutorialDone 
+		&& player->GetPosition().x >= 17.5f && player->GetPosition().y >= 8.0f) {
 		PlaySlamAttackTutorial();
 	}
 }
@@ -661,25 +662,25 @@ void UI::PlayPressurePlateTutorial() {
 						 player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
 
 	// --- Combine ---
-	AEMtx33 transform;
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
+AEMtx33 transform;
+AEMtx33Concat(&transform, &rot, &scaleMtx);
+AEMtx33Concat(&transform, &trans, &transform);
 
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
+// --- Render ---
+AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+AEGfxSetTransparency(1.0f);
 
-	AEGfxTextureSet(key_Z, 0, 0);
-	AEGfxSetTransform(transform.m);
+AEGfxTextureSet(key_Z, 0, 0);
+AEGfxSetTransform(transform.m);
 
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-	//std::cout << "Froze time due to passing thru pressure plate\n";
-	Time::GetInstance().SetTimeScale(0.0f);
-	if (AEInputCheckTriggered(AEVK_Z)) {
-		Time::GetInstance().SetTimeScale(1.0f);
-		pressurePlateTutorialDone = true;
-	}
+AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
+//std::cout << "Froze time due to passing thru pressure plate\n";
+Time::GetInstance().SetTimeScale(0.0f);
+if (AEInputCheckTriggered(AEVK_Z)) {
+	Time::GetInstance().SetTimeScale(1.0f);
+	pressurePlateTutorialDone = true;
+}
 }
 void UI::PlayJumpOffLedgeTutorial() {
 	//std::cout << "PLAY LEDGE TUTORIAL!!!!!!!!!!\n";
@@ -713,14 +714,14 @@ void UI::PlayJumpOffLedgeTutorial() {
 	AEGfxSetTransform(transform.m);
 
 	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-	
+
 	// --- Scale ---
 	AEMtx33Scale(&scaleMtx, 125.0f, 50.0f);
 
 	xOffset = 70.0f;
 	yOffset = 60.0f;
 	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-						 player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
+		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
 
 	// --- Combine ---
 	AEMtx33Concat(&transform, &rot, &scaleMtx);
@@ -754,11 +755,14 @@ void UI::PlayJumpOffLedgeTutorial() {
 	AEGfxPrint(gameOverFont, "+",
 		viewportPos.x,
 		viewportPos.y,
-		1.0f, 
+		1.0f,
 		1.0f, 1.0f, 1.0f, 1.0f);
 
 	if ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) &&
 		(AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C))) {
+		jumpOffLedgeTutorialDone = true;
+	}
+	else if (static_cast<int>(player->GetPosition().x) >= 17 && static_cast<int>(player->GetPosition().y) >= 8){
 		jumpOffLedgeTutorialDone = true;
 	}
 }

@@ -2,35 +2,22 @@
 #include "AEEngine.h"
 #include "LevelIO.h"
 #include "GSM.h"
-#include "GameScene.h"
+#include "../../Game/Rooms/RoomBuilder.h"
 #include "../Environment/MapTile.h"
 #include "../enemy/Enemy.h"
 #include "../Time.h"
-#include "../UI.h"
-#include "../AudioManager.h"
 
 #include <Windows.h>
 #include <new>
 #include <string>
 
-// defined in GameScene.cpp
-extern std::string gPendingLevelPath;
-
 namespace
 {
-    static RoomDirection CheckMenuExit(const AEVec2& playerPos, int mapRows)
+    static bool ShouldStartGame(RoomDirection exitDir)
     {
-        const bool nearLeft = playerPos.x <= 2.0f;
-        const bool nearTop = playerPos.y >= (float)mapRows - 2.0f;
-
-        if (nearLeft && nearTop)
-            return DIR_LEFT;
-
-        return DIR_NONE;
+        return exitDir == DIR_RIGHT;
     }
 }
-
-
 
 std::string MainMenuScene::ExeDir()
 {
@@ -44,7 +31,9 @@ std::string MainMenuScene::ExeDir()
 MainMenuScene::MainMenuScene()
     : map(20, 40)
     , player(&map, &enemyMgr)
-    , camera({ 1, 1 }, { 50, 50 }, 64)
+    , enemyBoss()
+    , camera({ 1.f, 1.f }, { 50.f, 50.f }, 64.f)
+    , roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
 {
 }
 
@@ -54,9 +43,7 @@ MainMenuScene::~MainMenuScene()
 
 void MainMenuScene::Init()
 {
-    // ensure relative texture paths work
     SetCurrentDirectoryA(ExeDir().c_str());
-    //AudioManager::LoadAll();
 
     if (uiFont < 0)
     {
@@ -65,7 +52,21 @@ void MainMenuScene::Init()
         if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/buggy-font.ttf", 18);
     }
 
-    // load vine texture and mesh
+    if (!fadeMesh)
+    {
+        AEGfxMeshStart();
+        AEGfxTriAdd(-0.5f, -0.5f, 0xFF000000, 0.f, 0.f,
+            0.5f, -0.5f, 0xFF000000, 0.f, 0.f,
+            0.5f, 0.5f, 0xFF000000, 0.f, 0.f);
+        AEGfxTriAdd(-0.5f, -0.5f, 0xFF000000, 0.f, 0.f,
+            0.5f, 0.5f, 0xFF000000, 0.f, 0.f,
+            -0.5f, 0.5f, 0xFF000000, 0.f, 0.f);
+        fadeMesh = AEGfxMeshEnd();
+    }
+
+    isFadingToGame = false;
+    fadeAlpha = 0.0f;
+
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
     AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, 0.f, 1.f,
@@ -76,18 +77,22 @@ void MainMenuScene::Init()
         -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
     vineMesh = AEGfxMeshEnd();
 
-    // load spike texture and per-frame meshes
     SpikePlate::LoadSharedRenderResources();
 
-    std::string path = "..\\..\\Assets\\Levels\\gamewholelv.lvl";
+    const std::string path = "..\\..\\Assets\\Levels\\mainmenufr.lvl";
 
     LevelData lvl;
+    RoomID startRoom = ROOM_1;
+
+    roomMgr.Clear();
+    roomSystem.ClearBlockedReturnDir();
+    vinePositions.clear();
+
     if (LoadLevelFromFile(path.c_str(), lvl))
     {
         mapCols = lvl.cols;
         mapRows = lvl.rows;
 
-        // reconstruct map safely (no shallow copy)
         map.~MapGrid();
         new (&map) MapGrid(lvl.cols, lvl.rows);
 
@@ -103,110 +108,98 @@ void MainMenuScene::Init()
             }
         }
 
-        player.Reset(lvl.spawn);
-
         vinePositions = lvl.vines;
 
-        // spawn traps and wire up pressure plate links
-        std::vector<SpikePlate*> spawnedSpikes;
-        std::vector<PressurePlate*> spawnedPlates;
-
-        for (const auto& td : lvl.traps)
-        {
-            Box box{};
-            box.size = td.size;
-            box.position = AEVec2{ td.pos.x - td.size.x * 0.5f, td.pos.y - td.size.y * 0.5f };
-
-            const Trap::Type tt = static_cast<Trap::Type>(td.type);
-
-            if (tt == Trap::Type::SpikePlate)
-            {
-                SpikePlate& s = trapMgr.Spawn<SpikePlate>(box, td.upTime, td.downTime, td.damageOnHit, td.startDisabled);
-                spawnedSpikes.push_back(&s);
-            }
-            else if (tt == Trap::Type::PressurePlate)
-            {
-                PressurePlate& p = trapMgr.Spawn<PressurePlate>(box);
-                spawnedPlates.push_back(&p);
-            }
-            else if (tt == Trap::Type::LavaPool)
-            {
-                trapMgr.Spawn<LavaPool>(box, td.damagePerTick, td.tickInterval);
-            }
-        }
-
-        // every pressure plate triggers every spike plate
-        for (PressurePlate* plate : spawnedPlates)
-            for (SpikePlate* spike : spawnedSpikes)
-                plate->AddLinkedTrap(spike);
-
-        // spawn enemies
-        std::vector<EnemyManager::SpawnInfo> spawns;
-        for (const auto& ed : lvl.enemies)
-            spawns.push_back({ (EnemySpawnType)ed.preset, ed.pos });
-
-        if (!spawns.empty())
-        {
-            enemyMgr.SetSpawns(spawns);
-            enemyMgr.SpawnAll();
-        }
+        BuildRoomsFromLevelData(lvl, roomMgr, startRoom);
+        roomMgr.SetCurrentRoom(startRoom);
     }
     else
     {
-        mapCols = 40;
-        mapRows = 50;
+        mapCols = ROOM_COLS;
+        mapRows = ROOM_ROWS;
 
-        // simple fallback terrain using new tile enums
-        for (int x = 0; x < 40; ++x)
+        map.~MapGrid();
+        new (&map) MapGrid(mapCols, mapRows);
+
+        RoomData room{};
+        room.id = ROOM_1;
+        room.gridX = 0;
+        room.gridY = 0;
+        room.startSpawn = { 2.5f, 2.5f };
+        room.rightRoom = ROOM_NONE;
+
+        for (int y = 0; y < ROOM_ROWS; ++y)
         {
+            for (int x = 0; x < ROOM_COLS; ++x)
+            {
+                room.tiles[y][x] = MapTile::Type::NONE;
+            }
+        }
+
+        for (int x = 0; x < ROOM_COLS; ++x)
+        {
+            room.tiles[0][x] = MapTile::Type::GROUND_BODY;
+            room.tiles[1][x] = MapTile::Type::GROUND_SURFACE;
+
             map.SetTile(x, 0, MapTile::Type::GROUND_BODY);
             map.SetTile(x, 1, MapTile::Type::GROUND_SURFACE);
         }
 
-        player.Reset({ 3.f, 3.f });
+        roomMgr.SetRoom(ROOM_1, room);
+        roomMgr.SetCurrentRoom(ROOM_1);
     }
 
-    camera.SetFollow(&player.GetPosition(), 0, 0, true);
-    camera.smoothTime = 0.4f;
+    camera.~Camera();
+    new (&camera) Camera(
+        { 0.f, 0.f },
+        { static_cast<float>(mapCols), static_cast<float>(mapRows) },
+        64.f
+    );
 
-    UI::Init(&player);
-    //AudioManager::PlayMusic(MusicId::MainMenu);
+    roomSystem.BuildCurrentRoom();
+    camera.Update();
 }
 
 void MainMenuScene::Update()
 {
-    player.Update();
-  
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
-    float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-    trapMgr.Update(dt, player);
-
-
-
-
-    enemyMgr.UpdateAll(player.GetPosition(), map);
-
-    camera.Update();
-
-    // transition to game when player reaches the exit area
-    RoomDirection exitDir = CheckMenuExit(player.GetPosition(), mapRows);
-    if (exitDir == DIR_LEFT)
+    if (isFadingToGame)
     {
-        gPendingLevelPath = ExeDir() + "..\\..\\Assets\\Levels\\checktransit.lvl";
-        std::cout << "Setting pending path to: " << gPendingLevelPath << "\n";
-        GSM::ChangeScene(SceneState::GS_GAME);
+        fadeAlpha += fadeSpeed * dt;
+        if (fadeAlpha > 1.0f)
+            fadeAlpha = 1.0f;
+
+     
+
+        if (fadeAlpha >= 1.0f)
+        {
+            GSM::ChangeScene(SceneState::GS_GAME);
+            return;
+        }
+
         return;
     }
 
-    UI::GetDamageTextSpawner().Update();
-    UI::Update();
+    player.Update();
+
+    const RoomDirection exitDir = roomSystem.CheckRoomExit();
+    if (ShouldStartGame(exitDir))
+    {
+        isFadingToGame = true;
+        fadeAlpha = 0.0f;
+        return;
+    }
+
+    trapMgr.Update(dt, player);
+    enemyMgr.UpdateAll(player.GetPosition(), map);
+    camera.Update();
 }
 
 void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
 
-    // reset render state
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);
@@ -218,7 +211,6 @@ void MainMenuScene::Render()
 
     map.Render();
 
-    // vine decorations
     if (vineTexture && vineMesh)
     {
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -227,6 +219,7 @@ void MainMenuScene::Render()
         AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
         AEGfxSetTransparency(1.f);
         AEGfxTextureSet(vineTexture, 0.f, 0.f);
+
         for (const auto& v : vinePositions)
         {
             AEMtx33 m;
@@ -238,8 +231,6 @@ void MainMenuScene::Render()
     }
 
     trapMgr.Render();
-
-
     player.Render();
     enemyMgr.RenderAll();
 
@@ -261,41 +252,40 @@ void MainMenuScene::Render()
 
         float nx, ny;
 
-        WorldToNDC(7.f, 12.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.0f, 1.0f, 1.0f, 1.0f);
-
         WorldToNDC(7.f, 11.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "CONTROLS", nx, ny, 1.0f, 1.0f, 0.82f, 0.35f, 1.0f);
+        AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(7.f, 10.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "A / D  - Move", nx, ny, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        WorldToNDC(7.f, 9.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "SPACE - Jump", nx, ny, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        WorldToNDC(30.f, 26.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "Press Z to dash", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        WorldToNDC(21.f, 10.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "Pressure plates activates the spikes", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        WorldToNDC(35.f, 8.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "Press Z to attack", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        WorldToNDC(9.f, 30.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "Good Job!", nx, ny, 0.6f, 1.0f, 1.0f, 1.0f, 1.0f);
+        WorldToNDC(21.f, 5.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "START GAME", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
-    UI::Render();
+    if (fadeAlpha > 0.0f && fadeMesh)
+    {
+        AEGfxSetCamPosition(0.f, 0.f);
+        AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetTransparency(fadeAlpha);
+        AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+        AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+
+        AEMtx33 scale, transform;
+        AEMtx33Scale(&scale, (float)AEGfxGetWindowWidth(), (float)AEGfxGetWindowHeight());
+        transform = scale;
+
+        AEGfxSetTransform(transform.m);
+        AEGfxMeshDraw(fadeMesh, AE_GFX_MDM_TRIANGLES);
+    }
 }
 
 void MainMenuScene::Exit()
 {
     if (vineTexture) { AEGfxTextureUnload(vineTexture); vineTexture = nullptr; }
-    if (vineMesh) { AEGfxMeshFree(vineMesh);         vineMesh = nullptr; }
+    if (vineMesh) { AEGfxMeshFree(vineMesh); vineMesh = nullptr; }
     vinePositions.clear();
 
     SpikePlate::UnloadSharedRenderResources();
+
+    if (fadeMesh) { AEGfxMeshFree(fadeMesh); fadeMesh = nullptr; }
 
     if (uiFont >= 0)
     {
@@ -303,5 +293,6 @@ void MainMenuScene::Exit()
         uiFont = -1;
     }
 
-    UI::Exit();
+    roomSystem.ClearRuntimeRoomObjects();
+    roomMgr.Clear();
 }

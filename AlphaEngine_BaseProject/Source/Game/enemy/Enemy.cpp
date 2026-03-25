@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include "../UI.h"
 #include "../Environment/MapGrid.h"
-#include "../Environment/MapTile.h"
+#include "../Time.h"
 
 // ---- Static helpers ----
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
@@ -79,7 +79,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.attackStartRange = 3.8f;
         c.maxHp = 50;
         c.hideAfterDeath = true;
-        c.attackDamage = 2;
+        c.attackDamage = 1;
         c.aggroYRange = 4.0f;       // can notice player across height difference
         c.attackYRange = 4.0f;       // can still attack across height difference
 
@@ -147,14 +147,17 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     //for druid long range spell
     castParticleSystem.Init();
     castParticleSystem.SetSpawnRate(0.f);
-    // shorter + chunkier + more "earth"
-    castParticleSystem.emitter.lifetimeRange = { 0.08f, 0.14f };
-    castParticleSystem.emitter.sizeRange = { 0.15f, 0.25f };
-    castParticleSystem.emitter.tint = { 0.50f, 0.24f, 0.10f, 0.95f };
 
-    // make particles pop upward then fall back down
-    castParticleSystem.emitter.behavior = ParticleBehavior::Gravity;
-    castParticleSystem.emitter.behaviorParams.pull = 7.5f;
+    // darker green magical warning
+    castParticleSystem.emitter.lifetimeRange = { 0.18f, 0.30f };
+    castParticleSystem.emitter.sizeRange = { 0.08f, 0.16f };
+    castParticleSystem.emitter.tint = { 0.18f, 0.70f, 0.30f, 0.90f };
+
+    // swirling spell effect instead of dirt/gravity
+    castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+    castParticleSystem.emitter.behaviorParams.center = { 0.f, 0.f };
+    castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+    castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
 
 
 
@@ -172,7 +175,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
 
 
-    const float dt = (float)AEFrameRateControllerGetFrameTime();
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+
     auto UpdateEnemyParticles = [&]()
         {
             // Trail only when moving; still updates existing particles either way
@@ -249,19 +253,26 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 return;
             }
 
-            // raise the effect slightly above the ground so it doesn't look buried
-            const float effectY = groundY + 0.14f;
+            /// keep the spell low and flat to the ground
+            const float effectY = groundY + 0.5f;
+            const float radius = 0.45f;
 
-            // keep it tight and low to the ground, but not too low
-            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeX, playerPos.x - 0.25f, playerPos.x + 1.f);
-            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeY, effectY, effectY + 0.25f);
+            // spawn around the target area, not biased to one side
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeX, playerPos.x - radius + 0.25f, playerPos.x + radius + 0.5f);
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeY, effectY - 0.08f, effectY + 0.08f);
 
-            // upward fan, not straight vertical
-            castParticleSystem.emitter.angleRange = { 0.96f, 2.18f }; // 55° to 125°
-            castParticleSystem.emitter.speedRange = { 0.9f, 2.2f };
+            // horizontal swirl around the target point
+            castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+            castParticleSystem.emitter.behaviorParams.center = { playerPos.x, effectY };
+            castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+            castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
 
-            // short, sharp warning only
-            castParticleSystem.SetSpawnRate(42.f);
+            // full direction range so particles can orbit
+            castParticleSystem.emitter.angleRange = { 0.0f, 6.2831853f }; // 0 to 360 degrees
+            castParticleSystem.emitter.speedRange = { 0.15f, 0.65f };
+
+            // calmer continuous warning
+            castParticleSystem.SetSpawnRate(24.f);
             castParticleSystem.Update();
         };
     if (dead)

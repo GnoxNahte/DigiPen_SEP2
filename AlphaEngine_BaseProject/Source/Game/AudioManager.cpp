@@ -10,12 +10,18 @@ std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::bossFightMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::gameMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::bossInstrMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::gameOverMusic = nullptr;
+std::unique_ptr<BGMAudio> AudioManager::victoryMusic = nullptr;
 
 // Declare sound effects.
 //std::unique_ptr<SFXAudio> AudioManager::buffFlipSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffRevealSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffHoverOnceSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerAttack1 = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerAttack2 = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerAttack3 = nullptr;
+
 namespace
 {
     const f32 PI_2 = 1.57079632679f;
@@ -35,7 +41,13 @@ namespace
     bool gIsCrossfading = false;
     BGMAudio* gFadeOutTrack = nullptr;
     BGMAudio* gFadeInTrack = nullptr;
-    bool gIsPlaying = false;
+
+    // Music flags to ensure they play only once.
+    bool gIsPlayingBoss2ndPhase = false;
+    bool gIsPlayingGOver = false;
+    bool gIsPlayingVictory = false;
+
+    BGMAudio* gCurrTrack = nullptr;
 
     float Clamp01(float v)
     {
@@ -90,19 +102,16 @@ BGMAudio::~BGMAudio() { // Dtor for automatic cleanup
     }
 }
 void BGMAudio::Play(f32 const& initialGroupVol) {
-    // 1. Set the internal volume state (the group multiplier)
     baseVolume = initialGroupVol;
-
-    // 2. Set the Group Volume immediately
     ApplyFinalVolume();
-
-    // 3. CRITICAL: Set the instance volume to 1.0f 
-    // This way the sound is "full strength" but muted by its parent group
     AEAudioPlay(audioFile, ownGroup, 1.0f, pitch, -1);
+    active = true;
+    gCurrTrack = this;
 }
 void BGMAudio::Stop() {
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioStopGroup(ownGroup);
+    active = false;
 }
 void BGMAudio::SetVolume(f32 const& vol) {
     baseVolume = vol;
@@ -120,6 +129,12 @@ void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration) {
 
     gFadeOutTrack = this;
     gFadeInTrack = &other;
+
+    if (!other.IsActive()) {
+        other.Play(0.0f);  // start silent
+        other.SetActive(true);
+    }
+
     gFadeTimer = 0.0f;
     gFadeDuration = duration;
     gIsCrossfading = true;
@@ -152,27 +167,51 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
         bossIntroMusic->SetActive(true);
         bossFightMusic->Play(0.0f);
         bossFightMusic->SetActive(true);
+        gCurrTrack = bossIntroMusic.get();
     }
     if (roomMgr.GetCurrentRoomID() == ROOM_11) {
         // Triggered boss phase 2
-        if (boss.phase2 && !gIsPlaying) { // To remove check triggered when rooms are spawned properly.
-            std::cout << "2ND PHASE" << '\n';
+        if (boss.phase2 && !gIsPlayingBoss2ndPhase) { // To remove check triggered when rooms are spawned properly.
+            //std::cout << "2ND PHASE" << '\n';
             bossIntroMusic->CrossfadeTo(*bossFightMusic, 1.2f);
-            gIsPlaying = true;
+            gIsPlayingBoss2ndPhase = true;
+            gCurrTrack = bossFightMusic.get();
+        }
+        if (boss.IsDead()) {
+            if (!gIsPlayingVictory) {
+                if (gCurrTrack) {
+                    gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
+                    gCurrTrack = victoryMusic.get();
+                }
+                victoryMusic->Play(victoryMusic->GetVolume());
+            }
+            gIsPlayingVictory = true;
         }
     }
 }
-void AudioManager::MuffleGameMusic() {
+void AudioManager::PlayGameOverMusic() {
+    if (!gIsPlayingGOver) {
+        if (gCurrTrack) {
+            gCurrTrack->CrossfadeTo(*gameOverMusic, 1.2f);
+        }
+        else {
+            gameOverMusic->Play(gameOverMusic->GetVolume()); // fallback
+        }
+        gCurrTrack = gameOverMusic.get();
+        gIsPlayingGOver = true;
+    }
+}
+void AudioManager::MuffleMusic() {
     if (!gIsMuffled) {
-        preservedGameVol = gameMusic->GetVolume();
+        preservedGameVol = gCurrTrack->GetVolume();
         gIsMuffled = true;
     }
-    gameMusic->SetVolume(preservedGameVol * 0.55f);
-    gameMusic->ApplyFinalVolume();
+    gCurrTrack->SetVolume(preservedGameVol * 0.55f);
+    gCurrTrack->ApplyFinalVolume();
     RefreshAllMusicVolumes();
 }
-void AudioManager::UnmuffleGameMusic() {
-    gameMusic->SetVolume(preservedGameVol);
+void AudioManager::UnmuffleMusic() {
+    gCurrTrack->SetVolume(preservedGameVol);
     gIsMuffled = false;
     RefreshAllMusicVolumes();
 }
@@ -189,6 +228,13 @@ void AudioManager::RefreshAllMusicVolumes()
 
     if (gameMusic && gameMusic->IsActive())
         gameMusic->ApplyFinalVolume();
+
+    if (gameOverMusic && gameOverMusic->IsActive()) {
+        gameOverMusic->ApplyFinalVolume();
+    }
+    if (victoryMusic && victoryMusic->IsActive()) {
+        victoryMusic->ApplyFinalVolume();
+    }
 }
 void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& pitch) {
     const AEAudio& audio = sfx.GetAudio();
@@ -220,6 +266,10 @@ void AudioManager::Init() {
         gameMusic = std::make_unique<BGMAudio>("Assets/music/GameBGM.mp3");
     if (!bossInstrMusic)
         bossInstrMusic = std::make_unique<BGMAudio>("Assets/music/BossInstrumental.mp3");
+    if (!gameOverMusic)
+        gameOverMusic = std::make_unique<BGMAudio>("Assets/music/Defeat.mp3");
+    if (!victoryMusic)
+        victoryMusic = std::make_unique<BGMAudio>("Assets/music/Victory.mp3");
 
     // Load sound effects here.
     //if (!buffFlipSFX)
@@ -230,6 +280,12 @@ void AudioManager::Init() {
         buffHoverOnceSFX = std::make_unique<SFXAudio>("Assets/music/BuffHoverOnceSFX.mp3");
     if (!buffConfirmSFX)
         buffConfirmSFX = std::make_unique<SFXAudio>("Assets/music/BuffConfirmSFX.mp3");
+    if (!playerAttack1)
+        playerAttack1 = std::make_unique<SFXAudio>("Assets/music/Player_Attack1.mp3");
+    if (!playerAttack2)
+        playerAttack2 = std::make_unique<SFXAudio>("Assets/music/Player_Attack2.mp3");
+    if (!playerAttack3)
+        playerAttack3 = std::make_unique<SFXAudio>("Assets/music/Player_Attack3.mp3");
 
     //if (!menuMusic)
     //    menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
@@ -264,19 +320,23 @@ void AudioManager::Update() {
     }
 }
 void AudioManager::Exit() {
-    // Call BGMAudio dtor by reset.
+    StopAllMusic();
+    ResetRuntimeState();
+
     bossIntroMusic.reset();
     bossFightMusic.reset();
     bossInstrMusic.reset();
     gameMusic.reset();
+    gameOverMusic.reset();
+    victoryMusic.reset();
 
-    // Call SFXAudio dtor by reset.
-    //buffFlipSFX.reset();
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
     buffConfirmSFX.reset();
+    playerAttack1.reset();
+    playerAttack2.reset();
+    playerAttack3.reset();
 
-    // Unload both music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
 }
@@ -313,3 +373,39 @@ float AudioManager::GetMusicVolume()
 {
     return gMusicVolume;
 }
+
+void AudioManager::StopAllMusic()
+{
+    if (gameMusic) gameMusic->Stop();
+    if (bossIntroMusic) bossIntroMusic->Stop();
+    if (bossFightMusic) bossFightMusic->Stop();
+    if (bossInstrMusic) bossInstrMusic->Stop();
+    if (gameOverMusic) gameOverMusic->Stop();
+    if (victoryMusic) victoryMusic->Stop();
+}
+
+void AudioManager::ResetRuntimeState()
+{
+    gIsMuffled = false;
+    gFadeTimer = 0.0f;
+    gFadeDuration = 0.0f;
+    preservedGameVol = 1.0f;
+    gIsCrossfading = false;
+    gFadeOutTrack = nullptr;
+    gFadeInTrack = nullptr;
+    gIsPlayingBoss2ndPhase = false;
+    gIsPlayingGOver = false;
+    gIsPlayingVictory = false;
+}
+
+void AudioManager::ResetForRestart()
+{
+    StopAllMusic();
+    ResetRuntimeState();
+}
+
+
+
+
+
+

@@ -4,7 +4,10 @@
 #include "../Environment/MapGrid.h"
 #include "../Environment/traps.h"
 #include "../enemy/EnemyManager.h"
+#include "../enemy/EnemyBoss.h"
 #include "../../Game/Rooms/RoomData.h"
+#include "../../Game/Rooms/RoomManager.h"
+#include "../../Game/Rooms/RoomSystem.h"
 #include "GSM.h"
 #include <string>
 #include <vector>
@@ -27,16 +30,22 @@ private:
     Player       player;
     TrapManager  trapMgr;
     EnemyManager enemyMgr;
+    EnemyBoss    enemyBoss;
     Camera       camera;
+
+    RoomManager  roomMgr;
+    RoomSystem   roomSystem;
 
     int mapCols = 100;
     int mapRows = 100;
     int uiFont = -1;
 
-    // vine decoration
     AEGfxTexture* vineTexture = nullptr;
     AEGfxVertexList* vineMesh = nullptr;
     std::vector<AEVec2> vinePositions;
 
-
+    AEGfxVertexList* fadeMesh = nullptr;
+    bool  isFadingToGame = false;
+    float fadeAlpha = 0.0f;
+    float fadeSpeed = 3.1f;
 };
