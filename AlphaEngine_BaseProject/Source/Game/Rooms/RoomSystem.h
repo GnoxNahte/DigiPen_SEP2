@@ -54,4 +54,5 @@ private:
 
     EnemyBoss* activeBoss = nullptr;
     RoomDirection blockedReturnDir = DIR_NONE;
+    float wallTimer = 0.5f;
 };

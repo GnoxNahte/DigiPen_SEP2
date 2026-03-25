@@ -4,6 +4,7 @@
 
 #include "../UI.h"
 #include <algorithm>
+#include "../Time.h"
 
 RoomSystem::RoomSystem(
     MapGrid& mapRef,
@@ -320,7 +321,12 @@ void RoomSystem::ApplyBlockedReturnBarrier()
 {
     if (blockedReturnDir == DIR_NONE || roomMgr.GetCurrentRoomID() == ROOM_NONE)
         return;
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
+    if (wallTimer > 0.f)
+    {
+        wallTimer -= dt;
+    }
     const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
     const int ox = static_cast<int>(origin.x);
     const int oy = static_cast<int>(origin.y);
@@ -352,4 +358,6 @@ void RoomSystem::ApplyBlockedReturnBarrier()
     default:
         break;
     }
+
+    wallTimer = 0.5f;
 }

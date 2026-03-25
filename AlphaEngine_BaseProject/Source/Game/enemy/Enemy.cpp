@@ -79,7 +79,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.attackStartRange = 3.8f;
         c.maxHp = 50;
         c.hideAfterDeath = true;
-        c.attackDamage = 2;
+        c.attackDamage = 1;
         c.aggroYRange = 4.0f;       // can notice player across height difference
         c.attackYRange = 4.0f;       // can still attack across height difference
 

@@ -403,6 +403,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 
             // Intimidating color (purple aura).
             particleSystem.emitter.tint = { 0.65f, 0.15f, 0.95f, 0.75f };
+
+            if (phase2)
+            {
+                particleSystem.emitter.tint = { 0.5f, 0.f, 0.f, 0.75f };
+            }
             //particleSystem.emitter.tint = { 0.18f, 0.09f, 0.20f, 0.8f };
 
             // Spawn even when idle; optionally increase when moving
