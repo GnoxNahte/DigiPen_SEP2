@@ -159,6 +159,7 @@ EnemyBoss::EnemyBoss()
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
     , bossFont(AEGfxCreateFont("Assets/m04.ttf", 36))
 {
+    
     //position = AEVec2{ initialPosX, initialPosY };
     velocity = AEVec2{ 0.f, 0.f };
     specialAttackVfx.SetState(SPELL1);
@@ -197,6 +198,7 @@ EnemyBoss::EnemyBoss(float initialPosX, float initialPosY) : EnemyBoss()
 {
 
     position = AEVec2{ initialPosX, initialPosY };
+    Reset(position);
     RebuildTeleportBounds();
   
   
