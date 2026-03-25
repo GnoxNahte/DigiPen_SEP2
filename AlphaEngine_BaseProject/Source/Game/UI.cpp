@@ -40,19 +40,21 @@ void UI::Init(Player* _player) {
 	healthBarFill = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar_Fill.png");
 	healthBarMesh = MeshGenerator::GetSquareMesh(1.f);
 
-	tutorialMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	key_Z = AEGfxTextureLoad("Assets/Art/Key_Z.png");
-	key_SPACE = AEGfxTextureLoad("Assets/Art/Key_SPACE.png");
-	key_RIGHT = AEGfxTextureLoad("Assets/Art/Key_RIGHT.png");
-	key_DOWN = AEGfxTextureLoad("Assets/Art/Key_DOWN.png");
-	key_X = AEGfxTextureLoad("Assets/Art/Key_X.png");
-
 	BuffCardManager::Init();
 	BuffCardScreen::Init();
 	UI::player = _player;
 	InitCooldownMeshes();
 	BuildEyelidMeshes();
 	BossIntroOverlay::Init();
+}
+// Initialization of textures in menu scene.
+void UI::MInit() {
+	menuMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	key_LMB = AEGfxTextureLoad("Assets/Art/UI/Key_LMB.png");
+	key_RMB = AEGfxTextureLoad("Assets/Art/UI/Key_RMB.png");
+	key_A = AEGfxTextureLoad("Assets/Art/UI/Key_A.png");
+	key_D = AEGfxTextureLoad("Assets/Art/UI/Key_D.png");
+	key_SPACE = AEGfxTextureLoad("Assets/Art/UI/Key_SPACE.png");
 }
 void UI::Update() {
 	BuffCardManager::Update();
@@ -84,30 +86,12 @@ void UI::Render() {
 			DrawGameOverText();
 		}
 	}
-	if (showPressurePlateTutorial && !pressurePlateTutorialDone && player->GetIsGrounded()) {
-		PlayPressurePlateTutorial();
-	}
-	if (showJumpLedgeTutorial && !jumpOffLedgeTutorialDone && player->GetIsGrounded()) {
-		PlayJumpOffLedgeTutorial();
-		//std::cout << "Pos y : " << player->GetPosition().y << '\n';
-	}
-	if (!slamAttackTutorialDone 
-		&& player->GetPosition().x >= 17.5f && player->GetPosition().y >= 8.0f) {
-		PlaySlamAttackTutorial();
-	}
-	//ShowAttackKeys();
 }
 void UI::Reset() {
 	deadTimerAdded = false;
 	ResetEyelid();
 	gameOverTextFadeTimer = 0.0f;
 	gameOverTextStage = 0;
-	pressurePlateTutorialDone = false;
-	jumpOffLedgeTutorialDone = false;
-	slamAttackTutorialDone = false;
-	showJumpLedgeTutorial = false;
-	showPressurePlateTutorial = false;
-	showSlamAttackTutorial = false;
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
@@ -117,24 +101,6 @@ void UI::Exit() {
 	}
 	if (healthVignette) {
 		AEGfxTextureUnload(healthVignette);
-	}
-	if (tutorialMesh) {
-		AEGfxMeshFree(tutorialMesh);
-	}
-	if (key_Z) {
-		AEGfxTextureUnload(key_Z);
-	}
-	if (key_RIGHT) {
-		AEGfxTextureUnload(key_RIGHT);
-	}
-	if (key_SPACE) {
-		AEGfxTextureUnload(key_SPACE);
-	}
-	if (key_DOWN) {
-		AEGfxTextureUnload(key_DOWN);
-	}
-	if (key_X) {
-		AEGfxTextureUnload(key_X);
 	}
 	if (healthBarStatic) {
 		AEGfxTextureUnload(healthBarStatic);
@@ -153,6 +119,26 @@ void UI::Exit() {
 	BossIntroOverlay::Exit();
 	UI::player = nullptr;
 	FreeEyelidMeshes();
+}
+void UI::MExit() {
+	if (menuMesh) {
+		AEGfxMeshFree(menuMesh);
+	}
+	if (key_LMB) {
+		AEGfxTextureUnload(key_LMB);
+	}
+	if (key_RMB) {
+		AEGfxTextureUnload(key_RMB);
+	}
+	if (key_A) {
+		AEGfxTextureUnload(key_A);
+	}
+	if (key_D) {
+		AEGfxTextureUnload(key_D);
+	}
+	if (key_SPACE) {
+		AEGfxTextureUnload(key_SPACE);
+	}
 }
 void UI::DrawHealthVignette() {
 	// --- Rotation ---
@@ -644,269 +630,3 @@ bool Button::CheckMouseInRectButton(AEVec2 pos, AEVec2 size) {
 		mouseY >= pos.y - size.y * 0.5f &&
 		mouseY <= pos.y + size.y * 0.5f);
 }
-/*--------------------------------------
-			Tutorial Functions
----------------------------------------*/
-void UI::PlayPressurePlateTutorial() {
-	// --- Scale ---
-	AEMtx33 scaleMtx;
-	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-
-	// --- Rotation (none) ---
-	AEMtx33 rot;
-	AEMtx33Identity(&rot);
-
-	// --- Translation ---
-	AEMtx33 trans;
-	f32 yOffset = 60.0f;
-	f32 xOffset = -15.0f;
-	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset, 
-						 player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
-
-	// --- Combine ---
-AEMtx33 transform;
-AEMtx33Concat(&transform, &rot, &scaleMtx);
-AEMtx33Concat(&transform, &trans, &transform);
-
-// --- Render ---
-AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-AEGfxSetTransparency(1.0f);
-
-AEGfxTextureSet(key_Z, 0, 0);
-AEGfxSetTransform(transform.m);
-
-AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-//std::cout << "Froze time due to passing thru pressure plate\n";
-Time::GetInstance().SetTimeScale(0.0f);
-if (AEInputCheckTriggered(AEVK_Z)) {
-	Time::GetInstance().SetTimeScale(1.0f);
-	pressurePlateTutorialDone = true;
-}
-}
-void UI::PlayJumpOffLedgeTutorial() {
-	//std::cout << "PLAY LEDGE TUTORIAL!!!!!!!!!!\n";
-
-	// --- Scale ---
-	AEMtx33 scaleMtx;
-	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-
-	// --- Rotation (none) ---
-	AEMtx33 rot;
-	AEMtx33Identity(&rot);
-
-	// --- Translation ---
-	AEMtx33 trans;
-	f32 xOffset = -50.0f;
-	f32 yOffset = 60.0f;
-	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
-
-	// --- Combine ---
-	AEMtx33 transform;
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
-
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
-
-	AEGfxTextureSet(key_RIGHT, 0, 0);
-	AEGfxSetTransform(transform.m);
-
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-
-	// --- Scale ---
-	AEMtx33Scale(&scaleMtx, 125.0f, 50.0f);
-
-	xOffset = 70.0f;
-	yOffset = 60.0f;
-	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
-
-	// --- Combine ---
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
-
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
-
-	AEGfxTextureSet(key_SPACE, 0, 0);
-	AEGfxSetTransform(transform.m);
-
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-
-	AEVec2 pos = player->GetPosition();
-	xOffset = -8.0f;
-	yOffset = 50.0f;
-	pos.x += xOffset / Camera::scale;
-	pos.y += yOffset / Camera::scale;
-
-	// Convert to viewport
-	AEVec2 viewportPos;
-	AEExtras::WorldToViewportPosition(pos, viewportPos);
-
-	// Convert to NDC
-	viewportPos.x = viewportPos.x * 2 - 1.f;
-	viewportPos.y = viewportPos.y * 2 - 1.f;
-
-	// Draw text
-	AEGfxPrint(gameOverFont, "+",
-		viewportPos.x,
-		viewportPos.y,
-		1.0f,
-		1.0f, 1.0f, 1.0f, 1.0f);
-
-	if ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) &&
-		(AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C))) {
-		jumpOffLedgeTutorialDone = true;
-	}
-	else if (static_cast<int>(player->GetPosition().x) >= 17 && static_cast<int>(player->GetPosition().y) >= 8){
-		jumpOffLedgeTutorialDone = true;
-	}
-}
-void UI::PlaySlamAttackTutorial() {
-	//std::cout << "PLAY Slam attack tutorial!!!!!!\n";
-	// --- Scale ---
-	AEMtx33 scaleMtx;
-	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-
-	// --- Rotation (none) ---
-	AEMtx33 rot;
-	AEMtx33Identity(&rot);
-
-	// --- Translation ---
-	AEMtx33 trans;
-	f32 xOffset = -50.0f;
-	f32 yOffset = 60.0f;
-	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
-
-	// --- Combine ---
-	AEMtx33 transform;
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
-
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
-
-	AEGfxTextureSet(key_DOWN, 0, 0);
-	AEGfxSetTransform(transform.m);
-
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-
-	// --- Scale ---
-	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-
-	xOffset = 30.0f;
-	yOffset = 60.0f;
-	AEMtx33Trans(&trans, player->GetPosition().x * Camera::scale + Camera::position.x + xOffset,
-		player->GetPosition().y * Camera::scale + Camera::position.y + yOffset);
-
-	// --- Combine ---
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
-
-	// --- Render ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
-
-	AEGfxTextureSet(key_X, 0, 0);
-	AEGfxSetTransform(transform.m);
-
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-
-	AEVec2 pos = player->GetPosition();
-	xOffset = -8.0f;
-	yOffset = 50.0f;
-	pos.x += xOffset / Camera::scale;
-	pos.y += yOffset / Camera::scale;
-
-	// Convert to viewport
-	AEVec2 viewportPos;
-	AEExtras::WorldToViewportPosition(pos, viewportPos);
-
-	// Convert to NDC
-	viewportPos.x = viewportPos.x * 2 - 1.f;
-	viewportPos.y = viewportPos.y * 2 - 1.f;
-
-	// Draw text
-	AEGfxPrint(gameOverFont, "+",
-		viewportPos.x,
-		viewportPos.y,
-		1.0f,
-		1.0f, 1.0f, 1.0f, 1.0f);
-	Time::GetInstance().SetTimeScale(0.0f);
-	if (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S) && (AEInputCheckCurr(AEVK_X))){
-		Time::GetInstance().SetTimeScale(1.0f);
-		slamAttackTutorialDone = true;
-	}
-}
-//void UI::ShowAttackKeys() {
-//	// --- Base position (center of sprite) ---
-//	f32 xOffset = 565.5f;
-//	f32 yOffset = 600.0f;
-//
-//	// --- Scale ---
-//	AEMtx33 scaleMtx;
-//	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-//
-//	// --- Rotation ---
-//	AEMtx33 rot;
-//	AEMtx33Identity(&rot);
-//
-//	// --- Translation ---
-//	AEMtx33 trans;
-//	AEMtx33Trans(&trans, xOffset - 125, yOffset + 25);
-//
-//	// --- Combine transform ---
-//	AEMtx33 transform;
-//	AEMtx33Concat(&transform, &rot, &scaleMtx);
-//	AEMtx33Concat(&transform, &trans, &transform);
-//
-//	// --- Render sprite ---
-//	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-//	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-//	AEGfxSetTransparency(1.0f);
-//
-//	AEGfxTextureSet(key_X, 0, 0);
-//	AEGfxSetTransform(transform.m);
-//	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-//
-//	// =====================================================
-//	//  Convert SAME position to NDC (for text alignment)
-//	// =====================================================
-//	float screenWidth = 1280.0f;
-//	float screenHeight = 720.0f;
-//
-//	float ndcX = (xOffset / screenWidth) * 2.0f - 1.0f;
-//	float ndcY = (yOffset / screenHeight) * 2.0f - 1.0f;
-//
-//	// Small vertical tweak (text baseline vs sprite center)
-//	ndcY -= 0.3f;
-//
-//
-//	// =====================================================
-//	//  Draw text aligned with sprite
-//	// =====================================================
-//
-//	// Left side text
-//	AEGfxPrint(gameOverFont, "Press",
-//		ndcX - 0.45f,
-//		ndcY,
-//		0.45f,
-//		1.0f, 1.0f, 1.0f, 1.0f);
-//
-//	// Right side text
-//	AEGfxPrint(gameOverFont, "to attack.",
-//		ndcX - 0.29f,
-//		ndcY,
-//		0.45f,
-//		1.0f, 1.0f, 1.0f, 1.0f);
-//}
