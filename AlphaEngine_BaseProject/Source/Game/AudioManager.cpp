@@ -339,6 +339,10 @@ void AudioManager::Exit() {
 
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
+
+    // Reset audio groups to default state to prevent dangling pointers on reinit
+    gMusicGroup = {};
+    gSFXGroup = {};
 }
 void AudioManager::SetMasterVolume(float v)
 {
