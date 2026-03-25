@@ -154,6 +154,9 @@ std::string GSM::GetStateName(SceneState state)
 
 void GSM::LoadState(SceneState state)
 {
+	Camera::position = { 0.f, 0.f };
+	Camera::scale = 64.0f;
+
 	// @todo add other states.
 	switch (state)
 	{

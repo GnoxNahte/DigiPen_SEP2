@@ -179,14 +179,12 @@ void RoomSystem::BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forcedSp
             std::clamp(spawn.y, roomMin.y, roomMax.y)
         };
     }
-
     // First entry into the scene = full reset.
     // Room-to-room transition = just reposition.
-   /* if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
+    if (cameFrom == DIR_NONE && forcedSpawn == nullptr)
         player.Reset(spawn);
     else
         player.SetPosition(spawn);
-        */
 
     const bool snapCamera = (cameFrom == DIR_NONE);
     camera.SetFollow(&player.GetPosition(), 0.f, 0.f, snapCamera);

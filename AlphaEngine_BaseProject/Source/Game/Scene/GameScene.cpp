@@ -154,60 +154,56 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
-	SpikePlate::LoadSharedRenderResources();
+	// clear room data from any prior run
 	roomMgr.Clear();
+	roomSystem.ClearBlockedReturnDir();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};
 	RoomID startRoom = ROOM_1;
 
-	if (!gPendingLevelPath.empty())
+	const std::string pathToLoad =
+		gPendingLevelPath.empty() ? "Assets/Levels/gamescene.lvl" : gPendingLevelPath;
+
+	std::cout << "pathToLoad: " << pathToLoad << "\n";
+
+	LevelData lvl;
+	if (LoadLevelFromFile(pathToLoad.c_str(), lvl))
 	{
-		std::cout << "pending path: " << gPendingLevelPath << "\n";
+		std::cout << "load success\n";
+		std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
 
-		LevelData lvl;
-		if (LoadLevelFromFile(gPendingLevelPath.c_str(), lvl))
-		{
-			std::cout << "load success\n";
-			std::cout << "loaded rows=" << lvl.rows << " cols=" << lvl.cols << "\n";
-
-			loadedFromFile = true;
-			loadedLevel = lvl;
-			gLastLoadedLevelPath = gPendingLevelPath;
-			BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
-			gPendingLevelPath.clear();
-		}
-		else
-		{
-			std::cout << "load failed\n";
-		}
-
-		gPendingLevelPath.clear();
+		loadedFromFile = true;
+		loadedLevel = lvl;
+		gLastLoadedLevelPath = pathToLoad;
+		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
 	else
 	{
-		std::cout << "pending path empty\n";
+		std::cout << "load failed\n";
 	}
+
+	gPendingLevelPath.clear();
 
 	if (!loadedFromFile)
 	{
-		LevelData lvl{};
-		lvl.rows = ROOM_ROWS;
-		lvl.cols = ROOM_COLS;
-		lvl.spawn = { 2.5f, 3.0f };
-		lvl.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
+		LevelData fallback{};
+		fallback.rows = ROOM_ROWS;
+		fallback.cols = ROOM_COLS;
+		fallback.spawn = { 2.5f, 3.0f };
+		fallback.tiles.assign((size_t)ROOM_ROWS * (size_t)ROOM_COLS, (int)MapTile::Type::NONE);
 
 		for (int x = 0; x < ROOM_COLS; ++x)
-			lvl.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
+			fallback.tiles[(size_t)0 * ROOM_COLS + x] = (int)MapTile::Type::GROUND_BOTTOM;
 
-		loadedLevel = lvl;
+		loadedLevel = fallback;
 		BuildRoomsFromLevelData(loadedLevel, roomMgr, startRoom);
 	}
 
 	mapCols = loadedLevel.cols;
 	mapRows = loadedLevel.rows;
 
-	// Rebuild full level map
+	// rebuild full map from loaded level
 	map.~MapGrid();
 	new (&map) MapGrid(mapCols, mapRows);
 
@@ -215,44 +211,31 @@ void GameScene::Init()
 	{
 		for (int x = 0; x < mapCols; ++x)
 		{
-			int v = loadedLevel.tiles[(size_t)y * (size_t)mapCols + (size_t)x];
+			int v = loadedLevel.tiles[(size_t)y * mapCols + x];
 			if (v < 0 || v >= MapTile::typeCount)
-				v = (int)MapTile::Type::NONE;
+				v = 0;
 
 			map.SetTile(x, y, (MapTile::Type)v);
 		}
 	}
 
-	// Rebuild camera with full level bounds
+	// rebuild camera using full level bounds
 	camera.~Camera();
 	new (&camera) Camera(
 		{ 0.f, 0.f },
 		{ (float)mapCols, (float)mapRows },
 		64.0f
 	);
-	//may move roommgr away, for now room build functions is here =====
+
 	roomMgr.SetCurrentRoom(startRoom);
-	const RoomData& r = roomMgr.GetCurrentRoom();
-	std::cout << "startRoom=" << (int)startRoom
-		<< " L=" << (int)r.leftRoom
-		<< " R=" << (int)r.rightRoom
-		<< " T=" << (int)r.topRoom
-		<< " B=" << (int)r.bottomRoom
-		<< "\n";
 	roomSystem.BuildCurrentRoom();
 	roomTransitionLocked = false;
 	roomSystem.ClearBlockedReturnDir();
-	//AudioManager::PlayMusic(MusicId::GameScene, 1.0f, 1.0f, -1);
-	std::cout << "lvl.cols=" << loadedLevel.cols
-		<< " lvl.rows=" << loadedLevel.rows
-		<< "\n";
+
 	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
-		if (AudioManager::gameMusic)   // make sure the pointer is initialized
-			AudioManager::gameMusic->Play(1.0f);  // pass volume
+		if (AudioManager::gameMusic)
+			AudioManager::gameMusic->Play(1.0f);
 	}
-
-
-	player.Reset({ 1, 7.5 });
 }
 
 void GameScene::Update()
@@ -294,7 +277,7 @@ void GameScene::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
-	player.Update();
+	
 #if _DEBUG
 	if (AEInputCheckTriggered(AEVK_T))
 	{
@@ -357,6 +340,8 @@ void GameScene::Update()
 	}
 
 	camera.Update();
+
+	player.Update();
 
 	AEVec2 p = player.GetPosition();
 	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
