@@ -71,7 +71,6 @@ public:
     static void ResetRuntimeState();
     static void ResetForRestart();
 
-
     /*=================================================
     *                Background Music                 |
     =================================================*/
@@ -99,4 +98,7 @@ public:
     static std::unique_ptr<SFXAudio> playerAirAttackImpact;
     static std::unique_ptr<SFXAudio> playerJump;
     static std::unique_ptr<SFXAudio> playerLand;
+    static std::unique_ptr<SFXAudio> playerDash;
+    static std::unique_ptr<SFXAudio> playerHurt;
+    static std::unique_ptr<SFXAudio> playerDeath;
 };

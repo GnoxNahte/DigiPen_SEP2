@@ -26,6 +26,9 @@ std::unique_ptr<SFXAudio> AudioManager::playerAirAttack = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAirAttackImpact = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerJump = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerLand = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerDash = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerHurt = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
 
 namespace
 {
@@ -282,12 +285,15 @@ void AudioManager::Init() {
         creditsMusic = std::make_unique<BGMAudio>("Assets/music/Credits.mp3");
 
     // Load sound effects here.
+    // Buff sfxs
     if (!buffRevealSFX)
         buffRevealSFX = std::make_unique<SFXAudio>("Assets/music/BuffRevealSFX.mp3");
     if (!buffHoverOnceSFX)
         buffHoverOnceSFX = std::make_unique<SFXAudio>("Assets/music/BuffHoverOnceSFX.mp3");
     if (!buffConfirmSFX)
         buffConfirmSFX = std::make_unique<SFXAudio>("Assets/music/BuffConfirmSFX.mp3");
+
+    // Player sfxs
     if (!playerAttack1)
         playerAttack1 = std::make_unique<SFXAudio>("Assets/music/PlayerAttack1.mp3");
     if (!playerAttack2)
@@ -302,6 +308,12 @@ void AudioManager::Init() {
         playerJump = std::make_unique<SFXAudio>("Assets/music/PlayerJump.mp3");
     if (!playerLand)
         playerLand = std::make_unique<SFXAudio>("Assets/music/PlayerLand.mp3");
+    if (!playerDash)
+        playerDash = std::make_unique<SFXAudio>("Assets/music/PlayerDash.mp3");
+    if (!playerHurt)
+        playerHurt = std::make_unique<SFXAudio>("Assets/music/PlayerHurt.mp3");
+    if (!playerDeath)
+        playerDeath = std::make_unique<SFXAudio>("Assets/music/PlayerDeath.mp3");
 }
 
 void AudioManager::Update() {
@@ -332,6 +344,7 @@ void AudioManager::Exit() {
     StopAllMusic();
     ResetRuntimeState();
 
+    // Reset background music.
     bossIntroMusic.reset();
     bossFightMusic.reset();
     gameMusic.reset();
@@ -340,10 +353,12 @@ void AudioManager::Exit() {
     menuMusic.reset();
     creditsMusic.reset();
 
+    // Reset buff card sfxs.
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
     buffConfirmSFX.reset();
 
+    // Reset player sfxs.
     playerAttack1.reset();
     playerAttack2.reset();
     playerAttack3.reset();
@@ -351,7 +366,11 @@ void AudioManager::Exit() {
     playerAirAttackImpact.reset();
     playerJump.reset();
     playerLand.reset();
+    playerDash.reset();
+    playerHurt.reset();
+    playerDeath.reset();
 
+    // Reset music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
 

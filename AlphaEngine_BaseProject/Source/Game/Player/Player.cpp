@@ -274,8 +274,10 @@ void Player::UpdateInput()
     if (AEInputCheckCurr(AEVK_X))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime)
+    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
+        AudioManager::PlaySFX(*AudioManager::playerDash);
         dashStartTime = currTime;
+    }
 }
 
 void Player::UpdateTriggerColliders()
@@ -783,15 +785,16 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     if (health <= dmg)
     {
         health = 0;
+        AudioManager::PlaySFX(*AudioManager::playerDeath);
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
         sprite.SetState(AnimState::DEATH, false, [&](int) {
             sprite.SetState(AnimState::DEATH_LOOP); 
-            //AudioManager::PlayMusic(MusicId::Death);
         });
         return false;
     }
 
     health -= dmg;
+    AudioManager::PlaySFX(*AudioManager::playerHurt);
     
     float knockbackStrength = max(dmg / stats.maxKnockbackDmg, 1.f) * stats.knockbackAmt;
 
