@@ -1,4 +1,4 @@
-﻿#include "traps.h"
+#include "traps.h"
 #include "../Camera.h"
 
 #include <algorithm>
@@ -584,7 +584,3 @@ void TrapManager::UnloadAllSharedRenderResources()
     UnloadLavaRenderResources();
 }
 
-void Player::ClearVelocity()
-{
-    AEVec2Zero(&velocity);
-}

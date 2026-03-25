@@ -31,6 +31,48 @@
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{9e0fe056-7bf8-4882-b1e0-a85e78dbe9ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Game\Environment">
+      <UniqueIdentifier>{bbed2e90-df0a-4c6c-ac9a-0d571b4cf90f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Environment">
+      <UniqueIdentifier>{eedb5019-91cb-48a5-b2b3-2eec156c8a5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Scene">
+      <UniqueIdentifier>{00cba9ab-1afb-42d9-b9d5-44068fc085ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Scene">
+      <UniqueIdentifier>{832b943c-8d30-4fe9-9f40-b0fe7827392c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library Files">
+      <UniqueIdentifier>{6623137f-f328-4f44-bd71-f37459752c7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library Files\ImGui">
+      <UniqueIdentifier>{b59d2ceb-c115-4a9f-a406-9e258d503177}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library Files\ImGui\backend">
+      <UniqueIdentifier>{fb80dfe2-b9dc-41b9-9605-4f06d53d966c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Editor">
+      <UniqueIdentifier>{18f0770a-a63d-4ba8-a625-e715adc39b6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{33977299-7197-4a11-bb84-d0f22fece88a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\enemy">
+      <UniqueIdentifier>{f26eff54-ceb2-4675-b745-db5d564a6e8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\enemy">
+      <UniqueIdentifier>{d0aa3d34-5fc9-4bb9-96f6-adb14b2d37e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils\Event">
+      <UniqueIdentifier>{cffcf4df-4c71-4f5a-babf-27cf5d409130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Rooms">
+      <UniqueIdentifier>{ea433814-fb40-4b63-b5c2-f0aed51b985e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Rooms">
+      <UniqueIdentifier>{16c578c2-0257-4947-add8-9927274a27e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -38,12 +80,6 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp">
       <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Player\Player.cpp">
-      <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\GameScene.cpp">
-      <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utils\Sprite.cpp">
       <Filter>Source Files\Utils</Filter>
@@ -63,6 +99,135 @@
     <ClCompile Include="Source\Utils\QuickGraphics.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\Timer.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\AEExtras.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Saves\SaveData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Saves\SaveSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\UI.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\ObjectPool.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\ParticleSystem.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Vec2Int.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GSM.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\GameScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_demo.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_draw.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_tables.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp">
+      <Filter>Library Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.cpp">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_win32.cpp">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Editor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\EditorUtils.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Time.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\LevelEditorScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\leveleditor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\LevelIO.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\BuffCards.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\Enemy.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\EditorUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Background.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\AttackSystem.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\PhysicsUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\SplashScreen.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\GameOver.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Environment\traps.cpp">
+      <Filter>Source Files\Game\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\AudioManager.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\enemy\BossIntroOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomBuilder.cpp">
+      <Filter>Source Files\Game\Rooms</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Rooms\RoomSystem.cpp">
+      <Filter>Source Files\Game\Rooms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -70,9 +235,6 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Player\Player.h">
       <Filter>Header Files\Game\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Game\GameScene.h">
-      <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="Source\Utils\Sprite.h">
       <Filter>Header Files\Utils</Filter>
@@ -94,6 +256,159 @@
     </ClInclude>
     <ClInclude Include="Source\Utils\QuickGraphics.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Timer.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapGrid.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\AEExtras.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Box.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Saves\SaveData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Saves\SaveSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\UI.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\ObjectPool.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\ParticleSystem.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\MapTile.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Vec2Int.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GSM.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\GameScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\MainMenuScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imconfig.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imgui.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imgui_internal.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_rectpack.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_textedit.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h">
+      <Filter>Library Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_win32.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3_loader.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.h">
+      <Filter>Library Files\ImGui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Editor.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\EditorUtils.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\ImGuiHelper.h">
+      <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyBoss.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\LevelEditorScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\leveleditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\LevelIO.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\BuffCards.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\Enemy.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\EnemyManager.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\IDamageable.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Background.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\EditorUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\AttackSystem.h">
+      <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\PhysicsUtils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Event\EventSystem.h">
+      <Filter>Header Files\Utils\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\SplashScreen.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\GameOver.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomData.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomManager.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Environment\traps.h">
+      <Filter>Header Files\Game\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\AudioManager.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\CommonTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\BossIntroOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomBuilder.h">
+      <Filter>Header Files\Game\Rooms</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Rooms\RoomSystem.h">
+      <Filter>Header Files\Game\Rooms</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

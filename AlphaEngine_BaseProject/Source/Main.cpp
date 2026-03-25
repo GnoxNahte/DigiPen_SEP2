@@ -1,11 +1,19 @@
 // ---------------------------------------------------------------------------
 // includes
-
+#pragma once
+#pragma message("Including SaveSystem.h from: " __FILE__)
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
+#include "Game/Scene/GSM.h"
+#include "Editor/Editor.h"
+#include "Game/AudioManager.h"
 
-#include "Game/GameScene.h"
-#include "Utils/QuickGraphics.h"
+#include <windows.h>
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_opengl3.h>
+
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // ---------------------------------------------------------------------------
 // main
@@ -21,53 +29,93 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// ===== Setup window and AlphaEngine =====
-	int gGameRunning = 1;
 
 	// Using custom window procedure
-	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 60, false, NULL);
+	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, WndProc);
 	
 	// Changing the window title
-	AESysSetWindowTitle("GAM 150"); // @todo: change name
+	AESysSetWindowTitle("Aetherfall"); // @todo: change name
 
 	// reset the system modules
 	AESysReset();
+	//AudioManager::Init();
 
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
 	AEGfxSetColorToAdd(0.0f, 0.0f, 0.0f, 0.0f);
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
+	AEGfxSetTransparency(1.0f);	
+	AEGfxSetTextureMode(AE_GFX_TM_PRECISE);
 
-	// === Init systems ===
-	QuickGraphics::Init();
+	// === ImGui setup ===
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking
 
-	// === Game loop ===
-	GameScene scene;
-	
-	// Game Loop
-	while (gGameRunning)
-	{
-		// Informing the system about the loop's start
-		AESysFrameStart();
+	//ImGui::StyleColorsDark();
 
-		AEGfxSetBackgroundColor(0.0f, 0.0f, 0.0f);
-		//AEGfxSetBackgroundColor(0.5f, 0.5f, 0.5f);
+	// Setup scaling
+	float main_scale = ImGui_ImplWin32_GetDpiScaleForMonitor(::MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY));
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.ScaleAllSizes(main_scale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+	style.FontScaleDpi = main_scale;        // Set initial font scale. (in docking branch: using io.ConfigDpiScaleFonts=true automatically overrides this for every window depending on the current monitor)
+	io.ConfigDpiScaleFonts = true;          // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+	io.ConfigDpiScaleViewports = true;      // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
 
-		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	HWND hwnd = AESysGetWindowHandle();
+	ImGui_ImplWin32_InitForOpenGL(hwnd);
+	ImGui_ImplOpenGL3_Init();
 
-		// Basic way to trigger exiting the application
-		// when ESCAPE is hit or when the window is closed
-		if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
-			gGameRunning = 0;
+#if _DEBUG
+	//GSM::Init(Editor::GetEditorPrefs().lastOpenedScene);
+	GSM::Init(SceneState::GS_GAME);
+#else
+	GSM::Init(SceneState::GS_MAIN_MENU);
+#endif
+	GSM::Update();
+	GSM::Exit();
 
-		scene.Update();
-		scene.Render();
-
-		// Informing the system about the loop's end
-		AESysFrameEnd();
-
-	}
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 
 	// free the system
+	//AudioManager::Exit();
 	AESysExit();
+}
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// Win32 message handler
+// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+// - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+// - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
+// Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+		return true;
+
+	//std::cout << std::hex << "MSG: " << msg << "\n";
+	switch (msg)
+	{
+	case WM_SIZE:
+		/*if (wParam != SIZE_MINIMIZED)
+		{
+			g_Width = LOWORD(lParam);
+			g_Height = HIWORD(lParam);
+		}*/
+
+		return 0;
+	case WM_SYSCOMMAND:
+		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
+			return 0;
+		break;
+	case WM_DESTROY:
+		GSM::ChangeScene(SceneState::GS_QUIT);
+		::PostQuitMessage(0);
+		return 0;
+	}
+	return ::DefWindowProcA(hWnd, msg, wParam, lParam);
 }

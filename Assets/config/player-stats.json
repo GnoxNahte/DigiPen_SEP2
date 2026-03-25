@@ -1,23 +1,168 @@
 {
-  "maxSpeed": 10.0,
-  "airStrafeMaxSpeed": 8.0,
-  "maxSpeedTime": 0.25,
-  "stopTime": 0.2,
-  "turnTime": 0.075,
-  "inAirTurnTime": 0.1,
-  "dashCooldown": 0.5,
-  "dashTime": 0.2,
-  "maxFallVelocity": -15.0,
-  "wallSlideMaxSpeedTime": 0.5,
-  "wallSlideMaxSpeed": -2,
-  "maxJumpHeight": 2.75,
-  "minJumpHeight": 0.25,
-  "timeToMaxHeight": 0.35,
-  "timeToGround": 0.25,
-  "gravityMultiplierWhenRelease": 2.5,
-  "coyoteTime": 0.175,
-  "jumpBuffer": 0.175,
-  "wallJumpHorizontalVelocity": 5.0,
-  "wallJumpHorizontalVelocityTowardsWall": 5.0,
-  "invincibilityDuration": 0.1
+    "maxSpeed": 10.0,
+    "airStrafeMaxSpeed": 8.0,
+    "attackMaxSpeedMultiplier": 0.2,
+    "maxSpeedTime": 0.25,
+    "stopTime": 0.2,
+    "turnTime": 0.075,
+    "inAirTurnTime": 0.1,
+    "dashSpeed": {
+        "x": 12.5,
+        "y": 10.0
+    },
+    "dashCooldown": 0.5,
+    "dashTime": 0.15,
+    "maxFallVelocity": -17.5,
+    "wallSlideMaxSpeedTime": 0.5,
+    "wallSlideMaxSpeed": -10.0,
+    "maxJumpHeight": 2.75,
+    "minJumpHeight": 0.25,
+    "timeToMaxHeight": 0.349,
+    "timeToGround": 0.349,
+    "gravityMultiplierWhenRelease": 2.5,
+    "coyoteTime": 0.172,
+    "jumpBuffer": 0.172,
+    "wallJumpHorizontalVelocity": 15.0,
+    "wallJumpHorizontalVelocityTowardsWall": 8.0,
+    "groundChecker": {
+        "position": {
+            "x": 0.0,
+            "y": -0.4
+        },
+        "size": {
+            "x": 0.4,
+            "y": 0.3
+        }
+    },
+    "ceilingChecker": {
+        "position": {
+            "x": 0.0,
+            "y": 0.5
+        },
+        "size": {
+            "x": 0.2,
+            "y": 0.3
+        }
+    },
+    "leftWallChecker": {
+        "position": {
+            "x": -0.4,
+            "y": 0.0
+        },
+        "size": {
+            "x": 0.3,
+            "y": 0.8
+        }
+    },
+    "rightWallChecker": {
+        "position": {
+            "x": 0.4,
+            "y": 0.0
+        },
+        "size": {
+            "x": 0.3,
+            "y": 0.8
+        }
+    },
+    "playerSize": {
+        "x": 0.5,
+        "y": 0.898
+    },
+    "maxHealth": 100,
+    "invincibleTime": 0.5,
+    "attackBuffer": 0.1,
+    "attackComboBuffer": 0.1,
+    "knockbackAmt": 20.0,
+    "maxKnockbackDmg": 20.0,
+    "slamAttackFallSpeed": -100.0,
+    "slamAttackMaxHeight": 7.5,
+    "baseCritDmgMultiplier": 1.2,
+    "groundAttacks": [
+        {
+            "damage": 10,
+            "recoilSpeed": 4.0,
+            "collider": {
+                "position": {
+                    "x": 0.4,
+                    "y": 0.15
+                },
+                "size": {
+                    "x": 1.799,
+                    "y": 1.799
+                }
+            }
+        },
+        {
+            "damage": 20,
+            "recoilSpeed": 4.0,
+            "collider": {
+                "position": {
+                    "x": 0.25,
+                    "y": 0.0
+                },
+                "size": {
+                    "x": 2.2,
+                    "y": 1.799
+                }
+            }
+        },
+        {
+            "damage": 30,
+            "recoilSpeed": 3.5,
+            "collider": {
+                "position": {
+                    "x": 0.1,
+                    "y": 0.1
+                },
+                "size": {
+                    "x": 3.049,
+                    "y": 1.299
+                }
+            }
+        }
+    ],
+    "airAttacks": [
+        {
+            "damage": 15,
+            "recoilSpeed": 10.0,
+            "collider": {
+                "position": {
+                    "x": 0.4,
+                    "y": 0.0
+                },
+                "size": {
+                    "x": 0.3,
+                    "y": 0.8
+                }
+            }
+        },
+        {
+            "damage": 25,
+            "recoilSpeed": 10.0,
+            "collider": {
+                "position": {
+                    "x": 0.4,
+                    "y": 0.0
+                },
+                "size": {
+                    "x": 0.3,
+                    "y": 0.8
+                }
+            }
+        },
+        {
+            "damage": 50,
+            "recoilSpeed": 10.0,
+            "collider": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "size": {
+                    "x": 3.0,
+                    "y": 0.8
+                }
+            }
+        }
+    ]
 }

@@ -1,0 +1,750 @@
+﻿#include "Enemy.h"
+
+#include <cmath>
+#include "../../Utils/QuickGraphics.h"
+#include "../Camera.h"
+#include <imgui.h>
+#include "../UI.h"
+#include "../Environment/MapGrid.h"
+#include "../Time.h"
+
+// ---- Static helpers ----
+float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
+{
+    if (stateIndex < 0 || stateIndex >= sprite.metadata.rows)
+        return 0.f;
+
+    const auto& s = sprite.metadata.stateInfoRows[stateIndex];
+    return (float)s.frameCount * (float)s.timePerFrame;
+}
+
+
+bool Enemy::HasGroundAhead(MapGrid& map, float dirX) const
+{
+    const AEVec2 hbPos = GetHurtboxPos();   // center
+    const AEVec2 hbSize = GetHurtboxSize();  // full size
+
+    const float eps = 0.05f;
+
+    // Probe a point just in front of the feet
+    const float probeX = hbPos.x + dirX * (hbSize.x * 0.5f + eps);
+    const float probeY = hbPos.y - hbSize.y * 0.5f - eps;
+
+    // MapGrid already treats "not NONE" as solid
+    return map.CheckPointCollision(probeX, probeY);
+}
+
+bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
+{
+    const AEVec2 hbPos = GetHurtboxPos();    // center
+    const AEVec2 hbSize = GetHurtboxSize();  // full size
+
+    const float eps = 0.05f;
+
+    // check just in front of the body
+    const float probeX = hbPos.x + dirX * (hbSize.x * 0.5f + eps);
+    const float probeY = hbPos.y; // middle height
+
+    return map.CheckPointCollision(probeX, probeY);
+}
+
+static bool FindGroundBelowForDruidEffect(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
+{
+    for (float y = startY; y >= minY; y -= step)
+    {
+        if (map.CheckPointCollision(x, y))
+        {
+            outGroundY = y;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+Enemy::Config Enemy::MakePreset(Preset preset)
+{
+    Config c{};
+
+    switch (preset)
+    {
+    case Preset::Druid:
+        c.spritePath = "Assets/Craftpix/Druid.png";
+        c.renderScale = 4.f;
+        c.runVelThreshold = 0.1f;
+        c.attackHitRange = 4.0f;    // try 1.4–2.0
+        c.attackBreakRange = 10.0f;  // how far before attack cancels
+        c.attackStartRange = 3.8f;
+        c.maxHp = 50;
+        c.hideAfterDeath = true;
+        c.attackDamage = 1;
+        c.aggroYRange = 4.0f;       // can notice player across height difference
+        c.attackYRange = 4.0f;       // can still attack across height difference
+
+        break;
+
+    case Preset::Skeleton:
+        c.spritePath = "Assets/Craftpix/Skeleton.png";
+        c.renderScale = 2.f;
+        c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
+        c.maxHp = 50;
+ 
+        break;
+    }
+
+    // Defaults already match your old ctor values:
+    // attackStartRange=1.2, hitRange=1.0, cooldown=0.8, hitTime=0.5
+
+    // NOTE:
+    // These anim indices assume your meta order is:
+    // 0 ATTACK, 1 DEATH, 2 RUN, 3 IDLE, 4 HURT
+    // If your Druid meta is in a different order, just change these numbers.
+    c.animAttack = 0;
+    c.animDeath = 1;
+    c.animRun = 2;
+    c.animIdle = 3;
+    c.animHurt = 4;
+
+    return c;
+}
+
+// ---- Ctors ----
+Enemy::Enemy(Preset preset, float initialPosX, float initialPosY)
+    : Enemy(MakePreset(preset), initialPosX, initialPosY)
+{
+     presetType = preset;
+}
+
+Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
+    : cfg(cfgIn)
+    , sprite(cfg.spritePath)
+{
+    position = AEVec2{ initialPosX, initialPosY };
+    homePos = position;
+    velocity = AEVec2{ 0.f, 0.f };
+
+    size = AEVec2{ 0.8f, 0.8f };
+    facingDirection = AEVec2{ 1.f, 0.f };
+    chasing = false;
+
+    // Attack component setup (same as your old EnemyA/B)
+    attack.startRange = cfg.attackStartRange;
+    attack.hitRange = cfg.attackHitRange;
+    attack.cooldown = cfg.attackCooldown;
+    attack.hitTimeNormalized = cfg.attackHitTimeNormalized;
+    attack.breakRange = cfg.attackBreakRange;
+
+	//enemy particle system setup
+    particleSystem.Init();
+    particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
+
+    // Optional: default “dust/blood-ish” lifetime for bursts
+    particleSystem.emitter.lifetimeRange.x = 0.10f;
+    particleSystem.emitter.lifetimeRange.y = 0.25f;
+
+    //for druid long range spell
+    castParticleSystem.Init();
+    castParticleSystem.SetSpawnRate(0.f);
+
+    // darker green magical warning
+    castParticleSystem.emitter.lifetimeRange = { 0.18f, 0.30f };
+    castParticleSystem.emitter.sizeRange = { 0.08f, 0.16f };
+    castParticleSystem.emitter.tint = { 0.18f, 0.70f, 0.30f, 0.90f };
+
+    // swirling spell effect instead of dirt/gravity
+    castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+    castParticleSystem.emitter.behaviorParams.center = { 0.f, 0.f };
+    castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+    castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
+
+
+
+    particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
+
+    //enemy life system
+    hp = cfg.maxHp;
+    dead = false;
+
+}
+
+// ---- Update ----
+void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
+{
+
+
+
+    const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+
+    auto UpdateEnemyParticles = [&]()
+        {
+            // Trail only when moving; still updates existing particles either way
+            const float speed = std::fabs(velocity.x);
+
+            // If your system treats 0 as "no spawn", this is fine
+            particleSystem.SetSpawnRate(speed > 0.1f ? 30.f : 0.f);
+
+            const float trailLen = 0.5f;     // how far behind to spawn
+            const float x = position.x + 0.5f;
+
+            // decide facing: if moving use velocity, else use facingDirection
+            const bool faceRight =
+                (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+            
+
+            if (faceRight)
+            {
+                // moving right 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x - trailLen);
+            }
+            else
+            {
+                // moving left 
+                AEVec2Set(&particleSystem.emitter.spawnPosRangeX, x, x + trailLen);
+            }
+            AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y + 0.2f, position.y + 0.8f);
+
+            particleSystem.Update();
+        };
+    auto StopDruidCastEffect = [&]()
+        {
+            castParticleSystem.SetSpawnRate(0.f);
+            castParticleSystem.ReleaseAll();
+            wasDruidCasting = false;
+        };
+
+    auto UpdateDruidCastEffect = [&]()
+        {
+            if (!IsDruid())
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            // Start exactly when attack starts
+            if (attack.JustStarted())
+            {
+                druidCastFxTimer = 0.5f;
+                castParticleSystem.ReleaseAll();
+                castParticleSystem.SpawnParticleBurst(18);
+            }
+
+            if (druidCastFxTimer <= 0.f)
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.ReleaseAll(); // exact hard stop at 0.5s
+                castParticleSystem.Update();
+                return;
+            }
+
+            druidCastFxTimer -= dt;
+
+            float groundY = 0.f;
+            const float searchStartY = playerPos.y + 0.5f;
+            const float searchMinY = playerPos.y - 5.0f;
+
+            if (!FindGroundBelowForDruidEffect(map, playerPos.x, searchStartY, searchMinY, 0.1f, groundY))
+            {
+                castParticleSystem.SetSpawnRate(0.f);
+                castParticleSystem.Update();
+                return;
+            }
+
+            /// keep the spell low and flat to the ground
+            const float effectY = groundY + 0.5f;
+            const float radius = 0.45f;
+
+            // spawn around the target area, not biased to one side
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeX, playerPos.x - radius + 0.25f, playerPos.x + radius + 0.5f);
+            AEVec2Set(&castParticleSystem.emitter.spawnPosRangeY, effectY - 0.08f, effectY + 0.08f);
+
+            // horizontal swirl around the target point
+            castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
+            castParticleSystem.emitter.behaviorParams.center = { playerPos.x, effectY };
+            castParticleSystem.emitter.behaviorParams.pull = 3.0f;
+            castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
+
+            // full direction range so particles can orbit
+            castParticleSystem.emitter.angleRange = { 0.0f, 6.2831853f }; // 0 to 360 degrees
+            castParticleSystem.emitter.speedRange = { 0.15f, 0.65f };
+
+            // calmer continuous warning
+            castParticleSystem.SetSpawnRate(24.f);
+            castParticleSystem.Update();
+        };
+    if (dead)
+    {
+        // Advance animation until the final frame starts, then stop updating so it doesn't loop.
+        if (deathTimeLeft > 0.f)
+        {
+            float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
+            if (tpf <= 0.f) tpf = 0.1f;
+
+            // Only update while we're not yet in the "last frame window"
+            if (deathTimeLeft > tpf)
+                sprite.Update();
+
+            deathTimeLeft -= dt;
+            if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
+        }
+        if (deathTimeLeft <= 0.f && cfg.hideAfterDeath)
+            hidden = true;
+        StopDruidCastEffect();
+        return;
+    }
+
+    // Hurt lock: keep the HURT row visible long enough to notice (play full row once)
+    if (hurtTimeLeft > 0.f)
+    {
+        hurtTimeLeft -= dt;
+
+        // While hurt, stop attacking / moving and just play the hurt animation
+        attack.Reset();
+        velocity = AEVec2{ 0.f, 0.f };
+        chasing = false;
+
+        // Force hurt state while timer is active (prevents any override)
+        sprite.SetState(cfg.animHurt);
+
+ 
+        sprite.Update();
+        StopDruidCastEffect();
+        return;
+    }
+
+    const float desiredStopDist =
+        (attack.startRange > 0.05f) ? (attack.startRange - 0.05f) : attack.startRange;
+
+    const float dx = playerPos.x - position.x;
+    const float absDx = std::fabs(dx);
+
+    const float dy = std::fabs(playerPos.y - position.y);
+    const bool yAggroOk = (dy <= cfg.aggroYRange);
+    const bool yAttackOk = (dy <= cfg.attackYRange);
+
+    // --- Guard/leash ---
+    const float playerFromHome = std::fabs(playerPos.x - homePos.x);
+    const float enemyFromHome = std::fabs(position.x - homePos.x);
+
+    const bool inAggroRange = (absDx <= cfg.aggroRange) && yAggroOk;
+
+    // Hysteresis so we don't spam switch at the boundary
+    const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
+    const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED
+
+    if (inAggroRange)
+        hadAggro = true;
+
+     
+    if (!returningHome)
+    {
+        //  Always return home if walked out of leash
+        if (enemyFromHome > leashEnter)
+            returningHome = true;
+
+        // Only consider playerFromHome when we are actually engaged
+        // (prevents "player far away" from freezing idle wandering)
+        if (inAggroRange && playerFromHome > leashEnter)
+            returningHome = true;
+
+        // If we were engaged and now lost aggro , than enemy will go home first
+        if (!inAggroRange && hadAggro)
+            returningHome = true;
+    }
+    else
+    {
+        // Cancel returning only if player is back in range and both are within leash
+        if (inAggroRange && playerFromHome <= cfg.leashRange && enemyFromHome <= leashExit)
+            returningHome = false;
+    }
+
+    //verical checck
+    const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
+    const float effectiveDist = yAttackOk ? absDx : 9999.0f;
+  
+    if (returningHome)
+    {
+        // Allow attacks while returning home (no chasing)
+        if (inAggroRange)
+        {
+            if (dx != 0.f)
+                facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
+
+           
+           
+            attack.Update(dt, effectiveDist, attackDur);
+
+            if (attack.IsAttacking())
+            {
+                velocity = AEVec2{ 0.f, 0.f };
+                UpdateAnimation();
+                sprite.Update();
+                UpdateDruidCastEffect();
+                return;
+            }
+        }
+        else
+        {
+            attack.Reset();
+        }
+
+        chasing = false;
+
+        const float eps = 0.05f;
+        const float dh = homePos.x - position.x;
+        const float absDh = std::fabs(dh);
+
+        velocity.y = 0.f;
+
+        if (absDh <= eps)
+        {
+            position.x = homePos.x;
+            velocity.x = 0.f;
+            returningHome = false;
+
+            hadAggro = false;    
+            idleWalkLeft = 0.f;
+            idlePauseLeft = 0.2f;
+        }
+        else
+        {
+            const float dirX = (dh > 0.f) ? 1.f : -1.f;
+            facingDirection = AEVec2{ dirX, 0.f };
+            velocity.x = dirX * cfg.moveSpeed;
+
+            AEVec2 displacement;
+            AEVec2Scale(&displacement, &velocity, dt);
+
+            AEVec2 nextPos = position;
+            AEVec2Add(&nextPos, &position, &displacement);
+
+            if (dirX > 0.f && nextPos.x > homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
+            if (dirX < 0.f && nextPos.x < homePos.x) { nextPos.x = homePos.x; velocity.x = 0.f; }
+
+            if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
+            {
+                nextPos.x = position.x;
+                velocity.x = 0.f;
+            }
+            position = nextPos;
+        }
+
+        UpdateAnimation();
+        sprite.Update();
+        UpdateEnemyParticles();
+        UpdateDruidCastEffect();
+        return;
+    }
+
+    // Update attack component (needs attack anim duration)
+    attack.Update(dt, effectiveDist, attackDur);
+
+    // If attacking, stop movement
+    if (attack.IsAttacking())
+    {
+        velocity.x = 0.f;
+        velocity.y = 0.f;
+        chasing = false;
+    }
+    else
+    {
+        if (inAggroRange)
+        {
+            chasing = (absDx > desiredStopDist);
+
+            if (dx != 0.f)
+                facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
+
+            if (chasing)
+            {
+                const float dirX = (dx > 0.f) ? 1.f : -1.f;
+                velocity.x = dirX * cfg.moveSpeed;
+            }
+            else
+            {
+                velocity.x = 0.f;
+            }
+
+            velocity.y = 0.f;
+
+            AEVec2 displacement;
+            AEVec2Scale(&displacement, &velocity, dt);
+            AEVec2 nextPos = position;
+            AEVec2Add(&nextPos, &position, &displacement);
+
+            if (chasing)
+            {
+                const float dirX = (dx > 0.f) ? 1.f : -1.f;
+                if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
+                {
+                    nextPos.x = position.x;
+                    velocity.x = 0.f;
+                    chasing = false;
+                }
+                const float targetX = playerPos.x - dirX * desiredStopDist;
+
+                if (dirX > 0.f && nextPos.x > targetX) { nextPos.x = targetX; velocity.x = 0.f; }
+                if (dirX < 0.f && nextPos.x < targetX) { nextPos.x = targetX; velocity.x = 0.f; }
+            }
+
+            const float minX = homePos.x - cfg.leashRange;
+            const float maxX = homePos.x + cfg.leashRange;
+
+            if (nextPos.x < minX) { nextPos.x = minX; velocity.x = 0.f; }
+            if (nextPos.x > maxX) { nextPos.x = maxX; velocity.x = 0.f; }
+
+            position = nextPos;
+
+        }
+        else
+        {
+            chasing = false;
+            velocity.y = 0.f;
+
+            const float minX = homePos.x - cfg.leashRange;
+            const float maxX = homePos.x + cfg.leashRange;
+
+            // Pause phase
+            if (idlePauseLeft > 0.f)
+            {
+                idlePauseLeft -= dt;
+                velocity.x = 0.f;
+            }
+            else
+            {
+                // Choose / refresh a walk segment
+                if (idleWalkLeft <= 0.f)
+                {
+                    idleWalkLeft = 1.2f;           // how long to walk before pausing (tune)
+                    idlePauseLeft = 0.25f;         // pause after walk (tune)
+                    idleDirX = -idleDirX;          // simple back-and-forth
+                }
+
+                const float dirX = (idleDirX >= 0.f) ? 1.f : -1.f;
+                facingDirection = AEVec2{ dirX, 0.f };
+
+                // slower than chase looks more natural
+                velocity.x = dirX * cfg.moveSpeed * 0.35f;
+
+                AEVec2 displacement;
+                AEVec2Scale(&displacement, &velocity, dt);
+
+                AEVec2 nextPos = position;
+                AEVec2Add(&nextPos, &position, &displacement);
+
+                // Don’t walk off ledges
+                if (!HasGroundAhead(map, dirX) || HasWallAhead(map, dirX))
+                {
+                    nextPos.x = position.x;
+                    velocity.x = 0.f;
+                    idleDirX = -idleDirX;
+                    facingDirection = AEVec2{ idleDirX >= 0.f ? 1.f : -1.f, 0.f };
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+
+                // Clamp to leash range
+                if (nextPos.x < minX)
+                {
+                    nextPos.x = minX;
+                    velocity.x = 0.f;
+                    idleDirX = 1.f;
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+                else if (nextPos.x > maxX)
+                {
+                    nextPos.x = maxX;
+                    velocity.x = 0.f;
+                    idleDirX = -1.f;
+                    idleWalkLeft = 0.f;
+                    idlePauseLeft = 0.35f;
+                }
+
+                position = nextPos;
+                idleWalkLeft -= dt;
+            }
+        }
+    }
+  
+    UpdateAnimation();
+    sprite.Update();
+    UpdateEnemyParticles();
+    UpdateDruidCastEffect();
+}
+
+bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
+{
+    if (dead || dmg <= 0 ) return false;
+
+    // --- The rest is your existing ApplyDamage logic ---
+    hp -= dmg;
+
+    UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
+
+    if (hp <= 0)
+    {
+        hp = 0;
+        dead = true;
+        hidden = false;
+
+        attack.Reset();
+        chasing = false;
+        returningHome = false;
+        velocity = AEVec2{ 0.f, 0.f };
+
+        sprite.SetState(cfg.animDeath, false, nullptr);
+        deathTimeLeft = GetAnimDurationSec(sprite, cfg.animDeath);
+        if (deathTimeLeft <= 0.f)
+            deathTimeLeft = 0.5f;
+    }
+    else if (hurtTimeLeft <= 0.f)
+    {
+        hurtTimeLeft = GetAnimDurationSec(sprite, cfg.animHurt);
+        if (hurtTimeLeft <= 0.3f)
+            hurtTimeLeft = 0.3f;
+
+        attack.Reset();
+        castParticleSystem.SetSpawnRate(0.f);
+        castParticleSystem.ReleaseAll();
+        wasDruidCasting = false;
+        sprite.SetState(cfg.animHurt);
+    }
+
+    return true;
+}
+
+/*void Enemy::ApplyDamage(int dmg)
+{
+	(void)TryTakeDamage(dmg, -1);
+}*/
+
+
+// ---- Animation selection ----
+void Enemy::UpdateAnimation()
+{
+    if (dead)
+    {
+       
+        return;
+    }
+
+    if (hurtTimeLeft > 0.f)
+    {
+        sprite.SetState(cfg.animHurt);
+        return;
+    }
+
+    if (attack.IsAttacking())
+    {
+        sprite.SetState(cfg.animAttack);
+        return;
+    }
+
+    if (std::fabs(velocity.x) > cfg.runVelThreshold)
+        sprite.SetState(cfg.animRun);
+    else
+        sprite.SetState(cfg.animIdle);
+}
+
+
+
+void Enemy::DrawInspector()
+{
+    ImGui::Begin("Enemy", &isInspectorOpen);
+
+    if (ImGui::CollapsingHeader("Runtime"))
+    {
+        ImGui::DragFloat2("Position", &position.x, 0.1f);
+        ImGui::DragFloat2("Velocity", &velocity.x, 0.1f);
+        ImGui::Checkbox("Chasing", &chasing);
+        ImGui::Checkbox("ReturningHome", &returningHome);
+        ImGui::Checkbox("Dead", &dead);
+
+        ImGui::SeparatorText("HP");
+        ImGui::SliderInt("HP", &hp, 0, cfg.maxHp);
+        ImGui::Text("MaxHP: %d", cfg.maxHp);
+    }
+
+    if (ImGui::CollapsingHeader("Config"))
+    {
+        ImGui::DragFloat("MoveSpeed", &cfg.moveSpeed, 0.05f, 0.f, 20.f);
+        ImGui::DragFloat("AggroRange", &cfg.aggroRange, 0.05f, 0.f, 50.f);
+        ImGui::DragFloat("LeashRange", &cfg.leashRange, 0.05f, 0.f, 50.f);
+
+        ImGui::SeparatorText("Combat");
+        ImGui::SliderInt("AttackDamage", &cfg.attackDamage, 0, 10);
+        ImGui::DragFloat("AttackCooldown", &cfg.attackCooldown, 0.01f, 0.f, 5.f);
+
+        ImGui::SeparatorText("Debug");
+        ImGui::Checkbox("DebugDraw", &debugDraw);
+    }
+
+    ImGui::End();
+}
+
+
+bool Enemy::CheckIfClicked(const AEVec2& mousePos)
+{
+    return fabsf(position.x - mousePos.x) < size.x &&
+    fabsf(position.y - mousePos.y) < size.y;
+
+}
+
+void Enemy::ApplyRoomScaling(int extraHp, int extraDamage)
+{
+    cfg.maxHp += extraHp;
+    if (cfg.maxHp < 1) cfg.maxHp = 1;
+
+    hp += extraHp;
+    if (hp > cfg.maxHp) hp = cfg.maxHp;
+    if (hp < 1) hp = 1;
+
+    cfg.attackDamage += extraDamage;
+    if (cfg.attackDamage < 1) cfg.attackDamage = 1;
+}
+
+// ---- Render ----
+void Enemy::Render()
+{
+    if (hidden) return;
+
+    particleSystem.Render();
+    castParticleSystem.Render();
+
+    AEMtx33 transform;
+
+    const bool faceRight =
+        (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
+
+    // Scale (flip X if facing left)
+    AEMtx33Scale(&transform, faceRight ? cfg.renderScale : -cfg.renderScale, cfg.renderScale);
+
+    // Pivot correction (same as your Player / EnemyA / EnemyB)
+    AEMtx33TransApply(
+        &transform,
+        &transform,
+        position.x - (0.5f - sprite.metadata.pivot.x),
+        position.y - (0 - sprite.metadata.pivot.y)
+    );
+
+    // Camera scale
+    AEMtx33ScaleApply(&transform, &transform, Camera::scale, Camera::scale);
+    AEGfxSetTransform(transform.m);
+
+    sprite.Render();
+
+  
+
+    if (debugDraw)
+
+    {
+        //const float boxYOffset = -0.25f; // negative = draw LOWER (
+        const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
+        const AEVec2 hb = GetHurtboxPos();
+        QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+    }
+}

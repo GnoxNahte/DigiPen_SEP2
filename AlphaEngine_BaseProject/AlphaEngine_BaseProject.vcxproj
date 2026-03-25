@@ -64,7 +64,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include;$(SolutionDir)Extern\imgui\include;$(SolutionDir)Extern\imgui\include\backends</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -88,7 +88,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmodL.dll" "$(OutDir)" /s /r /y /q
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Extern\rapidjson\include;$(SolutionDir)Extern\imgui\include;$(SolutionDir)Extern\imgui\include\backends</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -96,35 +96,126 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmodL.dll" "$(OutDir)" /s /r /y /q
       <AdditionalDependencies>Alpha_Engine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(SolutionDir)Assets\" "$(OutDir)Assets\" /s /r /y /q"
+      <Command>xcopy "$(SolutionDir)Assets\" "$(OutDir)Assets\" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\freetype.dll" "$(OutDir)" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\Alpha_Engine.dll" "$(OutDir)" /s /r /y /q
 xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\imgui.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\imgui_demo.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\imgui_draw.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\imgui_tables.cpp" />
+    <ClCompile Include="..\Extern\imgui\include\imgui_widgets.cpp" />
+    <ClCompile Include="Saves\SaveData.cpp" />
+    <ClCompile Include="Saves\SaveSystem.cpp" />
+    <ClCompile Include="Source\EditorUI.cpp" />
+    <ClCompile Include="Source\Editor\Editor.cpp" />
+    <ClCompile Include="Source\Editor\EditorUtils.cpp" />
+    <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
+    <ClCompile Include="Source\Game\AudioManager.cpp" />
+    <ClCompile Include="Source\Game\Background.cpp" />
+    <ClCompile Include="Source\Game\BuffCards.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
-    <ClCompile Include="Source\Game\GameScene.cpp" />
+    <ClCompile Include="Source\Game\enemy\AttackSystem.cpp" />
+    <ClCompile Include="Source\Game\enemy\BossIntroOverlay.cpp" />
+    <ClCompile Include="Source\Game\enemy\Enemy.cpp" />
+    <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
+    <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
+    <ClCompile Include="Source\Game\Environment\traps.cpp" />
+    <ClCompile Include="Source\Game\GameOver.cpp" />
     <ClCompile Include="Source\Game\Player\Player.cpp" />
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp" />
+    <ClCompile Include="Source\Game\Rooms\RoomBuilder.cpp" />
+    <ClCompile Include="Source\Game\Rooms\RoomManager.cpp" />
+    <ClCompile Include="Source\Game\Rooms\RoomSystem.cpp" />
+    <ClCompile Include="Source\Game\Scene\GameScene.cpp" />
+    <ClCompile Include="Source\Game\Scene\GSM.cpp" />
+    <ClCompile Include="Source\Game\Scene\leveleditor.cpp" />
+    <ClCompile Include="Source\Game\Scene\LevelEditorScene.cpp" />
+    <ClCompile Include="Source\Game\Scene\LevelIO.cpp" />
+    <ClCompile Include="Source\Game\Scene\MainMenuScene.cpp" />
+    <ClCompile Include="Source\Game\SplashScreen.cpp" />
+    <ClCompile Include="Source\Game\Time.cpp" />
+    <ClCompile Include="Source\Game\Timer.cpp" />
+    <ClCompile Include="Source\Game\UI.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Utils\AEExtras.cpp" />
     <ClCompile Include="Source\Utils\FileHelper.cpp" />
     <ClCompile Include="Source\Utils\MeshGenerator.cpp" />
+    <ClCompile Include="Source\Utils\ObjectPool.cpp" />
+    <ClCompile Include="Source\Utils\ParticleSystem.cpp" />
+    <ClCompile Include="Source\Utils\PhysicsUtils.cpp" />
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
+    <ClCompile Include="Source\Utils\Vec2Int.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\Extern\imgui\include\backends\imgui_impl_win32.h" />
+    <ClInclude Include="..\Extern\imgui\include\imconfig.h" />
+    <ClInclude Include="..\Extern\imgui\include\imgui.h" />
+    <ClInclude Include="..\Extern\imgui\include\imgui_internal.h" />
+    <ClInclude Include="..\Extern\imgui\include\imstb_rectpack.h" />
+    <ClInclude Include="..\Extern\imgui\include\imstb_textedit.h" />
+    <ClInclude Include="..\Extern\imgui\include\imstb_truetype.h" />
+    <ClInclude Include="Saves\SaveData.h" />
+    <ClInclude Include="Saves\SaveSystem.h" />
+    <ClInclude Include="Source\CommonTypes.h" />
+    <ClInclude Include="Source\EditorUI.h" />
+    <ClInclude Include="Source\Editor\Editor.h" />
+    <ClInclude Include="Source\Editor\EditorUtils.h" />
+    <ClInclude Include="Source\Editor\ImGuiHelper.h" />
+    <ClInclude Include="Source\Game\AudioManager.h" />
+    <ClInclude Include="Source\Game\Background.h" />
+    <ClInclude Include="Source\Game\BuffCards.h" />
     <ClInclude Include="Source\Game\Camera.h" />
-    <ClInclude Include="Source\Game\GameScene.h" />
+    <ClInclude Include="Source\Game\enemy\AttackSystem.h" />
+    <ClInclude Include="Source\Game\enemy\BossIntroOverlay.h" />
+    <ClInclude Include="Source\Game\enemy\Enemy.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyAttack.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyBoss.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyManager.h" />
+    <ClInclude Include="Source\Game\enemy\IDamageable.h" />
+    <ClInclude Include="Source\Game\Environment\MapGrid.h" />
+    <ClInclude Include="Source\Game\Environment\MapTile.h" />
+    <ClInclude Include="Source\Game\Environment\traps.h" />
+    <ClInclude Include="Source\Game\GameOver.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
+    <ClInclude Include="Source\Game\Rooms\RoomBuilder.h" />
+    <ClInclude Include="Source\Game\Rooms\RoomData.h" />
+    <ClInclude Include="Source\Game\Rooms\RoomManager.h" />
+    <ClInclude Include="Source\Game\Rooms\RoomSystem.h" />
+    <ClInclude Include="Source\Game\Scene\GameScene.h" />
+    <ClInclude Include="Source\Game\Scene\GSM.h" />
+    <ClInclude Include="Source\Game\Scene\leveleditor.h" />
+    <ClInclude Include="Source\Game\Scene\LevelEditorScene.h" />
+    <ClInclude Include="Source\Game\Scene\LevelIO.h" />
+    <ClInclude Include="Source\Game\Scene\MainMenuScene.h" />
+    <ClInclude Include="Source\Game\SplashScreen.h" />
+    <ClInclude Include="Source\Game\Time.h" />
+    <ClInclude Include="Source\Game\Timer.h" />
+    <ClInclude Include="Source\Game\UI.h" />
+    <ClInclude Include="Source\Utils\AEExtras.h" />
+    <ClInclude Include="Source\Utils\Box.h" />
     <ClInclude Include="Source\Utils\Easing.h" />
+    <ClInclude Include="Source\Utils\Event\EventSystem.h" />
     <ClInclude Include="Source\Utils\FileHelper.h" />
     <ClInclude Include="Source\Utils\MeshGenerator.h" />
+    <ClInclude Include="Source\Utils\ObjectPool.h" />
+    <ClInclude Include="Source\Utils\ParticleSystem.h" />
+    <ClInclude Include="Source\Utils\PhysicsUtils.h" />
     <ClInclude Include="Source\Utils\QuickGraphics.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
     <ClInclude Include="Source\Utils\SpriteMetadata.h" />
+    <ClInclude Include="Source\Utils\Vec2Int.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

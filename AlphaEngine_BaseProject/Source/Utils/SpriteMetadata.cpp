@@ -18,37 +18,50 @@ SpriteMetadata::SpriteMetadata(std::string originalFile)
 	}
 
 	// JSON member names
-	static const char *mframesPerRow = "framesPerRow",
-					  *mframesPerSecond = "framesPerSecond",
-					  *mPivot = "pivot";
+	static const char *mStateInfo = "stateInfo",
+					  *mPivot = "pivot",
+					  *mDefaultSampleRate = "defaultSampleRate";
 
-	if (!document.HasMember(mframesPerRow) || !document.HasMember(mframesPerSecond)|| !document.HasMember(mPivot))
+	if (!document.HasMember(mStateInfo) || !document.HasMember(mPivot) || !document.HasMember(mDefaultSampleRate))
 	{
 		std::cout << "File (" << originalFile << ") missing metadata members." << std::endl;
 		return;
 	}
 
-	auto framesPerRowArr = document[mframesPerRow].GetArray();
+	this->defaultSampleRate = document[mDefaultSampleRate].GetInt();
 
-	this->rows = framesPerRowArr.Size();
-	this->cols = 0; // Will set later in for loop
+	auto stateInfoArr = document[mStateInfo].GetArray();
+	this->rows = stateInfoArr.Size();
 
 	// Copy the rapidjson array result into framesPerRow vector
-	this->framesPerRow.reserve(framesPerRowArr.Size());
-	for (auto& i : framesPerRowArr)
+	this->stateInfoRows.reserve(rows);
+	for (auto& stateInfoObj : stateInfoArr)
 	{
-		int colCount = i.GetInt();
-		this->framesPerRow.emplace_back(colCount);
+		this->stateInfoRows.emplace_back(
+			stateInfoObj["name"].GetString(),
+			stateInfoObj["frameCount"].GetInt(),
+			stateInfoObj.HasMember("sampleRate") ? stateInfoObj["sampleRate"].GetInt() : defaultSampleRate,
+			stateInfoObj.HasMember("ifLoop") ? stateInfoObj["ifLoop"].GetBool() : true
+		);
+	}
 
-		// Get max column count
-		if (colCount > this->cols)
-			this->cols = colCount;
+	// Find the max frame count and assign it to cols
+	for (auto& stateInfo : stateInfoRows)
+	{
+		if (stateInfo.frameCount > cols)
+			cols = stateInfo.frameCount;
 	}
 	
-	this->framesPerSecond = document[mframesPerSecond].GetFloat();
-
 	auto pivotObject = document[mPivot].GetObject();
 	pivot.x = pivotObject["x"].GetFloat();
 	pivot.y = pivotObject["y"].GetFloat();
 }
 
+SpriteMetadata::StateInfo::StateInfo(std::string name, int frameCount, int sampleRate, bool ifLoop) :
+	name(name),
+	frameCount(frameCount),
+	sampleRate(sampleRate),
+	timePerFrame(1.f / sampleRate),
+	ifLoop(ifLoop)
+{
+}

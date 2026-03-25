@@ -353,7 +353,6 @@ void GameScene::Update()
 			else
 			{
 				//ClampPlayerInsideCurrentRoom();
-				player.ClearVelocity();
 				roomTransitionLocked = true;
 				roomInputLockTimer = kRoomInputLockDuration;
 				return;
