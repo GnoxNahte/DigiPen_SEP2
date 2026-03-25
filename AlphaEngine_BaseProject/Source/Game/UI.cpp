@@ -847,65 +847,65 @@ void UI::PlaySlamAttackTutorial() {
 		slamAttackTutorialDone = true;
 	}
 }
-void UI::ShowAttackKeys() {
-	// --- Base position (center of sprite) ---
-	f32 xOffset = 565.5f;
-	f32 yOffset = 600.0f;
-
-	// --- Scale ---
-	AEMtx33 scaleMtx;
-	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
-
-	// --- Rotation ---
-	AEMtx33 rot;
-	AEMtx33Identity(&rot);
-
-	// --- Translation ---
-	AEMtx33 trans;
-	AEMtx33Trans(&trans, xOffset - 125, yOffset + 25);
-
-	// --- Combine transform ---
-	AEMtx33 transform;
-	AEMtx33Concat(&transform, &rot, &scaleMtx);
-	AEMtx33Concat(&transform, &trans, &transform);
-
-	// --- Render sprite ---
-	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-	AEGfxSetTransparency(1.0f);
-
-	AEGfxTextureSet(key_X, 0, 0);
-	AEGfxSetTransform(transform.m);
-	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
-
-	// =====================================================
-	//  Convert SAME position to NDC (for text alignment)
-	// =====================================================
-	float screenWidth = 1280.0f;
-	float screenHeight = 720.0f;
-
-	float ndcX = (xOffset / screenWidth) * 2.0f - 1.0f;
-	float ndcY = (yOffset / screenHeight) * 2.0f - 1.0f;
-
-	// Small vertical tweak (text baseline vs sprite center)
-	ndcY -= 0.3f;
-
-
-	// =====================================================
-	//  Draw text aligned with sprite
-	// =====================================================
-
-	// Left side text
-	AEGfxPrint(gameOverFont, "Press",
-		ndcX - 0.45f,
-		ndcY,
-		0.45f,
-		1.0f, 1.0f, 1.0f, 1.0f);
-
-	// Right side text
-	AEGfxPrint(gameOverFont, "to attack.",
-		ndcX - 0.29f,
-		ndcY,
-		0.45f,
-		1.0f, 1.0f, 1.0f, 1.0f);
-}
+//void UI::ShowAttackKeys() {
+//	// --- Base position (center of sprite) ---
+//	f32 xOffset = 565.5f;
+//	f32 yOffset = 600.0f;
+//
+//	// --- Scale ---
+//	AEMtx33 scaleMtx;
+//	AEMtx33Scale(&scaleMtx, 50.0f, 50.0f);
+//
+//	// --- Rotation ---
+//	AEMtx33 rot;
+//	AEMtx33Identity(&rot);
+//
+//	// --- Translation ---
+//	AEMtx33 trans;
+//	AEMtx33Trans(&trans, xOffset - 125, yOffset + 25);
+//
+//	// --- Combine transform ---
+//	AEMtx33 transform;
+//	AEMtx33Concat(&transform, &rot, &scaleMtx);
+//	AEMtx33Concat(&transform, &trans, &transform);
+//
+//	// --- Render sprite ---
+//	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+//	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+//	AEGfxSetTransparency(1.0f);
+//
+//	AEGfxTextureSet(key_X, 0, 0);
+//	AEGfxSetTransform(transform.m);
+//	AEGfxMeshDraw(tutorialMesh, AE_GFX_MDM_TRIANGLES);
+//
+//	// =====================================================
+//	//  Convert SAME position to NDC (for text alignment)
+//	// =====================================================
+//	float screenWidth = 1280.0f;
+//	float screenHeight = 720.0f;
+//
+//	float ndcX = (xOffset / screenWidth) * 2.0f - 1.0f;
+//	float ndcY = (yOffset / screenHeight) * 2.0f - 1.0f;
+//
+//	// Small vertical tweak (text baseline vs sprite center)
+//	ndcY -= 0.3f;
+//
+//
+//	// =====================================================
+//	//  Draw text aligned with sprite
+//	// =====================================================
+//
+//	// Left side text
+//	AEGfxPrint(gameOverFont, "Press",
+//		ndcX - 0.45f,
+//		ndcY,
+//		0.45f,
+//		1.0f, 1.0f, 1.0f, 1.0f);
+//
+//	// Right side text
+//	AEGfxPrint(gameOverFont, "to attack.",
+//		ndcX - 0.29f,
+//		ndcY,
+//		0.45f,
+//		1.0f, 1.0f, 1.0f, 1.0f);
+//}

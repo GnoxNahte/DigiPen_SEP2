@@ -94,7 +94,7 @@ public:
 	static void PlayPressurePlateTutorial();
 	static void PlayJumpOffLedgeTutorial();
 	static void PlaySlamAttackTutorial();
-	static void ShowAttackKeys();
+	//static void ShowAttackKeys();
 
 	// Tutorial public variables to determine when to show tutorials.
 	inline static bool showPressurePlateTutorial = false;
