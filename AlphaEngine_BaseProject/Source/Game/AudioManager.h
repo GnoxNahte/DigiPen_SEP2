@@ -66,6 +66,12 @@ public:
     static void UnmuffleMusic();
     static void RefreshAllMusicVolumes();
 
+
+    // Flags
+    inline static bool playedBossChargingSFX = false;
+    inline static bool playedBossTeleportSFX = false;
+    inline static bool playedBossDeathSFX = false;
+
     // Reset functions
     static void StopAllMusic();
     static void ResetRuntimeState();
@@ -104,4 +110,11 @@ public:
 
     // Enemy SFXs
     static std::unique_ptr<SFXAudio> enemyHurt;
+
+    // Boss SFXs
+    static std::unique_ptr<SFXAudio> bossCharging;
+    static std::unique_ptr<SFXAudio> bossProjectile;
+    static std::unique_ptr<SFXAudio> bossTeleport;
+    static std::unique_ptr<SFXAudio> bossSlash;
+    static std::unique_ptr<SFXAudio> bossDeath;
 };

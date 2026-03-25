@@ -35,6 +35,13 @@ std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
 // Enemy SFXs
 std::unique_ptr<SFXAudio> AudioManager::enemyHurt = nullptr;
 
+// Boss SFXs
+std::unique_ptr<SFXAudio> AudioManager::bossCharging = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::bossProjectile = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::bossTeleport = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::bossSlash = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::bossDeath = nullptr;
+
 namespace
 {
     const f32 PI_2 = 1.57079632679f;
@@ -323,6 +330,18 @@ void AudioManager::Init() {
     // Enemy SFXs
     if (!enemyHurt)
         enemyHurt = std::make_unique<SFXAudio>("Assets/music/EnemyHurt.mp3");
+
+    // Boss SFXs
+    if (!bossCharging)
+        bossCharging = std::make_unique<SFXAudio>("Assets/music/BossCharging.mp3");
+    if (!bossProjectile)
+        bossProjectile = std::make_unique<SFXAudio>("Assets/music/BossProjectile.mp3");
+    if (!bossTeleport)
+        bossTeleport = std::make_unique<SFXAudio>("Assets/music/BossTeleport.mp3");
+    if (!bossSlash)
+        bossSlash = std::make_unique<SFXAudio>("Assets/music/BossSlash.mp3");
+    if (!bossDeath)
+        bossDeath = std::make_unique<SFXAudio>("Assets/music/BossDeath.mp3");
 }
 
 void AudioManager::Update() {
@@ -382,6 +401,13 @@ void AudioManager::Exit() {
     // Reset enemy sfxs.
     enemyHurt.reset();
 
+    // Reset boss sfxs.
+    bossCharging.reset();
+    bossProjectile.reset();
+    bossTeleport.reset();
+    bossSlash.reset();
+    bossDeath.reset();
+
     // Reset music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);
     AEAudioUnloadAudioGroup(gSFXGroup);
@@ -436,16 +462,23 @@ void AudioManager::StopAllMusic()
 void AudioManager::ResetRuntimeState()
 {
     gIsMuffled = false;
+
     gFadeTimer = 0.0f;
     gFadeDuration = 0.0f;
     preservedGameVol = 1.0f;
+
     gIsCrossfading = false;
     gFadeOutTrack = nullptr;
     gFadeInTrack = nullptr;
     gIsPlayingBoss2ndPhase = false;
     gIsPlayingGOver = false;
     gIsPlayingVictory = false;
+
     gCurrTrack = nullptr;
+
+    AudioManager::playedBossDeathSFX = false;
+    AudioManager::playedBossChargingSFX = false;
+    AudioManager::playedBossTeleportSFX = false;
 }
 
 void AudioManager::ResetForRestart()

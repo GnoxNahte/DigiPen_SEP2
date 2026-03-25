@@ -108,6 +108,11 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
 
     if (hp <= 0)
     {
+        if (!AudioManager::playedBossDeathSFX) {
+            std::cout << "PLAY DEATH SOUND!!!!!!!!!!\n";
+            AudioManager::playedBossDeathSFX = true;
+            AudioManager::PlaySFX(*AudioManager::bossDeath);
+        }
         hp = 0;
         isDead = true;
         sprite.SetState(DEATH, false, nullptr);
@@ -592,6 +597,10 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // If teleport is active, we fully own the boss this frame.
     if (teleportActive)
     {
+        if (!AudioManager::playedBossTeleportSFX) {
+            AudioManager::PlaySFX(*AudioManager::bossTeleport);
+            AudioManager::playedBossTeleportSFX = true;
+        }
         // Freeze everything while teleporting
         attack.Reset();
         chasing = false;
@@ -618,6 +627,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
         // End teleport after animation duration, then immediately start ATTACK
         if (teleDur > 0.f && teleportTimer >= teleDur)
         {
+            AudioManager::playedBossTeleportSFX = false;
             teleportActive = false;
             teleportTimer = 0.f;
             teleportMoved = false;
@@ -698,6 +708,10 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     {
         if (specialBurstActive)
         {
+            if (!AudioManager::playedBossChargingSFX) {
+                AudioManager::PlaySFX(*AudioManager::bossCharging);
+                AudioManager::playedBossChargingSFX = true;
+            }
             SpawnSpellChargeVfx(dt);
             // Face player during special
             if (dx != 0.f)
@@ -717,6 +731,8 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             while (specialSpawnTimer <= 0.0f && specialSpawnsRemaining > 0)
             {
                 const float dir = (facingDirection.x >= 0.f) ? 1.f : -1.f;
+
+                AudioManager::PlaySFX(*AudioManager::bossProjectile);
 
                 SpecialAttack specialAttack;
                 specialAttack.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
@@ -742,6 +758,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
         else
         {
             SpecialElapsed += dt;
+            AudioManager::playedBossChargingSFX = false;
 
             if (SpecialElapsed >= runtimeSpecialCooldown)
             {
@@ -1040,6 +1057,9 @@ void EnemyBoss::UpdateAnimation()
 
     if (attack.IsAttacking())
     {
+        if (sprite.GetState() != ATTACK) {
+            AudioManager::PlaySFX(*AudioManager::bossSlash);
+        }
         sprite.SetState(ATTACK);
         return;
     }
