@@ -17,7 +17,7 @@
 #include "../UI.h"
 #include "../rooms/RoomManager.h"
 #include "../rooms/roomBuilder.h"
-
+#include "../AudioManager.h"
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -930,12 +930,14 @@ static void PlayMode_Enter()
     PlayMode_BuildCurrentRoom(DIR_NONE);
 
     UI::Init(gPlayPlayer);
+    AudioManager::Init();
     
 }
 
 static void PlayMode_Exit()
 {
     UI::Exit();
+    AudioManager::Exit();
     delete gPlayPlayer;   gPlayPlayer = nullptr;
     delete gPlayTraps;    gPlayTraps = nullptr;
     delete gPlayEnemies;  gPlayEnemies = nullptr;
@@ -963,7 +965,7 @@ static void PlayMode_Update(float dt)
         gPlayCamera->Update();
         return;
     }
-
+    AudioManager::Update();
     gPlayPlayer->Update();
 
     if (gPlayRoomTransitionLocked)

@@ -461,7 +461,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // Runtime tuning derived from HP
     const float runtimeTeleportInterval = Lerp(2.2f, 1.0f, pressure);
     const float runtimeTeleportSnapNorm = Lerp(0.28f, 0.10f, pressure);
-    const float runtimeSpecialCooldown = Lerp(5.0f, 3.2f, pressure);
+    const float runtimeSpecialCooldown = Lerp(3.0f, 2.0f, pressure);
     const float runtimeSpecialSpawnGap = Lerp(1.0f, 0.55f, pressure);
     const float runtimeProjectileSpeed = Lerp(7.0f, 9.0f, pressure);
     const float runtimeMoveSpeed = Lerp(moveSpeed, moveSpeed * 1.12f, pressure);

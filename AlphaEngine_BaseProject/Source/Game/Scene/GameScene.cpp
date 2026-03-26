@@ -9,11 +9,10 @@
 #include "../../Game/Timer.h"
 #include <iomanip>
 #include <sstream>
-#include <cmath>
 #include "../AudioManager.h"
 #include "../Rooms/RoomBuilder.h"
 #include "../enemy/AttackSystem.h"
-#include <algorithm>
+
 
 std::string gPendingLevelPath = "Assets/Levels/gamescene.lvl";   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart

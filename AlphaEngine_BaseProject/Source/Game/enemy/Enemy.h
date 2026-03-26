@@ -5,7 +5,9 @@
 #include <AEVec2.h>
 #include "IDamageable.h"
 #include "../../Editor/EditorUtils.h"
+#include "../../CommonTypes.h"
 #include "../../Utils/ParticleSystem.h"
+
 
 class MapGrid; // forward declaration to avoid circular dependency
 
@@ -37,7 +39,7 @@ public:
         float leashRange = 8.0f;
 
         // Vertical gating (in world/tile units)
-        float aggroYRange = 1.0f; // start chasing only if player within this Y diff
+        float aggroYRange = 2.0f; // start chasing only if player within this Y diff
         float attackYRange = 1.0f; // allow attacking only if within this Y diff
 
         // Animation selection
@@ -158,6 +160,7 @@ private:
     float idleWalkLeft = 0.f;     // seconds left to keep walking
     float idlePauseLeft = 0.f;    // seconds left to pause
     float idleDirX = 1.f;         // +1 or -1
+    float idleSpeedMul = 0.35f;
 
     int  hp{ 1 };
     bool dead{ false };
