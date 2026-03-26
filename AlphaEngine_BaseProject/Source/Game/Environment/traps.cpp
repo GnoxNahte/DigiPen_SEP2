@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
+#include <cmath>
 
 
 #include "../../Game/Player/Player.h"
@@ -13,6 +15,11 @@ static inline float MinX(const Box& b) { return b.position.x; }
 static inline float MinY(const Box& b) { return b.position.y; }
 static inline float MaxX(const Box& b) { return b.position.x + b.size.x; }
 static inline float MaxY(const Box& b) { return b.position.y + b.size.y; }
+
+static inline float ClampFloat(float v, float lo, float hi)
+{
+    return (std::max)(lo, (std::min)(v, hi));
+}
 
 AEGfxTexture* SpikePlate::s_spikeTexture = nullptr;
 AEGfxVertexList* SpikePlate::s_spikeMeshes[4] = { nullptr, nullptr, nullptr, nullptr };
@@ -240,6 +247,25 @@ void Trap::Update(float dt, Player& player)
     m_prevOverlap = overlap;
 }
 
+AEVec2 Trap::GetCenter() const
+{
+    AEVec2 c{};
+    c.x = m_box.position.x + m_box.size.x * 0.5f;
+    c.y = m_box.position.y + m_box.size.y * 0.5f;
+    return c;
+}
+
+float Trap::GetDistanceToPoint(const AEVec2& point) const
+{
+    const float closestX = ClampFloat(point.x, MinX(m_box), MaxX(m_box));
+    const float closestY = ClampFloat(point.y, MinY(m_box), MaxY(m_box));
+
+    const float dx = point.x - closestX;
+    const float dy = point.y - closestY;
+
+    return std::sqrt(dx * dx + dy * dy);
+}
+
 void Trap::Render() const
 {
     unsigned int color = 0xFFFFFFFF;
@@ -254,6 +280,38 @@ void Trap::Render() const
 
 }
 
+const Trap* TrapManager::GetClosestTrap(const AEVec2& point, bool enabledOnly) const
+{
+    const Trap* closestTrap = nullptr;
+    float bestDistance = (std::numeric_limits<float>::max)();
+
+    for (const auto& t : m_traps)
+    {
+        if (!t)
+            continue;
+
+        if (enabledOnly && !t->IsEnabled())
+            continue;
+
+        const float d = t->GetDistanceToPoint(point);
+        if (d < bestDistance)
+        {
+            bestDistance = d;
+            closestTrap = t.get();
+        }
+    }
+
+    return closestTrap;
+}
+
+float TrapManager::GetClosestTrapDistance(const AEVec2& point, bool enabledOnly) const
+{
+    const Trap* closestTrap = GetClosestTrap(point, enabledOnly);
+    if (!closestTrap)
+        return -1.0f; // 表示没有 trap
+
+    return closestTrap->GetDistanceToPoint(point);
+}
 
 
 // ---------------- LavaPool ----------------

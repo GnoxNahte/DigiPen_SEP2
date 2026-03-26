@@ -32,6 +32,11 @@ public:
     const Box& GetBox() const { return m_box; }
     void SetBox(const Box& b) { m_box = b; }
 
+    Type GetType() const { return m_type; }
+
+    AEVec2 GetCenter() const;
+    float GetDistanceToPoint(const AEVec2& point) const;
+
 protected:
     virtual void OnPlayerEnter(Player&) {}
     virtual void OnPlayerStay(float, Player&) {}
@@ -141,6 +146,9 @@ public:
 
     void Update(float dt, Player& player);
     void Render() const;
+
+    const Trap* GetClosestTrap(const AEVec2& point, bool enabledOnly = true) const;
+    float GetClosestTrapDistance(const AEVec2& point, bool enabledOnly = true) const;
 
     static void UnloadAllSharedRenderResources();
 
