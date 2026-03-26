@@ -231,6 +231,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             {
                 druidCastFxTimer = 0.5f;
                 druidSpellTargetLocked = false;
+                AudioManager::PlaySFX(*AudioManager::druidCast, AudioManager::GetSFXVolume());
+                AudioManager::playedDruidImpactSFX = false;
 
                 float groundY = 0.f;
                 const float searchStartY = playerPos.y + 0.5f;
@@ -279,6 +281,13 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
             castParticleSystem.SetSpawnRate(24.f);
             castParticleSystem.Update();
+
+            // Play impact sound exactly once when the cast timer expires
+            if (druidCastFxTimer <= 0.f && !AudioManager::playedDruidImpactSFX)
+            {
+                AudioManager::PlaySFX(*AudioManager::druidImpact, AudioManager::GetSFXVolume());
+                AudioManager::playedDruidImpactSFX = true;
+            }
         };
     if (dead)
     {
@@ -382,6 +391,10 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
            
             attack.Update(dt, effectiveDist, attackDur);
 
+            // Play skeleton attack sfx
+            if (!IsDruid() && attack.JustStarted())
+                AudioManager::PlaySFX(*AudioManager::skeletonAttack, AudioManager::GetSFXVolume());
+
             if (attack.IsAttacking())
             {
                 velocity = AEVec2{ 0.f, 0.f };
@@ -446,6 +459,10 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
     // Update attack component (needs attack anim duration)
     attack.Update(dt, effectiveDist, attackDur);
+
+    // Play skeleton attack sfx
+    if (!IsDruid() && attack.JustStarted())
+        AudioManager::PlaySFX(*AudioManager::skeletonAttack, AudioManager::GetSFXVolume());
 
     // If attacking, stop movement
     if (attack.IsAttacking())
@@ -602,7 +619,8 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     // Clamp
     pitch = std::clamp(pitch, minPitch, maxPitch);
 
-    AudioManager::PlaySFX(*AudioManager::enemyHurt, pitch);
+    // Play generic enemy hurt sound.
+    AudioManager::PlaySFX(*AudioManager::enemyHurt, AudioManager::GetSFXVolume(), pitch);
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
@@ -611,6 +629,13 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         hp = 0;
         dead = true;
         hidden = false;
+
+        if (IsDruid())
+            AudioManager::PlaySFX(*AudioManager::druidDeath, AudioManager::GetSFXVolume());
+        else {
+            AudioManager::PlaySFX(*AudioManager::skeletonDeath, AudioManager::GetSFXVolume());
+        }
+
 
         attack.Reset();
         chasing = false;

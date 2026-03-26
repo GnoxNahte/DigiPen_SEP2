@@ -114,13 +114,13 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 		// --- KEYBOARD INPUT ---
 		if (AEInputCheckTriggered(AEVK_RIGHT) || AEInputCheckTriggered(AEVK_D)) {
 			//std::cout << "Hovered RIGHT once - play hover once sound\n";
-			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
+			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX, AudioManager::GetSFXVolume());
 			cardSelected = static_cast<int>((cardSelected + 1) % cards.size());
 			keyboardInputDetected = true;
 		}
 		else if (AEInputCheckTriggered(AEVK_LEFT) || AEInputCheckTriggered(AEVK_A)) {
 			//std::cout << "Hovered LEFT once - play hover once sound\n";
-			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
+			AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX, AudioManager::GetSFXVolume());
 			cardSelected = static_cast<int>((cardSelected - 1 + cards.size()) % cards.size());
 			keyboardInputDetected = true;
 		}
@@ -163,7 +163,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 						for (BuffCard& c : cards) c.selected = false;
 						cardSelected = i;
 						cards[cardSelected].selected = true;
-						AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX);
+						AudioManager::PlaySFX(*AudioManager::buffHoverOnceSFX, AudioManager::GetSFXVolume());
 						//std::cout << "Hovered MOUSE once - play hover once sound\n";
 					}
 					break;
@@ -188,7 +188,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 			else {
 				Time::GetInstance().SetTimeScale(0.0f);
 			}
-			AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
+			AudioManager::PlaySFX(*AudioManager::buffConfirmSFX, AudioManager::GetSFXVolume());
 			AudioManager::UnmuffleMusic();
 		}
 		if (AEInputCheckTriggered(AEVK_LBUTTON) && !cardSelectedThisUpdate) {
@@ -210,7 +210,7 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 				else {
 					Time::GetInstance().SetTimeScale(0.0f);
 				}
-				AudioManager::PlaySFX(*AudioManager::buffConfirmSFX);
+				AudioManager::PlaySFX(*AudioManager::buffConfirmSFX, AudioManager::GetSFXVolume());
 				AudioManager::UnmuffleMusic();
 				//std::cout << "Selected Card By Mouse: " << cards[cardSelected].cardName
 				//	<< '\n' << "Rarity: "
@@ -439,7 +439,7 @@ void BuffCardScreen::Update() {
 				case RARITY_LEGENDARY: pitch = 1.5f; break;
 				}
 
-				AudioManager::PlaySFX(*AudioManager::buffRevealSFX, pitch);
+				AudioManager::PlaySFX(*AudioManager::buffRevealSFX, AudioManager::GetSFXVolume(), pitch);
 				cardFlipStates[i] = 1.0f;
 				cardFlipping[i] = false;
 			}

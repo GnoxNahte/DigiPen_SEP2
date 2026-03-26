@@ -236,7 +236,12 @@ void GameScene::Init()
 	roomInputLockTimer = 0.f;
 
 	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
-		if (AudioManager::gameMusic)
+		if (AudioManager::trapLava && !AudioManager::trapLava->IsActive())
+		{
+			AudioManager::trapLava->Play(0.0f); // start silent
+			AudioManager::trapLava->SetActive(true);
+		}
+		if (AudioManager::gameMusic && !AudioManager::gameMusic->IsActive())
 			AudioManager::gameMusic->Play(1.0f);
 	}
 }
@@ -388,6 +393,7 @@ void GameScene::Update()
 	}
 	//std::cout << "Current room : " << static_cast<int>(roomMgr.GetCurrentRoomID()) << '\n';
 	AudioManager::Update();
+	AudioManager::UpdateLavaAudio(trapMgr, player);
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
@@ -418,6 +424,7 @@ void GameScene::Update()
 		return;
 	}
 	if (player.IsDead()) {
+		AudioManager::trapLava->Stop();
 		AudioManager::PlayGameOverMusic();
 	}
 }
@@ -697,8 +704,21 @@ void GameScene::UpdatePauseInput()
 		{
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
+			Time::GetInstance().ResetElapsedTime();
 			Time::GetInstance().SetTimeScale(1.0f);
+			TimerSystem::GetInstance().Clear();
 			UI::Reset();
+			if (!BuffCardManager::GetCurrentBuffs().empty())
+			{
+				BuffCardManager::ResetCurrentBuffs();
+			}
+
+			if (!gLastLoadedLevelPath.empty())
+			{
+				gPendingLevelPath = gLastLoadedLevelPath;
+			}
+
+			AudioManager::ResetForRestart();
 			GSM::ChangeScene(SceneState::GS_MAIN_MENU);
 			return;
 		}

@@ -275,7 +275,7 @@ void Player::UpdateInput()
         lastAttackHeld = currTime;
 
     if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
-        AudioManager::PlaySFX(*AudioManager::playerDash);
+        AudioManager::PlaySFX(*AudioManager::playerDash, AudioManager::GetSFXVolume());
         dashStartTime = currTime;
     }
 }
@@ -785,7 +785,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     if (health <= dmg)
     {
         health = 0;
-        AudioManager::PlaySFX(*AudioManager::playerDeath);
+        AudioManager::PlaySFX(*AudioManager::playerDeath, AudioManager::GetSFXVolume());
         EventSystem::Trigger<PlayerDeathEvent>({ *this });
         sprite.SetState(AnimState::DEATH, false, [&](int) {
             sprite.SetState(AnimState::DEATH_LOOP); 
@@ -795,7 +795,7 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
 
     health -= dmg;
     float pitch = AEExtras::RandomRange({ 0.9f, 1.2f });
-    AudioManager::PlaySFX(*AudioManager::playerHurt, pitch);
+    AudioManager::PlaySFX(*AudioManager::playerHurt, AudioManager::GetSFXVolume(), pitch);
     
     float knockbackStrength = max(dmg / stats.maxKnockbackDmg, 1.f) * stats.knockbackAmt;
 

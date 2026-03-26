@@ -100,7 +100,7 @@ public:
     SpikePlate(const Box& box, float upTime, float downTime, int damageOnHit, bool startDisabled);
 
     void Update(float dt, Player& player) override;
-    void ActivateFromPlate();
+    void ActivateFromPlate(const Player& player);
     void OnPlayerEnter(Player& player) override;
     void Render() const override;
 
@@ -149,6 +149,7 @@ public:
 
     const Trap* GetClosestTrap(const AEVec2& point, bool enabledOnly = true) const;
     float GetClosestTrapDistance(const AEVec2& point, bool enabledOnly = true) const;
+    float GetClosestLavaDistance(const AEVec2& point) const;
 
     static void UnloadAllSharedRenderResources();
 

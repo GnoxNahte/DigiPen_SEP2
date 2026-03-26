@@ -9,6 +9,7 @@
 
 #include "../../Game/Player/Player.h"
 #include "../../Utils/QuickGraphics.h"
+#include "../AudioManager.h"
 
 // ---------- AABB overlap ----------
 static inline float MinX(const Box& b) { return b.position.x; }
@@ -312,6 +313,28 @@ float TrapManager::GetClosestTrapDistance(const AEVec2& point, bool enabledOnly)
 
     return closestTrap->GetDistanceToPoint(point);
 }
+float TrapManager::GetClosestLavaDistance(const AEVec2& point) const
+{
+    float bestDistance = (std::numeric_limits<float>::max)();
+
+    for (const auto& t : m_traps)
+    {
+        if (!t) continue;
+        if (!t->IsEnabled()) continue;
+
+        if (t->GetType() != Trap::Type::LavaPool)
+            continue;
+
+        float d = t->GetDistanceToPoint(point);
+        if (d < bestDistance)
+            bestDistance = d;
+    }
+
+    if (bestDistance == (std::numeric_limits<float>::max)())
+        return -1.0f;
+
+    return bestDistance;
+}
 
 
 // ---------------- LavaPool ----------------
@@ -330,6 +353,12 @@ void LavaPool::OnPlayerEnter(Player& player)
 
 	// entering lava should cause immediate damage, and then start the tick timer so that it will deal damage periodically after that as well
     m_tickTimer = 0.f;
+
+    float distance = GetDistanceToPoint(player.GetPosition());
+
+    float maxDistance = 8.0f;
+    float volume = 1.0f - (distance / maxDistance);
+    volume = ClampFloat(volume, 0.0f, 1.0f);
 }
 
 void LavaPool::OnPlayerStay(float dt, Player& player)
@@ -398,8 +427,9 @@ void PressurePlate::AddLinkedTrap(Trap* t)
     m_linked.push_back(t);
 }
 
-void PressurePlate::OnPlayerEnter(Player&)
+void PressurePlate::OnPlayerEnter(Player& p)
 {
+    AudioManager::PlaySFX(*AudioManager::trapPressurePlate, AudioManager::GetSFXVolume());
     if (IsTriggered())
     {
         return;
@@ -417,7 +447,7 @@ void PressurePlate::OnPlayerEnter(Player&)
         if (!t) continue;
 
         if (auto* spike = dynamic_cast<SpikePlate*>(t))
-            spike->ActivateFromPlate();
+            spike->ActivateFromPlate(p);
         else
             t->SetEnabled(true);
     }
@@ -450,7 +480,7 @@ SpikePlate::SpikePlate(const Box& box, float upTime, float downTime, int damageO
     m_animTimer = 0.f;
 }
 
-void SpikePlate::ActivateFromPlate()
+void SpikePlate::ActivateFromPlate(const Player& player)
 {
     SetEnabled(true);
     m_spikesUp = true;
@@ -458,6 +488,16 @@ void SpikePlate::ActivateFromPlate()
     m_phaseTimer = 0.f;
     m_hitTimer = 0.f;
     m_animTimer = 0.f;
+
+    float distance = GetDistanceToPoint(player.GetPosition());
+
+    float maxDistance = 8.0f; // tweak
+    float volume = 1.0f - (distance / maxDistance);
+    volume = ClampFloat(volume, 0.0f, AudioManager::GetSFXVolume());
+    volume = 0.2f + 0.8f * volume; // allow far spikes to still have sounds
+
+    // Play once with volume
+    AudioManager::PlaySFX(*AudioManager::trapSpikes, volume);
 }
 // ------------- pressure plate render -------------
 void PressurePlate::Render() const

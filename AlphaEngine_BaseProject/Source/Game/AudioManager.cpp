@@ -4,6 +4,7 @@
 #include <iostream>
 #include "../Game/Time.h"
 #include "../Game/Rooms/RoomData.h"
+#include "../Game/Environment/traps.h"
 
 // Declare background music.
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
@@ -13,6 +14,8 @@ std::unique_ptr<BGMAudio> AudioManager::gameOverMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::victoryMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::menuMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::creditsMusic = nullptr;
+
+std::unique_ptr<BGMAudio> AudioManager::trapLava = nullptr;
 
 // Declare sound effects. 
 // Buff SFXs
@@ -34,6 +37,11 @@ std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
 
 // Enemy SFXs
 std::unique_ptr<SFXAudio> AudioManager::enemyHurt = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::druidCast = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::druidImpact = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::druidDeath = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::skeletonAttack = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::skeletonDeath = nullptr;
 
 // Boss SFXs
 std::unique_ptr<SFXAudio> AudioManager::bossCharging = nullptr;
@@ -41,6 +49,10 @@ std::unique_ptr<SFXAudio> AudioManager::bossProjectile = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::bossTeleport = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::bossSlash = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::bossDeath = nullptr;
+
+// Trap SFXs
+std::unique_ptr<SFXAudio> AudioManager::trapPressurePlate = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::trapSpikes = nullptr;
 
 namespace
 {
@@ -221,6 +233,18 @@ void AudioManager::PlayGameOverMusic() {
         gIsPlayingGOver = true;
     }
 }
+void AudioManager::PlayMenuMusic(RoomManager const& roomMgr) {
+    if (gCurrTrack && gCurrTrack != menuMusic.get())
+    {
+        gCurrTrack->CrossfadeTo(*menuMusic, 1.2f);
+    }
+    else if (!menuMusic->IsActive())
+    {
+        menuMusic->Play(menuMusic->GetVolume());
+    }
+    gCurrTrack = menuMusic.get();
+    std::cout << static_cast<int>(roomMgr.GetCurrentRoomID());
+}
 void AudioManager::MuffleMusic() {
     if (!gIsMuffled) {
         preservedGameVol = gCurrTrack->GetVolume();
@@ -258,13 +282,41 @@ void AudioManager::RefreshAllMusicVolumes()
     if (creditsMusic && creditsMusic->IsActive()) {
         creditsMusic->ApplyFinalVolume();
     }
+    if (trapLava && trapLava->IsActive()) {
+        trapLava->ApplyFinalVolume();
+    }
 }
-void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& pitch) {
+void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& volume, f32 const& pitch) {
     const AEAudio& audio = sfx.GetAudio();
     if (AEAudioIsValidAudio(audio))
     {
-        AEAudioPlay(audio, gSFXGroup, 1.0f, pitch, 0);
+        AEAudioPlay(audio, gSFXGroup, volume, pitch, 0);
     }
+}
+void AudioManager::UpdateLavaAudio(const TrapManager& trapMgr, const Player& player)
+{
+    if (!trapLava || !trapLava->IsActive()) {
+        return;
+    }
+
+    float dist = trapMgr.GetClosestLavaDistance(player.GetPosition());
+
+    if (dist < 0.0f)
+    {
+        trapLava->SetVolume(0.0f);
+        return;
+    }
+
+    float maxDistance = 10.0f;
+
+    float volume = 1.0f - (dist / maxDistance);
+    volume = Clamp01(volume);
+
+    // optional: don't go fully silent
+    volume = 0.1f + 0.9f * volume;
+
+    trapLava->SetVolume(volume);
+    trapLava->ApplyFinalVolume();
 }
 /*--------------------------------------------------
 |                                                  |
@@ -295,6 +347,8 @@ void AudioManager::Init() {
         menuMusic = std::make_unique<BGMAudio>("Assets/music/MenuBGM.mp3");
     if (!creditsMusic)
         creditsMusic = std::make_unique<BGMAudio>("Assets/music/Credits.mp3");
+    if (!trapLava)
+        trapLava = std::make_unique<BGMAudio>("Assets/music/TrapLava.mp3");
 
     // Load sound effects here.
     // Buff sfxs
@@ -330,6 +384,16 @@ void AudioManager::Init() {
     // Enemy SFXs
     if (!enemyHurt)
         enemyHurt = std::make_unique<SFXAudio>("Assets/music/EnemyHurt.mp3");
+    if (!druidCast)
+        druidCast = std::make_unique<SFXAudio>("Assets/music/DruidCast.mp3");
+    if (!druidImpact)
+        druidImpact = std::make_unique<SFXAudio>("Assets/music/DruidImpact.mp3");
+    if (!druidDeath)
+        druidDeath = std::make_unique<SFXAudio>("Assets/music/DruidDeath.mp3");
+    if (!skeletonAttack)
+        skeletonAttack = std::make_unique<SFXAudio>("Assets/music/SkeletonAttack.mp3");
+    if (!skeletonDeath)
+        skeletonDeath = std::make_unique<SFXAudio>("Assets/music/SkeletonDeath.mp3");
 
     // Boss SFXs
     if (!bossCharging)
@@ -342,6 +406,11 @@ void AudioManager::Init() {
         bossSlash = std::make_unique<SFXAudio>("Assets/music/BossSlash.mp3");
     if (!bossDeath)
         bossDeath = std::make_unique<SFXAudio>("Assets/music/BossDeath.mp3");
+    if (!trapPressurePlate)
+        trapPressurePlate = std::make_unique<SFXAudio>("Assets/music/TrapPressurePlate.mp3");
+    if (!trapSpikes)
+        trapSpikes = std::make_unique<SFXAudio>("Assets/music/TrapSpikes.mp3");
+
 }
 
 void AudioManager::Update() {
@@ -381,6 +450,9 @@ void AudioManager::Exit() {
     menuMusic.reset();
     creditsMusic.reset();
 
+    // Reset lava ambient sound.
+    trapLava.reset();
+
     // Reset buff card sfxs.
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
@@ -400,6 +472,11 @@ void AudioManager::Exit() {
 
     // Reset enemy sfxs.
     enemyHurt.reset();
+    druidCast.reset();
+    druidImpact.reset();
+    druidDeath.reset();
+    skeletonAttack.reset();
+    skeletonDeath.reset();
 
     // Reset boss sfxs.
     bossCharging.reset();
@@ -407,6 +484,10 @@ void AudioManager::Exit() {
     bossTeleport.reset();
     bossSlash.reset();
     bossDeath.reset();
+
+    // Reset trap sfxs.
+    trapSpikes.reset();
+    trapPressurePlate.reset();
 
     // Reset music groups.
     AEAudioUnloadAudioGroup(gMusicGroup);

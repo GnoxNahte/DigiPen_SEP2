@@ -6,6 +6,7 @@
 #include "../Environment/MapTile.h"
 #include "../enemy/Enemy.h"
 #include "../Time.h"
+#include "../AudioManager.h"
 
 #include <Windows.h>
 #include <new>
@@ -158,6 +159,9 @@ void MainMenuScene::Init()
 
     roomSystem.BuildCurrentRoom();
     camera.Update();
+    AudioManager::Init();
+    AudioManager::PlayMenuMusic(roomMgr);
+
 }
 
 void MainMenuScene::Update()
@@ -194,6 +198,7 @@ void MainMenuScene::Update()
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
+    AudioManager::Update();
 }
 
 void MainMenuScene::Render()
@@ -295,4 +300,5 @@ void MainMenuScene::Exit()
 
     roomSystem.ClearRuntimeRoomObjects();
     roomMgr.Clear();
+    AudioManager::Exit();
 }

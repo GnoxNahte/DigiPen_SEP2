@@ -111,7 +111,7 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
         if (!AudioManager::playedBossDeathSFX) {
             std::cout << "PLAY DEATH SOUND!!!!!!!!!!\n";
             AudioManager::playedBossDeathSFX = true;
-            AudioManager::PlaySFX(*AudioManager::bossDeath);
+            AudioManager::PlaySFX(*AudioManager::bossDeath, AudioManager::GetSFXVolume());
         }
         hp = 0;
         isDead = true;
@@ -598,7 +598,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     if (teleportActive)
     {
         if (!AudioManager::playedBossTeleportSFX) {
-            AudioManager::PlaySFX(*AudioManager::bossTeleport);
+            AudioManager::PlaySFX(*AudioManager::bossTeleport, AudioManager::GetSFXVolume());
             AudioManager::playedBossTeleportSFX = true;
         }
         // Freeze everything while teleporting
@@ -709,7 +709,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
         if (specialBurstActive)
         {
             if (!AudioManager::playedBossChargingSFX) {
-                AudioManager::PlaySFX(*AudioManager::bossCharging);
+                AudioManager::PlaySFX(*AudioManager::bossCharging, AudioManager::GetSFXVolume());
                 AudioManager::playedBossChargingSFX = true;
             }
             SpawnSpellChargeVfx(dt);
@@ -732,7 +732,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             {
                 const float dir = (facingDirection.x >= 0.f) ? 1.f : -1.f;
 
-                AudioManager::PlaySFX(*AudioManager::bossProjectile);
+                AudioManager::PlaySFX(*AudioManager::bossProjectile, AudioManager::GetSFXVolume());
 
                 SpecialAttack specialAttack;
                 specialAttack.pos = AEVec2{ position.x + dir * 0.6f, position.y + 0.35f };
@@ -1058,7 +1058,7 @@ void EnemyBoss::UpdateAnimation()
     if (attack.IsAttacking())
     {
         if (sprite.GetState() != ATTACK) {
-            AudioManager::PlaySFX(*AudioManager::bossSlash);
+            AudioManager::PlaySFX(*AudioManager::bossSlash, AudioManager::GetSFXVolume());
         }
         sprite.SetState(ATTACK);
         return;

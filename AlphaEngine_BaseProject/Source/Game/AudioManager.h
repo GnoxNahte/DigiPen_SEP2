@@ -2,6 +2,8 @@
 #include "AEEngine.h"
 #include "../Game/enemy/EnemyBoss.h"
 #include "../Game/Rooms/RoomManager.h"
+#include "../Game/Player/Player.h"
+#include "../Game/Environment/traps.h"
 
 class BGMAudio {
 public:
@@ -35,14 +37,6 @@ private:
     AEAudio audioFile{};
 };
 
-//struct MusicChannel
-//{
-//    MusicId id;
-//    float volume;
-//    int handle;
-//    bool playing;
-//};
-
 
 class AudioManager
 {
@@ -59,18 +53,20 @@ public:
     static float GetSFXVolume();
     static float GetMusicVolume();
 
-    static void PlaySFX(SFXAudio const& sfx, f32 const& pitch = 1.0f);
+    static void PlaySFX(SFXAudio const& sfx, f32 const& volume, f32 const& pitch = 1.0f);
     static void PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
+    static void PlayMenuMusic(RoomManager const& roomMgr);
     static void PlayGameOverMusic();
     static void MuffleMusic();
     static void UnmuffleMusic();
     static void RefreshAllMusicVolumes();
-
+    static void UpdateLavaAudio(const TrapManager& trapMgr, const Player& player);
 
     // Flags
     inline static bool playedBossChargingSFX = false;
     inline static bool playedBossTeleportSFX = false;
     inline static bool playedBossDeathSFX = false;
+    inline static bool playedDruidImpactSFX = false;
 
     // Reset functions
     static void StopAllMusic();
@@ -87,6 +83,8 @@ public:
     static std::unique_ptr<BGMAudio> victoryMusic;
     static std::unique_ptr<BGMAudio> menuMusic;
     static std::unique_ptr<BGMAudio> creditsMusic;
+
+    static std::unique_ptr<BGMAudio> trapLava;
 
     /*=================================================
     *                 Sound Effects                   |
@@ -110,6 +108,11 @@ public:
 
     // Enemy SFXs
     static std::unique_ptr<SFXAudio> enemyHurt;
+    static std::unique_ptr<SFXAudio> druidCast;
+    static std::unique_ptr<SFXAudio> druidImpact;
+    static std::unique_ptr<SFXAudio> druidDeath;
+    static std::unique_ptr<SFXAudio> skeletonAttack;
+    static std::unique_ptr<SFXAudio> skeletonDeath;
 
     // Boss SFXs
     static std::unique_ptr<SFXAudio> bossCharging;
@@ -117,4 +120,8 @@ public:
     static std::unique_ptr<SFXAudio> bossTeleport;
     static std::unique_ptr<SFXAudio> bossSlash;
     static std::unique_ptr<SFXAudio> bossDeath;
+
+    // Trap SFXs
+    static std::unique_ptr<SFXAudio> trapPressurePlate;
+    static std::unique_ptr<SFXAudio> trapSpikes;
 };
