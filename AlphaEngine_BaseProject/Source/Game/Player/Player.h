@@ -124,7 +124,8 @@ private:
     float buff_TrapDmgReduction;
     float buff_critChance;
     float buff_critDmgMulti;
-    float buff_DmgMultiLowHP;
+    float buff_CritChanceLowHP;
+    float buff_DmgMulti;
     float buff_DashCooldownMulti;
     
     EventId buffEventId;

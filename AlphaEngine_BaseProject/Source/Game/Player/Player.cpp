@@ -185,7 +185,8 @@ void Player::Reset(const AEVec2& initialPos)
     buff_TrapDmgReduction = 1.f;
     buff_critChance = 0.f;
     buff_critDmgMulti = 1.5f;
-    buff_DmgMultiLowHP = 1.f;
+    buff_CritChanceLowHP = 0.f;
+    buff_DmgMulti = 1.f;
     buff_DashCooldownMulti = 1.f;
 
     attackedEnemies.clear();
@@ -348,6 +349,7 @@ void Player::HandleLanding()
     float angleRange = 5.f;
     if (state == AnimState::AIR_ATTACK_SMASH)
     {
+        float smashStrength = GetSlamAttackScale();
         ParticleSystem::EmitterSettings emitter{
             .spawnPosRangeX { position.x, position.x },
             .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
@@ -357,15 +359,22 @@ void Player::HandleLanding()
             .tint           { 0.56f, 0.49f, 0.77f, 1.f }
         };
 
-        int spawnCount = static_cast<int>(30 * GetSlamAttackScale());
+        int spawnCount = static_cast<int>(30 * smashStrength);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
 
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
-        Camera::StartShake(0.25f, 0.25f * GetSlamAttackScale());
+        Camera::StartShake(0.25f, 0.25f * smashStrength);
+
+        // Lower pitch the stronger the smash strength
+        float pitch = 1.f - smashStrength * 0.5f;
+        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, pitch);
     }
-    // @todo: (Ethan) - Play sound
+    else
+    {
+        AudioManager::PlaySFX(*AudioManager::playerLand, AEExtras::RandomRange({0.8f, 1.4f}));
+    }
 }
 
 void Player::HandleGravity()
@@ -459,7 +468,7 @@ void Player::PerformJump()
     lastJumpTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
     ifReleaseJumpAfterJumping = false;
 
-    //sprite.SetState(JUMP_START, true);
+    AudioManager::PlaySFX(*AudioManager::playerJump, AEExtras::RandomRange({0.8f, 1.4f}));
 }
 
 void Player::UpdateCollisions(const AEVec2& nextPosition)
@@ -514,18 +523,27 @@ void Player::SetAttack(AnimState toState)
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
+
+    float pitch = AEExtras::RandomRange({0.8f, 1.4f});
+    switch (toState)
+    {
+    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, pitch); break;
+    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, pitch); break;
+    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, pitch); break;
+    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, pitch); break;
+    }
 }
 
 void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
 {
-    int damage = attack.damage;
+    int damage = static_cast<int>(attack.damage * buff_DmgMulti);
 
     if (!isGroundAttack)
         damage = static_cast<int>(damage * GetSlamAttackScale());
 
-    // 100% crit if low health
-    // Else crit depending on chance
-    bool isCrit = health < 0.2f * maxHealth || AERandFloat() < buff_critChance;
+    // Increased crit chacne if low health
+    float critChance = buff_critChance + (health < 0.5f * maxHealth) * buff_CritChanceLowHP;
+    bool isCrit =  AERandFloat() < critChance;
 
     // Crit
     if (isCrit)
@@ -738,10 +756,10 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         break;
     }
     case CARD_TYPE::SHARPEN:        
-        buff_critDmgMulti   *= PercentToScale(card.effectValue1);
+        buff_DmgMulti *= PercentToScale(card.effectValue1);
         buff_critChance     += card.effectValue2 / 100.f; 
         break;
-    case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::BERSERKER:      buff_CritChanceLowHP    += card.effectValue1 / 100.f; break;
     case CARD_TYPE::FLEETING_STEP:  buff_DashCooldownMulti  *= PercentToScaleInvert(card.effectValue1); break;
     case CARD_TYPE::SUREFOOTED:     buff_TrapDmgReduction   *= PercentToScaleInvert(card.effectValue1); break;
     case CARD_TYPE::DEEP_VITALITY: {
@@ -835,7 +853,8 @@ void Player::DrawInspector()
         ImGui::DragFloat("Trap Damage Reduction", &buff_TrapDmgReduction, 0.1f);
         ImGui::DragFloat("Crit Chance", &buff_critChance, 0.1f);
         ImGui::DragFloat("Crit Dmg", &buff_critDmgMulti, 0.1f);
-        ImGui::DragFloat("Damage Low HP", &buff_DmgMultiLowHP, 0.1f);
+        ImGui::DragFloat("Crit Chance Low HP", &buff_CritChanceLowHP, 0.1f);
+        ImGui::DragFloat("Damage", &buff_DmgMulti, 0.1f);
         ImGui::DragFloat("Dash Cooldown Multi", &buff_DashCooldownMulti, 0.1f);
     }
 
