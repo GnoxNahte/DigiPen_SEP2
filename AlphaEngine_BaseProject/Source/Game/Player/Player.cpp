@@ -349,6 +349,7 @@ void Player::HandleLanding()
     float angleRange = 5.f;
     if (state == AnimState::AIR_ATTACK_SMASH)
     {
+        float smashStrength = GetSlamAttackScale();
         ParticleSystem::EmitterSettings emitter{
             .spawnPosRangeX { position.x, position.x },
             .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
@@ -358,15 +359,22 @@ void Player::HandleLanding()
             .tint           { 0.56f, 0.49f, 0.77f, 1.f }
         };
 
-        int spawnCount = static_cast<int>(30 * GetSlamAttackScale());
+        int spawnCount = static_cast<int>(30 * smashStrength);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
 
         emitter.angleRange.x = AEDegToRad(180.f);
         emitter.angleRange.y = AEDegToRad(180.f - angleRange);
         particleSystem.SpawnParticleBurst(emitter, spawnCount);
-        Camera::StartShake(0.25f, 0.25f * GetSlamAttackScale());
+        Camera::StartShake(0.25f, 0.25f * smashStrength);
+
+        // Lower pitch the stronger the smash strength
+        float pitch = 1.f - smashStrength * 0.5f;
+        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, pitch);
     }
-    // @todo: (Ethan) - Play sound
+    else
+    {
+        AudioManager::PlaySFX(*AudioManager::playerLand, AEExtras::RandomRange({0.8f, 1.4f}));
+    }
 }
 
 void Player::HandleGravity()
@@ -460,7 +468,7 @@ void Player::PerformJump()
     lastJumpTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
     ifReleaseJumpAfterJumping = false;
 
-    //sprite.SetState(JUMP_START, true);
+    AudioManager::PlaySFX(*AudioManager::playerJump, AEExtras::RandomRange({0.8f, 1.4f}));
 }
 
 void Player::UpdateCollisions(const AEVec2& nextPosition)
@@ -515,6 +523,15 @@ void Player::SetAttack(AnimState toState)
     sprite.SetState(toState, false,
         [this](int index) { OnAttackAnimEnd(index); }
     );
+
+    float pitch = AEExtras::RandomRange({0.8f, 1.4f});
+    switch (toState)
+    {
+    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, pitch); break;
+    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, pitch); break;
+    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, pitch); break;
+    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, pitch); break;
+    }
 }
 
 void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
