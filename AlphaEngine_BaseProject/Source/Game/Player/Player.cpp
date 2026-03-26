@@ -185,7 +185,8 @@ void Player::Reset(const AEVec2& initialPos)
     buff_TrapDmgReduction = 1.f;
     buff_critChance = 0.f;
     buff_critDmgMulti = 1.5f;
-    buff_DmgMultiLowHP = 1.f;
+    buff_CritChanceLowHP = 0.f;
+    buff_DmgMulti = 1.f;
     buff_DashCooldownMulti = 1.f;
 
     attackedEnemies.clear();
@@ -518,14 +519,14 @@ void Player::SetAttack(AnimState toState)
 
 void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack)
 {
-    int damage = attack.damage;
+    int damage = static_cast<int>(attack.damage * buff_DmgMulti);
 
     if (!isGroundAttack)
         damage = static_cast<int>(damage * GetSlamAttackScale());
 
-    // 100% crit if low health
-    // Else crit depending on chance
-    bool isCrit = health < 0.2f * maxHealth || AERandFloat() < buff_critChance;
+    // Increased crit chacne if low health
+    float critChance = buff_critChance + (health < 0.5f * maxHealth) * buff_CritChanceLowHP;
+    bool isCrit =  AERandFloat() < critChance;
 
     // Crit
     if (isCrit)
@@ -738,10 +739,10 @@ void Player::OnBuffSelected(const BuffSelectedEvent& ev)
         break;
     }
     case CARD_TYPE::SHARPEN:        
-        buff_critDmgMulti   *= PercentToScale(card.effectValue1);
+        buff_DmgMulti *= PercentToScale(card.effectValue1);
         buff_critChance     += card.effectValue2 / 100.f; 
         break;
-    case CARD_TYPE::BERSERKER:      buff_DmgMultiLowHP      *= PercentToScale(card.effectValue1); break;
+    case CARD_TYPE::BERSERKER:      buff_CritChanceLowHP    += card.effectValue1 / 100.f; break;
     case CARD_TYPE::FLEETING_STEP:  buff_DashCooldownMulti  *= PercentToScaleInvert(card.effectValue1); break;
     case CARD_TYPE::SUREFOOTED:     buff_TrapDmgReduction   *= PercentToScaleInvert(card.effectValue1); break;
     case CARD_TYPE::DEEP_VITALITY: {
@@ -835,7 +836,8 @@ void Player::DrawInspector()
         ImGui::DragFloat("Trap Damage Reduction", &buff_TrapDmgReduction, 0.1f);
         ImGui::DragFloat("Crit Chance", &buff_critChance, 0.1f);
         ImGui::DragFloat("Crit Dmg", &buff_critDmgMulti, 0.1f);
-        ImGui::DragFloat("Damage Low HP", &buff_DmgMultiLowHP, 0.1f);
+        ImGui::DragFloat("Crit Chance Low HP", &buff_CritChanceLowHP, 0.1f);
+        ImGui::DragFloat("Damage", &buff_DmgMulti, 0.1f);
         ImGui::DragFloat("Dash Cooldown Multi", &buff_DashCooldownMulti, 0.1f);
     }
 

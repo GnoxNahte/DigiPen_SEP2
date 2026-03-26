@@ -210,9 +210,6 @@
     <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
       <Filter>Header Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\Player\Player.cpp">
-      <Filter>Source Files\Game\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Game\Environment\traps.cpp">
       <Filter>Source Files\Game\Environment</Filter>
     </ClCompile>
@@ -227,6 +224,9 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Rooms\RoomSystem.cpp">
       <Filter>Source Files\Game\Rooms</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
