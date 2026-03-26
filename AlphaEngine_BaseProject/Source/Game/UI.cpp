@@ -89,6 +89,8 @@ void UI::Render() {
 }
 void UI::Reset() {
 	deadTimerAdded = false;
+	restartRun = false;
+	returnToMenu = false;
 	ResetEyelid();
 	gameOverTextFadeTimer = 0.0f;
 	gameOverTextStage = 0;
@@ -369,7 +371,8 @@ void UI::UpdateGameOverButtonsAndText() {
 	if (hoverMenu) {
 		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
 			std::cout << "MENU\n";
-			// menu
+			Time::GetInstance().SetTimeScale(1.0f);
+			returnToMenu = true;
 		}
 	}
 }

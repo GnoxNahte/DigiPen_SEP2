@@ -65,6 +65,7 @@ private:
 	AEGfxVertexList* pauseRectMesh = nullptr;
 	AEGfxTexture* pauseCardBackTex = nullptr;
 	s8 pauseFontLarge = -1;
+	s8 pauseFontMedium = -1;
 	s8 pauseFontSmall = -1;
 	s8 pauseFontRuntime = -1; // for dynamic text like run time
 

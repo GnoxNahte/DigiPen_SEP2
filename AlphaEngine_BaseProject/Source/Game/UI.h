@@ -91,6 +91,7 @@ public:
 	static void UpdateGameOverButtonsAndText();
 	static void DrawGameOverText();
 	inline static bool& GetRestartStatus() { return restartRun; }
+	inline static bool& GetReturnToMenuStatus() { return returnToMenu; }
 
 	// Game over screen variables
 	inline static float gameOverTextFadeTimer; // For game over
@@ -127,6 +128,7 @@ private:
 	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
 	inline static bool deadTimerAdded = false;
 	inline static bool restartRun = false;
+	inline static bool returnToMenu = false;
 
 	// Health vignette variables.
 	inline static Player* player = nullptr;

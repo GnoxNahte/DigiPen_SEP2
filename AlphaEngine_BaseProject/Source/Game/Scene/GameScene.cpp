@@ -78,6 +78,7 @@ GameScene::GameScene() :
 	pauseBuffTex[(int)SUNDERING_BLOW] = AEGfxTextureLoad("Assets/Art/Sundering_Blow.png");
 	// Fonts for pause overlay
 	pauseFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
+	pauseFontMedium = AEGfxCreateFont("Assets/m04.ttf", 50);
 	pauseFontSmall = AEGfxCreateFont("Assets/m04.ttf", 35);
 	pauseFontRuntime = AEGfxCreateFont("Assets/m04.ttf", 28);
 
@@ -407,6 +408,15 @@ void GameScene::Update()
 		GSM::ChangeScene(SceneState::GS_GAME);
 		return; // << This return stops the music from playing for a clean restart.
 	}
+	if (UI::GetReturnToMenuStatus()) {
+		UI::GetReturnToMenuStatus() = false;
+		pausePage = PausePage::None;
+		Time::GetInstance().SetPaused(false);
+		Time::GetInstance().SetTimeScale(1.0f);
+		UI::Reset();
+		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
+		return;
+	}
 	if (player.IsDead()) {
 		AudioManager::PlayGameOverMusic();
 	}
@@ -672,9 +682,11 @@ void GameScene::UpdatePauseInput()
 	{
 		float w = (float)AEGfxGetWindowWidth();
 		float h = (float)AEGfxGetWindowHeight();
+		float centerX = w * 0.5f;
+		float centerY = h * 0.5f;
 
-		UIRect btnNo{ { w * 0.5f - 100, h * 0.5f + 30 }, {140, 44} };
-		UIRect btnYes{ { w * 0.5f + 100, h * 0.5f + 30 }, {140, 44} };
+		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 
 		if (IsClicked(btnNo))
 		{
@@ -685,6 +697,8 @@ void GameScene::UpdatePauseInput()
 		{
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
+			Time::GetInstance().SetTimeScale(1.0f);
+			UI::Reset();
 			GSM::ChangeScene(SceneState::GS_MAIN_MENU);
 			return;
 		}
@@ -709,15 +723,20 @@ void GameScene::UpdatePauseInput()
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
 			Time::GetInstance().ResetElapsedTime();
+			Time::GetInstance().SetTimeScale(1.0f);
 			TimerSystem::GetInstance().Clear();
 			UI::Reset();
-			if (!BuffCardManager::GetCurrentBuffs().empty()) {
+
+			if (!BuffCardManager::GetCurrentBuffs().empty())
+			{
 				BuffCardManager::ResetCurrentBuffs();
 			}
+
 			if (!gLastLoadedLevelPath.empty())
 			{
 				gPendingLevelPath = gLastLoadedLevelPath;
 			}
+
 			AudioManager::ResetForRestart();
 			GSM::ChangeScene(SceneState::GS_GAME);
 			return;
@@ -764,6 +783,7 @@ void GameScene::UpdatePauseInput()
 		auto MakeKnobRect = [&](float value, float y) -> UIRect {
 			return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
 			};
+
 		UIRect masterTrack = MakeTrackRect(masterY);
 		UIRect bgmTrack = MakeTrackRect(bgmY);
 		UIRect sfxTrack = MakeTrackRect(sfxY);
@@ -789,6 +809,7 @@ void GameScene::UpdatePauseInput()
 			draggingBgmSlider = false;
 			draggingSfxSlider = false;
 		}
+
 		if (draggingMasterSlider)
 			AudioManager::SetMasterVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
 		if (draggingBgmSlider)
@@ -871,6 +892,48 @@ void GameScene::RenderPauseOverlay()
 		DrawSlider("Master Volume", AudioManager::GetMasterVolume(), masterY, draggingMasterSlider);
 		DrawSlider("BGM Volume", AudioManager::GetMusicVolume(), bgmY, draggingBgmSlider);
 		DrawSlider("SFX Volume", AudioManager::GetSFXVolume(), sfxY, draggingSfxSlider);
+	}
+	else if (pausePage == PausePage::ConfirmQuit)
+	{
+		float centerX = w * 0.5f;
+		float centerY = h * 0.5f;
+
+		{
+			AEMtx33 scale, rot, trans, transform;
+			AEMtx33Scale(&scale, 850.0f, 400.0f);
+			AEMtx33Rot(&rot, 0.0f);
+			AEVec2 eng = ScreenToEngine(centerX, centerY);
+			AEMtx33Trans(&trans, eng.x + Camera::position.x * Camera::scale, eng.y + Camera::position.y * Camera::scale);
+			AEMtx33Concat(&transform, &rot, &scale);
+			AEMtx33Concat(&transform, &trans, &transform);
+
+			AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+			AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
+			AEGfxSetColorToAdd(0.18f, 0.18f, 0.18f, 0.90f);
+			AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+			AEGfxSetTransparency(0.90f);
+			AEGfxSetTransform(transform.m);
+			AEGfxMeshDraw(pauseRectMesh, AE_GFX_MDM_TRIANGLES);
+		}
+
+		DrawTextPx(pauseFontMedium, "RETURN TO MENU?", centerX - 380.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
+		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST", centerX - 370.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
+
+		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+
+		bool hoverNo = IsMouseOver(btnNo);
+		float scaleNo = hoverNo ? 1.05f : 1.0f;
+		float rNo = 1.f, gNo = 1.f, bNo = 1.f, aNo = hoverNo ? 1.f : 0.85f;
+		if (hoverNo) { rNo = 1.0f; gNo = 0.95f; bNo = 0.35f; }
+
+		bool hoverYes = IsMouseOver(btnYes);
+		float scaleYes = hoverYes ? 1.05f : 1.0f;
+		float rYes = 1.f, gYes = 1.f, bYes = 1.f, aYes = hoverYes ? 1.f : 0.85f;
+		if (hoverYes) { rYes = 1.0f; gYes = 0.4f; bYes = 0.4f; }
+
+		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
+		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
 	else if (pausePage == PausePage::ConfirmRestart)
 	{
