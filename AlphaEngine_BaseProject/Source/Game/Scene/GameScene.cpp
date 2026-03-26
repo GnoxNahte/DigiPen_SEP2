@@ -236,13 +236,7 @@ void GameScene::Init()
 	roomInputLockTimer = 0.f;
 
 	if (roomMgr.GetCurrentRoomID() == ROOM_1) {
-		if (AudioManager::trapLava && !AudioManager::trapLava->IsActive())
-		{
-			AudioManager::trapLava->Play(0.0f); // start silent
-			AudioManager::trapLava->SetActive(true);
-		}
-		if (AudioManager::gameMusic && !AudioManager::gameMusic->IsActive())
-			AudioManager::gameMusic->Play(1.0f);
+		AudioManager::PlayGameMusic();
 	}
 }
 

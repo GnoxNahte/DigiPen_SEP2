@@ -55,7 +55,8 @@ public:
 
     static void PlaySFX(SFXAudio const& sfx, f32 const& volume, f32 const& pitch = 1.0f);
     static void PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr);
-    static void PlayMenuMusic(RoomManager const& roomMgr);
+    static void PlayMenuMusic();
+    static void PlayGameMusic();
     static void PlayGameOverMusic();
     static void MuffleMusic();
     static void UnmuffleMusic();

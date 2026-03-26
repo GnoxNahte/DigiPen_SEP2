@@ -160,7 +160,7 @@ void MainMenuScene::Init()
     roomSystem.BuildCurrentRoom();
     camera.Update();
     AudioManager::Init();
-    AudioManager::PlayMenuMusic(roomMgr);
+    AudioManager::PlayMenuMusic();
 
 }
 
@@ -199,6 +199,7 @@ void MainMenuScene::Update()
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
     AudioManager::Update();
+    // std::cout << static_cast<int>(roomMgr.GetCurrentRoomID()); // TODO: Reference credits room id and add credits room music.
 }
 
 void MainMenuScene::Render()

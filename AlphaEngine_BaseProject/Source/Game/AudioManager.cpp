@@ -233,7 +233,7 @@ void AudioManager::PlayGameOverMusic() {
         gIsPlayingGOver = true;
     }
 }
-void AudioManager::PlayMenuMusic(RoomManager const& roomMgr) {
+void AudioManager::PlayMenuMusic() {
     if (gCurrTrack && gCurrTrack != menuMusic.get())
     {
         gCurrTrack->CrossfadeTo(*menuMusic, 1.2f);
@@ -243,7 +243,22 @@ void AudioManager::PlayMenuMusic(RoomManager const& roomMgr) {
         menuMusic->Play(menuMusic->GetVolume());
     }
     gCurrTrack = menuMusic.get();
-    std::cout << static_cast<int>(roomMgr.GetCurrentRoomID());
+}
+void AudioManager::PlayGameMusic() {
+    if (gCurrTrack && gCurrTrack != gameMusic.get())
+    {
+        gCurrTrack->CrossfadeTo(*gameMusic, 1.2f);
+    }
+    else if (!gameMusic->IsActive())
+    {
+        gameMusic->Play(gameMusic->GetVolume());
+    }
+    if (AudioManager::trapLava && !AudioManager::trapLava->IsActive())
+    {
+        AudioManager::trapLava->Play(0.0f); // start silent
+        AudioManager::trapLava->SetActive(true);
+    }
+    gCurrTrack = gameMusic.get();
 }
 void AudioManager::MuffleMusic() {
     if (!gIsMuffled) {
