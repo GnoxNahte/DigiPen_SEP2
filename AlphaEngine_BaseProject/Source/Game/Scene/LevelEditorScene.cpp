@@ -1,5 +1,6 @@
 #include "LevelEditorScene.h"
 #include "leveleditor.h"   // gamestate functions
+#include "../AudioManager.h"
 
 LevelEditorScene::LevelEditorScene()
 {
