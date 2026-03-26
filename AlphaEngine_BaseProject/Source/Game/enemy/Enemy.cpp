@@ -1,5 +1,4 @@
 ﻿#include "Enemy.h"
-
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
@@ -92,6 +91,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.renderScale = 2.f;
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
         c.maxHp = 50;
+        c.attackHitTimeNormalized = 0.42f;
  
         break;
     }
@@ -295,7 +295,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         if (deathTimeLeft > 0.f)
         {
             float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
-            if (tpf <= 0.f) tpf = 0.1f;
+            if (tpf <= 0.f) tpf = 0.f;
 
             // Only update while we're not yet in the "last frame window"
             if (deathTimeLeft > tpf)
@@ -540,16 +540,17 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 // Choose / refresh a walk segment
                 if (idleWalkLeft <= 0.f)
                 {
-                    idleWalkLeft = 1.2f;           // how long to walk before pausing (tune)
-                    idlePauseLeft = 0.25f;         // pause after walk (tune)
-                    idleDirX = -idleDirX;          // simple back-and-forth
+                    idleWalkLeft = AEExtras::RandomRange({ 0.8f, 1.6f }); // how long to walk before pausing (tune)
+                    idlePauseLeft = AEExtras::RandomRange({ 0.15f, 0.40f });   // pause after walk (tune)
+                    idleDirX = (AEExtras::RandomRange({ 0.f, 1.f }) < 0.5f) ? -1.f : 1.f;// simple back-and-forth
+                    idleSpeedMul = AEExtras::RandomRange({ 0.25f, 0.50f });
                 }
 
                 const float dirX = (idleDirX >= 0.f) ? 1.f : -1.f;
                 facingDirection = AEVec2{ dirX, 0.f };
 
                 // slower than chase looks more natural
-                velocity.x = dirX * cfg.moveSpeed * 0.35f;
+                velocity.x = dirX * cfg.moveSpeed * idleSpeedMul;
 
                 AEVec2 displacement;
                 AEVec2Scale(&displacement, &velocity, dt);
@@ -643,7 +644,15 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         velocity = AEVec2{ 0.f, 0.f };
 
         sprite.SetState(cfg.animDeath, false, nullptr);
+
         deathTimeLeft = GetAnimDurationSec(sprite, cfg.animDeath);
+
+        float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
+        if (tpf <= 0.f) tpf = 0.1f;
+
+        // give one extra frame window so the last death frame can actually stay visible
+        deathTimeLeft += tpf;
+
         if (deathTimeLeft <= 0.f)
             deathTimeLeft = 0.5f;
     }

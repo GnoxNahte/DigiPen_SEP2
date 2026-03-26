@@ -151,7 +151,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
         if (spellHits > 0)
         {
 
-            const int spellDmg = 5;
+            const int spellDmg = 6;
             player.TryTakeDamage(spellHits * spellDmg, boss->GetHurtboxPos());
             std::cout << "[Boss] spell hit x" << spellHits << "\n";
         }

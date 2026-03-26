@@ -274,8 +274,8 @@ AEVec2 RoomSystem::ComputeTransitionSpawn(
         };
 
     // Safe playable interior for the PLAYER CENTER, not just a raw room inset
-    const float nextMinX = nextOrigin.x + halfW + kEntryPadding;
-    const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - halfW - kEntryPadding;
+    const float nextMinX = nextOrigin.x + halfW + kEntryPadding - 1.f;
+    const float nextMaxX = nextOrigin.x + static_cast<float>(ROOM_COLS) - halfW - kEntryPadding + 1.f;
     const float nextMinY = nextOrigin.y + halfH + kEntryPadding;
     const float nextMaxY = nextOrigin.y + static_cast<float>(ROOM_ROWS) - halfH - kEntryPadding;
 
