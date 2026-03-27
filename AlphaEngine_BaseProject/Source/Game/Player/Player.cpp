@@ -624,9 +624,10 @@ void Player::UpdateAttacks()
     {
         enemyManager->ForEachDamageable([&](IDamageable& obj) {
             // If hit enemy && current enemy isn't in attackedEnemies
-            bool ifAttack = PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) &&
-                            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend();
-
+            bool ifAttack = PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) && // If hit enemy
+                            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend() && // If haven't attacked that enemy
+                            !map->CheckRaycast(position, obj.GetHurtboxPos());  // If there's no wall in between them
+            std::cout << map->CheckRaycast(position, obj.GetHurtboxPos()) << "\n";
             if (ifAttack)
                 AttackDamageable(obj, *attack, isGroundAttack);
         });

@@ -211,6 +211,14 @@ bool MapGrid::CheckBoxCollision(const Box& box)
 	return CheckBoxCollision(box.position, box.size);
 }
 
+bool MapGrid::CheckRaycast(const AEVec2& start, const AEVec2& end)
+{
+	float sqrDist{ AEExtras::SqrDist(end - start) };
+	float raycastDist = Raycast(start, end);
+	// If raycastDist < dist between player & enemy, it collides with a wall
+	return raycastDist * raycastDist + EPSILON < sqrDist;
+}
+
 float MapGrid::Raycast(const AEVec2& start, const AEVec2& end)
 {
 	if (start == end)
