@@ -621,7 +621,12 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     pitch = std::clamp(pitch, minPitch, maxPitch);
 
     // Play generic enemy hurt sound.
-    AudioManager::PlaySFX(*AudioManager::enemyHurt, AudioManager::GetSFXVolume(), pitch);
+    if (type == DAMAGE_TYPE_NORMAL) {
+        AudioManager::PlaySFX(*AudioManager::enemyHurt, AudioManager::GetSFXVolume(), pitch);
+    }
+    else if (type == DAMAGE_TYPE_CRIT) {
+        AudioManager::PlaySFX(*AudioManager::enemyHurtCrit, AudioManager::GetSFXVolume(), pitch);
+    }
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 

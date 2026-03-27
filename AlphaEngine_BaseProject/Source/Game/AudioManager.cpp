@@ -37,6 +37,7 @@ std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
 
 // Enemy SFXs
 std::unique_ptr<SFXAudio> AudioManager::enemyHurt = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::enemyHurtCrit = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidCast = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidImpact = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidDeath = nullptr;
@@ -399,6 +400,8 @@ void AudioManager::Init() {
     // Enemy SFXs
     if (!enemyHurt)
         enemyHurt = std::make_unique<SFXAudio>("Assets/music/EnemyHurt.mp3");
+    if (!enemyHurtCrit)
+        enemyHurtCrit = std::make_unique<SFXAudio>("Assets/music/EnemyHurtCrit.mp3");
     if (!druidCast)
         druidCast = std::make_unique<SFXAudio>("Assets/music/DruidCast.mp3");
     if (!druidImpact)
@@ -487,6 +490,7 @@ void AudioManager::Exit() {
 
     // Reset enemy sfxs.
     enemyHurt.reset();
+    enemyHurtCrit.reset();
     druidCast.reset();
     druidImpact.reset();
     druidDeath.reset();
