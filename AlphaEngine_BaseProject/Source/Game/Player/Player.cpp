@@ -34,6 +34,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     enemyManager(enemyManager)
 {
     Reset(AEVec2{ 10, 10 });
+    SetKeybinds();
 
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
@@ -245,14 +246,9 @@ Player::AnimState Player::GetAnimState() const
 void Player::SetPosition(const AEVec2& pos)
 {
     position = pos;
-    // Important: do not carry movement from previous room
-    AEVec2Zero(&velocity);
 
-    // Let the next update recalculate fresh collision state
-    isGroundCollided = false;
-    isCeilingCollided = false;
-    isLeftWallCollided = false;
-    isRightWallCollided = false;
+    AEVec2Zero(&velocity);
+    UpdateTriggerColliders();
 }
 
 void Player::UpdateInput()
@@ -260,22 +256,20 @@ void Player::UpdateInput()
     float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     // Consider shift all keybinds to another file. Then maybe can allow custom keybinding 
-    inputDirection.x = (f32)((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
-                     - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
-    inputDirection.y = (f32)((AEInputCheckCurr(AEVK_UP) || AEInputCheckCurr(AEVK_W))
-                     - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
+    inputDirection.x = static_cast<f32>(AEInputCheckCurr(keybinds.right)) - AEInputCheckCurr(keybinds.left);
+    inputDirection.y = static_cast<f32>(AEInputCheckCurr(keybinds.up)) - AEInputCheckCurr(keybinds.down);
 
-    isJumpHeld = AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C);
-    if (AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_C))
+    isJumpHeld = AEInputCheckCurr(keybinds.jump);
+    if (AEInputCheckTriggered(keybinds.jump))
         lastJumpPressed = currTime;
 
-    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
+    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(keybinds.dash)))
         isFacingRight = inputDirection.x > 0;
 
-    if (AEInputCheckCurr(AEVK_X))
+    if (AEInputCheckCurr(keybinds.attack))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
+    if (AEInputCheckCurr(keybinds.dash) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
         AudioManager::PlaySFX(*AudioManager::playerDash, AudioManager::GetSFXVolume());
         dashStartTime = currTime;
     }
@@ -293,6 +287,18 @@ void Player::UpdateTriggerColliders()
     isCeilingCollided   = map->CheckBoxCollision(position + stats.ceilingChecker.position,  stats.ceilingChecker.size);
     isLeftWallCollided  = map->CheckBoxCollision(position + stats.leftWallChecker.position, stats.leftWallChecker.size);
     isRightWallCollided = map->CheckBoxCollision(position + stats.rightWallChecker.position,stats.rightWallChecker.size);
+}
+
+void Player::SetKeybinds()
+{
+    keybinds.left = AEVK_A;
+    keybinds.right = AEVK_D;
+    keybinds.up = AEVK_W;
+    keybinds.down = AEVK_S;
+
+    keybinds.jump = AEVK_SPACE;
+    keybinds.dash = AEVK_LSHIFT;
+    keybinds.attack = AEVK_LBUTTON;
 }
 
 void Player::HorizontalMovement()
@@ -346,35 +352,52 @@ void Player::VerticalMovement()
 void Player::HandleLanding()
 {
     int state = sprite.GetState();
-    float angleRange = 5.f;
+    
+    // Default values, will set later depending on the landing
+    int particleSpawnCount = 0;
+    float particleAngleRange = 0.f;
+    AEVec2 particleSpeedRange;
+    
+    // Alot of code below will use this format: A + B * scale
+    // A - base value
+    // B - variable value based on scale
     if (state == AnimState::AIR_ATTACK_SMASH)
     {
         float smashStrength = GetSlamAttackScale();
-        ParticleSystem::EmitterSettings emitter{
-            .spawnPosRangeX { position.x, position.x },
-            .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
-            .angleRange     { AEDegToRad(0.f), AEDegToRad(angleRange) },
-            .speedRange     { 2.f, 30.f },
-            .lifetimeRange  { 0.1f, 0.3f },
-            .tint           { 0.56f, 0.49f, 0.77f, 1.f }
-        };
+        particleSpawnCount = 10 + static_cast<int>(20 * smashStrength);
+        particleAngleRange = 10.f + 15.f * smashStrength;
+        AEVec2Set(&particleSpeedRange, 2.f, 10.f + 20.f * smashStrength);
 
-        int spawnCount = static_cast<int>(30 * smashStrength);
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
-
-        emitter.angleRange.x = AEDegToRad(180.f);
-        emitter.angleRange.y = AEDegToRad(180.f - angleRange);
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
         Camera::StartShake(0.25f, 0.25f * smashStrength);
 
         // Lower pitch the stronger the smash strength
         float pitch = 1.f - smashStrength * 0.5f;
-        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, pitch);
+        float volume = (0.75f + 0.5f * smashStrength) * AudioManager::GetSFXVolume();
+        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, volume, pitch);
     }
     else
     {
-        AudioManager::PlaySFX(*AudioManager::playerLand, AEExtras::RandomRange({0.8f, 1.4f}));
+        float landStrength = velocity.y / stats.maxFallVelocity;
+        particleSpawnCount = static_cast<int>(2 + 3 * landStrength);
+        particleAngleRange = 5.f + 10.f * landStrength;
+        AEVec2Set(&particleSpeedRange, 2.f, 2.f + landStrength * 5.f);
+        AudioManager::PlaySFX(*AudioManager::playerLand, AudioManager::GetSFXVolume(), AEExtras::RandomRange({0.8f, 1.4f}));
     }
+
+    ParticleSystem::EmitterSettings emitter{
+        .spawnPosRangeX { position.x, position.x },
+        .spawnPosRangeY { position.y - 0.1f, position.y },
+        .angleRange     { AEDegToRad(0.f), AEDegToRad(particleAngleRange) },
+        .speedRange     { particleSpeedRange },
+        .lifetimeRange  { 0.1f, 0.3f },
+        .tint           { 0.56f, 0.49f, 0.77f, 1.f }
+    };
+
+    particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
+
+    emitter.angleRange.x = AEDegToRad(180.f);
+    emitter.angleRange.y = AEDegToRad(180.f - particleAngleRange);
+    particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
 }
 
 void Player::HandleGravity()
@@ -435,6 +458,9 @@ void Player::HandleGravity()
 
 void Player::HandleJump()
 {
+    if (IsAnimAirAttack())
+        return;
+
     f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
@@ -468,7 +494,7 @@ void Player::PerformJump()
     lastJumpTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
     ifReleaseJumpAfterJumping = false;
 
-    AudioManager::PlaySFX(*AudioManager::playerJump, AEExtras::RandomRange({0.8f, 1.4f}));
+    AudioManager::PlaySFX(*AudioManager::playerJump, AudioManager::GetSFXVolume(), AEExtras::RandomRange({0.8f, 1.4f}));
 }
 
 void Player::UpdateCollisions(const AEVec2& nextPosition)
@@ -525,12 +551,13 @@ void Player::SetAttack(AnimState toState)
     );
 
     float pitch = AEExtras::RandomRange({0.8f, 1.4f});
+    float volume = AudioManager::GetSFXVolume();
     switch (toState)
     {
-    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, pitch); break;
-    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, pitch); break;
-    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, pitch); break;
-    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, pitch); break;
+    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, volume, pitch); break;
+    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, volume, pitch); break;
+    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, volume, pitch); break;
+    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, volume, pitch); break;
     }
 }
 
@@ -635,8 +662,8 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
         // Shouldn't handle input here but not sure how else to do..
         // If switch direction when chaining attacks
-        if (((AEInputCheckCurr(AEVK_LEFT)  || AEInputCheckCurr(AEVK_A)) && isFacingRight) ||
-            ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && !isFacingRight))
+        if ((AEInputCheckCurr(keybinds.left)  && isFacingRight) ||
+            (AEInputCheckCurr(keybinds.right) && !isFacingRight))
             isFacingRight = !isFacingRight;
     }
 }
@@ -700,7 +727,7 @@ void Player::UpdateAnimation()
     // If player is trying to attack (including input buffer)
     if (time - lastAttackHeld < stats.attackBuffer)
     {
-        if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
+        if (!isGroundCollided && AEInputCheckCurr(keybinds.down))
             SetAttack(AIR_ATTACK_SMASH);
         else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
             SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
