@@ -5,9 +5,9 @@
 
 void Background::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-	backgroundLayers[0] = AEGfxTextureLoad("Assets/Background.png");
-	backgroundLayers[1] = AEGfxTextureLoad("Assets/Midground.png");
-	backgroundLayers[2] = AEGfxTextureLoad("Assets/Foreground.png");
+	backgroundLayers[0] = AEGfxTextureLoad("Assets/Art/Background.png");
+	backgroundLayers[1] = AEGfxTextureLoad("Assets/Art/Midground.png");
+	backgroundLayers[2] = AEGfxTextureLoad("Assets/Art/Foreground.png");
 }
 void Background::Render()
 {

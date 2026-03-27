@@ -50,6 +50,7 @@ void Editor::Update()
 	if (AEInputCheckTriggered(AEVK_TAB))
 		instance.showInspectors = !instance.showInspectors;
 
+#if _DEBUG
 	if (AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
 	{
 		instance.focusedObject = nullptr;
@@ -78,6 +79,7 @@ void Editor::Update()
 		Time::GetInstance().SetTimeScale(0.25f);
 	else if (AEInputCheckTriggered(AEVK_F3))
 		Time::GetInstance().SetTimeScale(1.f);
+#endif
 }
 
 void Editor::DrawInspectors()
