@@ -603,6 +603,12 @@ void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVe
 			text.damageType = "MISS!";
 			text.damageNumber = "";
 			break;
+		case DAMAGE_TYPE_TRAP:
+			text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			break;
 	}
 	text.velocity = { direction.x * speed, direction.y * speed * 1.25f }; // Add a multiplier to y so it rises up more.
 	text.initialScale = text.scale;
