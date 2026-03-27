@@ -66,6 +66,7 @@ public:
 
     // === Getters ===
     const AEVec2&       GetPosition()   const;
+    const AEVec2&       GetVelocity()   const;
     const PlayerStats&  GetStats()      const;
     const Sprite&       GetSprite()     const;
     float   GetDashCooldownPercentage() const;

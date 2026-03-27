@@ -20,10 +20,19 @@ public:
 private:
 	struct Afterimage : public ObjectPoolItem
 	{
-		AEVec2 position {};
+		enum Type
+		{
+			DASH_UP,
+			DASH_DOWN,
+			DASH_HORIZONTAL,
+			SMASH_ATTACK,
+
+			TOTAL_TYPE
+		};
+		AEVec2 position{};
 		float spawnTime = -1.f;
 		bool isFacingRight;
-		bool isDashing;
+		Type type;
 
 		void Init() override;
 		void OnGet() override;
@@ -43,9 +52,7 @@ private:
 
 	// === Settings ===
 	float lifetime;
-	AEVec2 dash_uvOffset;
-	AEVec2 slam_uvOffset;
-	float dashSpacing;
-	float slamSpacing;
+	AEVec2 uvOffsets[Afterimage::TOTAL_TYPE];
+	float spacings[Afterimage::TOTAL_TYPE];
 };
 

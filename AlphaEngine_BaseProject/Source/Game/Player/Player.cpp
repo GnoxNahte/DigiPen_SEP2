@@ -204,6 +204,11 @@ const AEVec2& Player::GetPosition() const
     return position;
 }
 
+const AEVec2& Player::GetVelocity() const
+{
+    return velocity;
+}
+
 int Player::GetHealth() const
 {
     return health;
@@ -553,7 +558,10 @@ bool Player::IsInvincible() const
 void Player::SetAttack(AnimState toState)
 {
     if (toState == AIR_ATTACK_SMASH)
+    {
         slamStartHeight = position.y;
+        afterimage.ResetLastSpawn();
+    }
     
     //AudioManager::PlayNextAttackSFX();
 
