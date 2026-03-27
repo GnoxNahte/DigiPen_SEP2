@@ -96,7 +96,7 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
     // Clamp
     pitch = std::clamp(pitch, minPitch, maxPitch);
 
-    AudioManager::PlaySFX(*AudioManager::enemyHurt, pitch);
+    AudioManager::PlaySFX(*AudioManager::enemyHurt, AudioManager::GetSFXVolume() , pitch);
 
     const bool shouldStagger = (timeSinceLastDamage >= staggerResetDelay);
 

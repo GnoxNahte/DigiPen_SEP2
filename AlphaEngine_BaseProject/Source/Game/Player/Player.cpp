@@ -369,11 +369,12 @@ void Player::HandleLanding()
 
         // Lower pitch the stronger the smash strength
         float pitch = 1.f - smashStrength * 0.5f;
-        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, pitch);
+        float volume = AEExtras::Remap(smashStrength, { 0.f, 1.f }, { 0.75f, 1.25f }) * AudioManager::GetSFXVolume();
+        AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, volume, pitch);
     }
     else
     {
-        AudioManager::PlaySFX(*AudioManager::playerLand, AEExtras::RandomRange({0.8f, 1.4f}));
+        AudioManager::PlaySFX(*AudioManager::playerLand, AudioManager::GetSFXVolume(), AEExtras::RandomRange({0.8f, 1.4f}));
     }
 }
 
@@ -468,7 +469,7 @@ void Player::PerformJump()
     lastJumpTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
     ifReleaseJumpAfterJumping = false;
 
-    AudioManager::PlaySFX(*AudioManager::playerJump, AEExtras::RandomRange({0.8f, 1.4f}));
+    AudioManager::PlaySFX(*AudioManager::playerJump, AudioManager::GetSFXVolume(), AEExtras::RandomRange({0.8f, 1.4f}));
 }
 
 void Player::UpdateCollisions(const AEVec2& nextPosition)
@@ -525,12 +526,13 @@ void Player::SetAttack(AnimState toState)
     );
 
     float pitch = AEExtras::RandomRange({0.8f, 1.4f});
+    float volume = AudioManager::GetSFXVolume();
     switch (toState)
     {
-    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, pitch); break;
-    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, pitch); break;
-    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, pitch); break;
-    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, pitch); break;
+    case ATTACK_1: AudioManager::PlaySFX(*AudioManager::playerAttack1, volume, pitch); break;
+    case ATTACK_2: AudioManager::PlaySFX(*AudioManager::playerAttack2, volume, pitch); break;
+    case ATTACK_3: AudioManager::PlaySFX(*AudioManager::playerAttack3, volume, pitch); break;
+    case AIR_ATTACK_SMASH: AudioManager::PlaySFX(*AudioManager::playerAirAttack, volume, pitch); break;
     }
 }
 
