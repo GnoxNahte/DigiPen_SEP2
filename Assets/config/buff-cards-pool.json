@@ -137,7 +137,7 @@
       "rarity": "RARE",
       "name": "Berserker",
       "description": "Pain sharpens your focus.",
-      "effect": "Increase Critical Chance by 10% below 50% HP.",
+      "effect": "Increase Critical Chance by 10% below 25% HP.",
       "effect_value_1": 10
     },
     {
@@ -145,7 +145,7 @@
       "rarity": "EPIC",
       "name": "Berserker",
       "description": "Blood and fury guide your aim.",
-      "effect": "Increase Critical Chance by 20% below 50% HP.",
+      "effect": "Increase Critical Chance by 20% below 25% HP.",
       "effect_value_1": 20
     },
     {
@@ -153,7 +153,7 @@
       "rarity": "LEGENDARY",
       "name": "Berserker",
       "description": "On the brink of death, every strike is lethal.",
-      "effect": "Increase Critical Chance by 35% below 50% HP.",
+      "effect": "Increase Critical Chance by 35% below 25% HP.",
       "effect_value_1": 35
     },
     {
