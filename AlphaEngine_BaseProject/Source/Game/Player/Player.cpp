@@ -569,7 +569,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
         damage = static_cast<int>(damage * GetSlamAttackScale());
 
     // Increased crit chacne if low health
-    float critChance = buff_critChance + (health < 0.5f * maxHealth) * buff_CritChanceLowHP;
+    float critChance = buff_critChance + (health <= stats.berserkerTrigger * maxHealth) * buff_CritChanceLowHP;
     bool isCrit =  AERandFloat() < critChance;
 
     // Crit
@@ -828,6 +828,8 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
+    if (health <= stats.berserkerTrigger * maxHealth)
+        dmg = static_cast<int>(dmg * stats.berserkerHealthReductionAmt);
     if (health <= dmg)
     {
         health = 0;

@@ -94,6 +94,8 @@ struct PlayerStats
     float slamAttackFallSpeed;  
     float slamAttackMaxHeight;  // Applies max damage at max height
     float baseCritDmgMultiplier;
+    float berserkerTrigger;     // Triggers berserker at this percentage
+    float berserkerHealthReductionAmt; // Reduces amount of dmg player is taking (This is hidden from player)
 
     std::array<AttackStats, 3> groundAttacks;
     std::array<AttackStats, 3> airAttacks; // Currently only using last attack as ground slam
@@ -113,6 +115,9 @@ struct PlayerStats
     // Player will call this instead of editor
     void DrawInspector();
 private:
+    // Pre-calcuate some variables to prevent calculating it every frame
+    // Not using this directly in inspector directly because abit hard to 
+    // estimate behaviours when modifying acceleration or the other variables
     void CalculateDerivedVariables();
 };
 

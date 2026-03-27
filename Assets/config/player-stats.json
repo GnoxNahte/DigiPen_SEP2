@@ -24,6 +24,8 @@
     "jumpBuffer": 0.172,
     "wallJumpHorizontalVelocity": 15.0,
     "wallJumpHorizontalVelocityTowardsWall": 8.0,
+    "berserkerTrigger": 0.25,
+    "berserkerHealthReductionAmt": 0.75,
     "groundChecker": {
         "position": {
             "x": 0.0,

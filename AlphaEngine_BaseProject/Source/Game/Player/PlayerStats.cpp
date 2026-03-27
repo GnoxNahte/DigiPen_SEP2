@@ -154,6 +154,8 @@ void PlayerStats::LoadFileData()
     slamAttackFallSpeed = doc["slamAttackFallSpeed"].GetFloat();
     slamAttackMaxHeight = doc["slamAttackMaxHeight"].GetFloat();
     baseCritDmgMultiplier = doc["baseCritDmgMultiplier"].GetFloat();
+    berserkerTrigger = doc["berserkerTrigger"].GetFloat();
+    berserkerHealthReductionAmt = doc["berserkerHealthReductionAmt"].GetFloat();
 
 	auto groundAttackArr = doc["groundAttacks"].GetArray();
 	for (int i = 0; i < groundAttacks.size(); i++)
@@ -235,6 +237,8 @@ void PlayerStats::SaveFileData()
     doc.AddMember("slamAttackFallSpeed", slamAttackFallSpeed, allocator);
     doc.AddMember("slamAttackMaxHeight", slamAttackMaxHeight, allocator);
     doc.AddMember("baseCritDmgMultiplier", baseCritDmgMultiplier, allocator);
+    doc.AddMember("berserkerTrigger", berserkerTrigger, allocator);
+    doc.AddMember("berserkerHealthReductionAmt", berserkerHealthReductionAmt, allocator);
 
     // Attack Arrays
     rapidjson::Value groundAttacksArr(rapidjson::kArrayType);
@@ -370,6 +374,8 @@ void PlayerStats::DrawInspector()
         ifChanged = ImGui::DragFloat("Slam Attack Fall Speed", &slamAttackFallSpeed, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Slam Attack Max Height", &slamAttackMaxHeight, 0.01f) || ifChanged;
         ifChanged = ImGui::DragFloat("Base Crit Dmg Multiplier", &baseCritDmgMultiplier, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Berserker Trigger", &berserkerTrigger, 0.01f) || ifChanged;
+        ifChanged = ImGui::DragFloat("Berserker Health Reduction Amt", &berserkerHealthReductionAmt, 0.01f) || ifChanged;
 
         for (size_t i = 0; i < groundAttacks.size(); i++)
             DrawInspectorAttack(("Ground attack " + std::to_string(i)).c_str(), groundAttacks[i]);
