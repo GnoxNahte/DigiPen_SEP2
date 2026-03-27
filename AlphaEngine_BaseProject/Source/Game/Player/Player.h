@@ -38,7 +38,6 @@ public:
         SWORD_SHEATH,
         WALL_SLIDE,  
         WALL_CLIMB,  
-        // @todo - Split into air attack and attack down (smash)?
         AIR_ATTACK_1,
         AIR_ATTACK_2,
         AIR_ATTACK_SMASH,
@@ -79,6 +78,14 @@ public:
     void SetPosition(const AEVec2& pos);
 
 private:
+    struct Keybinds
+    {
+        u8 left, right, up, down;
+        u8 jump;
+        u8 attack;
+        u8 dash;
+    };
+
     PlayerStats stats;
     Sprite sprite;
 
@@ -91,6 +98,7 @@ private:
     f64 lastJumpPressed = -1.f;
     bool ifReleaseJumpAfterJumping = true;
     f64 lastAttackHeld = -1.f;
+    Keybinds keybinds;
 
     // === Movement data ===
     AEVec2 position;
@@ -137,6 +145,7 @@ private:
     // ===== Helper Functions =====
     void UpdateInput();
     void UpdateTriggerColliders();
+    void SetKeybinds();
 
     // === Movement update ===
     void HorizontalMovement();

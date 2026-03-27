@@ -34,6 +34,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     enemyManager(enemyManager)
 {
     Reset(AEVec2{ 10, 10 });
+    SetKeybinds();
 
     particleSystem.Init();
     particleSystem.emitter.lifetimeRange.x = 0.1f;
@@ -260,22 +261,20 @@ void Player::UpdateInput()
     float currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     // Consider shift all keybinds to another file. Then maybe can allow custom keybinding 
-    inputDirection.x = (f32)((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D))
-                     - (AEInputCheckCurr(AEVK_LEFT) || AEInputCheckCurr(AEVK_A)));
-    inputDirection.y = (f32)((AEInputCheckCurr(AEVK_UP) || AEInputCheckCurr(AEVK_W))
-                     - (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)));
+    inputDirection.x = static_cast<f32>(AEInputCheckCurr(keybinds.right)) - AEInputCheckCurr(keybinds.left);
+    inputDirection.y = static_cast<f32>(AEInputCheckCurr(keybinds.up)) - AEInputCheckCurr(keybinds.down);
 
-    isJumpHeld = AEInputCheckCurr(AEVK_SPACE) || AEInputCheckCurr(AEVK_C);
-    if (AEInputCheckTriggered(AEVK_SPACE) || AEInputCheckTriggered(AEVK_C))
+    isJumpHeld = AEInputCheckCurr(keybinds.jump);
+    if (AEInputCheckTriggered(keybinds.jump))
         lastJumpPressed = currTime;
 
-    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(AEVK_Z)))
+    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(keybinds.dash)))
         isFacingRight = inputDirection.x > 0;
 
-    if (AEInputCheckCurr(AEVK_X))
+    if (AEInputCheckCurr(keybinds.attack))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(AEVK_Z) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
+    if (AEInputCheckCurr(keybinds.dash) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
         AudioManager::PlaySFX(*AudioManager::playerDash, AudioManager::GetSFXVolume());
         dashStartTime = currTime;
     }
@@ -293,6 +292,18 @@ void Player::UpdateTriggerColliders()
     isCeilingCollided   = map->CheckBoxCollision(position + stats.ceilingChecker.position,  stats.ceilingChecker.size);
     isLeftWallCollided  = map->CheckBoxCollision(position + stats.leftWallChecker.position, stats.leftWallChecker.size);
     isRightWallCollided = map->CheckBoxCollision(position + stats.rightWallChecker.position,stats.rightWallChecker.size);
+}
+
+void Player::SetKeybinds()
+{
+    keybinds.left = AEVK_A;
+    keybinds.right = AEVK_D;
+    keybinds.up = AEVK_W;
+    keybinds.down = AEVK_S;
+
+    keybinds.jump = AEVK_SPACE;
+    keybinds.dash = AEVK_LSHIFT;
+    keybinds.attack = AEVK_LBUTTON;
 }
 
 void Player::HorizontalMovement()
@@ -637,8 +648,8 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
         // Shouldn't handle input here but not sure how else to do..
         // If switch direction when chaining attacks
-        if (((AEInputCheckCurr(AEVK_LEFT)  || AEInputCheckCurr(AEVK_A)) && isFacingRight) ||
-            ((AEInputCheckCurr(AEVK_RIGHT) || AEInputCheckCurr(AEVK_D)) && !isFacingRight))
+        if ((AEInputCheckCurr(keybinds.left)  && isFacingRight) ||
+            (AEInputCheckCurr(keybinds.right) && !isFacingRight))
             isFacingRight = !isFacingRight;
     }
 }
@@ -702,7 +713,7 @@ void Player::UpdateAnimation()
     // If player is trying to attack (including input buffer)
     if (time - lastAttackHeld < stats.attackBuffer)
     {
-        if (!isGroundCollided && (AEInputCheckCurr(AEVK_DOWN) || AEInputCheckCurr(AEVK_S)))
+        if (!isGroundCollided && AEInputCheckCurr(keybinds.down))
             SetAttack(AIR_ATTACK_SMASH);
         else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
             SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
