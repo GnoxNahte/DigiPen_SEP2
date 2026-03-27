@@ -246,14 +246,9 @@ Player::AnimState Player::GetAnimState() const
 void Player::SetPosition(const AEVec2& pos)
 {
     position = pos;
-    // Important: do not carry movement from previous room
-    AEVec2Zero(&velocity);
 
-    // Let the next update recalculate fresh collision state
-    isGroundCollided = false;
-    isCeilingCollided = false;
-    isLeftWallCollided = false;
-    isRightWallCollided = false;
+    AEVec2Zero(&velocity);
+    UpdateTriggerColliders();
 }
 
 void Player::UpdateInput()
@@ -357,36 +352,52 @@ void Player::VerticalMovement()
 void Player::HandleLanding()
 {
     int state = sprite.GetState();
-    float angleRange = 5.f;
+    
+    // Default values, will set later depending on the landing
+    int particleSpawnCount = 0;
+    float particleAngleRange = 0.f;
+    AEVec2 particleSpeedRange;
+    
+    // Alot of code below will use this format: A + B * scale
+    // A - base value
+    // B - variable value based on scale
     if (state == AnimState::AIR_ATTACK_SMASH)
     {
         float smashStrength = GetSlamAttackScale();
-        ParticleSystem::EmitterSettings emitter{
-            .spawnPosRangeX { position.x, position.x },
-            .spawnPosRangeY { position.y - 0.2f, position.y + 0.3f },
-            .angleRange     { AEDegToRad(0.f), AEDegToRad(angleRange) },
-            .speedRange     { 2.f, 30.f },
-            .lifetimeRange  { 0.1f, 0.3f },
-            .tint           { 0.56f, 0.49f, 0.77f, 1.f }
-        };
+        particleSpawnCount = 10 + static_cast<int>(20 * smashStrength);
+        particleAngleRange = 10.f + 15.f * smashStrength;
+        AEVec2Set(&particleSpeedRange, 2.f, 10.f + 20.f * smashStrength);
 
-        int spawnCount = static_cast<int>(30 * smashStrength);
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
-
-        emitter.angleRange.x = AEDegToRad(180.f);
-        emitter.angleRange.y = AEDegToRad(180.f - angleRange);
-        particleSystem.SpawnParticleBurst(emitter, spawnCount);
         Camera::StartShake(0.25f, 0.25f * smashStrength);
 
         // Lower pitch the stronger the smash strength
         float pitch = 1.f - smashStrength * 0.5f;
-        float volume = AEExtras::Remap(smashStrength, { 0.f, 1.f }, { 0.75f, 1.25f }) * AudioManager::GetSFXVolume();
+        float volume = (0.75f + 0.5f * smashStrength) * AudioManager::GetSFXVolume();
         AudioManager::PlaySFX(*AudioManager::playerAirAttackImpact, volume, pitch);
     }
     else
     {
+        float landStrength = velocity.y / stats.maxFallVelocity;
+        particleSpawnCount = static_cast<int>(2 + 3 * landStrength);
+        particleAngleRange = 5.f + 10.f * landStrength;
+        AEVec2Set(&particleSpeedRange, 2.f, 2.f + landStrength * 5.f);
         AudioManager::PlaySFX(*AudioManager::playerLand, AudioManager::GetSFXVolume(), AEExtras::RandomRange({0.8f, 1.4f}));
     }
+
+    ParticleSystem::EmitterSettings emitter{
+        .spawnPosRangeX { position.x, position.x },
+        .spawnPosRangeY { position.y - 0.1f, position.y },
+        .angleRange     { AEDegToRad(0.f), AEDegToRad(particleAngleRange) },
+        .speedRange     { particleSpeedRange },
+        .lifetimeRange  { 0.1f, 0.3f },
+        .tint           { 0.56f, 0.49f, 0.77f, 1.f }
+    };
+
+    particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
+
+    emitter.angleRange.x = AEDegToRad(180.f);
+    emitter.angleRange.y = AEDegToRad(180.f - particleAngleRange);
+    particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
 }
 
 void Player::HandleGravity()
@@ -447,6 +458,9 @@ void Player::HandleGravity()
 
 void Player::HandleJump()
 {
+    if (IsAnimAirAttack())
+        return;
+
     f64 currTime = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
 
     bool isJumpBufferActive = (currTime - lastJumpPressed) < stats.jumpBuffer;
