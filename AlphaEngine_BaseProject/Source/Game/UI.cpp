@@ -174,7 +174,7 @@ void UI::DrawHealthVignette() {
 	float baseAlpha = 0.0f;
 
 	// Only activate below 50%
-	if (healthFraction < 0.5f)
+	if (healthFraction < 0.35f)
 	{
 		float t = (0.5f - healthFraction) / 0.25f;
 		t = AEClamp(t, 0.0f, 1.0f);
@@ -184,7 +184,7 @@ void UI::DrawHealthVignette() {
 	// --- Heartbeat pulse ---
 	float pulse = 0.0f;
 
-	if (healthFraction <= 0.5f)
+	if (healthFraction <= 0.35f)
 	{
 		float totalTime = static_cast<f32>(Time::GetInstance().GetScaledElapsedTime());
 
