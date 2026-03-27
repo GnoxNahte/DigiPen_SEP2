@@ -71,7 +71,7 @@ void Editor::Update()
 	}
 
 	if (AEInputCheckTriggered(AEVK_LCTRL))
-		instance.showColliders = !instance.showColliders;
+		instance.editorPrefs.ifShowColliders = !instance.editorPrefs.ifShowColliders;
 
 	if (AEInputCheckTriggered(AEVK_F1))
 		Time::GetInstance().SetTimeScale(0.f);
@@ -109,7 +109,7 @@ void Editor::DrawInspectors()
 
 bool Editor::GetShowColliders()
 {
-	return Get().showColliders;
+	return Get().editorPrefs.ifShowColliders;
 }
 
 Editor& Editor::Get()
@@ -159,7 +159,8 @@ void Editor::DrawMenus()
 
 		if (ImGui::BeginMenu("Debug"))
 		{
-			ImGui::MenuItem("Show colliders", "Ctrl", &instance.showColliders);
+			ImGui::MenuItem("Show colliders", "Ctrl", &instance.editorPrefs.ifShowColliders);
+			ImGui::MenuItem("Allow selecting objs", NULL, &instance.editorPrefs.ifAllowSelectingObjs);
 			ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow);
 
 			if (ImGui::BeginMenu("Variables"))
@@ -202,8 +203,8 @@ void Editor::LoadEditorPrefs()
 	if (!success)
 		return;
 
-	if (doc.HasMember("showColliders"))
-		showColliders = doc["showColliders"].GetBool();
+	if (doc.HasMember("ifShowColliders"))
+		editorPrefs.ifShowColliders = doc["ifShowColliders"].GetBool();
 
 	if (doc.HasMember("lastOpenedScene"))
 	{
@@ -222,7 +223,7 @@ void Editor::SaveEditorPrefs()
 	doc.SetObject();
 	auto& allocator = doc.GetAllocator();
 	doc.AddMember("lastOpenedScene", editorPrefs.lastOpenedScene, allocator);
-	doc.AddMember("showColliders", showColliders, allocator);
+	doc.AddMember("ifShowColliders", editorPrefs.ifShowColliders, allocator);
 
 	FileHelper::TryWriteJsonFile(editorPrefsPath, doc, true);
 }

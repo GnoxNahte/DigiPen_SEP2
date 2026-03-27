@@ -13,7 +13,8 @@ public:
 	struct EditorPrefs
 	{
 		SceneState lastOpenedScene = SceneState::GS_GAME;
-		bool showColliders = false;
+		bool ifShowColliders = false;
+		bool ifAllowSelectingObjs = true;
 	};
 
 	// Some common variables to make debugging easier
@@ -51,7 +52,6 @@ private:
 
 	bool showInspectors = false;
 	bool showDemoWindow = false;
-	bool showColliders = false;
 
 	Inspectable* focusedObject = nullptr;
 
