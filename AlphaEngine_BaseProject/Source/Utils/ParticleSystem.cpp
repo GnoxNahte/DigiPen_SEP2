@@ -65,7 +65,7 @@ void ParticleSystem::Render()
 {
 	AEGfxTextureSet(nullptr, 0, 0);
 	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-	// todo - make custom iterator inside object pool instead?
+
 	for (size_t i = 0; i < pool.GetSize(); i++)
 		pool.pool[i].Render(particleMesh);
 

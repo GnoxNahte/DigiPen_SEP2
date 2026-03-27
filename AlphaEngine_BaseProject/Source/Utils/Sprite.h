@@ -4,11 +4,12 @@
 #include <string>
 #include <functional>
 #include "SpriteMetadata.h"
+#include <AEVec2.h>
 
 class Sprite
 {
 public:
-	Sprite(std::string file);
+	Sprite(const char* file);
 	~Sprite();
 
 	/**
@@ -25,6 +26,10 @@ public:
 
 	int GetState() const;
 	void SetState(int nextState, bool ifLock = false, std::function<void(int)> _onAnimEnd = {});
+	
+	const char* GetFile() const;
+	AEVec2 GetUV_Size() const;
+
 	const SpriteMetadata metadata;
 private:
 
@@ -55,6 +60,7 @@ private:
 	AEVec2 uvOffset; // Current uv offset
 
 	std::function<void(int)> onAnimEnd;
+	const char* file;
 
 	// === Mesh data ===
 	AEGfxVertexList* mesh;

@@ -38,6 +38,7 @@ struct Particle : public ObjectPoolItem
 
 	virtual void Update(float dt);
 	virtual void Render(AEGfxVertexList* mesh);
+
 	virtual void Init() override;
 	virtual void OnGet() override;
 	virtual void OnRelease() override;

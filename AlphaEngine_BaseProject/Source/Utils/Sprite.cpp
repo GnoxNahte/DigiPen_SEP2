@@ -4,19 +4,21 @@
 #include "MeshGenerator.h"
 #include "../Game/Time.h"
 
-Sprite::Sprite(std::string file) 
-	: uvOffset(0.f, 0.f), metadata(file)
+Sprite::Sprite(const char* _file) :
+	file(_file),
+	uvOffset(0.f, 0.f), 
+	metadata(_file)
 {
 	uvWidth = 1.f / metadata.cols;
 	uvHeight = 1.f / metadata.rows;
-
+	
 	ifLockCurrent = false;
 	animTimer = 0.f;
 	currStateIndex = nextStateIndex = 0;
 	frameIndex = 0;
 
 	mesh = MeshGenerator::GetRectMesh(1.f, 1.f, uvWidth, uvHeight);
-	texture = AEGfxTextureLoad(file.c_str());
+	texture = AEGfxTextureLoad(_file);
 }
 
 Sprite::~Sprite()
@@ -102,4 +104,14 @@ void Sprite::SetState(int nextState, bool ifLock, std::function<void(int)> _onAn
 
 	uvOffset.x = frameIndex * uvWidth;
 	uvOffset.y = currStateIndex * uvHeight;
+}
+
+const char* Sprite::GetFile() const
+{
+	return file;
+}
+
+AEVec2 Sprite::GetUV_Size() const
+{
+	return { uvWidth, uvHeight };
 }

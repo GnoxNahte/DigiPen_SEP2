@@ -129,6 +129,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Game\Environment\traps.cpp" />
     <ClCompile Include="Source\Game\GameOver.cpp" />
     <ClCompile Include="Source\Game\Player\Player.cpp" />
+    <ClCompile Include="Source\Game\Player\PlayerAfterimage.cpp" />
     <ClCompile Include="Source\Game\Player\PlayerStats.cpp" />
     <ClCompile Include="Source\Game\Rooms\RoomBuilder.cpp" />
     <ClCompile Include="Source\Game\Rooms\RoomManager.cpp" />
@@ -188,6 +189,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\Environment\traps.h" />
     <ClInclude Include="Source\Game\GameOver.h" />
     <ClInclude Include="Source\Game\Player\Player.h" />
+    <ClInclude Include="Source\Game\Player\PlayerAfterimage.h" />
     <ClInclude Include="Source\Game\Player\PlayerStats.h" />
     <ClInclude Include="Source\Game\Rooms\RoomBuilder.h" />
     <ClInclude Include="Source\Game\Rooms\RoomData.h" />
