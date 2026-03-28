@@ -139,6 +139,7 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     attack.breakRange = cfg.attackBreakRange;
 
 	//enemy particle system setup
+    particleSystem.ReleaseAll();
     particleSystem.Init();
     particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
 
@@ -170,6 +171,7 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     dead = false;
 
 }
+
 
 // ---- Update ----
 void Enemy::Update(const AEVec2& playerPos, MapGrid& map)

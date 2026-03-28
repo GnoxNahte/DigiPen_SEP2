@@ -1201,6 +1201,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
     sprite.SetState(IDLE, false, nullptr);
     specialAttackVfx.SetState(SPELL1);
 
+    particleSystem.ReleaseAll();
     particleSystem.SetSpawnRate(0.f);
 }
 

@@ -158,6 +158,7 @@ void GameScene::Init()
 	// clear room data from any prior run
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
+	enemyMgr.ResetAll();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};
