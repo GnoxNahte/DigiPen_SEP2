@@ -87,9 +87,15 @@ public:
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
 	static void DrawHealthBar();
+
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();
 	static void DrawGameOverText();
+
+	static void UpdateVictoryStatus();
+	static void UpdateVictoryButtonsAndText();
+	static void DrawVictoryText();
+
 	inline static bool& GetRestartStatus() { return restartRun; }
 	inline static bool& GetReturnToMenuStatus() { return returnToMenu; }
 
@@ -102,6 +108,10 @@ public:
 	//boss intro screen
 	static void StartBossIntro();
 	static bool IsBossIntroActive();
+
+	inline static bool isVictory = false;
+	inline static float victoryTextFadeTimer;
+	inline static int   victoryTextStage; // 0 = none, 1 = first, 2 = second, 3 = third, for game over.
 
 	// For drawing in menu tutorial.
     inline static AEGfxVertexList* menuMesh = nullptr;
@@ -127,6 +137,7 @@ private:
 	inline static const float MENU_NDC_X = -0.9f;  // matches AEGfxPrint x for "Menu"
 	inline static const float MENU_NDC_Y = -0.5f;  // matches AEGfxPrint y for "Menu"
 	inline static bool deadTimerAdded = false;
+	inline static bool victoryTimerAdded = false;
 	inline static bool restartRun = false;
 	inline static bool returnToMenu = false;
 
