@@ -386,7 +386,10 @@ void GameScene::Update()
 	}
 	//std::cout << "Current room : " << static_cast<int>(roomMgr.GetCurrentRoomID()) << '\n';
 	AudioManager::Update();
-	AudioManager::UpdateLavaAudio(trapMgr, player);
+
+	if (!UI::isVictory && !player.IsDead()) // Only play lava music if not dead or victorious.
+		AudioManager::UpdateLavaAudio(trapMgr, player);
+
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;

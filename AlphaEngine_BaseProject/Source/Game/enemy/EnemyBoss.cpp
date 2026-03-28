@@ -516,7 +516,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             deathTimeLeft -= dt;
             if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
 
-			if (deathTimeLeft <= 0.f) hideAfterDeath = true;
+            if (deathTimeLeft <= 0.f) {
+                hideAfterDeath = true;
+                UI::isVictory = true;
+            }
+
         }
 
 
