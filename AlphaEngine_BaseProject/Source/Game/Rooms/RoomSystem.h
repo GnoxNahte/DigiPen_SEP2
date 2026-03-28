@@ -40,6 +40,7 @@ public:
 
     EnemyBoss* GetActiveBoss();
     const EnemyBoss* GetActiveBoss() const;
+    void ApplyStartRoomLeftBoundaryLock();
 
 private:
     void ApplyBlockedReturnBarrier();

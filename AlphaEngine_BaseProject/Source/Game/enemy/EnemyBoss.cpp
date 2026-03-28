@@ -10,7 +10,7 @@
 #include "../Environment/MapGrid.h"
 #include "../UI.h"
 #include "../AudioManager.h"
-#include "../../Utils/AEExtras.h"
+#include "../../Editor/Editor.h"
 
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
@@ -1111,37 +1111,9 @@ void EnemyBoss::Render()
     AEMtx33 world;
     AEMtx33Scale(&world, Camera::scale, Camera::scale);
     AEGfxSetTransform(world.m);
-
-    for (const auto& specialAttack : g_specialAttacks)
+    if (Editor::GetShowColliders() || debugDraw)
     {
-        specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
 
-        AEGfxSetTransform(world.m);
-
-        if (debugDraw)
-        {
-            QuickGraphics::DrawRect(
-                specialAttack.pos.x, specialAttack.pos.y,
-                specialAttack.debugW, specialAttack.debugH,
-                0xFF00FF00,
-                AE_GFX_MDM_LINES_STRIP
-            );
-
-            QuickGraphics::DrawRect(
-                specialAttack.pos.x, specialAttack.pos.y,
-                0.05f, 0.05f,
-                0xFFFF0000,
-                AE_GFX_MDM_LINES_STRIP
-            );
-
-          
-        }
-    }
-
-    AEGfxSetTransform(world.m);
-
-    if (debugDraw)
-    {
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
 
@@ -1151,8 +1123,46 @@ void EnemyBoss::Render()
             QuickGraphics::DrawRect(hb.position.x, hb.position.y, hb.size.x, hb.size.y,
                 0xFF00FFFF, AE_GFX_MDM_LINES_STRIP);
         }
-      
+        for (const auto& specialAttack : g_specialAttacks)
+        {
+            specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
+
+            AEGfxSetTransform(world.m);
+            
+                QuickGraphics::DrawRect(
+                    specialAttack.pos.x, specialAttack.pos.y,
+                    specialAttack.debugW, specialAttack.debugH,
+                    0xFF00FF00,
+                    AE_GFX_MDM_LINES_STRIP
+                );
+
+                QuickGraphics::DrawRect(
+                    specialAttack.pos.x, specialAttack.pos.y,
+                    0.05f, 0.05f,
+                    0xFFFF0000,
+                    AE_GFX_MDM_LINES_STRIP
+                );
+        }
+
+        AEGfxSetTransform(world.m);
+
+        /*if (debugDraw)
+        {
+            const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
+            QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+
+            if (attack.IsAttacking())
+            {
+                const auto& hb = meleeHitbox;
+                QuickGraphics::DrawRect(hb.position.x, hb.position.y, hb.size.x, hb.size.y,
+                    0xFF00FFFF, AE_GFX_MDM_LINES_STRIP);
+            }
+
+    }*/
     }
+ 
+
+
     RenderHealthbar();
 
     // make sure we�re not stuck in additive mode from VFX

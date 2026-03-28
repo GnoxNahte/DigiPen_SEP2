@@ -293,6 +293,7 @@ void GameScene::Update()
 	if (roomInputLockTimer <= 0.f)
 	{
 		player.Update();
+		//roomSystem.ApplyStartRoomLeftBoundaryLock();
 	}
 
 #if _DEBUG

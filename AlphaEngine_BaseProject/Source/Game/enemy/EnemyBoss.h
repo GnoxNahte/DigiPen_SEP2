@@ -37,7 +37,7 @@ struct SpecialAttack
         AEMtx33 m;
         const bool faceRight = (vel.x >= 0.0f);
 
-        AEMtx33Scale(&m, sx, sy);
+        AEMtx33Scale(&m, faceRight ? sx : -sx, sy);
 
         float px = vfx.metadata.pivot.x;
         float py = vfx.metadata.pivot.y;

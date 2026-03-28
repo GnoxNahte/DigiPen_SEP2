@@ -201,6 +201,8 @@ void RoomSystem::ClearRuntimeRoomObjects()
 
 void RoomSystem::Update(float dt)
 {
+    ApplyStartRoomLeftBoundaryLock();
+
     if (!wallSpawnPending)
         return;
 
@@ -335,6 +337,23 @@ EnemyBoss* RoomSystem::GetActiveBoss()
 const EnemyBoss* RoomSystem::GetActiveBoss() const
 {
     return activeBoss;
+}
+
+void RoomSystem::ApplyStartRoomLeftBoundaryLock()
+{
+    if (roomMgr.GetCurrentRoomID() != ROOM_1)
+        return;
+
+    const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
+    const float halfW = player.GetStats().playerSize.x * 0.5f;
+    const float minX = origin.x + halfW + 0.05f;
+
+    AEVec2 pos = player.GetPosition();
+    if (pos.x < minX)
+    {
+        pos.x = minX;
+        player.SetPosition(pos);
+    }
 }
 
 void RoomSystem::ApplyBlockedReturnBarrier()
