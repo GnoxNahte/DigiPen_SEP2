@@ -87,7 +87,7 @@ private:
         u8 left, right, up, down;
         u8 jump;
         u8 attack;
-        u8 dash;
+        u8 dash, dashAlt;
     };
 
     PlayerStats stats;

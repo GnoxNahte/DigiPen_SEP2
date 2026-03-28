@@ -284,13 +284,16 @@ void Player::UpdateInput()
     if (AEInputCheckTriggered(keybinds.jump))
         lastJumpPressed = currTime;
 
-    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(keybinds.dash)))
+    if (inputDirection.x != 0 && 
+       (!IsAttacking() || AEInputCheckTriggered(keybinds.dash) || AEInputCheckTriggered(keybinds.dashAlt)))
         isFacingRight = inputDirection.x > 0;
 
     if (AEInputCheckCurr(keybinds.attack))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(keybinds.dash) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
+    if ((AEInputCheckCurr(keybinds.dash) || AEInputCheckCurr(keybinds.dashAlt)) && 
+        currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime)
+    {
         AudioManager::PlaySFX(*AudioManager::playerDash, AudioManager::GetSFXVolume());
         dashStartTime = currTime;
         afterimage.ResetLastSpawn();
@@ -320,6 +323,7 @@ void Player::SetKeybinds()
 
     keybinds.jump = AEVK_SPACE;
     keybinds.dash = AEVK_LSHIFT;
+    keybinds.dashAlt = AEVK_RBUTTON;
     keybinds.attack = AEVK_LBUTTON;
 }
 
@@ -848,6 +852,8 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         return health > 0;
 
     dmg = static_cast<int>(dmg * buff_DmgReduction);
+    if (type == DAMAGE_TYPE_TRAP)
+        dmg = static_cast<int>(dmg * buff_TrapDmgReduction);
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
