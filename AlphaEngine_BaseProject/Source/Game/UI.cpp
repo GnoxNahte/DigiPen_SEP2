@@ -639,7 +639,7 @@
 			text.position.y += text.velocity.y * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
 
 
-			float gravity = -15.f; // To adjust this for fall of damage text
+			float gravity = -17.f; // To adjust this for fall of damage text
 			text.velocity.y += gravity * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
 
 
@@ -670,7 +670,9 @@
 		}
 
 		AEVec2 direction{ AEExtras::GetNormalise(velocity) };
-		//std::cout << direction << "\n";
+
+		// force upward bias
+		direction.y = max(direction.y, 0.4f);
 
 		if (direction.x == -1.0f) // If player is attacking enemy
 		{
