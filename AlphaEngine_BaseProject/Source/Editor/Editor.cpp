@@ -51,7 +51,7 @@ void Editor::Update()
 		instance.showInspectors = !instance.showInspectors;
 
 #if _DEBUG
-	if (AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
+	if (instance.editorPrefs.ifAllowSelectingObjs && AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
 	{
 		instance.focusedObject = nullptr;
 		instance.showInspectors = false;

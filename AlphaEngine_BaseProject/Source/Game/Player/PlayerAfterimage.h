@@ -31,8 +31,8 @@ private:
 		};
 		AEVec2 position{};
 		float spawnTime = -1.f;
-		bool isFacingRight;
-		Type type;
+		bool isFacingRight = false;
+		Type type = DASH_HORIZONTAL;
 
 		void Init() override;
 		void OnGet() override;
