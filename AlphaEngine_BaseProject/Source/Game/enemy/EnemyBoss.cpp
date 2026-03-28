@@ -496,9 +496,6 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
 	if (hpBarShown < 0.f) hpBarShown = 0.f;
 	if (hpBarShown > 1.5) hpBarShown = 1.5f;
 
-
-    
-
   if (isDead)
     {
         // Ensure we are in DEATH state (safe to call; SetState ignores same-state)
