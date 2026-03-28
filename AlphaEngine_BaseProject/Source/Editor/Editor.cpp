@@ -215,6 +215,9 @@ void Editor::LoadEditorPrefs()
 		else
 			std::cout << "Failed to load scene editor prefs\n";
 	}
+
+	if (doc.HasMember("ifAllowSelectingObjs"))
+		editorPrefs.ifAllowSelectingObjs = doc["ifAllowSelectingObjs"].GetBool();
 }
 
 void Editor::SaveEditorPrefs()
@@ -224,6 +227,7 @@ void Editor::SaveEditorPrefs()
 	auto& allocator = doc.GetAllocator();
 	doc.AddMember("lastOpenedScene", editorPrefs.lastOpenedScene, allocator);
 	doc.AddMember("ifShowColliders", editorPrefs.ifShowColliders, allocator);
+	doc.AddMember("ifAllowSelectingObjs", editorPrefs.ifAllowSelectingObjs, allocator);
 
 	FileHelper::TryWriteJsonFile(editorPrefsPath, doc, true);
 }
