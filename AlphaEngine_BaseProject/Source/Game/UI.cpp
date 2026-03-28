@@ -72,6 +72,10 @@ void UI::Update() {
 	if (player->IsDead() && EyelidDone()) {
 		UpdateGameOverButtonsAndText();
 	}
+	UpdateVictoryStatus();
+	if (isVictory && EyelidDone()) {
+		UpdateVictoryButtonsAndText();
+	}
 }
 void UI::Render() {
 	DrawPlayerCooldownMeter();
@@ -86,6 +90,10 @@ void UI::Render() {
 			DrawGameOverText();
 		}
 	}
+	if (isVictory && !player->IsDead()) {
+		DrawEyelid();
+		if (EyelidDone()) DrawVictoryText();
+	}
 }
 void UI::Reset() {
 	deadTimerAdded = false;
@@ -94,6 +102,12 @@ void UI::Reset() {
 	ResetEyelid();
 	gameOverTextFadeTimer = 0.0f;
 	gameOverTextStage = 0;
+
+	victoryTimerAdded = false; // add this
+	victoryTextFadeTimer = 0.0f;
+	isVictory = false;
+	victoryTextStage = 0;
+
 }
 void UI::Exit() {
 	AEGfxDestroyFont(damageTextFont);
@@ -309,6 +323,7 @@ void UI::DrawHealthBar()
 	AEGfxSetTransparency(1.f); // 画完恢复，避免影响后面UI
 }
 void UI::UpdateGameOverStatus() {
+	if (isVictory) return; // don't interfere
 	if (!player->IsDead()) {
 		deadTimerAdded = false;
 		ResetEyelid();
@@ -436,6 +451,135 @@ void UI::DrawGameOverText() {
 			a4);
 	}
 }
+void UI::UpdateVictoryStatus() {
+	if (player->IsDead()) return; // don't interfere
+	if (!isVictory) {
+		victoryTimerAdded = false;
+		return;
+	}
+	if (victoryTimerAdded && !TimerSystem::GetInstance().GetTimerByName("VictoryAnim")) {
+		victoryTimerAdded = false;
+	}
+	if (!victoryTimerAdded) {
+		TimerSystem::GetInstance().AddTimer("VictoryAnim", 2.5f, false);
+		victoryTimerAdded = true;
+		ResetEyelid();
+
+	}
+	auto* timer = TimerSystem::GetInstance().GetTimerByName("VictoryAnim");
+
+	if (timer && timer->completed) {
+		UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
+		if (Time::GetInstance().GetTimeScale() > 0.0f) {
+			Time::GetInstance().SetTimeScale(0);
+		}
+	}
+}
+void UI::UpdateVictoryButtonsAndText() {
+	victoryTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
+	if (victoryTextFadeTimer >= 0.0f) victoryTextStage = 1;
+	if (victoryTextFadeTimer >= 1.5f) victoryTextStage = 2;
+	if (victoryTextFadeTimer >= 3.0f) victoryTextStage = 3;
+	float winW = static_cast<float>(AEGfxGetWindowWidth());
+	float winH = static_cast<float>(AEGfxGetWindowHeight());
+
+	// Approximate pixel width: font size * char count * scale * ~0.6
+	float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
+	float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
+
+	// NDC left-edge of text pixel left-edge
+	float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
+	float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
+
+	// Center of hit box = left edge + half text width
+	float restartCenterX = restartLeftPx + restartTextW * 0.5f;
+	float menuCenterX = menuLeftPx + menuTextW * 0.5f;
+
+	float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;
+	float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
+
+	AEVec2 btnSizeRestart = { restartTextW, 50.f };
+	AEVec2 btnSizeMenu = { menuTextW,    50.f };
+
+	bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
+	bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
+
+	if (hoverRestart) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			std::cout << "RESTART\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			restartRun = true;
+			// restart
+		}
+	}
+	if (hoverMenu) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			std::cout << "MENU\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			returnToMenu = true;
+		}
+	}
+}
+void UI::DrawVictoryText() {
+	float t = victoryTextFadeTimer;
+
+	// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
+	float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
+	float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
+	float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+
+	if (a1 > 0.0f)
+		AEGfxPrint(gameOverFont, "At last...", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
+	if (a2 > 0.0f)
+		AEGfxPrint(gameOverFont, "The storm has passed.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
+	if (a3 > 0.0f) {
+		AEGfxPrint(gameOverFont, "Sleep comes gently.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
+		f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
+		std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
+		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.65f, 1.f, 1.f, 1.f, a3);
+
+		float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
+
+		float winW = static_cast<float>(AEGfxGetWindowWidth());
+		float winH = static_cast<float>(AEGfxGetWindowHeight());
+
+		// Approximate pixel width: font size * char count * scale * ~0.6
+		float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
+		float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
+
+		// NDC left-edge of text pixel left-edge
+		float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
+		float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
+
+		// Center of hit box = left edge + half text width
+		float restartCenterX = restartLeftPx + restartTextW * 0.5f;
+		float menuCenterX = menuLeftPx + menuTextW * 0.5f;
+
+		float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;  // was missing / 2.0f
+		float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
+
+		AEVec2 btnSizeRestart = { restartTextW, 50.f };
+		AEVec2 btnSizeMenu = { menuTextW,    50.f };
+
+		bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
+		bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
+
+		AEGfxPrint(gameOverFont, "Restart Run",
+			RESTART_NDC_X, RESTART_NDC_Y, 1.0f,
+			hoverRestart ? 1.f : 0.7f,
+			hoverRestart ? 0.8f : 0.7f,
+			hoverRestart ? 0.f : 0.7f,
+			a4);
+
+		AEGfxPrint(gameOverFont, "Menu",
+			MENU_NDC_X, MENU_NDC_Y, 1.0f,
+			hoverMenu ? 1.f : 0.7f,
+			hoverMenu ? 0.8f : 0.7f,
+			hoverMenu ? 0.f : 0.7f,
+			a4);
+	}
+}
+
 
 /*--------------------------------------
 		  Damage Text Functions

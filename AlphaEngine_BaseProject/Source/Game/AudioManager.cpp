@@ -5,6 +5,7 @@
 #include "../Game/Time.h"
 #include "../Game/Rooms/RoomData.h"
 #include "../Game/Environment/traps.h"
+#include "../Game/UI.h"
 
 // Declare background music.
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
@@ -211,6 +212,7 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
             gCurrTrack = bossFightMusic.get();
         }
         if (boss.IsDead()) {
+            UI::isVictory = true;
             if (!gIsPlayingVictory) {
                 if (gCurrTrack) {
                     gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
