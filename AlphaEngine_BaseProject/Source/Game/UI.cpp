@@ -320,7 +320,7 @@
 		AEGfxTextureSet(healthBarFill, 0.f, 0.f);
 		AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 
-		AEGfxSetTransparency(1.f); // 画完恢复，避免影响后面UI
+		AEGfxSetTransparency(1.f);
 	}
 	void UI::UpdateGameOverStatus() {
 		if (isVictory) return; // don't interfere
