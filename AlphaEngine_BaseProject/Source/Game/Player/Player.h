@@ -2,6 +2,7 @@
 
 #include "AEEngine.h"
 #include "PlayerStats.h"
+#include "PlayerAfterimage.h"
 #include "../../Utils/Sprite.h"
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
@@ -38,7 +39,6 @@ public:
         SWORD_SHEATH,
         WALL_SLIDE,  
         WALL_CLIMB,  
-        // @todo - Split into air attack and attack down (smash)?
         AIR_ATTACK_1,
         AIR_ATTACK_2,
         AIR_ATTACK_SMASH,
@@ -66,24 +66,36 @@ public:
 
     // === Getters ===
     const AEVec2&       GetPosition()   const;
+    const AEVec2&       GetVelocity()   const;
     const PlayerStats&  GetStats()      const;
+    const Sprite&       GetSprite()     const;
     float   GetDashCooldownPercentage() const;
     int     GetHealth()         const;
     int     GetMaxHealth()      const;
     float   GetHealthPercentage() const;
     bool    GetIsFacingRight()  const;
     bool    GetIsGrounded()     const;
+    bool    IsDashing()         const;
     AnimState GetAnimState()    const;
 
     // === Setters ===
     void SetPosition(const AEVec2& pos);
 
 private:
+    struct Keybinds
+    {
+        u8 left, right, up, down;
+        u8 jump;
+        u8 attack;
+        u8 dash, dashAlt;
+    };
+
     PlayerStats stats;
     Sprite sprite;
 
     AEMtx33 transform;
     ParticleSystem particleSystem;
+    PlayerAfterimage afterimage;
 
     // === Player Input ===
     AEVec2 inputDirection;
@@ -91,6 +103,7 @@ private:
     f64 lastJumpPressed = -1.f;
     bool ifReleaseJumpAfterJumping = true;
     f64 lastAttackHeld = -1.f;
+    Keybinds keybinds;
 
     // === Movement data ===
     AEVec2 position;
@@ -124,7 +137,8 @@ private:
     float buff_TrapDmgReduction;
     float buff_critChance;
     float buff_critDmgMulti;
-    float buff_DmgMultiLowHP;
+    float buff_CritChanceLowHP;
+    float buff_DmgMulti;
     float buff_DashCooldownMulti;
     
     EventId buffEventId;
@@ -136,6 +150,7 @@ private:
     // ===== Helper Functions =====
     void UpdateInput();
     void UpdateTriggerColliders();
+    void SetKeybinds();
 
     // === Movement update ===
     void HorizontalMovement();
@@ -146,11 +161,10 @@ private:
     void PerformJump();
     void UpdateCollisions(const AEVec2& nextPosition);
 
-    bool IsDashing();
-    bool IsAnimGroundAttack();
-    bool IsAnimAirAttack();
-    bool IsAttacking();
-    bool IsInvincible();
+    bool IsAnimGroundAttack() const;
+    bool IsAnimAirAttack() const;
+    bool IsAttacking() const;
+    bool IsInvincible() const;
     void SetAttack(AnimState toState);
     void AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack);
     void UpdateAttacks();

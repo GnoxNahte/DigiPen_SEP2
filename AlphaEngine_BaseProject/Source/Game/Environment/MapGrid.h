@@ -25,7 +25,10 @@ public:
 	bool CheckBoxCollision(const AEVec2& boxPosition, const AEVec2& boxSize);
 	bool CheckBoxCollision(const Box& box);
 
+	// Returns raycast dist from start to hit point
 	float Raycast(const AEVec2& start, const AEVec2& end);
+	// Returns if it hit a tile
+	bool CheckRaycast(const AEVec2& start, const AEVec2& end);
 
 	void HandleBoxCollision(AEVec2& currentPosition, AEVec2& velocity, const AEVec2& nextPosition, const AEVec2& size, bool ifSlide = false);
 

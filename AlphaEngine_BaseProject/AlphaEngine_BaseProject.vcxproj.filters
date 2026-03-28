@@ -201,17 +201,11 @@
     <ClCompile Include="Source\Utils\PhysicsUtils.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Game\SplashScreen.cpp">
-      <Filter>Source Files\Game</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Game\GameOver.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\Rooms\RoomManager.cpp">
       <Filter>Header Files\Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Game\Player\Player.cpp">
-      <Filter>Source Files\Game\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\Environment\traps.cpp">
       <Filter>Source Files\Game\Environment</Filter>
@@ -227,6 +221,15 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Rooms\RoomSystem.cpp">
       <Filter>Source Files\Game\Rooms</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\Player.cpp">
+      <Filter>Source Files\Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Scene\SplashScreenScene.cpp">
+      <Filter>Source Files\Game\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Game\Player\PlayerAfterimage.cpp">
+      <Filter>Source Files\Game\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -380,9 +383,6 @@
     <ClInclude Include="Source\Utils\Event\EventSystem.h">
       <Filter>Header Files\Utils\Event</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Game\SplashScreen.h">
-      <Filter>Header Files\Game</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\GameOver.h">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
@@ -409,6 +409,12 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Rooms\RoomSystem.h">
       <Filter>Header Files\Game\Rooms</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Scene\SplashScreenScene.h">
+      <Filter>Header Files\Game\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\Player\PlayerAfterimage.h">
+      <Filter>Header Files\Game\Player</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -109,6 +109,7 @@ public:
 
     // Enemy SFXs
     static std::unique_ptr<SFXAudio> enemyHurt;
+    static std::unique_ptr<SFXAudio> enemyHurtCrit;
     static std::unique_ptr<SFXAudio> druidCast;
     static std::unique_ptr<SFXAudio> druidImpact;
     static std::unique_ptr<SFXAudio> druidDeath;

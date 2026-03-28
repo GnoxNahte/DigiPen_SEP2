@@ -46,11 +46,11 @@ public:
 private: 
 	static void LoadState(SceneState state);
 
-	static BaseScene* currentScene;
+	static inline BaseScene* currentScene = nullptr;
 	
-	static SceneState previousState;
-	static SceneState currentState;
-	static SceneState nextState;
+	static inline SceneState previousState = GS_QUIT;
+	static inline SceneState currentState = GS_QUIT;
+	static inline SceneState nextState = GS_QUIT;
 };
 
 // Called after changing scene

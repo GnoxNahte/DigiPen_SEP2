@@ -387,7 +387,10 @@ void GameScene::Update()
 	}
 	//std::cout << "Current room : " << static_cast<int>(roomMgr.GetCurrentRoomID()) << '\n';
 	AudioManager::Update();
-	AudioManager::UpdateLavaAudio(trapMgr, player);
+
+	if (!UI::isVictory && !player.IsDead()) // Only play lava music if not dead or victorious.
+		AudioManager::UpdateLavaAudio(trapMgr, player);
+
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
@@ -997,12 +1000,12 @@ void GameScene::RenderPauseOverlay()
 		const auto& buffs = BuffCardManager::GetCurrentBuffs();
 		if (!buffs.empty())
 		{
-			const int cols = 3;
+			const int cols = 4;
 
 			// Bigger cards
-			const float cardW = 180.0f;
-			const float cardH = 255.0f;
-			const float gapX = 20.0f;   // horizontal gap 
+			const float cardW = 130.0f;
+			const float cardH = 185.0f;
+			const float gapX = 35.0f;   // horizontal gap 
 			const float gapY = 20.0f;   // vertical gap between rows 
 
 			// Anchor: move this block to the right & top area (match your red mark)

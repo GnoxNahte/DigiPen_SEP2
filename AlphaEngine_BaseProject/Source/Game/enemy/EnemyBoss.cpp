@@ -95,8 +95,12 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
 
     // Clamp
     pitch = std::clamp(pitch, minPitch, maxPitch);
-
-    AudioManager::PlaySFX(*AudioManager::enemyHurt, pitch);
+    if (type == DAMAGE_TYPE_NORMAL) {
+        AudioManager::PlaySFX(*AudioManager::enemyHurt, AudioManager::GetSFXVolume(), pitch);
+    }
+    else if (type == DAMAGE_TYPE_CRIT) {
+        AudioManager::PlaySFX(*AudioManager::enemyHurtCrit, AudioManager::GetSFXVolume(), pitch);
+    }
 
     const bool shouldStagger = (timeSinceLastDamage >= staggerResetDelay);
 
@@ -109,7 +113,6 @@ bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type
     if (hp <= 0)
     {
         if (!AudioManager::playedBossDeathSFX) {
-            std::cout << "PLAY DEATH SOUND!!!!!!!!!!\n";
             AudioManager::playedBossDeathSFX = true;
             AudioManager::PlaySFX(*AudioManager::bossDeath, AudioManager::GetSFXVolume());
         }
@@ -513,7 +516,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             deathTimeLeft -= dt;
             if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
 
-			if (deathTimeLeft <= 0.f) hideAfterDeath = true;
+            if (deathTimeLeft <= 0.f) {
+                hideAfterDeath = true;
+                UI::isVictory = true;
+            }
+
         }
 
 

@@ -37,6 +37,7 @@ std::unique_ptr<SFXAudio> AudioManager::playerDeath = nullptr;
 
 // Enemy SFXs
 std::unique_ptr<SFXAudio> AudioManager::enemyHurt = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::enemyHurtCrit = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidCast = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidImpact = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::druidDeath = nullptr;
@@ -209,15 +210,26 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
             gIsPlayingBoss2ndPhase = true;
             gCurrTrack = bossFightMusic.get();
         }
-        if (boss.IsDead()) {
-            if (!gIsPlayingVictory) {
-                if (gCurrTrack) {
-                    gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
-                    gCurrTrack = victoryMusic.get();
-                }
-                victoryMusic->Play(victoryMusic->GetVolume());
-            }
+        if (boss.IsDead() && !gIsPlayingVictory) {
             gIsPlayingVictory = true;
+
+            // Stop whichever boss track is still audible
+            if (gCurrTrack) {
+                gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
+                gCurrTrack = victoryMusic.get();
+            }
+            else {
+                victoryMusic->Play(victoryMusic->GetVolume());
+                gCurrTrack = victoryMusic.get();
+            }
+
+            // Force-silence the other boss track that wasn't gCurrTrack
+            if (bossIntroMusic && bossIntroMusic.get() != gCurrTrack)
+                bossIntroMusic->SetVolume(0.0f);
+            if (bossFightMusic && bossFightMusic.get() != gCurrTrack)
+                bossFightMusic->SetVolume(0.0f);
+            if (trapLava && trapLava->IsActive())
+                trapLava->Stop();
         }
     }
 }
@@ -399,6 +411,8 @@ void AudioManager::Init() {
     // Enemy SFXs
     if (!enemyHurt)
         enemyHurt = std::make_unique<SFXAudio>("Assets/music/EnemyHurt.mp3");
+    if (!enemyHurtCrit)
+        enemyHurtCrit = std::make_unique<SFXAudio>("Assets/music/EnemyHurtCrit.mp3");
     if (!druidCast)
         druidCast = std::make_unique<SFXAudio>("Assets/music/DruidCast.mp3");
     if (!druidImpact)
@@ -487,6 +501,7 @@ void AudioManager::Exit() {
 
     // Reset enemy sfxs.
     enemyHurt.reset();
+    enemyHurtCrit.reset();
     druidCast.reset();
     druidImpact.reset();
     druidDeath.reset();

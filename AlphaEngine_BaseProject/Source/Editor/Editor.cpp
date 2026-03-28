@@ -50,7 +50,8 @@ void Editor::Update()
 	if (AEInputCheckTriggered(AEVK_TAB))
 		instance.showInspectors = !instance.showInspectors;
 
-	if (AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
+#if _DEBUG
+	if (instance.editorPrefs.ifAllowSelectingObjs && AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
 	{
 		instance.focusedObject = nullptr;
 		instance.showInspectors = false;
@@ -70,7 +71,7 @@ void Editor::Update()
 	}
 
 	if (AEInputCheckTriggered(AEVK_LCTRL))
-		instance.showColliders = !instance.showColliders;
+		instance.editorPrefs.ifShowColliders = !instance.editorPrefs.ifShowColliders;
 
 	if (AEInputCheckTriggered(AEVK_F1))
 		Time::GetInstance().SetTimeScale(0.f);
@@ -78,6 +79,7 @@ void Editor::Update()
 		Time::GetInstance().SetTimeScale(0.25f);
 	else if (AEInputCheckTriggered(AEVK_F3))
 		Time::GetInstance().SetTimeScale(1.f);
+#endif
 }
 
 void Editor::DrawInspectors()
@@ -107,7 +109,7 @@ void Editor::DrawInspectors()
 
 bool Editor::GetShowColliders()
 {
-	return Get().showColliders;
+	return Get().editorPrefs.ifShowColliders;
 }
 
 Editor& Editor::Get()
@@ -157,7 +159,8 @@ void Editor::DrawMenus()
 
 		if (ImGui::BeginMenu("Debug"))
 		{
-			ImGui::MenuItem("Show colliders", "Ctrl", &instance.showColliders);
+			ImGui::MenuItem("Show colliders", "Ctrl", &instance.editorPrefs.ifShowColliders);
+			ImGui::MenuItem("Allow selecting objs", NULL, &instance.editorPrefs.ifAllowSelectingObjs);
 			ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow);
 
 			if (ImGui::BeginMenu("Variables"))
@@ -200,8 +203,8 @@ void Editor::LoadEditorPrefs()
 	if (!success)
 		return;
 
-	if (doc.HasMember("showColliders"))
-		showColliders = doc["showColliders"].GetBool();
+	if (doc.HasMember("ifShowColliders"))
+		editorPrefs.ifShowColliders = doc["ifShowColliders"].GetBool();
 
 	if (doc.HasMember("lastOpenedScene"))
 	{
@@ -212,6 +215,9 @@ void Editor::LoadEditorPrefs()
 		else
 			std::cout << "Failed to load scene editor prefs\n";
 	}
+
+	if (doc.HasMember("ifAllowSelectingObjs"))
+		editorPrefs.ifAllowSelectingObjs = doc["ifAllowSelectingObjs"].GetBool();
 }
 
 void Editor::SaveEditorPrefs()
@@ -220,7 +226,8 @@ void Editor::SaveEditorPrefs()
 	doc.SetObject();
 	auto& allocator = doc.GetAllocator();
 	doc.AddMember("lastOpenedScene", editorPrefs.lastOpenedScene, allocator);
-	doc.AddMember("showColliders", showColliders, allocator);
+	doc.AddMember("ifShowColliders", editorPrefs.ifShowColliders, allocator);
+	doc.AddMember("ifAllowSelectingObjs", editorPrefs.ifAllowSelectingObjs, allocator);
 
 	FileHelper::TryWriteJsonFile(editorPrefsPath, doc, true);
 }
