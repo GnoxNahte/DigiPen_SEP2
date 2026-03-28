@@ -212,8 +212,8 @@ private:
     bool debugDraw{ false };
 
     // --- Health / damage ---
-    int   maxHP{ 500 };
-    int   hp{ 500 };
+    int   maxHP{ 650 };
+    int   hp{ 650 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };
