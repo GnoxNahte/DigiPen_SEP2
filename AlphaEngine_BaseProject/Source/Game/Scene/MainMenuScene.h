@@ -61,5 +61,5 @@ private:
 
     void LoadRunRecords();
     std::string FormatTime(double seconds) const;
-    void RenderLeaderboard() const;
+    void RenderLeaderboard(float worldX, float worldY) const;
 };

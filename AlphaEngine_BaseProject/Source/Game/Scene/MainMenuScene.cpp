@@ -91,32 +91,48 @@ std::string MainMenuScene::FormatTime(double seconds) const
     return oss.str();
 }
 
-void MainMenuScene::RenderLeaderboard() const
+void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
 {
     if (uiFont < 0)
         return;
 
-    
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);
     AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
     AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
 
-    AEGfxPrint((s8)uiFont, "RUN RECORDS", 0.42f, 0.72f, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
+    auto WorldToNDC = [](float wx, float wy, float& ndcX, float& ndcY)
+        {
+            float screenX = (wx - Camera::position.x) * Camera::scale + AEGfxGetWindowWidth() * 0.5f;
+            float screenY = (wy - Camera::position.y) * Camera::scale + AEGfxGetWindowHeight() * 0.5f;
+            ndcX = (screenX / AEGfxGetWindowWidth()) * 2.f - 1.f;
+            ndcY = (screenY / AEGfxGetWindowHeight()) * 2.f - 1.f;
+        };
+
+    float nx, ny;
+
+    WorldToNDC(worldX, worldY, nx, ny);
+    AEGfxPrint((s8)uiFont, "RUN RECORDS", nx, ny, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
 
     if (personalBest.valid)
     {
         std::string best1 = "BEST LEVELS: " + std::to_string(personalBest.levelsCleared);
         std::string best2 = "BEST TIME:   " + FormatTime(personalBest.timeSeconds);
 
-        AEGfxPrint((s8)uiFont, best1.c_str(), 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
-        AEGfxPrint((s8)uiFont, best2.c_str(), 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, best1.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
+
+        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        AEGfxPrint((s8)uiFont, best2.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
     else
     {
-        AEGfxPrint((s8)uiFont, "BEST LEVELS: --", 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
-        AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, "BEST LEVELS: --", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
+
+        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
 
     if (latestRun.valid)
@@ -124,13 +140,19 @@ void MainMenuScene::RenderLeaderboard() const
         std::string latest1 = "LAST LEVELS: " + std::to_string(latestRun.levelsCleared);
         std::string latest2 = "LAST TIME:   " + FormatTime(latestRun.timeSeconds);
 
-        AEGfxPrint((s8)uiFont, latest1.c_str(), 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
-        AEGfxPrint((s8)uiFont, latest2.c_str(), 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        AEGfxPrint((s8)uiFont, latest1.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+
+        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, latest2.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
     else
     {
-        AEGfxPrint((s8)uiFont, "LAST LEVELS: --", 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
-        AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        AEGfxPrint((s8)uiFont, "LAST LEVELS: --", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+
+        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
 }
 
@@ -340,14 +362,25 @@ void MainMenuScene::Render()
 
         float nx, ny;
 
-        WorldToNDC(7.f, 11.f, nx, ny);
+        WorldToNDC(6.f, 26.f, nx, ny);
         AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(21.f, 5.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "START GAME", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(1.f, 18.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(1.f, 22.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "CREDITS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(23.f, 22.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "RECORDS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(23.f, 18.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "START QUEST", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        
     }
 
-    RenderLeaderboard();
+    RenderLeaderboard(34.f,27.f);
 
     if (fadeAlpha > 0.0f && fadeMesh)
     {
