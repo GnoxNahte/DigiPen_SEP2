@@ -43,6 +43,8 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.emitter.tint.a = 0.5f;
 
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
+        OnBuffSelected(ev);
+        });
 
     enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
         {
