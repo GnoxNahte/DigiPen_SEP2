@@ -30,6 +30,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
     particleSystem{ 50, {} },
+    afterimage(*this, {2.f, 2.f * 0.74f}),
     map(map),
     enemyManager(enemyManager)
 {
@@ -101,6 +102,7 @@ void Player::Update()
 void Player::Render()
 {
     particleSystem.Render();
+    afterimage.Render();
 
     // Local scale. For flipping sprite's facing direction
     // Multiply height by 0.74f because sprite aspect ratio isn't a square
@@ -193,11 +195,18 @@ void Player::Reset(const AEVec2& initialPos)
     attackedEnemies.clear();
     sprite.SetState(AnimState::IDLE_W_SWORD);
     particleSystem.ReleaseAll();
+
+    afterimage.ResetLastSpawn();
 }
 
 const AEVec2& Player::GetPosition() const
 {
     return position;
+}
+
+const AEVec2& Player::GetVelocity() const
+{
+    return velocity;
 }
 
 int Player::GetHealth() const
@@ -220,6 +229,11 @@ const PlayerStats& Player::GetStats() const
     return stats;
 }
 
+const Sprite& Player::GetSprite() const
+{
+    return sprite;
+}
+
 bool Player::GetIsFacingRight() const
 {
     return isFacingRight;
@@ -230,6 +244,11 @@ bool Player::GetIsGrounded() const
     return isGroundCollided;
 }
 
+bool Player::IsDashing() const
+{
+    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
+    return !IsAnimAirAttack() && (currTime - dashStartTime < stats.dashTime);
+}
 
 float Player::GetDashCooldownPercentage() const
 {
@@ -249,6 +268,8 @@ void Player::SetPosition(const AEVec2& pos)
 
     AEVec2Zero(&velocity);
     UpdateTriggerColliders();
+
+    afterimage.ResetLastSpawn();
 }
 
 void Player::UpdateInput()
@@ -263,15 +284,19 @@ void Player::UpdateInput()
     if (AEInputCheckTriggered(keybinds.jump))
         lastJumpPressed = currTime;
 
-    if (inputDirection.x != 0 && (!IsAttacking() || AEInputCheckTriggered(keybinds.dash)))
+    if (inputDirection.x != 0 && 
+       (!IsAttacking() || AEInputCheckTriggered(keybinds.dash) || AEInputCheckTriggered(keybinds.dashAlt)))
         isFacingRight = inputDirection.x > 0;
 
     if (AEInputCheckCurr(keybinds.attack))
         lastAttackHeld = currTime;
 
-    if (AEInputCheckCurr(keybinds.dash) && currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime) {
+    if ((AEInputCheckCurr(keybinds.dash) || AEInputCheckCurr(keybinds.dashAlt)) && 
+        currTime - dashStartTime > stats.dashCooldown * buff_DashCooldownMulti + stats.dashTime)
+    {
         AudioManager::PlaySFX(*AudioManager::playerDash, AudioManager::GetSFXVolume());
         dashStartTime = currTime;
+        afterimage.ResetLastSpawn();
     }
 }
 
@@ -298,6 +323,7 @@ void Player::SetKeybinds()
 
     keybinds.jump = AEVK_SPACE;
     keybinds.dash = AEVK_LSHIFT;
+    keybinds.dashAlt = AEVK_RBUTTON;
     keybinds.attack = AEVK_LBUTTON;
 }
 
@@ -377,7 +403,7 @@ void Player::HandleLanding()
     }
     else
     {
-        float landStrength = velocity.y / stats.maxFallVelocity;
+        float landStrength = AEClamp(velocity.y / stats.maxFallVelocity, 0.f, 1.f);
         particleSpawnCount = static_cast<int>(2 + 3 * landStrength);
         particleAngleRange = 5.f + 10.f * landStrength;
         AEVec2Set(&particleSpeedRange, 2.f, 2.f + landStrength * 5.f);
@@ -511,30 +537,24 @@ void Player::UpdateCollisions(const AEVec2& nextPosition)
         TryTakeDamage(5, damageable->GetHurtboxPos());
 }
 
-bool Player::IsDashing()
-{
-    f64 currTime = Time::GetInstance().GetScaledElapsedTime();
-    return !IsAnimAirAttack() && (currTime - dashStartTime < stats.dashTime);
-}
-
-bool Player::IsAnimGroundAttack()
+bool Player::IsAnimGroundAttack() const
 {
     AnimState state = GetAnimState();
     return  state >= ATTACK_1 && state <= ATTACK_END;
 }
 
-bool Player::IsAnimAirAttack()
+bool Player::IsAnimAirAttack() const
 {
     AnimState state = GetAnimState();
     return  state >= AIR_ATTACK_1 && state <= AIR_ATTACK_END;
 }
 
-bool Player::IsAttacking()
+bool Player::IsAttacking() const
 {
     return IsAnimAirAttack() || IsAnimGroundAttack();
 }
 
-bool Player::IsInvincible()
+bool Player::IsInvincible() const
 {
     return IsDashing() || Time::GetInstance().GetScaledElapsedTime() - lastDamagedTime < stats.invincibleTime;
 }
@@ -542,7 +562,10 @@ bool Player::IsInvincible()
 void Player::SetAttack(AnimState toState)
 {
     if (toState == AIR_ATTACK_SMASH)
+    {
         slamStartHeight = position.y;
+        afterimage.ResetLastSpawn();
+    }
     
     //AudioManager::PlayNextAttackSFX();
 
@@ -569,7 +592,7 @@ void Player::AttackDamageable(IDamageable& damageable, const AttackStats& attack
         damage = static_cast<int>(damage * GetSlamAttackScale());
 
     // Increased crit chacne if low health
-    float critChance = buff_critChance + (health < 0.5f * maxHealth) * buff_CritChanceLowHP;
+    float critChance = buff_critChance + (health <= stats.berserkerTrigger * maxHealth) * buff_CritChanceLowHP;
     bool isCrit =  AERandFloat() < critChance;
 
     // Crit
@@ -624,9 +647,10 @@ void Player::UpdateAttacks()
     {
         enemyManager->ForEachDamageable([&](IDamageable& obj) {
             // If hit enemy && current enemy isn't in attackedEnemies
-            bool ifAttack = PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) &&
-                            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend();
-
+            bool ifAttack = PhysicsUtils::AABB(colliderPos, attack->collider.size, obj.GetHurtboxPos(), obj.GetHurtboxSize()) && // If hit enemy
+                            std::find(attackedEnemies.cbegin(), attackedEnemies.cend(), &obj) == attackedEnemies.cend() && // If haven't attacked that enemy
+                            !map->CheckRaycast(position, obj.GetHurtboxPos());  // If there's no wall in between them
+            
             if (ifAttack)
                 AttackDamageable(obj, *attack, isGroundAttack);
         });
@@ -658,7 +682,10 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
     if (IsAnimGroundAttack())
     {
-        SetAttack(static_cast<AnimState>(spriteStateIndex + 1));
+        if (inputDirection.y < 0)
+            SetAttack(AnimState::AIR_ATTACK_SMASH);
+        else
+            SetAttack(static_cast<AnimState>(spriteStateIndex + 1));
 
         // Shouldn't handle input here but not sure how else to do..
         // If switch direction when chaining attacks
@@ -711,6 +738,8 @@ void Player::UpdateTrails()
     AEVec2Set(&particleSystem.emitter.spawnPosRangeY, position.y, position.y);
 
     particleSystem.Update();
+
+    afterimage.Update();
 }
 
 void Player::UpdateAnimation()
@@ -823,10 +852,14 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         return health > 0;
 
     dmg = static_cast<int>(dmg * buff_DmgReduction);
+    if (type == DAMAGE_TYPE_TRAP)
+        dmg = static_cast<int>(dmg * buff_TrapDmgReduction);
 
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
+    if (health <= stats.berserkerTrigger * maxHealth)
+        dmg = static_cast<int>(dmg * stats.berserkerHealthReductionAmt);
     if (health <= dmg)
     {
         health = 0;

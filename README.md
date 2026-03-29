@@ -12,13 +12,14 @@ Links:
     - [Guides](https://gnoxnahte.github.io/DigiPen_SEP2/md_content_2Guides_2index.html)
 
 ## Controls
-| Action            | Primary Keys | Alternative Keys |
-| ----------------- | ------------ | ---------------- |
-| Move Left / Right | `←` / `→`    | `A / D`          |
-| Jump              | `C`          | `<space>`        |
-| Dash              | `Z`          | -                |
-| Attack            | `X`          | -                |
-| Ground slam       | `↓` + `X`    | `S + X`          |
+|      Action |                           |
+| ----------: | ------------------------- |
+|   Move Left | `A`                       |
+|  Move Right | `D`                       |
+|        Jump | `<Space>`                 |
+|        Dash | `<Left Shift>`            |
+|      Attack | `Left Mouse Button (LMB)` |
+| Ground slam | `D` + `LMB`               |
 
 Advanced:
 - Wall Jump: *Jump* while touching a wall to perform a wall jump

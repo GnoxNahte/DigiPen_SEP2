@@ -349,7 +349,7 @@ LavaPool::LavaPool(const Box& box, int damagePerTick, float tickInterval)
 void LavaPool::OnPlayerEnter(Player& player)
 {
     AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
-    player.TryTakeDamage(m_damagePerTick, trapOrigin);
+    player.TryTakeDamage(m_damagePerTick, trapOrigin, DAMAGE_TYPE_TRAP);
 
 	// entering lava should cause immediate damage, and then start the tick timer so that it will deal damage periodically after that as well
     m_tickTimer = 0.f;
@@ -368,7 +368,7 @@ void LavaPool::OnPlayerStay(float dt, Player& player)
     {
         m_tickTimer -= m_tickInterval;
         AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
-        player.TryTakeDamage(m_damagePerTick, trapOrigin);
+        player.TryTakeDamage(m_damagePerTick, trapOrigin, DAMAGE_TYPE_TRAP);
     }
 }
 
@@ -615,7 +615,7 @@ void SpikePlate::OnPlayerEnter(Player& player)
 
     std::cout << "[Spike] Enter Hit!\n";
     AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
-    player.TryTakeDamage(m_damageOnHit, trapOrigin);
+    player.TryTakeDamage(m_damageOnHit, trapOrigin, DAMAGE_TYPE_TRAP);
 
     m_hitTimer = m_hitCooldown;;
 }
@@ -626,7 +626,7 @@ void SpikePlate::OnPlayerStay(float, Player& player)
     if (m_hitTimer > 0.f) return;
     std::cout << "[Spike] Hit!\n";
     AEVec2 trapOrigin = { player.GetPosition().x, player.GetPosition().y - 1.0f };
-    player.TryTakeDamage(m_damageOnHit, trapOrigin);
+    player.TryTakeDamage(m_damageOnHit, trapOrigin, DAMAGE_TYPE_TRAP);
 
     m_hitTimer = m_hitCooldown;;
 }

@@ -1,6 +1,7 @@
 
 #include "GSM.h"
 #include "AEEngine.h"
+#include "SplashScreenScene.h"
 #include "GameScene.h"
 #include "MainMenuScene.h"
 #include "../../Utils/QuickGraphics.h" 
@@ -14,13 +15,6 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
-
-BaseScene* GSM::currentScene = nullptr;
-
-// Set inital value. Not sure what to use, make it quit for now
-SceneState GSM::previousState = GS_QUIT;
-SceneState GSM::currentState = GS_QUIT;
-SceneState GSM::nextState = GS_QUIT;
 
 void GSM::Init(SceneState type)
 {
@@ -57,13 +51,12 @@ void GSM::Update()
 			LoadState(currentState);
 		}
 
-		if (currentScene == nullptr)
-			throw;
-
 		EventSystem::Trigger(SceneChangeEvent{
 			.previousState = previousState,
 			.currentState = currentState
 		});
+
+		AE_ASSERT(currentScene != nullptr);
 		
 		currentScene->Init();
 
@@ -160,7 +153,7 @@ void GSM::LoadState(SceneState state)
 	// @todo add other states.
 	switch (state)
 	{
-		//case GS_SPLASH_SCREEN: currentScene = new SplashScreenScene(); break;
+		case GS_SPLASH_SCREEN: currentScene = new SplashScreenScene(); break;
 		case GS_MAIN_MENU: currentScene = new MainMenuScene(); break;
 		case GS_GAME:	currentScene = new GameScene();		break;
 		case GS_LEVEL_EDITOR:   currentScene = new LevelEditorScene(); break;

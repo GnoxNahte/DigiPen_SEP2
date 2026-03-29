@@ -210,15 +210,26 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
             gIsPlayingBoss2ndPhase = true;
             gCurrTrack = bossFightMusic.get();
         }
-        if (boss.IsDead()) {
-            if (!gIsPlayingVictory) {
-                if (gCurrTrack) {
-                    gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
-                    gCurrTrack = victoryMusic.get();
-                }
-                victoryMusic->Play(victoryMusic->GetVolume());
-            }
+        if (boss.IsDead() && !gIsPlayingVictory) {
             gIsPlayingVictory = true;
+
+            // Stop whichever boss track is still audible
+            if (gCurrTrack) {
+                gCurrTrack->CrossfadeTo(*victoryMusic, 1.2f);
+                gCurrTrack = victoryMusic.get();
+            }
+            else {
+                victoryMusic->Play(victoryMusic->GetVolume());
+                gCurrTrack = victoryMusic.get();
+            }
+
+            // Force-silence the other boss track that wasn't gCurrTrack
+            if (bossIntroMusic && bossIntroMusic.get() != gCurrTrack)
+                bossIntroMusic->SetVolume(0.0f);
+            if (bossFightMusic && bossFightMusic.get() != gCurrTrack)
+                bossFightMusic->SetVolume(0.0f);
+            if (trapLava && trapLava->IsActive())
+                trapLava->Stop();
         }
     }
 }

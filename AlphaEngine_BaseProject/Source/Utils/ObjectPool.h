@@ -31,6 +31,7 @@ public:
  * @brief	Object Pool with time complexity of:
  *			- Get:		O(1)
  *			- Release:	O(1)
+ *			Objects are also continous in memory (stored in vector)
  * 
  *			Need the object that is being pooled to inherit ObjectPoolItem
  * 

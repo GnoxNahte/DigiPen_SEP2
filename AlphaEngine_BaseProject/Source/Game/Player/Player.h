@@ -2,6 +2,7 @@
 
 #include "AEEngine.h"
 #include "PlayerStats.h"
+#include "PlayerAfterimage.h"
 #include "../../Utils/Sprite.h"
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
@@ -65,13 +66,16 @@ public:
 
     // === Getters ===
     const AEVec2&       GetPosition()   const;
+    const AEVec2&       GetVelocity()   const;
     const PlayerStats&  GetStats()      const;
+    const Sprite&       GetSprite()     const;
     float   GetDashCooldownPercentage() const;
     int     GetHealth()         const;
     int     GetMaxHealth()      const;
     float   GetHealthPercentage() const;
     bool    GetIsFacingRight()  const;
     bool    GetIsGrounded()     const;
+    bool    IsDashing()         const;
     AnimState GetAnimState()    const;
 
     // === Setters ===
@@ -83,7 +87,7 @@ private:
         u8 left, right, up, down;
         u8 jump;
         u8 attack;
-        u8 dash;
+        u8 dash, dashAlt;
     };
 
     PlayerStats stats;
@@ -91,6 +95,7 @@ private:
 
     AEMtx33 transform;
     ParticleSystem particleSystem;
+    PlayerAfterimage afterimage;
 
     // === Player Input ===
     AEVec2 inputDirection;
@@ -156,11 +161,10 @@ private:
     void PerformJump();
     void UpdateCollisions(const AEVec2& nextPosition);
 
-    bool IsDashing();
-    bool IsAnimGroundAttack();
-    bool IsAnimAirAttack();
-    bool IsAttacking();
-    bool IsInvincible();
+    bool IsAnimGroundAttack() const;
+    bool IsAnimAirAttack() const;
+    bool IsAttacking() const;
+    bool IsInvincible() const;
     void SetAttack(AnimState toState);
     void AttackDamageable(IDamageable& damageable, const AttackStats& attack, bool isGroundAttack);
     void UpdateAttacks();
