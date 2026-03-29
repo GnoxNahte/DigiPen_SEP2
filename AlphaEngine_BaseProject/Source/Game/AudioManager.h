@@ -64,6 +64,7 @@ public:
     static void UpdateLavaAudio(const TrapManager& trapMgr, const Player& player);
 
     // Flags
+	inline static bool playedBossIntroMusic = false;
     inline static bool playedBossChargingSFX = false;
     inline static bool playedBossTeleportSFX = false;
     inline static bool playedBossDeathSFX = false;

@@ -270,6 +270,7 @@ void GameScene::Update()
 		return;
 	}
 
+
 	if (UI::IsBossIntroActive())
 	{
 		UI::Update();
@@ -367,7 +368,6 @@ void GameScene::Update()
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
-
 
 
 	trapMgr.Update(dt, player);
