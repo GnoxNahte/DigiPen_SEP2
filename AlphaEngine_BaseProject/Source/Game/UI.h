@@ -108,6 +108,7 @@ public:
 	//boss intro screen
 	static void StartBossIntro();
 	static bool IsBossIntroActive();
+	static bool EndScreenContentVisible();
 
 	inline static bool isVictory = false;
 	inline static float victoryTextFadeTimer;

@@ -125,4 +125,7 @@ private:
 	void LoadRunRecords();
 	void SaveRunRecords() const;
 	bool IsBetterRun(const RunRecord& a, const RunRecord& b) const;
+	void RenderBuffSummaryGrid(float anchorX, float anchorY, const std::string& title, int cols = 4);
+	void RenderEndScreenBuffs();
+
 };

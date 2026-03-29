@@ -18,6 +18,9 @@
 std::string gPendingLevelPath = "Assets/Levels/gamescene.lvl";   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
 
+namespace {
+	bool gEndSequenceStarted = false;
+}
 /*void GameScene::ClampPlayerInsideCurrentRoom()
 {
 	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
@@ -261,6 +264,7 @@ void GameScene::Init()
 	Time::GetInstance().SetTimeScale(1.0f);
 	LoadRunRecords();
 	ResetRunRecordsForNewRun();
+	gEndSequenceStarted = false;
 
 	// clear room data from any prior run
 	roomMgr.Clear();
@@ -497,6 +501,18 @@ void GameScene::Update()
 
 	if (!UI::isVictory && !player.IsDead()) // Only play lava music if not dead or victorious.
 		AudioManager::UpdateLavaAudio(trapMgr, player);
+	const bool endSequenceActive = player.IsDead() || UI::isVictory;
+
+	if (endSequenceActive && !gEndSequenceStarted) {
+		gEndSequenceStarted = true;
+		FinalizeRunAndSave();
+
+		AudioManager::trapLava->Stop();
+
+		if (player.IsDead()) {
+			AudioManager::PlayGameOverMusic();
+		}
+	}
 
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
 		FinalizeRunAndSave();
@@ -531,13 +547,10 @@ void GameScene::Update()
 		GSM::ChangeScene(SceneState::GS_MAIN_MENU);
 		return;
 	}
-	if (player.IsDead()) {
-		FinalizeRunAndSave();
-		AudioManager::trapLava->Stop();
-		AudioManager::PlayGameOverMusic();
+
+	if (player.IsDead() || UI::isVictory) {
 		return;
 	}
-
 	
 	enemyMgr.UpdateAll(pPos, player.GetIsFacingRight(), map);
 	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
@@ -561,9 +574,13 @@ void GameScene::Render()
 	enemyMgr.RenderAll();
 	attackSystem.Render();
 	UI::Render();
+	if (UI::EndScreenContentVisible())
+	{
+		RenderEndScreenBuffs();
+	}
 
 	// in-game runtime HUD (top-right)
-	if (!IsPaused())
+	if (!IsPaused() && !player.IsDead() && !UI::isVictory)
 	{
 		float w = (float)AEGfxGetWindowWidth();
 
@@ -959,6 +976,110 @@ void GameScene::UpdatePauseInput()
 	}
 }
 
+void GameScene::RenderBuffSummaryGrid(float anchorX, float anchorY, const std::string& title, int cols)
+{
+	const auto& buffs = BuffCardManager::GetCurrentBuffs();
+	if (buffs.empty())
+		return;
+
+	float w = (float)AEGfxGetWindowWidth();
+	float h = (float)AEGfxGetWindowHeight();
+
+	const float cardW = 130.0f;
+	const float cardH = 185.0f;
+	const float gapX = 35.0f;
+	const float gapY = 20.0f;
+
+	DrawTextPx(pauseFontLarge, title, anchorX, anchorY - 30.0f, 0.75f, 1, 1, 1, 1);
+
+	for (int i = 0; i < (int)buffs.size(); ++i)
+	{
+		const BuffCard& b = buffs[i];
+
+		UIRect card;
+		card.size = { cardW, cardH };
+
+		const int cx = i % cols;
+		const int cy = i / cols;
+
+		const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
+		const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
+		card.pos = { centerX, centerY };
+
+		AEGfxTexture* tex = nullptr;
+		int typeIdx = (int)b.type;
+		if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
+			tex = pauseBuffTex[typeIdx];
+		if (!tex)
+			tex = pauseCardBackTex;
+
+		DrawTexturePanel(tex, card, 1.0f);
+
+		AEGfxTexture* glow = nullptr;
+		int rarityIdx = (int)b.rarity;
+		if (rarityIdx >= 0 && rarityIdx < kPauseRarityTexCount)
+			glow = pauseRarityTex[rarityIdx];
+
+		if (glow)
+		{
+			const float EMISSION_SCALE = 1.15f;
+			UIRect glowRect = card;
+			glowRect.size.x *= EMISSION_SCALE;
+			glowRect.size.y *= EMISSION_SCALE;
+			DrawTexturePanel(glow, glowRect, 1.0f);
+		}
+
+		if (IsMouseOver(card))
+		{
+			DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
+
+			f32 red{}, green{}, blue{};
+			switch (b.rarity)
+			{
+			case RARITY_UNCOMMON:
+				red = 0.015f; green = 1.0f;   blue = 0.0f;
+				break;
+			case RARITY_RARE:
+				red = 0.0f;   green = 0.384f; blue = 1.0f;
+				break;
+			case RARITY_EPIC:
+				red = 0.584f; green = 0.0f;   blue = 1.0f;
+				break;
+			case RARITY_LEGENDARY:
+				red = 1.0f;   green = 0.733f; blue = 0.0f;
+				break;
+			default:
+				red = green = blue = 1.0f;
+				break;
+			}
+
+			DrawTextPx(
+				pauseFontSmall,
+				b.cardName,
+				120.0f, h - 125.0f, 1.0f,
+				red, green, blue, 1.0f
+			);
+
+			const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
+
+			DrawTextPx(
+				pauseFontDesc,
+				desc,
+				120.0f, h - 65.0f, 1.0f,
+				0.9f, 0.9f, 0.9f, 1.0f
+			);
+		}
+	}
+}
+
+void GameScene::RenderEndScreenBuffs()
+{
+	float w = (float)AEGfxGetWindowWidth();
+
+	// 先放右侧，尽量不挡住中间的 victory / defeat 文字和按钮
+	RenderBuffSummaryGrid(w * 0.56f, 220.0f, "ACTIVE BUFFS:", 4);
+}
+
 void GameScene::RenderPauseOverlay()
 {
 	float w = (float)AEGfxGetWindowWidth();
@@ -1117,123 +1238,10 @@ void GameScene::RenderPauseOverlay()
 		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
 		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
-	// ============================== Active Buffs (top-right) ==============================
-	// Draw only existing buffs. 1 row max, 4 cards per row. No placeholders.
-	if (pausePage == PausePage::Menu) {
-		const auto& buffs = BuffCardManager::GetCurrentBuffs();
-		if (!buffs.empty())
-		{
-			const int cols = 4;
-
-			// Bigger cards
-			const float cardW = 130.0f;
-			const float cardH = 185.0f;
-			const float gapX = 35.0f;   // horizontal gap 
-			const float gapY = 20.0f;   // vertical gap between rows 
-
-			// Anchor: move this block to the right & top area (match your red mark)
-			// (0,0) is top-left in pixel coordinates
-			const float anchorX = w * 0.56f;   // increase => move right, decrease => move left
-			const float anchorY = 110.0f;      // increase => move down, decrease => move up
-
-			// Title position (aligned with cards)
-			DrawTextPx(pauseFontLarge, "ACTIVE BUFFS:", anchorX, 80.0f, 0.75f, 1, 1, 1, 1);
-
-			const int count = (int)buffs.size();
-			const int drawCount = count;
-
-
-			for (int i = 0; i < drawCount; ++i)
-			{
-				const BuffCard& b = buffs[i];
-
-				UIRect card;
-				card.size = { cardW, cardH };
-
-				// UIRect.pos is center-based (pixel coords)
-				const int cx = i % cols;   // column index: 0,1,2
-				const int cy = i / cols;   // row index: 0,0,0,1,1,1,...
-
-				const float centerX = anchorX + cx * (cardW + gapX) + cardW * 0.5f;
-				const float centerY = anchorY + cy * (cardH + gapY) + cardH * 0.5f;
-				card.pos = { centerX, centerY };
-
-				// Pick buff front texture by card type; fallback to card back if missing
-				AEGfxTexture* tex = nullptr;
-				int typeIdx = (int)b.type;
-				if (typeIdx >= 0 && typeIdx < kPauseBuffTexCount)
-					tex = pauseBuffTex[typeIdx];
-				if (!tex)
-					tex = pauseCardBackTex;
-
-				DrawTexturePanel(tex, card, 1.0f);
-
-				// --- draw glow (rarity emission) ---
-				AEGfxTexture* glow = nullptr;
-				int r = (int)b.rarity;
-				if (r >= 0 && r < kPauseRarityTexCount) glow = pauseRarityTex[r];
-
-				if (glow)
-				{
-					const float EMISSION_SCALE = 1.15f; // same as BuffCardScreen
-					UIRect glowRect = card;
-					glowRect.size.x *= EMISSION_SCALE;
-					glowRect.size.y *= EMISSION_SCALE;
-					// pos same as card center, so glow is centered on card
-					DrawTexturePanel(glow, glowRect, 1.0f);
-				}
-
-				// Hover tooltip (text only)
-				if (IsMouseOver(card))
-				{
-					// tooltip panel
-					DrawSolidPanel(UIRect{ { w * 0.5f, h - 90.0f }, { w * 0.85f, 90.0f } }, 0.55f);
-
-					f32 red{}, green{}, blue{};
-					switch (b.rarity) { // Match sprite hex colors
-					case (RARITY_UNCOMMON):
-						red = 0.015f;
-						green = 1.0f;
-						blue = 0.0f;
-						break;
-					case(RARITY_RARE):
-						red = 0.0f;
-						green = 0.384f;
-						blue = 1.0f;
-						break;
-					case(RARITY_EPIC):
-						red = 0.584f;
-						green = 0.0f;
-						blue = 1.0f;
-						break;
-					case(RARITY_LEGENDARY):
-						red = 1.0f;
-						green = 0.733f;
-						blue = 0.0f;
-						break;
-					}
-
-					// Title (m04)
-					DrawTextPx(
-						pauseFontSmall,
-						b.cardName,
-						120.0f, h - 125.0f, 1.0f,
-						red, green, blue, 1
-					);
-
-					// Description/effect (Pixellari) - using cardEffect if available, otherwise fallback to cardDesc. 
-					const std::string desc = b.cardEffect.empty() ? b.cardDesc : b.cardEffect;
-
-					DrawTextPx(
-						pauseFontDesc,
-						desc,
-						120.0f, h - 65.0f, 1.0f,
-						0.9f, 0.9f, 0.9f, 1.0f
-					);
-				}
-			}
-		}
+	
+	if (pausePage == PausePage::Menu)
+	{
+		RenderBuffSummaryGrid(w * 0.56f, 110.0f, "ACTIVE BUFFS:", 4);
 	}
-	// ======================================================================================
 
 }
