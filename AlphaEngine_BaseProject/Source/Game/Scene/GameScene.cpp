@@ -363,15 +363,12 @@ void GameScene::Update()
 
 	camera.Update();
 
-	AEVec2 p = player.GetPosition();
-	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
-
 	//std::cout << player.GetPosition() << '\n';
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
+
 
 	trapMgr.Update(dt, player);
 
@@ -424,7 +421,12 @@ void GameScene::Update()
 	if (player.IsDead()) {
 		AudioManager::trapLava->Stop();
 		AudioManager::PlayGameOverMusic();
+		return;
 	}
+
+	
+	enemyMgr.UpdateAll(pPos, player.GetIsFacingRight(), map);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
 }
 
 void GameScene::Render()

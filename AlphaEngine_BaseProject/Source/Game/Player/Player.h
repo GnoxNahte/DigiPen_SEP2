@@ -142,6 +142,7 @@ private:
     float buff_DashCooldownMulti;
     
     EventId buffEventId;
+    EventId enemyKilledEventId;
 
     // === References to other systems ===
     MapGrid* map;

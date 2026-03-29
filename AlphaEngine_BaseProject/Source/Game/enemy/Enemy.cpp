@@ -686,6 +686,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     }
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
+   
 
     if (hp <= 0)
     {
@@ -699,7 +700,8 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
             AudioManager::PlaySFX(*AudioManager::skeletonDeath, AudioManager::GetSFXVolume());
         }
 
-        UI::GetDamageTextSpawner().SpawnDamageText(20, DAMAGE_TYPE_HEAL, position, position - hitOrigin);
+        //UI::GetDamageTextSpawner().SpawnDamageText(20, DAMAGE_TYPE_HEAL, position, position - hitOrigin);
+        EventSystem::Trigger<IDamageable::EnemyKilledEvent>({ position });
     
 
 

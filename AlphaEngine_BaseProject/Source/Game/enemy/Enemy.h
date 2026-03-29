@@ -139,9 +139,6 @@ private:
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
     Preset presetType = Preset::Skeleton;
 
-
-
-private:
     Config cfg;
 
     Sprite sprite;

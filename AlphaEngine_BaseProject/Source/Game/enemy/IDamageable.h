@@ -14,4 +14,9 @@ public:
 
     // Return true if damage was applied (not invuln, not already hit, etc.)
     virtual bool   TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) = 0;
+
+    struct EnemyKilledEvent
+    {
+        AEVec2 position; // where the enemy died , maybe for item drop later?
+    };
 };

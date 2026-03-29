@@ -43,13 +43,22 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.emitter.tint.a = 0.5f;
 
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
-        OnBuffSelected(ev);
-    });
+
+    enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
+        {
+            (void)ev;
+            int healAmt = 10; // or use stat??
+            health = min(maxHealth, health + healAmt);
+            UI::GetDamageTextSpawner().SpawnDamageText(
+                healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
+        });
+
 }
 
 Player::~Player()
 {
     EventSystem::Unsubscribe<BuffSelectedEvent>(buffEventId);
+    EventSystem::Unsubscribe<IDamageable::EnemyKilledEvent>(enemyKilledEventId);
 }
 
 void Player::Update()
