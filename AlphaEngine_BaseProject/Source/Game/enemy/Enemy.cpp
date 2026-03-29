@@ -699,6 +699,9 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
             AudioManager::PlaySFX(*AudioManager::skeletonDeath, AudioManager::GetSFXVolume());
         }
 
+        UI::GetDamageTextSpawner().SpawnDamageText(20, DAMAGE_TYPE_HEAL, position, position - hitOrigin);
+    
+
 
         attack.Reset();
         chasing = false;

@@ -1111,6 +1111,11 @@ void EnemyBoss::Render()
     AEMtx33 world;
     AEMtx33Scale(&world, Camera::scale, Camera::scale);
     AEGfxSetTransform(world.m);
+
+    for (const auto& specialAttack : g_specialAttacks)
+    {
+        specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
+    }
     if (Editor::GetShowColliders() || debugDraw)
     {
 
@@ -1125,7 +1130,7 @@ void EnemyBoss::Render()
         }
         for (const auto& specialAttack : g_specialAttacks)
         {
-            specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
+            //specialAttack.Render(specialAttackVfx, 10.0f, 3.0f);
 
             AEGfxSetTransform(world.m);
             

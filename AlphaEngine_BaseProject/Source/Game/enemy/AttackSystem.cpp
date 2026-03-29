@@ -62,6 +62,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
         {
             player.TryTakeDamage(hb.damage, hb.position);
             hb.alreadyHit = true;
+
         }
     }
 
