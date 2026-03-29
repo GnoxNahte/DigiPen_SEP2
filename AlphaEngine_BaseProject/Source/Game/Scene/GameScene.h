@@ -12,6 +12,7 @@
 #include "../../Game/Rooms/RoomManager.h"
 #include "../Rooms/RoomBuilder.h"
 #include "../Rooms/RoomSystem.h"
+#include <string>
 
 class GameScene : public BaseScene
 {
@@ -82,7 +83,6 @@ private:
 	void UpdatePauseInput();
 	void RenderPauseOverlay();
 
-
 	// Draw helpers (no ImGui)
 	void DrawDimBackground(float alpha);
 	void DrawSolidPanel(const UIRect& r, float alpha);
@@ -105,5 +105,24 @@ private:
 	int mapCols = ROOM_COLS;
 	int mapRows = ROOM_ROWS;
 
-	
+	// ======================= Run Record / Leaderboard Sync =======================
+	struct RunRecord
+	{
+		int levelsCleared = 0;
+		double timeSeconds = 0.0;
+		bool valid = false;
+	};
+
+	int currentRunLevelsCleared = 0;
+	bool runRecorded = false;
+
+	RunRecord personalBest;
+	RunRecord latestRun;
+
+	void ResetRunRecordsForNewRun();
+	void OnLevelCleared();
+	void FinalizeRunAndSave();
+	void LoadRunRecords();
+	void SaveRunRecords() const;
+	bool IsBetterRun(const RunRecord& a, const RunRecord& b) const;
 };

@@ -11,14 +11,11 @@
 #include <Windows.h>
 #include <new>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
 
-namespace
-{
-    static bool ShouldStartGame(RoomDirection exitDir)
-    {
-        return exitDir == DIR_RIGHT;
-    }
-}
+
 
 std::string MainMenuScene::ExeDir()
 {
@@ -40,6 +37,101 @@ MainMenuScene::MainMenuScene()
 
 MainMenuScene::~MainMenuScene()
 {
+}
+
+void MainMenuScene::LoadRunRecords()
+{
+    personalBest = RunRecord{};
+    latestRun = RunRecord{};
+
+    std::ifstream in("Assets/Levels/leaderboard.txt");
+    if (!in.is_open())
+        in.open("../../Assets/Levels/leaderboard.txt");
+
+    if (!in.is_open())
+        return;
+
+    std::string label;
+    int levels = 0;
+    double time = 0.0;
+
+    while (in >> label >> levels >> time)
+    {
+        if (label == "BEST")
+        {
+            personalBest.levelsCleared = levels;
+            personalBest.timeSeconds = time;
+            personalBest.valid = true;
+        }
+        else if (label == "LATEST")
+        {
+            latestRun.levelsCleared = levels;
+            latestRun.timeSeconds = time;
+            latestRun.valid = true;
+        }
+    }
+}
+
+std::string MainMenuScene::FormatTime(double seconds) const
+{
+    if (seconds < 0.0)
+        seconds = 0.0;
+
+    int totalMs = static_cast<int>(seconds * 1000.0);
+    int mm = (totalMs / 60000) % 100;
+    int ss = (totalMs / 1000) % 60;
+    int cs = (totalMs / 10) % 100;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << mm
+        << ":"
+        << std::setfill('0') << std::setw(2) << ss
+        << ":"
+        << std::setfill('0') << std::setw(2) << cs;
+    return oss.str();
+}
+
+void MainMenuScene::RenderLeaderboard() const
+{
+    if (uiFont < 0)
+        return;
+
+    
+    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetTransparency(1.f);
+    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+
+    AEGfxPrint((s8)uiFont, "RUN RECORDS", 0.42f, 0.72f, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
+
+    if (personalBest.valid)
+    {
+        std::string best1 = "BEST LEVELS: " + std::to_string(personalBest.levelsCleared);
+        std::string best2 = "BEST TIME:   " + FormatTime(personalBest.timeSeconds);
+
+        AEGfxPrint((s8)uiFont, best1.c_str(), 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        AEGfxPrint((s8)uiFont, best2.c_str(), 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+    }
+    else
+    {
+        AEGfxPrint((s8)uiFont, "BEST LEVELS: --", 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+    }
+
+    if (latestRun.valid)
+    {
+        std::string latest1 = "LAST LEVELS: " + std::to_string(latestRun.levelsCleared);
+        std::string latest2 = "LAST TIME:   " + FormatTime(latestRun.timeSeconds);
+
+        AEGfxPrint((s8)uiFont, latest1.c_str(), 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        AEGfxPrint((s8)uiFont, latest2.c_str(), 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+    }
+    else
+    {
+        AEGfxPrint((s8)uiFont, "LAST LEVELS: --", 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+    }
 }
 
 void MainMenuScene::Init()
@@ -67,6 +159,7 @@ void MainMenuScene::Init()
 
     isFadingToGame = false;
     fadeAlpha = 0.0f;
+    LoadRunRecords();
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
@@ -161,7 +254,6 @@ void MainMenuScene::Init()
     camera.Update();
     AudioManager::Init();
     AudioManager::PlayMenuMusic();
-
 }
 
 void MainMenuScene::Update()
@@ -174,8 +266,6 @@ void MainMenuScene::Update()
         if (fadeAlpha > 1.0f)
             fadeAlpha = 1.0f;
 
-     
-
         if (fadeAlpha >= 1.0f)
         {
             GSM::ChangeScene(SceneState::GS_GAME);
@@ -186,14 +276,6 @@ void MainMenuScene::Update()
     }
 
     player.Update();
-
-    const RoomDirection exitDir = roomSystem.CheckRoomExit();
-    if (ShouldStartGame(exitDir))
-    {
-        isFadingToGame = true;
-        fadeAlpha = 0.0f;
-        return;
-    }
 
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
@@ -264,6 +346,8 @@ void MainMenuScene::Render()
         WorldToNDC(21.f, 5.f, nx, ny);
         AEGfxPrint((s8)uiFont, "START GAME", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
+
+    RenderLeaderboard();
 
     if (fadeAlpha > 0.0f && fadeMesh)
     {

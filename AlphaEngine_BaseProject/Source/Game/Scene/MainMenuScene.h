@@ -48,4 +48,18 @@ private:
     bool  isFadingToGame = false;
     float fadeAlpha = 0.0f;
     float fadeSpeed = 3.1f;
+
+    struct RunRecord
+    {
+        int levelsCleared = 0;
+        double timeSeconds = 0.0;
+        bool valid = false;
+    };
+
+    RunRecord personalBest;
+    RunRecord latestRun;
+
+    void LoadRunRecords();
+    std::string FormatTime(double seconds) const;
+    void RenderLeaderboard() const;
 };

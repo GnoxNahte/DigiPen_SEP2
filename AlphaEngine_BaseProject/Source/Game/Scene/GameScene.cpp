@@ -9,6 +9,7 @@
 #include "../../Game/Timer.h"
 #include <iomanip>
 #include <sstream>
+#include <fstream>
 #include "../AudioManager.h"
 #include "../Rooms/RoomBuilder.h"
 #include "../enemy/AttackSystem.h"
@@ -152,9 +153,115 @@ GameScene::~GameScene()
 	TrapManager::UnloadAllSharedRenderResources();
 }
 
+void GameScene::ResetRunRecordsForNewRun()
+{
+	currentRunLevelsCleared = 0;
+	runRecorded = false;
+}
+
+void GameScene::OnLevelCleared()
+{
+	++currentRunLevelsCleared;
+}
+
+bool GameScene::IsBetterRun(const RunRecord& a, const RunRecord& b) const
+{
+	if (!a.valid)
+		return false;
+
+	if (!b.valid)
+		return true;
+
+	if (a.levelsCleared != b.levelsCleared)
+		return a.levelsCleared > b.levelsCleared;
+
+	return a.timeSeconds < b.timeSeconds;
+}
+
+void GameScene::LoadRunRecords()
+{
+	personalBest = RunRecord{};
+	latestRun = RunRecord{};
+
+	std::ifstream in("Assets/Levels/leaderboard.txt");
+	if (!in.is_open())
+		in.open("../../Assets/Levels/leaderboard.txt");
+
+	if (!in.is_open())
+		return;
+
+	std::string label;
+	int levels = 0;
+	double time = 0.0;
+
+	while (in >> label >> levels >> time)
+	{
+		if (label == "BEST")
+		{
+			personalBest.levelsCleared = levels;
+			personalBest.timeSeconds = time;
+			personalBest.valid = true;
+		}
+		else if (label == "LATEST")
+		{
+			latestRun.levelsCleared = levels;
+			latestRun.timeSeconds = time;
+			latestRun.valid = true;
+		}
+	}
+}
+
+void GameScene::SaveRunRecords() const
+{
+	std::ofstream out("Assets/Levels/leaderboard.txt", std::ios::trunc);
+	if (!out.is_open())
+		out.open("../../Assets/Levels/leaderboard.txt", std::ios::trunc);
+
+	if (!out.is_open())
+		return;
+
+	if (personalBest.valid)
+	{
+		out << "BEST "
+			<< personalBest.levelsCleared << ' '
+			<< personalBest.timeSeconds << '\n';
+	}
+
+	if (latestRun.valid)
+	{
+		out << "LATEST "
+			<< latestRun.levelsCleared << ' '
+			<< latestRun.timeSeconds << '\n';
+	}
+}
+
+void GameScene::FinalizeRunAndSave()
+{
+	if (runRecorded)
+		return;
+
+	RunRecord current;
+	current.levelsCleared = currentRunLevelsCleared;
+	current.timeSeconds = Time::GetInstance().GetScaledElapsedTime();
+	current.valid = true;
+
+	latestRun = current;
+
+	if (IsBetterRun(current, personalBest))
+	{
+		personalBest = current;
+	}
+
+	SaveRunRecords();
+	runRecorded = true;
+}
+
 void GameScene::Init()
 {
 	Time::GetInstance().SetTimeScale(1.0f);
+	LoadRunRecords();
+	ResetRunRecordsForNewRun();
+
 	// clear room data from any prior run
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
@@ -327,6 +434,8 @@ void GameScene::Update()
 
 			if (roomMgr.ChangeRoom(exitDir))
 			{
+				OnLevelCleared();
+
 				RoomDirection cameFrom = DIR_NONE;
 				BuffCardManager::IsRoomCleared() = true;
 				BuffCardScreen::ResetFlipSequence();
@@ -391,6 +500,8 @@ void GameScene::Update()
 		AudioManager::UpdateLavaAudio(trapMgr, player);
 
 	if (UI::GetRestartStatus()) { // Allow restart run from game over screen
+		FinalizeRunAndSave();
+
 		UI::GetRestartStatus() = false;
 		pausePage = PausePage::None;
 
@@ -398,7 +509,7 @@ void GameScene::Update()
 		Time::GetInstance().SetTimeScale(1.0f);
 		TimerSystem::GetInstance().Clear();
 		UI::Reset();
-		
+
 		if (!BuffCardManager::GetCurrentBuffs().empty()) {
 			BuffCardManager::ResetCurrentBuffs();
 		}
@@ -411,6 +522,8 @@ void GameScene::Update()
 		return; // << This return stops the music from playing for a clean restart.
 	}
 	if (UI::GetReturnToMenuStatus()) {
+		FinalizeRunAndSave();
+
 		UI::GetReturnToMenuStatus() = false;
 		pausePage = PausePage::None;
 		Time::GetInstance().SetPaused(false);
@@ -420,6 +533,7 @@ void GameScene::Update()
 		return;
 	}
 	if (player.IsDead()) {
+		FinalizeRunAndSave();
 		AudioManager::trapLava->Stop();
 		AudioManager::PlayGameOverMusic();
 	}
@@ -485,6 +599,8 @@ void GameScene::Render()
 	QuickGraphics::PrintText(ppos.c_str(), -1, 0.75f, 0.3f, 0.5f, 0.5f, 0.5f, 1);
 
 	if (AEInputCheckTriggered(AEVK_R)) {
+		FinalizeRunAndSave();
+
 		pausePage = PausePage::None;
 		Time::GetInstance().ResetElapsedTime();
 		TimerSystem::GetInstance().Clear();
@@ -698,6 +814,8 @@ void GameScene::UpdatePauseInput()
 		}
 		if (IsClicked(btnYes))
 		{
+			FinalizeRunAndSave();
+
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
 			Time::GetInstance().ResetElapsedTime();
@@ -736,6 +854,8 @@ void GameScene::UpdatePauseInput()
 		}
 		if (IsClicked(btnYes))
 		{
+			FinalizeRunAndSave();
+
 			pausePage = PausePage::None;
 			Time::GetInstance().SetPaused(false);
 			Time::GetInstance().ResetElapsedTime();

@@ -37,6 +37,15 @@ MapGrid::MapGrid(int cols, int rows)
 	bottomTexture = AEGfxTextureLoad(BOTTOM_PATH);
 	platformTexture = AEGfxTextureLoad(PLATFORM_PATH);
 
+	std::cout << "[MapGrid ctor] cols=" << cols
+		<< " rows=" << rows
+		<< "\n  tileMesh=" << tileMesh
+		<< "\n  surfaceTexture=" << surfaceTexture << " path=" << SURFACE_PATH
+		<< "\n  bodyTexture=" << bodyTexture << " path=" << BODY_PATH
+		<< "\n  bottomTexture=" << bottomTexture << " path=" << BOTTOM_PATH
+		<< "\n  platformTexture=" << platformTexture << " path=" << PLATFORM_PATH
+		<< "\n";
+
 	for (auto& t : tiles)
 		t.type = MapTile::Type::NONE;
 }
@@ -98,6 +107,11 @@ bool MapGrid::IsSolidAtGridCell(int x, int y) const
 
 void MapGrid::Render()
 {
+	if (!tileMesh)
+	{
+		std::cout << "[MapGrid::Render] tileMesh is null\n";
+		return;
+	}
 	AEMtx33 transform;
 
 	AEVec2 bottomLeft, topRight;
@@ -155,7 +169,11 @@ void MapGrid::Render()
 			}
 
 			if (!tex)
+			{
+				std::cout << "[MapGrid::Render] missing texture for tile type "
+					<< (int)tile->type << " at (" << x << "," << y << ")\n";
 				continue;
+			}
 
 			AEMtx33Trans(&transform, drawX, drawY);
 			AEMtx33ScaleApply(&transform, &transform, scaleX, scaleY);
