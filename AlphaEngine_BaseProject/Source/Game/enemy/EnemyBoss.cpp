@@ -1176,6 +1176,7 @@ void EnemyBoss::Reset(const AEVec2& spawnPos)
     hp = maxHP;
     isDead = false;
     hideAfterDeath = false;
+    phase2 = false;
 
     chasing = false;
     isAttacking = false;
