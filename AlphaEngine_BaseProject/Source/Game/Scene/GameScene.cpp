@@ -265,6 +265,7 @@ void GameScene::Init()
 	// clear room data from any prior run
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
+	enemyMgr.ResetAll();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};
@@ -376,6 +377,7 @@ void GameScene::Update()
 		return;
 	}
 
+
 	if (UI::IsBossIntroActive())
 	{
 		UI::Update();
@@ -399,6 +401,7 @@ void GameScene::Update()
 	if (roomInputLockTimer <= 0.f)
 	{
 		player.Update();
+		//roomSystem.ApplyStartRoomLeftBoundaryLock();
 	}
 
 #if _DEBUG
@@ -470,15 +473,11 @@ void GameScene::Update()
 
 	camera.Update();
 
-	AEVec2 p = player.GetPosition();
-	enemyMgr.UpdateAll(p, player.GetIsFacingRight(), map);
-
 	//std::cout << player.GetPosition() << '\n';
 
 	const AEVec2 pPos = player.GetPosition();
 	const AEVec2 pSize = player.GetStats().playerSize;
 
-	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
 
 	trapMgr.Update(dt, player);
 
@@ -536,7 +535,12 @@ void GameScene::Update()
 		FinalizeRunAndSave();
 		AudioManager::trapLava->Stop();
 		AudioManager::PlayGameOverMusic();
+		return;
 	}
+
+	
+	enemyMgr.UpdateAll(pPos, player.GetIsFacingRight(), map);
+	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
 }
 
 void GameScene::Render()

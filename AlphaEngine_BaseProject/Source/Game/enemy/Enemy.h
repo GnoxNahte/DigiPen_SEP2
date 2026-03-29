@@ -39,7 +39,7 @@ public:
         float leashRange = 8.0f;
 
         // Vertical gating (in world/tile units)
-        float aggroYRange = 2.0f; // start chasing only if player within this Y diff
+        float aggroYRange = 4.0f; // start chasing only if player within this Y diff
         float attackYRange = 1.0f; // allow attacking only if within this Y diff
 
         // Animation selection
@@ -81,6 +81,7 @@ public:
   virtual const  AEVec2& GetHurtboxPos()  const override 
     {
       return GetPosition();
+    
     }
    virtual const AEVec2& GetHurtboxSize() const override { return GetSize(); }
 
@@ -138,9 +139,6 @@ private:
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
     Preset presetType = Preset::Skeleton;
 
-
-
-private:
     Config cfg;
 
     Sprite sprite;
@@ -173,6 +171,10 @@ private:
   // NEW internal helper
     bool HasGroundAhead(MapGrid& map, float dirX) const;
     bool HasWallAhead(MapGrid& map, float dirX) const;
+    bool HasLineOfSightToTarget(MapGrid& map, const AEVec2& targetPos) const;
+
+    bool targetLocked = false;
+    float losGraceTimer = 0.f;
 
     AEVec2 druidSpellTargetPos{ 0.f, 0.f };
     bool druidSpellTargetLocked = false;

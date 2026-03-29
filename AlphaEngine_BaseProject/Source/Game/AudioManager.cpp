@@ -145,6 +145,8 @@ void BGMAudio::Stop() {
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioStopGroup(ownGroup);
     active = false;
+    fadeVolume = 1.0f;
+    baseVolume = 1.0f;
 }
 void BGMAudio::SetVolume(f32 const& vol) {
     baseVolume = vol;
@@ -195,12 +197,11 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
     // with crossfade effect.
 
     // Default first track to vocal
-    if (!bossIntroMusic->IsActive()) {
+    if (!playedBossIntroMusic) {
         bossIntroMusic->Play(bossIntroMusic->GetVolume());
-        bossIntroMusic->SetActive(true);
         bossFightMusic->Play(0.0f);
-        bossFightMusic->SetActive(true);
         gCurrTrack = bossIntroMusic.get();
+        playedBossIntroMusic = true;
     }
     if (roomMgr.GetCurrentRoomID() == ROOM_11) {
         // Triggered boss phase 2
@@ -568,6 +569,9 @@ void AudioManager::StopAllMusic()
     if (bossFightMusic) bossFightMusic->Stop();
     if (gameOverMusic) gameOverMusic->Stop();
     if (victoryMusic) victoryMusic->Stop();
+	if (menuMusic) menuMusic->Stop();
+    if (creditsMusic) creditsMusic->Stop();
+	if (trapLava) trapLava->Stop();
 }
 
 void AudioManager::ResetRuntimeState()
@@ -584,6 +588,7 @@ void AudioManager::ResetRuntimeState()
     gIsPlayingBoss2ndPhase = false;
     gIsPlayingGOver = false;
     gIsPlayingVictory = false;
+    playedBossIntroMusic = false;
 
     gCurrTrack = nullptr;
 

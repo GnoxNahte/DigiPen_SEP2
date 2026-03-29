@@ -8,8 +8,9 @@
 #include "../Time.h"
 #include "../AudioManager.h"
 #include "../../Utils/AEExtras.h"
+#include "../../Editor/Editor.h"
 
-// ---- Static helpers ----
+
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 {
     if (stateIndex < 0 || stateIndex >= sprite.metadata.rows)
@@ -47,6 +48,21 @@ bool Enemy::HasWallAhead(MapGrid& map, float dirX) const
     const float probeY = hbPos.y; // middle height
 
     return map.CheckPointCollision(probeX, probeY);
+}
+
+
+bool Enemy::HasLineOfSightToTarget(MapGrid& map, const AEVec2& targetPos) const
+{
+    const AEVec2 enemyCenter = GetHurtboxPos();
+    const AEVec2 enemySize = GetHurtboxSize();
+
+    const float enemyHalfH = enemySize.y * 0.5f;
+    static constexpr float kTargetHalfH = 0.40f;
+
+    const AEVec2 enemyHead{ enemyCenter.x, enemyCenter.y + enemyHalfH * 0.35f };
+    const AEVec2 targetHead{ targetPos.x, targetPos.y + kTargetHalfH };
+
+    return !map.CheckRaycast(enemyHead, targetHead);
 }
 
 static bool FindGroundBelowForDruidEffect(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
@@ -92,6 +108,7 @@ Enemy::Config Enemy::MakePreset(Preset preset)
         c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
         c.maxHp = 50;
         c.attackHitTimeNormalized = 0.42f;
+        c.aggroRange = 50.f;
  
         break;
     }
@@ -139,6 +156,7 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     attack.breakRange = cfg.attackBreakRange;
 
 	//enemy particle system setup
+    particleSystem.ReleaseAll();
     particleSystem.Init();
     particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
 
@@ -170,6 +188,7 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     dead = false;
 
 }
+
 
 // ---- Update ----
 void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
@@ -329,6 +348,14 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         return;
     }
 
+
+    // Skeleton line-of-sight logic:
+    // 1. Cast one ray from the enemy to the player head
+    // 2. MapGrid::CheckRaycast() returns true if a wall blocks the ray
+    // 3. Therefore LOS is clear only when !CheckRaycast(...) is true
+    // 4. A short grace timer keeps LOS valid for a brief moment after it is lost,
+    //    so the skeleton does not flicker between aggro and idle on one bad frame.
+     // 5. LOS is used for both detection (aggro) and attack gating
     const float desiredStopDist =
         (attack.startRange > 0.05f) ? (attack.startRange - 0.05f) : attack.startRange;
 
@@ -339,11 +366,40 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     const bool yAggroOk = (dy <= cfg.aggroYRange);
     const bool yAttackOk = (dy <= cfg.attackYRange);
 
+    // Skeleton requires line of sight. Druid keeps existing behaviour.
+    const bool useLineOfSight = (presetType == Preset::Skeleton);
+    const bool rawLineOfSight = !useLineOfSight || HasLineOfSightToTarget(map, playerPos);
+
+    // Small perception memory so one bad ray frame does not drop aggro instantly.
+    static constexpr float kLosGraceDuration = 2.f;
+    static constexpr float kAggroExitPadding = 0.35f;
+
+    //basically skeleton does not forget/lose track of player instantly, do prevent skeleton rapid flickering
+    if (useLineOfSight)
+    {
+        if (rawLineOfSight)
+            losGraceTimer = kLosGraceDuration;
+        else
+            losGraceTimer = (std::max)(0.0f, losGraceTimer - dt);
+    }
+    else
+    {
+        losGraceTimer = 0.0f;
+    }
+
+    const bool stableLineOfSight =
+        !useLineOfSight || rawLineOfSight || (losGraceTimer > 0.0f);
+
     // --- Guard/leash ---
     const float playerFromHome = std::fabs(playerPos.x - homePos.x);
     const float enemyFromHome = std::fabs(position.x - homePos.x);
 
-    const bool inAggroRange = (absDx <= cfg.aggroRange) && yAggroOk;
+    const float aggroRangeToUse =
+        targetLocked ? (cfg.aggroRange + kAggroExitPadding) : cfg.aggroRange;
+
+    targetLocked = (absDx <= aggroRangeToUse) && yAggroOk && stableLineOfSight;
+
+    const bool inAggroRange = targetLocked;
 
     // Hysteresis so we don't spam switch at the boundary
     const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
@@ -361,8 +417,9 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
         // Only consider playerFromHome when we are actually engaged
         // (prevents "player far away" from freezing idle wandering)
+        /*
         if (inAggroRange && playerFromHome > leashEnter)
-            returningHome = true;
+            returningHome = true;*/
 
         // If we were engaged and now lost aggro , than enemy will go home first
         if (!inAggroRange && hadAggro)
@@ -377,7 +434,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
 
     //verical checck
     const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
-    const float effectiveDist = yAttackOk ? absDx : 9999.0f;
+    const float effectiveDist = (yAttackOk && stableLineOfSight) ? absDx : 9999.0f;
   
     if (returningHome)
     {
@@ -629,6 +686,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     }
 
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
+   
 
     if (hp <= 0)
     {
@@ -641,6 +699,10 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         else {
             AudioManager::PlaySFX(*AudioManager::skeletonDeath, AudioManager::GetSFXVolume());
         }
+
+        //UI::GetDamageTextSpawner().SpawnDamageText(20, DAMAGE_TYPE_HEAL, position, position - hitOrigin);
+        EventSystem::Trigger<IDamageable::EnemyKilledEvent>({ position });
+    
 
 
         attack.Reset();
@@ -802,6 +864,14 @@ void Enemy::Render()
 
     if (debugDraw)
 
+    {
+        //const float boxYOffset = -0.25f; // negative = draw LOWER (
+        const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
+        const AEVec2 hb = GetHurtboxPos();
+        QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
+    }
+
+    if (Editor::GetShowColliders())
     {
         //const float boxYOffset = -0.25f; // negative = draw LOWER (
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;

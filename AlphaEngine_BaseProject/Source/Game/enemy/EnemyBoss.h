@@ -37,7 +37,7 @@ struct SpecialAttack
         AEMtx33 m;
         const bool faceRight = (vel.x >= 0.0f);
 
-        AEMtx33Scale(&m, sx, sy);
+        AEMtx33Scale(&m, faceRight ? sx : -sx, sy);
 
         float px = vfx.metadata.pivot.x;
         float py = vfx.metadata.pivot.y;
@@ -212,8 +212,8 @@ private:
     bool debugDraw{ false };
 
     // --- Health / damage ---
-    int   maxHP{ 500 };
-    int   hp{ 500 };
+    int   maxHP{ 650 };
+    int   hp{ 650 };
 
     // Hurt lock (like regular Enemy): keeps HURT animation visible + blocks re-hits.
     float hurtTimeLeft{ 0.0f };

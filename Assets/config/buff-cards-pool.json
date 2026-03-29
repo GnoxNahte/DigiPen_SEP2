@@ -38,32 +38,32 @@
       "rarity": "UNCOMMON",
       "name": "Iron Defence",
       "description": "Your stance steadies against the world.",
-      "effect": "Gain 5% Damage Reduction.",
-      "effect_value_1": 5
+      "effect": "Gain 4% Damage Reduction.",
+      "effect_value_1": 4
     },
     {
       "type": "IRON_DEFENCE",
       "rarity": "RARE",
       "name": "Iron Defence",
       "description": "Stone settles into your bones.",
-      "effect": "Gain 10% Damage Reduction.",
-      "effect_value_1": 10
+      "effect": "Gain 7% Damage Reduction.",
+      "effect_value_1": 7
     },
     {
       "type": "IRON_DEFENCE",
       "rarity": "EPIC",
       "name": "Iron Defence",
       "description": "Steel seems to guard your skin.",
-      "effect": "Gain 15% Damage Reduction.",
-      "effect_value_1": 15
+      "effect": "Gain 10% Damage Reduction.",
+      "effect_value_1": 10
     },
     {
       "type": "IRON_DEFENCE",
       "rarity": "LEGENDARY",
       "name": "Iron Defence",
       "description": "You stand like an unbreakable fortress.",
-      "effect": "Gain 20% Damage Reduction.",
-      "effect_value_1": 20
+      "effect": "Gain 12% Damage Reduction.",
+      "effect_value_1": 12
     },
     {
       "type": "SWITCH_IT_UP",
@@ -101,36 +101,36 @@
       "rarity": "UNCOMMON",
       "name": "Sharpen",
       "description": "Your weapon stirs with quiet hunger.",
-      "effect": "Increase Damage by 8% and Critical Chance by 5%.",
+      "effect": "Increase Damage by 8% and Critical Chance by 4%.",
       "effect_value_1": 8,
-      "effect_value_2": 5
+      "effect_value_2": 4
     },
     {
       "type": "SHARPEN",
       "rarity": "RARE",
       "name": "Sharpen",
       "description": "Steel answers your will.",
-      "effect": "Increase Damage by 12% and Critical Chance by 8%.",
+      "effect": "Increase Damage by 12% and Critical Chance by 6%.",
       "effect_value_1": 12,
-      "effect_value_2": 8
+      "effect_value_2": 6
     },
     {
       "type": "SHARPEN",
       "rarity": "EPIC",
       "name": "Sharpen",
       "description": "Each strike grows deadlier than the last.",
-      "effect": "Increase Damage by 15% and Critical Chance by 10%.",
+      "effect": "Increase Damage by 15% and Critical Chance by 8%.",
       "effect_value_1": 15,
-      "effect_value_2": 10
+      "effect_value_2": 8
     },
     {
       "type": "SHARPEN",
       "rarity": "LEGENDARY",
       "name": "Sharpen",
       "description": "Your blade thirsts for victory.",
-      "effect": "Increase Damage by 20% and Critical Chance by 15%.",
+      "effect": "Increase Damage by 20% and Critical Chance by 10%.",
       "effect_value_1": 20,
-      "effect_value_2": 15
+      "effect_value_2": 10
     },
     {
       "type": "BERSERKER",
@@ -145,16 +145,16 @@
       "rarity": "EPIC",
       "name": "Berserker",
       "description": "Blood and fury guide your aim.",
-      "effect": "Increase Critical Chance by 20% below 25% HP.",
-      "effect_value_1": 20
+      "effect": "Increase Critical Chance by 15% below 25% HP.",
+      "effect_value_1": 15
     },
     {
       "type": "BERSERKER",
       "rarity": "LEGENDARY",
       "name": "Berserker",
       "description": "On the brink of death, every strike is lethal.",
-      "effect": "Increase Critical Chance by 35% below 25% HP.",
-      "effect_value_1": 35
+      "effect": "Increase Critical Chance by 20% below 25% HP.",
+      "effect_value_1": 20
     },
     {
       "type": "FLEETING_STEP",
@@ -193,64 +193,64 @@
       "rarity": "UNCOMMON",
       "name": "Deep Vitality",
       "description": "The world may strike, but you endure longer.",
-      "effect": "Increase Maximum Health by 10%.",
-      "effect_value_1": 10
+      "effect": "Increase Maximum Health by 8%.",
+      "effect_value_1": 8
     },
     {
       "type": "DEEP_VITALITY",
       "rarity": "RARE",
       "name": "Deep Vitality",
       "description": "Your strength grows, blows bruise but do not break you.",
-      "effect": "Increase Maximum Health by 20%.",
-      "effect_value_1": 20
+      "effect": "Increase Maximum Health by 15%.",
+      "effect_value_1": 15
     },
     {
       "type": "DEEP_VITALITY",
       "rarity": "EPIC",
       "name": "Deep Vitality",
       "description": "Vitality surges, the body resists what once would fell it.",
-      "effect": "Increase Maximum Health by 30%.",
-      "effect_value_1": 30
+      "effect": "Increase Maximum Health by 20%.",
+      "effect_value_1": 20
     },
     {
       "type": "DEEP_VITALITY",
       "rarity": "LEGENDARY",
       "name": "Deep Vitality",
       "description": "Your heart beats like iron, even fate itself struggles to harm you.",
-      "effect": "Increase Maximum Health by 50%.",
-      "effect_value_1": 50
+      "effect": "Increase Maximum Health by 30%.",
+      "effect_value_1": 30
     },
     {
       "type": "HAND_OF_FATE",
       "rarity": "RARE",
       "name": "Hand Of Fate",
       "description": "Fate leans slightly in your favor, each strike finds its mark.",
-      "effect": "Increase Critical Chance by 10%.",
-      "effect_value_1": 10
+      "effect": "Increase Critical Chance by 8%.",
+      "effect_value_1": 8
     },
     {
       "type": "HAND_OF_FATE",
       "rarity": "EPIC",
       "name": "Hand Of Fate",
       "description": "The threads of destiny twist to your hand, your strikes almost cannot miss.",
-      "effect": "Increase Critical Chance by 15%.",
-      "effect_value_1": 15
+      "effect": "Increase Critical Chance by 12%.",
+      "effect_value_1": 12
     },
     {
       "type": "SUNDERING_BLOW",
       "rarity": "RARE",
       "name": "Sundering Blow",
       "description": "When your strikes land true, they carve deep.",
-      "effect": "Increase Critical Damage by 10%.",
-      "effect_value_1": 10
+      "effect": "Increase Critical Damage by 25%.",
+      "effect_value_1": 25
     },
     {
       "type": "SUNDERING_BLOW",
       "rarity": "EPIC",
       "name": "Sundering Blow",
       "description": "Your strikes rend the world, no defense can stand before them.",
-      "effect": "Increase Critical Damage by 25%.",
-      "effect_value_1": 25
+      "effect": "Increase Critical Damage by 40%.",
+      "effect_value_1": 40
     }
 
 

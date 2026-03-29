@@ -11,7 +11,7 @@ public:
     float hitTimeNormalized = 0.5f;  // 0..1 (hit time within animation)
 
 
-    //  - distanceToTarget: abs(x distance) or full distance, your choice (be consistent)
+    //  - distanceToTarget: abs(x distance) or full distance, choice (be consistent)
     //  - attackAnimDurationSec: duration of ATTACK animation in seconds (frameCount * timePerFrame)
 
     //if target goes beyond this while attacking, cancel attack
