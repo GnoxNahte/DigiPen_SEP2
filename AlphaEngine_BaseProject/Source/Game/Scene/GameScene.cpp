@@ -990,7 +990,7 @@ void GameScene::RenderBuffSummaryGrid(float anchorX, float anchorY, const std::s
 	const float gapX = 35.0f;
 	const float gapY = 20.0f;
 
-	DrawTextPx(pauseFontLarge, title, anchorX, anchorY - 30.0f, 0.75f, 1, 1, 1, 1);
+	DrawTextPx(pauseFontLarge, title, anchorX, anchorY - 30.0f, 0.55f, 1, 0.2f, 0.85f, 1);
 
 	for (int i = 0; i < (int)buffs.size(); ++i)
 	{
@@ -1077,7 +1077,7 @@ void GameScene::RenderEndScreenBuffs()
 	float w = (float)AEGfxGetWindowWidth();
 
 	// 先放右侧，尽量不挡住中间的 victory / defeat 文字和按钮
-	RenderBuffSummaryGrid(w * 0.56f, 220.0f, "ACTIVE BUFFS:", 4);
+	RenderBuffSummaryGrid(w * 0.56f, 220.0f, "BUFFS ATTAINED:", 4);
 }
 
 void GameScene::RenderPauseOverlay()

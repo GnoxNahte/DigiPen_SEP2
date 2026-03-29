@@ -556,7 +556,7 @@
 			AEGfxPrint(gameOverFont, "Rest, hero.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
 			f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
 			std::string displayStr = "Clear Time - " + FormatTimeMMSSMS(timeSpent);
-			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.65f, 1.f, 1.f, 1.f, a3);
+			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
 
 			float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
 
