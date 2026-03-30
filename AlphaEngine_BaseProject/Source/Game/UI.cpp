@@ -392,6 +392,8 @@
 
 		if (hoverRestart) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "RESTART\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				restartRun = true;
@@ -400,6 +402,8 @@
 		}
 		if (hoverMenu) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "MENU\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				returnToMenu = true;
@@ -526,6 +530,8 @@
 
 		if (hoverRestart) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "RESTART\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				restartRun = true;
@@ -534,6 +540,8 @@
 		}
 		if (hoverMenu) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "MENU\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				returnToMenu = true;

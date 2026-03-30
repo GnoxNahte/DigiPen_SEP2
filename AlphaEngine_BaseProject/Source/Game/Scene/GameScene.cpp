@@ -798,22 +798,26 @@ void GameScene::UpdatePauseInput()
 	{
 		if (IsClicked(btnResume))
 		{
+			AudioManager::PlayButtonClick();
 			TogglePause();
 			AudioManager::UnmuffleMusic();
 			return;
 		}
 		if (IsClicked(btnRestart))
 		{
+			AudioManager::PlayButtonClick();
 			pausePage = PausePage::ConfirmRestart;
 			return;
 		}
 		if (IsClicked(btnSettings))
 		{
+			AudioManager::PlayButtonClick();
 			pausePage = PausePage::Settings;
 			return;
 		}
 		if (IsClicked(btnMenu))
 		{
+			AudioManager::PlayButtonClick();
 			pausePage = PausePage::ConfirmQuit;
 			return;
 		}
@@ -830,11 +834,14 @@ void GameScene::UpdatePauseInput()
 
 		if (IsClicked(btnNo))
 		{
+			AudioManager::PlayButtonClick();
 			pausePage = PausePage::Menu;
 			return;
 		}
 		if (IsClicked(btnYes))
 		{
+			AudioManager::PlayButtonClick();
+			Sleep(150);
 			FinalizeRunAndSave();
 
 			pausePage = PausePage::None;
@@ -870,11 +877,14 @@ void GameScene::UpdatePauseInput()
 
 		if (IsClicked(btnNo))
 		{
+			AudioManager::PlayButtonClick();
 			pausePage = PausePage::Menu;
 			return;
 		}
 		if (IsClicked(btnYes))
 		{
+			AudioManager::PlayButtonClick();
+			Sleep(150); // small delay to allow button click sound to play before restarting
 			FinalizeRunAndSave();
 
 			pausePage = PausePage::None;

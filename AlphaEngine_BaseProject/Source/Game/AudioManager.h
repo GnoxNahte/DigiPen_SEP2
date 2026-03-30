@@ -63,6 +63,10 @@ public:
     static void RefreshAllMusicVolumes();
     static void UpdateLavaAudio(const TrapManager& trapMgr, const Player& player);
 
+	// UI Audio for buttons
+    static void PlayButtonClick();
+
+
     // Flags
 	inline static bool playedBossIntroMusic = false;
     inline static bool playedBossChargingSFX = false;
@@ -95,6 +99,9 @@ public:
     static std::unique_ptr<SFXAudio> buffRevealSFX;
     static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
     static std::unique_ptr<SFXAudio> buffConfirmSFX;
+
+    // UI SFXs
+    static std::unique_ptr<SFXAudio> buttonClick;
 
     // Player SFXs
     static std::unique_ptr<SFXAudio> playerAttack1;
