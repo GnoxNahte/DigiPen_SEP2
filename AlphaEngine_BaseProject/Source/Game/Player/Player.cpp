@@ -48,11 +48,11 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
         OnBuffSelected(ev);
         });
 
-    enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
+    enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& )
         {
-            (void)ev;
-            int healAmt = 10; // or use stat??
-            health = min(maxHealth, health + healAmt);
+            int healAmt = min(maxHealth - health, stats.healDropAmt);
+
+            health += healAmt;
             UI::GetDamageTextSpawner().SpawnDamageText(
                 healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
         });
@@ -869,11 +869,15 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     if (type == DAMAGE_TYPE_TRAP)
         dmg = static_cast<int>(dmg * buff_TrapDmgReduction);
 
+    dmg = max(dmg, 1);
+
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
+    // Fake giving the player less dmg when the player is at low health
     if (health <= stats.berserkerTrigger * maxHealth)
-        dmg = static_cast<int>(dmg * stats.berserkerHealthReductionAmt);
+        dmg = max(static_cast<int>(dmg * stats.berserkerHealthReductionAmt), 1);
+
     if (health <= dmg)
     {
         health = 0;

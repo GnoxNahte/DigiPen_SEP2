@@ -86,6 +86,7 @@ struct PlayerStats
 
 	// ===== Combat stats =====
 	int maxHealth;
+    int healDropAmt;
     float invincibleTime;       // After taking damage
     float knockbackAmt;         // Knockback when taking damage
     float maxKnockbackDmg;      // At max dmg, apply full knockback
