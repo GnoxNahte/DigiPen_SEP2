@@ -29,7 +29,7 @@ namespace
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
-    particleSystem{ 50, {} },
+    particleSystem{ 50, {} , "Assets/Art/smoke.png"},
     afterimage(*this, {2.f, 2.f * 0.74f}),
     map(map),
     enemyManager(enemyManager)
@@ -41,6 +41,8 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
     particleSystem.emitter.tint.a = 0.5f;
+    particleSystem.emitter.sizeRange.x = 0.3f;
+    particleSystem.emitter.sizeRange.y = 0.7f;
 
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
         OnBuffSelected(ev);
@@ -427,7 +429,8 @@ void Player::HandleLanding()
         .angleRange     { AEDegToRad(0.f), AEDegToRad(particleAngleRange) },
         .speedRange     { particleSpeedRange },
         .lifetimeRange  { 0.1f, 0.3f },
-        .tint           { 0.56f, 0.49f, 0.77f, 1.f }
+        .sizeRange      { particleSystem.emitter.sizeRange },
+        .tint           { 0.56f, 0.49f, 0.77f, 1.f },
     };
 
     particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
