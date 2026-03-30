@@ -87,6 +87,7 @@ public:
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
 	static void DrawHealthBar();
+	static AEVec2 GetHealthBarHeartTargetPx();
 
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();

@@ -1,8 +1,8 @@
 {
   "stateInfo": [
-    { "name": "HURT",  "frameCount": 4, "sampleRate": 8 }
+    { "name": "HURT",  "frameCount": 5, "sampleRate": 12 }
   ],
   "defaultSampleRate": 8,
-  "pivot": { "x": 0.5, "y": 0.35 }
+  "pivot": { "x": 0.5, "y": 0.35}
 }
 

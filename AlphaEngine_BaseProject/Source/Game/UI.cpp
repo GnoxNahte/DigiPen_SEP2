@@ -337,6 +337,24 @@
 
 		AEGfxSetTransparency(1.f);
 	}
+
+	AEVec2 UI::GetHealthBarHeartTargetPx()
+	{
+		constexpr float scale = 2.f;
+
+		AEVec2 pos{ 30.f, 30.f };
+		pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
+
+		// same offset used before drawing the fill
+		pos += AEVec2{ 36.f * scale, 6.f * scale };
+
+		// choose a stable point inside the bar, near the left side
+		return AEVec2{
+			pos.x + 12.f,
+			pos.y + (21.f * scale) * 0.5f
+		};
+	}
+
 	void UI::UpdateGameOverStatus() {
 		if (isVictory) return; // don't interfere
 		if (!player->IsDead()) {

@@ -6,6 +6,7 @@
 #include "../Camera.h"
 #include "../Time.h"
 #include "../../Utils/Sprite.h" 
+#include "../UI.h"
 
 namespace
 {
@@ -80,6 +81,7 @@ void ItemDropManager::SpawnHeart(const AEVec2& worldPos, int healAmount)
 void ItemDropManager::Update(const Player& player)
 {
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
+    heartSprite.Update();
 
     for (ItemDrop& drop : drops)
     {
@@ -118,23 +120,39 @@ void ItemDropManager::UpdateDrop(ItemDrop& drop, const Player& player, float dt)
         drop.velocity = dir * cfg.magnetSpeed;
         drop.position += drop.velocity * dt;
 
-        // temporary completion condition for this step
         const AEVec2 remain = player.GetPosition() - drop.position;
         if (LengthSquared(remain) <= 0.10f * 0.10f)
         {
-            // do not heal here yet in this step
+            drop.uiPosition = AEVec2{
+            drop.position.x * Camera::scale + Camera::position.x,
+            drop.position.y * Camera::scale + Camera::position.y
+            };
+
             drop.state = State::FlyingToUI;
+
         }
         break;
     }
 
     case State::FlyingToUI:
     {
-        // not implemented in this step yet
-        // keep drop alive for next step or remove for now if needed
-        drop.active = false;
+        AEVec2 target = UI::GetHealthBarHeartTargetPx();
+        AEVec2 toTarget = target - drop.uiPosition;
+        AEVec2 dir = NormalizedOrZero(toTarget);
+
+        const float uiFlySpeed = 900.f; // tune
+        drop.uiPosition += dir * uiFlySpeed * dt;
+
+        if (LengthSquared(target - drop.uiPosition) <= 12.f * 12.f)
+        {
+            // final heal trigger here if want to heal player from here...?
+            // player.Heal(drop.healAmount, player.GetPosition());
+            drop.active = false;
+        }
         break;
     }
+
+
     }
 }
 
@@ -158,6 +176,26 @@ void ItemDropManager::Render()
 
 void ItemDropManager::RenderDrop(const ItemDrop& drop)
 {
+    if (drop.state == State::FlyingToUI)
+    {
+        AEMtx33 transform;
+        AEMtx33Identity(&transform);
+
+        const float pxSize = 150.f; // tune this
+        AEMtx33Scale(&transform, pxSize, pxSize);
+
+        // uiPosition is already in pixel space
+        AEMtx33TransApply(
+            &transform, &transform,
+            drop.uiPosition.x,
+            drop.uiPosition.y
+        );
+
+        AEGfxSetTransform(transform.m);
+        heartSprite.Render();
+        return;
+    }
+
     AEVec2 renderPos = drop.position;
 
     if (drop.state == State::WorldIdle)
@@ -168,7 +206,7 @@ void ItemDropManager::RenderDrop(const ItemDrop& drop)
     AEMtx33 transform;
     AEMtx33Identity(&transform);
 
-    AEMtx33Scale(&transform, cfg.renderScale, cfg.renderScale);
+    AEMtx33Scale(&transform, cfg.renderScale + 1.f, cfg.renderScale);
     AEMtx33TransApply(&transform, &transform,
         renderPos.x - (0.5f - heartSprite.metadata.pivot.x),
         renderPos.y + (0.5f - heartSprite.metadata.pivot.y));

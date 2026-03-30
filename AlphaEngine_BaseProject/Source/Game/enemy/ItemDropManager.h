@@ -27,7 +27,7 @@ public:
     {
         //const char* heartSpritePath = "Assets/Craftpix/heart.png";
 
-        float renderScale = 1.25f;
+        float renderScale = 1.5f;
         float bobAmplitude = 0.10f;
         float bobSpeed = 3.5f;
 
@@ -46,6 +46,7 @@ public:
         AEVec2 spawnPosition{ 0.f, 0.f };
         AEVec2 position{ 0.f, 0.f };
         AEVec2 velocity{ 0.f, 0.f };
+        AEVec2 uiPosition{ 0.f, 0.f };
 
         float age = 0.f;
         int healAmount = 0;

@@ -429,6 +429,7 @@ void GameScene::Update()
 
 	if (!roomTransitionLocked)
 	{
+		
 		RoomDirection exitDir = roomSystem.CheckRoomExit();
 		if (exitDir != DIR_NONE)
 		{
@@ -443,7 +444,9 @@ void GameScene::Update()
 
 			if (roomMgr.ChangeRoom(exitDir))
 			{
+		
 				OnLevelCleared();
+				
 
 				RoomDirection cameFrom = DIR_NONE;
 				BuffCardManager::IsRoomCleared() = true;
@@ -462,6 +465,8 @@ void GameScene::Update()
 				const AEVec2 transitionSpawn = roomSystem.ComputeTransitionSpawn(previousRoom, nextRoom, previousPos);
 				roomSystem.SetBlockedReturnDir(cameFrom);
 				roomSystem.BuildCurrentRoom(cameFrom, &transitionSpawn);
+				itemDropMgr.Clear();
+				
 
 				roomTransitionLocked = true;
 				roomInputLockTimer = kRoomInputLockDuration;
