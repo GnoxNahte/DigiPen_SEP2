@@ -64,6 +64,8 @@ public:
     bool IsDead() const override;
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_ENEMY_ATTACK) override;
 
+    void Heal(int healAmt);
+
     // === Getters ===
     const AEVec2&       GetPosition()   const;
     const AEVec2&       GetVelocity()   const;

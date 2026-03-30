@@ -47,16 +47,6 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
         OnBuffSelected(ev);
         });
-
-    enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& )
-        {
-            int healAmt = min(maxHealth - health, stats.healDropAmt);
-
-            health += healAmt;
-            UI::GetDamageTextSpawner().SpawnDamageText(
-                healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
-        });
-
 }
 
 Player::~Player()
@@ -905,6 +895,15 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     sprite.SetState(AnimState::HURT);
 
     return true;
+}
+
+void Player::Heal(int healAmt)
+{
+    healAmt = min(maxHealth - health, healAmt);
+
+    health += healAmt;
+    UI::GetDamageTextSpawner().SpawnDamageText(
+        healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
 }
 
 void Player::DrawInspector()
