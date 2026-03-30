@@ -121,7 +121,13 @@ void PlayerAfterimage::Render()
 	{
 		Afterimage& obj = pool.pool[i];
 
-		AEMtx33Trans(
+		if (obj.isFacingRight)
+			AEMtx33Identity(&transform);
+		else
+			AEMtx33Scale(&transform, -1.f, 1.f);
+
+		AEMtx33TransApply(
+			&transform,
 			&transform,
 			obj.position.x - (0.5f - spritePivot.x),
 			obj.position.y + (0.5f - spritePivot.y)
