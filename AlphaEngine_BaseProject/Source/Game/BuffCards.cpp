@@ -339,7 +339,7 @@ void BuffCardManager::LoadCardInfo() {
 	allCards.clear(); // clear previous cards
 
 	// Build the path to the JSON file
-	std::string actualAssetPath = "../../Assets/config/" + file;
+	std::string actualAssetPath = "Assets/config/" + file;
 
 	if (!std::filesystem::exists(actualAssetPath)) {
 		std::cout << "Card info file does not exist: " << actualAssetPath << std::endl;
