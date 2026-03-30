@@ -159,6 +159,8 @@ void GameScene::Init()
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
 	enemyMgr.ResetAll();
+	itemDropMgr.Init();
+	itemDropMgr.Clear();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};
@@ -425,6 +427,7 @@ void GameScene::Update()
 	}
 
 	
+	itemDropMgr.Update(player);
 	enemyMgr.UpdateAll(pPos, player.GetIsFacingRight(), map);
 	attackSystem.UpdateEnemyAttack(player, enemyMgr, roomSystem.GetActiveBoss());
 }
@@ -444,6 +447,7 @@ void GameScene::Render()
 	if (roomSystem.GetActiveBoss())
 		roomSystem.GetActiveBoss()->Render();
 	//enemyBoss.Render();
+	itemDropMgr.Render();
 	enemyMgr.RenderAll();
 	attackSystem.Render();
 	UI::Render();

@@ -12,6 +12,13 @@
 #include "../../Game/Rooms/RoomManager.h"
 #include "../Rooms/RoomBuilder.h"
 #include "../Rooms/RoomSystem.h"
+<<<<<<< Updated upstream
+=======
+#include "../enemy/ItemDropManager.h"
+#include <string>
+>>>>>>> Stashed changes
+
+
 
 class GameScene : public BaseScene
 {
@@ -40,6 +47,7 @@ private:
 	AttackSystem attackSystem;
 	RoomManager roomMgr;
 	RoomSystem roomSystem;
+	ItemDropManager itemDropMgr;
 	bool roomTransitionLocked = false;
 	bool draggingMasterSlider = false;
 	bool draggingBgmSlider = false;

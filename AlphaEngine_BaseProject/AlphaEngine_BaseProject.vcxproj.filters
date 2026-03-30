@@ -231,6 +231,9 @@
     <ClCompile Include="Source\Game\Player\PlayerAfterimage.cpp">
       <Filter>Source Files\Game\Player</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Game\enemy\ItemDropManager.cpp">
+      <Filter>Source Files\Game\enemy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -415,6 +418,9 @@
     </ClInclude>
     <ClInclude Include="Source\Game\Player\PlayerAfterimage.h">
       <Filter>Header Files\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Game\enemy\ItemDropManager.h">
+      <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -46,21 +46,21 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
         OnBuffSelected(ev);
         });
 
-    enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
+    /*enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
         {
             (void)ev;
             int healAmt = 10; // or use stat??
             health = min(maxHealth, health + healAmt);
             UI::GetDamageTextSpawner().SpawnDamageText(
                 healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
-        });
+        });*/
 
 }
 
 Player::~Player()
 {
     EventSystem::Unsubscribe<BuffSelectedEvent>(buffEventId);
-    EventSystem::Unsubscribe<IDamageable::EnemyKilledEvent>(enemyKilledEventId);
+    //EventSystem::Unsubscribe<IDamageable::EnemyKilledEvent>(enemyKilledEventId);
 }
 
 void Player::Update()
