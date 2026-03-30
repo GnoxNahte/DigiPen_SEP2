@@ -62,7 +62,7 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
 Player::~Player()
 {
     EventSystem::Unsubscribe<BuffSelectedEvent>(buffEventId);
-    EventSystem::Unsubscribe<IDamageable::EnemyKilledEvent>(enemyKilledEventId);
+    //EventSystem::Unsubscribe<IDamageable::EnemyKilledEvent>(enemyKilledEventId);
 }
 
 void Player::Update()

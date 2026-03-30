@@ -1,0 +1,81 @@
+#pragma once
+#pragma once
+
+#include <vector>
+#include <functional>
+#include <AEVec2.h>
+#include "../../Utils/Sprite.h"
+
+class Player;
+
+class ItemDropManager
+{
+public:
+    enum class DropType
+    {
+        Heart
+    };
+
+    enum class State
+    {
+        WorldIdle,
+        CollectedToPlayer,
+        FlyingToUI
+    };
+
+    struct Config
+    {
+        //const char* heartSpritePath = "Assets/Craftpix/heart.png";
+
+        float renderScale = 1.5f;
+        float bobAmplitude = 0.10f;
+        float bobSpeed = 3.5f;
+
+        float pickupRadius = 0.85f;
+        float magnetRadius = 1.50f;
+        float magnetSpeed = 8.0f;
+
+        int healAmount = 10;
+    };
+
+    struct ItemDrop
+    {
+        DropType type = DropType::Heart;
+        State state = State::WorldIdle;
+
+        AEVec2 spawnPosition{ 0.f, 0.f };
+        AEVec2 position{ 0.f, 0.f };
+        AEVec2 velocity{ 0.f, 0.f };
+        AEVec2 uiPosition{ 0.f, 0.f };
+
+        float age = 0.f;
+        int healAmount = 0;
+        bool active = true;
+    };
+
+public:
+    explicit ItemDropManager(const Config& cfg = Config{});
+    ~ItemDropManager();
+
+    void Init();
+    void Exit();
+
+    void Clear();
+
+    void Update(const Player& player);
+    void Render();
+
+    void SpawnHeart(const AEVec2& worldPos, int healAmount);
+
+private:
+    void UpdateDrop(ItemDrop& drop, const Player& player, float dt);
+    bool CheckPlayerPickup(const ItemDrop& drop, const Player& player) const;
+    void RenderDrop(const ItemDrop& drop);
+
+private:
+    Config cfg;
+    Sprite heartSprite;
+    std::vector<ItemDrop> drops;
+
+    int enemyKilledEventId = -1;
+};

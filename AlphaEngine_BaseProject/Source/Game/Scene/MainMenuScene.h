@@ -61,5 +61,46 @@ private:
 
     void LoadRunRecords();
     std::string FormatTime(double seconds) const;
-    void RenderLeaderboard() const;
+    void RenderLeaderboard(float worldX, float worldY) const;
+
+    enum class MenuPage
+    {
+        None,
+        Settings
+    };
+
+    struct TriggerZone
+    {
+        float minX = 0.f;
+        float maxX = 0.f;
+        float minY = 0.f;
+        float maxY = 0.f;
+    };
+
+    MenuPage menuPage = MenuPage::None;
+
+    bool draggingMasterSlider = false;
+    bool draggingBgmSlider = false;
+    bool draggingSfxSlider = false;
+
+    struct UIRect
+    {
+        AEVec2 pos;
+        AEVec2 size;
+    };
+
+    TriggerZone settingsTrigger;
+    TriggerZone startGameTrigger;
+
+    bool IsPlayerInsideTrigger(const TriggerZone& t) const;
+    bool IsMenuOpen() const;
+    void UpdateMenuInput();
+    void RenderMenuOverlay();
+
+    void DrawDimBackground(float alpha);
+    void DrawSolidPanel(const UIRect& r, float alpha);
+    void DrawTextPx(s8 font, const std::string& text, float px, float py, float scale,
+        float r, float g, float b, float a);
+    bool IsMouseOver(const UIRect& r) const;
+    bool IsClicked(const UIRect& r) const;
 };

@@ -87,6 +87,7 @@ public:
 	static void InitCooldownMeshes();
 	static void DrawPlayerCooldownMeter();
 	static void DrawHealthBar();
+	static AEVec2 GetHealthBarHeartTargetPx();
 
 	static void UpdateGameOverStatus();
 	static void UpdateGameOverButtonsAndText();
@@ -108,6 +109,7 @@ public:
 	//boss intro screen
 	static void StartBossIntro();
 	static bool IsBossIntroActive();
+	static bool EndScreenContentVisible();
 
 	inline static bool isVictory = false;
 	inline static float victoryTextFadeTimer;

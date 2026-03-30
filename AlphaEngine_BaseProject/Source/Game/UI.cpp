@@ -14,13 +14,14 @@
 	#include "../Editor/Editor.h"
 
 	namespace {
+		constexpr float END_SCREEN_DELAY = 2.0f;
+
 		// To format time to MM:SS:MS format.
 		std::string FormatTimeMMSSMS(double timeInSeconds) {
 			int minutes = static_cast<int>(timeInSeconds) / 60;
 			int seconds = static_cast<int>(timeInSeconds) % 60;
 			int milliseconds = static_cast<int>((timeInSeconds - floor(timeInSeconds)) * 100); // two digits of ms
 
-			// Format with leading zeros
 			char buffer[16];
 			sprintf_s(buffer, "%02d:%02d:%02d", minutes, seconds, milliseconds);
 			return std::string(buffer);
@@ -94,6 +95,20 @@
 			DrawEyelid();
 			if (EyelidDone()) DrawVictoryText();
 		}
+	}
+
+	bool UI::EndScreenContentVisible() {
+		if (!player) return false;
+
+		if (player->IsDead()) {
+			return EyelidDone() && gameOverTextFadeTimer >= 4.0f;
+		}
+
+		if (isVictory && !player->IsDead()) {
+			return EyelidDone() && victoryTextFadeTimer >= 4.0f;
+		}
+
+		return false;
 	}
 	void UI::Reset() {
 		deadTimerAdded = false;
@@ -322,6 +337,24 @@
 
 		AEGfxSetTransparency(1.f);
 	}
+
+	AEVec2 UI::GetHealthBarHeartTargetPx()
+	{
+		constexpr float scale = 2.f;
+
+		AEVec2 pos{ 30.f, 30.f };
+		pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
+
+		// same offset used before drawing the fill
+		pos += AEVec2{ 36.f * scale, 6.f * scale };
+
+		// choose a stable point inside the bar, near the left side
+		return AEVec2{
+			pos.x + 12.f,
+			pos.y + (21.f * scale) * 0.5f
+		};
+	}
+
 	void UI::UpdateGameOverStatus() {
 		if (isVictory) return; // don't interfere
 		if (!player->IsDead()) {
@@ -333,10 +366,9 @@
 			deadTimerAdded = false;
 		}
 		if (!deadTimerAdded) {
-			TimerSystem::GetInstance().AddTimer("DeathAnim", 1.0f, false);
+			TimerSystem::GetInstance().AddTimer("DeathAnim", END_SCREEN_DELAY, false);
 			deadTimerAdded = true;
 			ResetEyelid();
-		
 		}
 		auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
 
@@ -378,6 +410,8 @@
 
 		if (hoverRestart) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "RESTART\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				restartRun = true;
@@ -386,6 +420,8 @@
 		}
 		if (hoverMenu) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "MENU\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				returnToMenu = true;
@@ -408,7 +444,7 @@
 			AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
 			f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
 			std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
-			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.65f, 1.f, 1.f, 1.f, a3);
+			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
 
 			float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
 
@@ -451,21 +487,36 @@
 				a4);
 		}
 	}
+	
 	void UI::UpdateVictoryStatus() {
 		if (player->IsDead()) return;
+
 		if (!isVictory) {
 			victoryTimerAdded = false;
+			ResetEyelid();
 			return;
 		}
-		if (!victoryTimerAdded) {
-			ResetEyelid();
-			victoryTimerAdded = true;
+
+		if (victoryTimerAdded && !TimerSystem::GetInstance().GetTimerByName("VictoryAnim")) {
+			victoryTimerAdded = false;
 		}
-		// Start eyelid immediately, no timer
-		UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
-		if (Time::GetInstance().GetTimeScale() > 0.0f)
-			Time::GetInstance().SetTimeScale(0);
+
+		if (!victoryTimerAdded) {
+			TimerSystem::GetInstance().AddTimer("VictoryAnim", END_SCREEN_DELAY, false);
+			victoryTimerAdded = true;
+			ResetEyelid();
+		}
+
+		auto* timer = TimerSystem::GetInstance().GetTimerByName("VictoryAnim");
+
+		if (timer && timer->completed) {
+			UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
+			if (Time::GetInstance().GetTimeScale() > 0.0f) {
+				Time::GetInstance().SetTimeScale(0);
+			}
+		}
 	}
+
 	void UI::UpdateVictoryButtonsAndText() {
 		victoryTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
 		if (victoryTextFadeTimer >= 0.0f) victoryTextStage = 1;
@@ -497,6 +548,8 @@
 
 		if (hoverRestart) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "RESTART\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				restartRun = true;
@@ -505,6 +558,8 @@
 		}
 		if (hoverMenu) {
 			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+				AudioManager::PlayButtonClick();
+				Sleep(150); // small delay to allow click sound to play before restarting
 				std::cout << "MENU\n";
 				Time::GetInstance().SetTimeScale(1.0f);
 				returnToMenu = true;
@@ -527,7 +582,7 @@
 			AEGfxPrint(gameOverFont, "Rest, hero.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
 			f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
 			std::string displayStr = "Clear Time - " + FormatTimeMMSSMS(timeSpent);
-			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.65f, 1.f, 1.f, 1.f, a3);
+			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
 
 			float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
 

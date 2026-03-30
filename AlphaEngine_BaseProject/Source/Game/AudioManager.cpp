@@ -23,6 +23,9 @@ std::unique_ptr<SFXAudio> AudioManager::buffRevealSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffHoverOnceSFX = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
 
+// UI SFXs
+std::unique_ptr<SFXAudio> AudioManager::buttonClick = nullptr;
+
 // Player SFXs
 std::unique_ptr<SFXAudio> AudioManager::playerAttack1 = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::playerAttack2 = nullptr;
@@ -387,6 +390,10 @@ void AudioManager::Init() {
     if (!buffConfirmSFX)
         buffConfirmSFX = std::make_unique<SFXAudio>("Assets/music/BuffConfirmSFX.mp3");
 
+	// UI sfxs
+    if (!buttonClick)
+        buttonClick = std::make_unique<SFXAudio>("Assets/music/click_but.mp3");
+
     // Player sfxs
     if (!playerAttack1)
         playerAttack1 = std::make_unique<SFXAudio>("Assets/music/PlayerAttack1.mp3");
@@ -487,6 +494,9 @@ void AudioManager::Exit() {
     buffRevealSFX.reset();
     buffHoverOnceSFX.reset();
     buffConfirmSFX.reset();
+
+	// Reset UI sfxs.
+    buttonClick.reset();
 
     // Reset player sfxs.
     playerAttack1.reset();
@@ -602,4 +612,10 @@ void AudioManager::ResetForRestart()
     StopAllMusic();
     ResetRuntimeState();
     gCurrTrack = nullptr;
+}
+
+void AudioManager::PlayButtonClick()
+{
+    if (buttonClick)
+        PlaySFX(*buttonClick, 0.8f);
 }

@@ -7,15 +7,13 @@
 #include "../enemy/Enemy.h"
 #include "../Time.h"
 #include "../AudioManager.h"
-
+#include "../UI.h"
 #include <Windows.h>
 #include <new>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-
-
 
 std::string MainMenuScene::ExeDir()
 {
@@ -37,6 +35,222 @@ MainMenuScene::MainMenuScene()
 
 MainMenuScene::~MainMenuScene()
 {
+}
+
+bool MainMenuScene::IsPlayerInsideTrigger(const TriggerZone& t) const
+{
+    AEVec2 p = player.GetPosition();
+    return (p.x >= t.minX && p.x <= t.maxX &&
+        p.y >= t.minY && p.y <= t.maxY);
+}
+
+bool MainMenuScene::IsMenuOpen() const
+{
+    return menuPage != MenuPage::None;
+}
+
+bool MainMenuScene::IsMouseOver(const UIRect& r) const
+{
+    return Button::CheckMouseInRectButton(r.pos, r.size);
+}
+
+bool MainMenuScene::IsClicked(const UIRect& r) const
+{
+    return IsMouseOver(r) && AEInputCheckTriggered(AEVK_LBUTTON);
+}
+
+void MainMenuScene::DrawTextPx(s8 font, const std::string& text, float px, float py, float scale,
+    float r, float g, float b, float a)
+{
+    float w = (float)AEGfxGetWindowWidth();
+    float h = (float)AEGfxGetWindowHeight();
+
+    float xNdc = (px / w) * 2.0f - 1.0f;
+    float yNdc = 1.0f - (py / h) * 2.0f;
+
+    AEGfxPrint(font, text.c_str(), xNdc, yNdc, scale, r, g, b, a);
+}
+
+static AEVec2 MM_ScreenToEngine(float px, float py)
+{
+    float w = (float)AEGfxGetWindowWidth();
+    float h = (float)AEGfxGetWindowHeight();
+    return AEVec2{ px - w * 0.5f, (h * 0.5f) - py };
+}
+
+void MainMenuScene::DrawDimBackground(float alpha)
+{
+    if (alpha <= 0.0f || !fadeMesh) return;
+
+    AEMtx33 scale, rotate, translate, transform;
+
+    AEMtx33Scale(&scale,
+        (float)AEGfxGetWindowWidth() * 2.0f,
+        (float)AEGfxGetWindowHeight() * 2.0f);
+
+    AEMtx33Rot(&rotate, 0.0f);
+
+    AEMtx33Trans(&translate,
+        Camera::position.x * Camera::scale,
+        Camera::position.y * Camera::scale);
+
+    AEMtx33Concat(&transform, &rotate, &scale);
+    AEMtx33Concat(&transform, &translate, &transform);
+
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 1.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetTransparency(alpha);
+
+    AEGfxSetTransform(transform.m);
+    AEGfxMeshDraw(fadeMesh, AE_GFX_MDM_TRIANGLES);
+}
+
+void MainMenuScene::DrawSolidPanel(const UIRect& r, float alpha)
+{
+    if (!fadeMesh) return;
+
+    AEMtx33 scale, rot, trans, transform;
+    AEMtx33Scale(&scale, r.size.x, r.size.y);
+    AEMtx33Rot(&rot, 0.0f);
+
+    AEVec2 eng = MM_ScreenToEngine(r.pos.x, r.pos.y);
+    AEMtx33Trans(&trans,
+        eng.x + Camera::position.x * Camera::scale,
+        eng.y + Camera::position.y * Camera::scale);
+
+    AEMtx33Concat(&transform, &rot, &scale);
+    AEMtx33Concat(&transform, &trans, &transform);
+
+    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+    AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
+    AEGfxSetColorToAdd(0.f, 0.f, 0.f, alpha);
+    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+    AEGfxSetTransparency(alpha);
+
+    AEGfxSetTransform(transform.m);
+    AEGfxMeshDraw(fadeMesh, AE_GFX_MDM_TRIANGLES);
+}
+
+void MainMenuScene::UpdateMenuInput()
+{
+    auto Clamp01_UI = [](float v) -> float {
+        if (v < 0.0f) return 0.0f;
+        if (v > 1.0f) return 1.0f;
+        return v;
+        };
+
+    auto PointInRectPx = [](float mx, float my, const UIRect& r) -> bool {
+        const float left = r.pos.x - r.size.x * 0.5f;
+        const float right = r.pos.x + r.size.x * 0.5f;
+        const float top = r.pos.y - r.size.y * 0.5f;
+        const float bottom = r.pos.y + r.size.y * 0.5f;
+        return (mx >= left && mx <= right && my >= top && my <= bottom);
+        };
+
+    auto SliderValueFromMouse = [&](float mouseX, float leftX, float width) -> float {
+        if (width <= 0.0f) return 0.0f;
+        return Clamp01_UI((mouseX - leftX) / width);
+        };
+
+    const float sliderLeft = 860.0f;
+    const float sliderWidth = 330.0f;
+    const float knobSize = 28.0f;
+    const float hitboxHeight = 36.0f;
+    const float masterY = 240.f;
+    const float bgmY = 350.0f;
+    const float sfxY = 460.0f;
+
+    s32 mx = 0, my = 0;
+    AEInputGetCursorPosition(&mx, &my);
+
+    const bool mousePressed = AEInputCheckTriggered(AEVK_LBUTTON);
+    const bool mouseHeld = AEInputCheckCurr(AEVK_LBUTTON);
+
+    auto MakeTrackRect = [&](float y) -> UIRect {
+        return UIRect{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, hitboxHeight } };
+        };
+    auto MakeKnobRect = [&](float value, float y) -> UIRect {
+        return UIRect{ { sliderLeft + sliderWidth * value, y }, { knobSize, knobSize } };
+        };
+
+    UIRect masterTrack = MakeTrackRect(masterY);
+    UIRect bgmTrack = MakeTrackRect(bgmY);
+    UIRect sfxTrack = MakeTrackRect(sfxY);
+    UIRect masterKnob = MakeKnobRect(AudioManager::GetMasterVolume(), masterY);
+    UIRect bgmKnob = MakeKnobRect(AudioManager::GetMusicVolume(), bgmY);
+    UIRect sfxKnob = MakeKnobRect(AudioManager::GetSFXVolume(), sfxY);
+
+    if (mousePressed)
+    {
+        if (PointInRectPx((float)mx, (float)my, masterTrack) || PointInRectPx((float)mx, (float)my, masterKnob))
+            draggingMasterSlider = true;
+
+        if (PointInRectPx((float)mx, (float)my, bgmTrack) || PointInRectPx((float)mx, (float)my, bgmKnob))
+            draggingBgmSlider = true;
+
+        if (PointInRectPx((float)mx, (float)my, sfxTrack) || PointInRectPx((float)mx, (float)my, sfxKnob))
+            draggingSfxSlider = true;
+    }
+
+    if (!mouseHeld)
+    {
+        draggingMasterSlider = false;
+        draggingBgmSlider = false;
+        draggingSfxSlider = false;
+    }
+
+    if (draggingMasterSlider)
+        AudioManager::SetMasterVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
+    if (draggingBgmSlider)
+        AudioManager::SetMusicVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
+    if (draggingSfxSlider)
+        AudioManager::SetSFXVolume(SliderValueFromMouse((float)mx, sliderLeft, sliderWidth));
+}
+
+void MainMenuScene::RenderMenuOverlay()
+{
+    DrawDimBackground(0.75f);
+
+    DrawTextPx((s8)uiFont, "SETTINGS", 40.f, 100.f, 1.2f, 1, 1, 1, 1);
+    DrawTextPx((s8)uiFont, "ESC - BACK", 40.f, 845.f, 1.0f, 1, 1, 1, 1);
+
+    const float labelX = 420.0f;
+    const float sliderLeft = 860.0f;
+    const float sliderWidth = 330.0f;
+    const float percentX = 1230.0f;
+    const float masterY = 240.f;
+    const float bgmY = 350.0f;
+    const float sfxY = 460.0f;
+    const float trackH = 8.0f;
+    const float knobSz = 28.0f;
+
+    auto DrawSlider = [&](const char* label, float value, float y, bool dragging)
+        {
+            int percent = (int)(value * 100.0f + 0.5f);
+            DrawTextPx((s8)uiFont, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, 1);
+
+            UIRect trackBg{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, trackH } };
+            DrawSolidPanel(trackBg, 0.20f);
+
+            float filledW = sliderWidth * value;
+            if (filledW > 0.0f)
+            {
+                UIRect trackFill{ { sliderLeft + filledW * 0.5f, y }, { filledW, trackH } };
+                DrawSolidPanel(trackFill, 0.50f);
+            }
+
+            float knobX = sliderLeft + sliderWidth * value;
+            UIRect knob{ { knobX, y }, { knobSz, knobSz } };
+            DrawSolidPanel(knob, dragging ? 0.60f : 0.36f);
+
+            DrawTextPx((s8)uiFont, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, 1.0f);
+        };
+
+    DrawSlider("Master Volume", AudioManager::GetMasterVolume(), masterY, draggingMasterSlider);
+    DrawSlider("BGM Volume", AudioManager::GetMusicVolume(), bgmY, draggingBgmSlider);
+    DrawSlider("SFX Volume", AudioManager::GetSFXVolume(), sfxY, draggingSfxSlider);
 }
 
 void MainMenuScene::LoadRunRecords()
@@ -91,32 +305,48 @@ std::string MainMenuScene::FormatTime(double seconds) const
     return oss.str();
 }
 
-void MainMenuScene::RenderLeaderboard() const
+void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
 {
     if (uiFont < 0)
         return;
 
-    
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
     AEGfxSetTransparency(1.f);
     AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
     AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
 
-    AEGfxPrint((s8)uiFont, "RUN RECORDS", 0.42f, 0.72f, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
+    auto WorldToNDC = [](float wx, float wy, float& ndcX, float& ndcY)
+        {
+            float screenX = (wx - Camera::position.x) * Camera::scale + AEGfxGetWindowWidth() * 0.5f;
+            float screenY = (wy - Camera::position.y) * Camera::scale + AEGfxGetWindowHeight() * 0.5f;
+            ndcX = (screenX / AEGfxGetWindowWidth()) * 2.f - 1.f;
+            ndcY = (screenY / AEGfxGetWindowHeight()) * 2.f - 1.f;
+        };
+
+    float nx, ny;
+
+    WorldToNDC(worldX, worldY, nx, ny);
+    AEGfxPrint((s8)uiFont, "RUN RECORDS", nx, ny, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
 
     if (personalBest.valid)
     {
         std::string best1 = "BEST LEVELS: " + std::to_string(personalBest.levelsCleared);
         std::string best2 = "BEST TIME:   " + FormatTime(personalBest.timeSeconds);
 
-        AEGfxPrint((s8)uiFont, best1.c_str(), 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
-        AEGfxPrint((s8)uiFont, best2.c_str(), 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, best1.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
+
+        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        AEGfxPrint((s8)uiFont, best2.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
     else
     {
-        AEGfxPrint((s8)uiFont, "BEST LEVELS: --", 0.38f, 0.58f, 0.72f, 1.f, 1.f, 1.f, 1.f);
-        AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", 0.38f, 0.49f, 0.72f, 1.f, 1.f, 1.f, 1.f);
+        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, "BEST LEVELS: --", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
+
+        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
 
     if (latestRun.valid)
@@ -124,13 +354,19 @@ void MainMenuScene::RenderLeaderboard() const
         std::string latest1 = "LAST LEVELS: " + std::to_string(latestRun.levelsCleared);
         std::string latest2 = "LAST TIME:   " + FormatTime(latestRun.timeSeconds);
 
-        AEGfxPrint((s8)uiFont, latest1.c_str(), 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
-        AEGfxPrint((s8)uiFont, latest2.c_str(), 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        AEGfxPrint((s8)uiFont, latest1.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+
+        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, latest2.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
     else
     {
-        AEGfxPrint((s8)uiFont, "LAST LEVELS: --", 0.38f, 0.34f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
-        AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", 0.38f, 0.25f, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        AEGfxPrint((s8)uiFont, "LAST LEVELS: --", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
+
+        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
 }
 
@@ -160,6 +396,15 @@ void MainMenuScene::Init()
     isFadingToGame = false;
     fadeAlpha = 0.0f;
     LoadRunRecords();
+
+    menuPage = MenuPage::None;
+    draggingMasterSlider = false;
+    draggingBgmSlider = false;
+    draggingSfxSlider = false;
+
+    // Adjust these if needed after testing
+    settingsTrigger = { 0.0f, 6.0f, 16.0f, 20.0f };
+    startGameTrigger = { 22.0f, 29.0f, 16.0f, 20.0f };
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
@@ -258,6 +503,23 @@ void MainMenuScene::Init()
 
 void MainMenuScene::Update()
 {
+    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    {
+        if (menuPage == MenuPage::Settings)
+        {
+            menuPage = MenuPage::None;
+            Time::GetInstance().SetPaused(false);
+            return;
+        }
+    }
+
+    if (IsMenuOpen())
+    {
+        UpdateMenuInput();
+        AudioManager::Update();
+        return;
+    }
+
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
 
     if (isFadingToGame)
@@ -277,11 +539,25 @@ void MainMenuScene::Update()
 
     player.Update();
 
+    if (IsPlayerInsideTrigger(settingsTrigger))
+    {
+        menuPage = MenuPage::Settings;
+        Time::GetInstance().SetPaused(true);
+        AudioManager::Update();
+        return;
+    }
+
+    if (IsPlayerInsideTrigger(startGameTrigger))
+    {
+        isFadingToGame = true;
+        fadeAlpha = 0.0f;
+        return;
+    }
+
     trapMgr.Update(dt, player);
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
     AudioManager::Update();
-    // std::cout << static_cast<int>(roomMgr.GetCurrentRoomID()); // TODO: Reference credits room id and add credits room music.
 }
 
 void MainMenuScene::Render()
@@ -340,14 +616,23 @@ void MainMenuScene::Render()
 
         float nx, ny;
 
-        WorldToNDC(7.f, 11.f, nx, ny);
+        WorldToNDC(6.f, 26.f, nx, ny);
         AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(21.f, 5.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "START GAME", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(1.f, 18.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(1.f, 22.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "CREDITS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(23.f, 22.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "RECORDS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        WorldToNDC(23.f, 18.f, nx, ny);
+        AEGfxPrint((s8)uiFont, "START QUEST", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
-    RenderLeaderboard();
+    RenderLeaderboard(34.f, 27.f);
 
     if (fadeAlpha > 0.0f && fadeMesh)
     {
@@ -365,10 +650,17 @@ void MainMenuScene::Render()
         AEGfxSetTransform(transform.m);
         AEGfxMeshDraw(fadeMesh, AE_GFX_MDM_TRIANGLES);
     }
+
+    if (IsMenuOpen())
+    {
+        RenderMenuOverlay();
+    }
 }
 
 void MainMenuScene::Exit()
 {
+    Time::GetInstance().SetPaused(false);
+
     if (vineTexture) { AEGfxTextureUnload(vineTexture); vineTexture = nullptr; }
     if (vineMesh) { AEGfxMeshFree(vineMesh); vineMesh = nullptr; }
     vinePositions.clear();
