@@ -29,7 +29,7 @@ namespace
 Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     stats("Assets/config/player-stats.json"), 
     sprite("Assets/Art/rvros/Adventurer.png"),
-    particleSystem{ 50, {} },
+    particleSystem{ 50, {} , "Assets/Art/smoke.png"},
     afterimage(*this, {2.f, 2.f * 0.74f}),
     map(map),
     enemyManager(enemyManager)
@@ -41,20 +41,12 @@ Player::Player(MapGrid* map, EnemyManager* enemyManager) :
     particleSystem.emitter.lifetimeRange.x = 0.1f;
     particleSystem.emitter.lifetimeRange.y = 0.3f;
     particleSystem.emitter.tint.a = 0.5f;
+    particleSystem.emitter.sizeRange.x = 0.3f;
+    particleSystem.emitter.sizeRange.y = 0.7f;
 
     buffEventId = EventSystem::Subscribe<BuffSelectedEvent>([this](const BuffSelectedEvent& ev) {
         OnBuffSelected(ev);
         });
-
-    /*enemyKilledEventId = EventSystem::Subscribe<IDamageable::EnemyKilledEvent>([this](const IDamageable::EnemyKilledEvent& ev)
-        {
-            (void)ev;
-            int healAmt = 10; // or use stat??
-            health = min(maxHealth, health + healAmt);
-            UI::GetDamageTextSpawner().SpawnDamageText(
-                healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
-        });*/
-
 }
 
 Player::~Player()
@@ -427,7 +419,8 @@ void Player::HandleLanding()
         .angleRange     { AEDegToRad(0.f), AEDegToRad(particleAngleRange) },
         .speedRange     { particleSpeedRange },
         .lifetimeRange  { 0.1f, 0.3f },
-        .tint           { 0.56f, 0.49f, 0.77f, 1.f }
+        .sizeRange      { particleSystem.emitter.sizeRange },
+        .tint           { 0.56f, 0.49f, 0.77f, 1.f },
     };
 
     particleSystem.SpawnParticleBurst(emitter, particleSpawnCount);
@@ -866,11 +859,15 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     if (type == DAMAGE_TYPE_TRAP)
         dmg = static_cast<int>(dmg * buff_TrapDmgReduction);
 
+    dmg = max(dmg, 1);
+
     lastDamagedTime = Time::GetInstance().GetScaledElapsedTime();
     UI::GetDamageTextSpawner().SpawnDamageText(dmg, type, position, position - hitOrigin);
 
+    // Fake giving the player less dmg when the player is at low health
     if (health <= stats.berserkerTrigger * maxHealth)
-        dmg = static_cast<int>(dmg * stats.berserkerHealthReductionAmt);
+        dmg = max(static_cast<int>(dmg * stats.berserkerHealthReductionAmt), 1);
+
     if (health <= dmg)
     {
         health = 0;
@@ -898,6 +895,15 @@ bool Player::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     sprite.SetState(AnimState::HURT);
 
     return true;
+}
+
+void Player::Heal(int healAmt)
+{
+    healAmt = min(maxHealth - health, healAmt);
+
+    health += healAmt;
+    UI::GetDamageTextSpawner().SpawnDamageText(
+        healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
 }
 
 void Player::DrawInspector()

@@ -78,7 +78,7 @@ void ItemDropManager::SpawnHeart(const AEVec2& worldPos, int healAmount)
     drops.push_back(drop);
 }
 
-void ItemDropManager::Update(const Player& player)
+void ItemDropManager::Update(Player& player)
 {
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
     heartSprite.Update();
@@ -97,7 +97,7 @@ void ItemDropManager::Update(const Player& player)
         drops.end());
 }
 
-void ItemDropManager::UpdateDrop(ItemDrop& drop, const Player& player, float dt)
+void ItemDropManager::UpdateDrop(ItemDrop& drop, Player& player, float dt)
 {
     drop.age += dt;
 
@@ -145,8 +145,7 @@ void ItemDropManager::UpdateDrop(ItemDrop& drop, const Player& player, float dt)
 
         if (LengthSquared(target - drop.uiPosition) <= 12.f * 12.f)
         {
-            // final heal trigger here if want to heal player from here...?
-            // player.Heal(drop.healAmount, player.GetPosition());
+            player.Heal(drop.healAmount);
             drop.active = false;
         }
         break;

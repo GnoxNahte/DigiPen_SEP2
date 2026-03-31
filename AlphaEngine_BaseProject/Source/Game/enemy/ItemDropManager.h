@@ -62,13 +62,13 @@ public:
 
     void Clear();
 
-    void Update(const Player& player);
+    void Update(Player& player);
     void Render();
 
     void SpawnHeart(const AEVec2& worldPos, int healAmount);
 
 private:
-    void UpdateDrop(ItemDrop& drop, const Player& player, float dt);
+    void UpdateDrop(ItemDrop& drop, Player& player, float dt);
     bool CheckPlayerPickup(const ItemDrop& drop, const Player& player) const;
     void RenderDrop(const ItemDrop& drop);
 

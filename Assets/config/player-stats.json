@@ -69,6 +69,7 @@
         "y": 0.898
     },
     "maxHealth": 100,
+    "healDropAmt": 1,
     "invincibleTime": 1.0,
     "attackBuffer": 0.1,
     "attackComboBuffer": 0.1,

@@ -75,7 +75,7 @@ public:
 
 	};
 
-	ParticleSystem(int initialSize, const EmitterSettings& emitter);
+	ParticleSystem(int initialSize, const EmitterSettings& emitter, const std::string& textureFilePath = "");
 	~ParticleSystem();
 
 	void Init();
@@ -106,5 +106,6 @@ private:
 	float timeBetweenSpawn = 0.f;
 	ObjectPool<Particle> pool;
 	AEGfxVertexList* particleMesh = nullptr;
+	AEGfxTexture* texture = nullptr;
 	double lastSpawnTime = 0.f;
 };

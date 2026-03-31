@@ -7,17 +7,25 @@
 #include "../Utils/AEExtras.h"
 #include "../Game/Time.h"
 
-ParticleSystem::ParticleSystem(int initialSize, const EmitterSettings& emitter) : 
+ParticleSystem::ParticleSystem(int initialSize, const EmitterSettings& emitter, const std::string& textureFilePath) :
 	pool(initialSize),
 	emitter(emitter)
 {
 	particleMesh = MeshGenerator::GetSquareMesh(1.f);
+	
+	if (textureFilePath.empty())
+		texture = nullptr;
+	else
+		texture = AEGfxTextureLoad(textureFilePath.c_str());
+
 	//SetSpawnRate(10000.f);
 }
 
 ParticleSystem::~ParticleSystem()
 {
 	AEGfxMeshFree(particleMesh);
+	if (texture)
+		AEGfxTextureUnload(texture);
 }
 
 void ParticleSystem::Init()
@@ -63,8 +71,15 @@ void ParticleSystem::Update()
 
 void ParticleSystem::Render()
 {
-	AEGfxTextureSet(nullptr, 0, 0);
-	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+	if (texture)
+	{
+		AEGfxTextureSet(texture, 0, 0);
+	}
+	else
+	{
+		AEGfxTextureSet(nullptr, 0, 0);
+		AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+	}
 
 	for (size_t i = 0; i < pool.GetSize(); i++)
 		pool.pool[i].Render(particleMesh);
