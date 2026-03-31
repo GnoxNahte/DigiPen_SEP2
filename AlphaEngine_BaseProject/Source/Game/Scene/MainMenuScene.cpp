@@ -665,7 +665,7 @@ void MainMenuScene::Exit()
     if (vineMesh) { AEGfxMeshFree(vineMesh); vineMesh = nullptr; }
     vinePositions.clear();
 
-    SpikePlate::UnloadSharedRenderResources();
+    TrapManager::UnloadAllSharedRenderResources();
 
     if (fadeMesh) { AEGfxMeshFree(fadeMesh); fadeMesh = nullptr; }
 
