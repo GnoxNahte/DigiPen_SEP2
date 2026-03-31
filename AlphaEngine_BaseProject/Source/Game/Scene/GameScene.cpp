@@ -838,8 +838,8 @@ void GameScene::UpdatePauseInput()
 		float centerX = w * 0.5f;
 		float centerY = h * 0.5f;
 
-		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
-		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 
 		if (IsClicked(btnNo))
 		{
@@ -881,8 +881,8 @@ void GameScene::UpdatePauseInput()
 		float centerX = w * 0.5f;
 		float centerY = h * 0.5f;
 
-		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
-		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 
 		if (IsClicked(btnNo))
 		{
@@ -1199,8 +1199,8 @@ void GameScene::RenderPauseOverlay()
 		DrawTextPx(pauseFontMedium, "RETURN TO MENU?", centerX - 380.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
 		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST", centerX - 370.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
 
-		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
-		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 
 		bool hoverNo = IsMouseOver(btnNo);
 		float scaleNo = hoverNo ? 1.05f : 1.0f;
@@ -1212,8 +1212,8 @@ void GameScene::RenderPauseOverlay()
 		float rYes = 1.f, gYes = 1.f, bYes = 1.f, aYes = hoverYes ? 1.f : 0.85f;
 		if (hoverYes) { rYes = 1.0f; gYes = 0.4f; bYes = 0.4f; }
 
-		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
-		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
+		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 52.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
+		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 35.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
 	else if (pausePage == PausePage::ConfirmRestart)
 	{
@@ -1241,8 +1241,8 @@ void GameScene::RenderPauseOverlay()
 		DrawTextPx(pauseFontLarge, "RESTART RUN?", centerX - 320.0f, centerY - 100.0f, 1.0f, 1, 1, 1, 1);
 		DrawTextPx(pauseFontSmall, "PROGRESS WILL BE LOST", centerX - 370.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1);
 
-		UIRect btnNo{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
-		UIRect btnYes{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+		UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
 
 		bool hoverNo = IsMouseOver(btnNo);
 		float scaleNo = hoverNo ? 1.05f : 1.0f;
@@ -1254,8 +1254,8 @@ void GameScene::RenderPauseOverlay()
 		float rYes = 1.f, gYes = 1.f, bYes = 1.f, aYes = hoverYes ? 1.f : 0.85f;
 		if (hoverYes) { rYes = 1.0f; gYes = 0.4f; bYes = 0.4f; }
 
-		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 35.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
-		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 52.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
+		DrawTextPx(pauseFontSmall, "NO", btnNo.pos.x - 52.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
+		DrawTextPx(pauseFontSmall, "YES", btnYes.pos.x - 35.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
 	}
 	
 	if (pausePage == PausePage::Menu)
