@@ -33,7 +33,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// ===== Setup window and AlphaEngine =====
 
 	// Using custom window procedure
+#if _DEBUG
 	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 120, false, WndProc);
+#else
+	AESysInit(hInstance, nCmdShow, 1600, 900, 0, 120, false, WndProc);
+#endif
 	
 	// Changing the window title
 	AESysSetWindowTitle("Aetherfall"); // @todo: change name
