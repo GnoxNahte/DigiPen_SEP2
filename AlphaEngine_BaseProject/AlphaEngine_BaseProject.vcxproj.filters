@@ -234,6 +234,9 @@
     <ClCompile Include="Source\Game\enemy\ItemDropManager.cpp">
       <Filter>Source Files\Game\enemy</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Utils\ScopedTimer.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Player\PlayerStats.h">
@@ -421,6 +424,9 @@
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\ItemDropManager.h">
       <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\ScopedTimer.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

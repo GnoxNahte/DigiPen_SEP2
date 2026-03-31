@@ -13,7 +13,7 @@
 #include "../AudioManager.h"
 #include "../Rooms/RoomBuilder.h"
 #include "../enemy/AttackSystem.h"
-
+#include "../../Utils/ScopedTimer.h"
 
 std::string gPendingLevelPath = "Assets/Levels/gamescene.lvl";   // defined here, extern'd in MainMenuScene.cpp
 std::string gLastLoadedLevelPath; // last successfully loaded level path for restart
@@ -57,6 +57,8 @@ GameScene::GameScene() :
 	roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
 
 {
+	ScopedTimer timer("GameScene constructor");
+
 	UI::Init(&player);
 	Background::Init();
 	AudioManager::Init();
@@ -98,6 +100,7 @@ GameScene::GameScene() :
 
 GameScene::~GameScene()
 {
+	ScopedTimer timer("GameScene deconstructor");
 	UI::Exit();
 	Background::Exit();
 
@@ -261,6 +264,8 @@ void GameScene::FinalizeRunAndSave()
 
 void GameScene::Init()
 {
+	ScopedTimer timer("GameScene Init");
+
 	Time::GetInstance().SetTimeScale(1.0f);
 	LoadRunRecords();
 	ResetRunRecordsForNewRun();

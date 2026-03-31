@@ -153,6 +153,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\ParticleSystem.cpp" />
     <ClCompile Include="Source\Utils\PhysicsUtils.cpp" />
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
+    <ClCompile Include="Source\Utils\ScopedTimer.cpp" />
     <ClCompile Include="Source\Utils\Sprite.cpp" />
     <ClCompile Include="Source\Utils\SpriteMetadata.cpp" />
     <ClCompile Include="Source\Utils\Vec2Int.cpp" />
@@ -217,6 +218,7 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Utils\ParticleSystem.h" />
     <ClInclude Include="Source\Utils\PhysicsUtils.h" />
     <ClInclude Include="Source\Utils\QuickGraphics.h" />
+    <ClInclude Include="Source\Utils\ScopedTimer.h" />
     <ClInclude Include="Source\Utils\Sprite.h" />
     <ClInclude Include="Source\Utils\SpriteMetadata.h" />
     <ClInclude Include="Source\Utils\Vec2Int.h" />
