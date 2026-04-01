@@ -18,5 +18,6 @@ public:
     struct EnemyKilledEvent
     {
         AEVec2 position; // where the enemy died , maybe for item drop later?
+        int count = 1;
     };
 };

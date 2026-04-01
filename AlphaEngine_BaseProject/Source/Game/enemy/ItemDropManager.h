@@ -2,7 +2,7 @@
 #pragma once
 
 #include <vector>
-#include <functional>
+
 #include <AEVec2.h>
 #include "../../Utils/Sprite.h"
 
@@ -18,6 +18,7 @@ public:
 
     enum class State
     {
+		LaunchFromEnemy,
         WorldIdle,
         CollectedToPlayer,
         FlyingToUI
@@ -47,10 +48,14 @@ public:
         AEVec2 position{ 0.f, 0.f };
         AEVec2 velocity{ 0.f, 0.f };
         AEVec2 uiPosition{ 0.f, 0.f };
+	
 
         float age = 0.f;
+		float angle = 0.f;
         int healAmount = 0;
         bool active = true;
+        float launchTime = 0.f;
+        
     };
 
 public:
@@ -76,6 +81,5 @@ private:
     Config cfg;
     Sprite heartSprite;
     std::vector<ItemDrop> drops;
-
     int enemyKilledEventId = -1;
 };

@@ -701,7 +701,8 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         }
 
         //UI::GetDamageTextSpawner().SpawnDamageText(20, DAMAGE_TYPE_HEAL, position, position - hitOrigin);
-        EventSystem::Trigger<IDamageable::EnemyKilledEvent>({ position });
+        int count = (IsDruid()) ? 4 : 2;
+        EventSystem::Trigger<IDamageable::EnemyKilledEvent>({ position, count });
     
 
 

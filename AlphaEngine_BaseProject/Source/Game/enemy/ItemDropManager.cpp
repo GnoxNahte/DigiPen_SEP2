@@ -39,11 +39,21 @@ ItemDropManager::~ItemDropManager()
 
 void ItemDropManager::Init()
 {
+    if (enemyKilledEventId >= 0)
+        return;
+
     enemyKilledEventId =
         EventSystem::Subscribe<IDamageable::EnemyKilledEvent>(
             [this](const IDamageable::EnemyKilledEvent& ev)
             {
-                SpawnHeart(ev.position, cfg.healAmount);
+                for (int i = 0; i < ev.count; ++i)
+                {
+                    AEVec2 offset = AEVec2{
+                        AEExtras::RandomRange({ -0.3f, 0.3f }),
+                        AEExtras::RandomRange({ -0.1f, 0.2f })
+                    };
+                    SpawnHeart(ev.position + offset, cfg.healAmount);
+                }
             });
 }
 
@@ -67,10 +77,16 @@ void ItemDropManager::SpawnHeart(const AEVec2& worldPos, int healAmount)
 {
     ItemDrop drop;
     drop.type = DropType::Heart;
-    drop.state = State::WorldIdle;
+    drop.state = State::LaunchFromEnemy;
+	drop.launchTime = 0.f;
     drop.spawnPosition = worldPos;
     drop.position = worldPos;
-    drop.velocity = { 0.f, 0.f };
+
+    drop.velocity = AEVec2{
+        AEExtras::RandomRange({ -1.f, 1.f }),
+        AEExtras::RandomRange({ 3.f, 4.0f })
+    };
+
     drop.age = 0.f;
     drop.healAmount = healAmount;
     drop.active = true;
@@ -103,6 +119,30 @@ void ItemDropManager::UpdateDrop(ItemDrop& drop, Player& player, float dt)
 
     switch (drop.state)
     {
+    case State::LaunchFromEnemy:
+    {
+        drop.launchTime += dt;
+
+        const float duration = 0.35f;
+        float t = drop.launchTime / duration;
+        if (t > 1.f) t = 1.f;
+
+        // small horizontal push
+        float offsetX = drop.velocity.x * t;
+
+        // arc: 0 -> peak -> 0
+        float arcY = 1.2f * 4.f * t * (1.f - t);
+
+        drop.position.x = drop.spawnPosition.x + offsetX;
+        drop.position.y = drop.spawnPosition.y + arcY;
+
+        if (t >= 1.f)
+        {
+            drop.velocity = { 0.f, 0.f };
+            drop.state = State::WorldIdle;
+        }
+        break;
+    }
     case State::WorldIdle:
     {
         if (CheckPlayerPickup(drop, player))
