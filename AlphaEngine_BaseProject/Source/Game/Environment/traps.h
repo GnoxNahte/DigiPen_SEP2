@@ -1,21 +1,33 @@
 #pragma once
-#include <vector>
+
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "AEEngine.h"
-#include "../../Utils/Box.h" 
+#include "../../Utils/Box.h"
 
 class Player;
 
+// -----------------------------------------------------------------------------
+// Helper functions
+// -----------------------------------------------------------------------------
 bool IntersectsBox(const Box& a, const Box& b);
 Box MakePlayerFeetBox(const Player& p);
 Box MakePlayerBodyBox(const Player& p);
 
+// -----------------------------------------------------------------------------
+// Base Trap
+// -----------------------------------------------------------------------------
 class Trap
 {
 public:
-    enum class Type { LavaPool, PressurePlate, SpikePlate };
+    enum class Type
+    {
+        LavaPool,
+        PressurePlate,
+        SpikePlate
+    };
 
     Trap(Type type, const Box& box);
     virtual ~Trap() = default;
@@ -46,15 +58,18 @@ private:
     Type m_type;
     Box  m_box{};
     bool m_enabled = true;
-
     bool m_prevOverlap = false;
     bool m_triggered = false;
 };
 
+// -----------------------------------------------------------------------------
+// LavaPool
+// -----------------------------------------------------------------------------
 class LavaPool final : public Trap
 {
 public:
     LavaPool(const Box& box, int damagePerTick, float tickInterval);
+
     void Render() const override;
 
 protected:
@@ -67,10 +82,14 @@ private:
     float m_tickTimer = 0.f;
 };
 
+// -----------------------------------------------------------------------------
+// PressurePlate
+// -----------------------------------------------------------------------------
 class PressurePlate final : public Trap
 {
 public:
     PressurePlate(const Box& box);
+
     void AddLinkedTrap(Trap* t);
     void Update(float dt, Player& player) override;
     void Render() const override;
@@ -83,21 +102,28 @@ protected:
 private:
     static AEGfxTexture* s_plateTexture;
     static AEGfxVertexList* s_plateMeshes[4];
-    static bool s_plateResourcesLoaded;
+    static bool             s_plateResourcesLoaded;
 
     static AEGfxVertexList* MakePlateMesh(int frame);
-    static void LoadSharedRenderResources();
+    static void             LoadSharedRenderResources();
 
     std::vector<Trap*> m_linked;
 
-    int m_animFrame = 0;
+    int   m_animFrame = 0;
     float m_animTimer = 0.f;
 };
 
+// -----------------------------------------------------------------------------
+// SpikePlate
+// -----------------------------------------------------------------------------
 class SpikePlate final : public Trap
 {
 public:
-    SpikePlate(const Box& box, float upTime, float downTime, int damageOnHit, bool startDisabled);
+    SpikePlate(const Box& box,
+        float      upTime,
+        float      downTime,
+        int        damageOnHit,
+        bool       startDisabled);
 
     void Update(float dt, Player& player) override;
     void ActivateFromPlate(const Player& player);
@@ -112,6 +138,7 @@ protected:
 
 private:
     static AEGfxVertexList* MakeSpikeMesh(int frame);
+
     float m_upTime = 1.f;
     float m_downTime = 1.f;
     int   m_damageOnHit = 10;
@@ -121,21 +148,23 @@ private:
 
     float m_hitCooldown = 0.5f;
     float m_hitTimer = 0.f;
-    bool m_lockedOn = false;
+    bool  m_lockedOn = false;
 
     int   m_animFrame = 0;   // 0~3
     float m_animTimer = 0.f;
 
     static AEGfxTexture* s_spikeTexture;
     static AEGfxVertexList* s_spikeMeshes[4];
-    static bool s_resourcesLoaded;
+    static bool             s_resourcesLoaded;
 };
 
+// -----------------------------------------------------------------------------
+// TrapManager
+// -----------------------------------------------------------------------------
 class TrapManager
 {
 public:
-
-    template<typename T, typename... Args>
+    template <typename T, typename... Args>
     T& Spawn(Args&&... args)
     {
         auto u = std::make_unique<T>(std::forward<Args>(args)...);
