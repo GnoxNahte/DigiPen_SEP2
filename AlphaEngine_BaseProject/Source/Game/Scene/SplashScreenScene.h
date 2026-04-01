@@ -23,15 +23,18 @@ private:
 		NEXT_SCENE,
 	};
 
-	float stayDuration = 1.f;
-	float fadeDuration = 1.5f;
+	const float stayDuration = 1.f;
+	const float fadeDuration = 1.5f;
 
+	bool isShowingLogo = true; // Showing DigiPen logo
 	State currState = FADE_IN;
 	f64 timeLeft = -1.f; // time left in current state
 
 	float transparency = 1.f;
-
+	
 	AEGfxVertexList* mesh;
 	AEGfxTexture* texture;
+	
+	s8 fontId;
 };
 
