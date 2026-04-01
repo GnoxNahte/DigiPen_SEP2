@@ -1,42 +1,51 @@
 #pragma once
-#include "AEEngine.h"
-#include "../Game/enemy/EnemyBoss.h"
-#include "../Game/Rooms/RoomManager.h"
-#include "../Game/Player/Player.h"
-#include "../Game/Environment/traps.h"
 
-class BGMAudio {
+#include <memory>
+#include "AEEngine.h"
+#include "../Game/Environment/traps.h"
+#include "../Game/Player/Player.h"
+#include "../Game/Rooms/RoomManager.h"
+#include "../Game/enemy/EnemyBoss.h"
+
+class BGMAudio
+{
 public:
     BGMAudio() = delete;
     BGMAudio(char const* filename);
     ~BGMAudio();
+
     void Play(f32 const& initialGroupVol);
     void Stop();
     void SetVolume(f32 const& vol);
-    const f32& GetVolume() const { return baseVolume; }
     void ApplyFinalVolume();
+    void CrossfadeTo(BGMAudio& other, f32 duration);
+
+    const f32& GetVolume() const { return baseVolume; }
     const f32& GetPitch() const { return pitch; }
     const bool& IsActive() const { return active; }
     void SetActive(bool activeState) { active = activeState; }
-    void CrossfadeTo(BGMAudio& other, f32 duration);
 
 private:
-    AEAudio audioFile{};
-    AEAudioGroup ownGroup{};  // each instance owns its group
-    f32 baseVolume{}, fadeVolume{}, pitch{};
-    bool active{};
+    AEAudio      audioFile{};
+    AEAudioGroup ownGroup{};   // each instance owns its group
+    f32          baseVolume{};
+    f32          fadeVolume{};
+    f32          pitch{};
+    bool         active{};
 };
 
-class SFXAudio {
+class SFXAudio
+{
 public:
     SFXAudio() = delete;
     SFXAudio(char const* filename);
     ~SFXAudio();
+
     AEAudio const& GetAudio() const { return audioFile; }
+
 private:
     AEAudio audioFile{};
 };
-
 
 class AudioManager
 {
@@ -58,30 +67,34 @@ public:
     static void PlayMenuMusic();
     static void PlayGameMusic();
     static void PlayGameOverMusic();
+
     static void MuffleMusic();
     static void UnmuffleMusic();
     static void RefreshAllMusicVolumes();
     static void UpdateLavaAudio(const TrapManager& trapMgr, const Player& player);
 
-	// UI Audio for buttons
+    // UI Audio for buttons
     static void PlayButtonClick();
 
-
+    // -------------------------------------------------------------------------
     // Flags
-	inline static bool playedBossIntroMusic = false;
+    // -------------------------------------------------------------------------
+    inline static bool playedBossIntroMusic = false;
     inline static bool playedBossChargingSFX = false;
     inline static bool playedBossTeleportSFX = false;
     inline static bool playedBossDeathSFX = false;
     inline static bool playedDruidImpactSFX = false;
 
+    // -------------------------------------------------------------------------
     // Reset functions
+    // -------------------------------------------------------------------------
     static void StopAllMusic();
     static void ResetRuntimeState();
     static void ResetForRestart();
 
-    /*=================================================
-    *                Background Music                 |
-    =================================================*/
+    /*=========================================================================
+     *                         Background Music
+     *=========================================================================*/
     static std::unique_ptr<BGMAudio> bossIntroMusic;
     static std::unique_ptr<BGMAudio> bossFightMusic;
     static std::unique_ptr<BGMAudio> gameMusic;
@@ -89,13 +102,12 @@ public:
     static std::unique_ptr<BGMAudio> victoryMusic;
     static std::unique_ptr<BGMAudio> menuMusic;
     static std::unique_ptr<BGMAudio> creditsMusic;
-
     static std::unique_ptr<BGMAudio> trapLava;
 
-    /*=================================================
-    *                 Sound Effects                   |
-    =================================================*/
-    // Buff SFXs
+    /*=========================================================================
+     *                          Sound Effects
+     *=========================================================================*/
+     // Buff SFXs
     static std::unique_ptr<SFXAudio> buffRevealSFX;
     static std::unique_ptr<SFXAudio> buffHoverOnceSFX;
     static std::unique_ptr<SFXAudio> buffConfirmSFX;
