@@ -39,6 +39,7 @@ private:
     int mapCols = 100;
     int mapRows = 100;
     int uiFont = -1;
+    int uiFontLarge = -1;
 
     AEGfxTexture* vineTexture = nullptr;
     AEGfxVertexList* vineMesh = nullptr;
