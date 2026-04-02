@@ -553,6 +553,8 @@ void MainMenuScene::Update()
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
     AudioManager::Update();
+
+    credits.Update();
 }
 
 void MainMenuScene::Render()
@@ -661,6 +663,8 @@ void MainMenuScene::Render()
         DrawTriggerCollider(startGameTrigger);
         DrawTriggerCollider(settingsTrigger);
     }
+
+    credits.Render();
 }
 
 void MainMenuScene::Exit()

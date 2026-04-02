@@ -1,9 +1,32 @@
 #include "Credits.h"
-#include "../Utils/FileHelper.h"
 
-Credits::Credits()
+#include <imgui.h>
+
+#include "Time.h"
+#include "Camera.h"
+#include "../Utils/FileHelper.h"
+#include "../Utils/MeshGenerator.h"
+#include "../Editor/Editor.h"
+#include <iostream>
+
+namespace
+{
+	// Print text center aligned
+	// Returns text size
+	float PrintTextCenter(s8 fontId, const char* str, float x, float y, float r, float g, float b, float a)
+	{
+		AEGfxPrint(fontId, str, x, y, 1.f, r, g, b, a);
+	}
+}
+
+Credits::Credits() : Inspectable(true)
 {
 	fontId = AEGfxCreateFont("Assets/Pixellari.ttf", 36);
+	mesh = MeshGenerator::GetRectMesh(
+		static_cast<float>(AEGfxGetWindowWidth()),
+		static_cast<float>(AEGfxGetWindowHeight()), 
+		0xFF000000
+	);
 
 	rapidjson::Document doc;
 	bool success = FileHelper::TryReadJsonFile("Assets/config/credits.json", doc);
@@ -34,22 +57,78 @@ Credits::Credits()
 		}
 	}
 
-	(void)success;
+	Editor::RegisterSystem("Credits", this);
 }
 
 Credits::~Credits()
 {
+	AEGfxDestroyFont(fontId);
+	AEGfxMeshFree(mesh);
+
 	for (BaseCreditsData* i : data)
 		delete i;
+
+	Editor::UnregisterSystem("Credits", this);
 }
 
-void Credits::Draw()
+void Credits::Reset()
 {
+	animateOffset = 0.f;
 }
 
-float Credits::SingleCreditData::Print(float )
+void Credits::Update()
 {
-	return 0.f;
+	// Pause
+	if (AEInputCheckCurr(AEVK_SPACE))
+		return;
+
+	if (AEInputCheckCurr(AEVK_LBUTTON))
+	{
+		s32 x, y;
+		AEInputGetCursorPositionDelta(&x, &y);
+		animateOffset -= static_cast<float>(y) / AEGfxGetWindowHeight();
+	}
+	else
+		animateOffset += 0.1f * static_cast<float>(Time::GetInstance().GetDeltaTime());
+}
+
+void Credits::Render()
+{
+	AEMtx33 transform;
+	AEMtx33Identity(&transform);
+	AEMtx33Trans(&transform,
+		Camera::position.x * Camera::scale,
+		Camera::position.y * Camera::scale);
+
+	AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+
+	AEGfxSetTransform(transform.m);
+	AEGfxMeshDraw(mesh, AE_GFX_MDM_TRIANGLES);
+
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+
+	float offset = animateOffset;
+	for (auto& i : data)
+		offset = i->Print(fontId, offset);
+}
+
+void Credits::DrawInspector()
+{
+	ImGui::Begin("Credits", &isInspectorOpen);
+
+	ImGui::DragFloat("Animate Offset", &animateOffset, 0.1f);
+
+	ImGui::End();
+}
+
+float Credits::SingleCreditData::Print(s8 fontId, float offset)
+{
+	// Don't render if out of screen
+	if (offset < -1.f - spacing || offset > 1.f)
+		return offset - spacing;
+
+	AEGfxPrint(fontId, title.c_str(), 0.f, offset, 1.f, 1.f, 1.f, 1.f, 1.f);
+	return offset - spacing;
 }
 
 Credits::BaseCreditsData* Credits::SingleCreditData::Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj)
@@ -77,9 +156,9 @@ Credits::BaseCreditsData* Credits::SingleCreditData::Load(const rapidjson::Gener
 	return this;
 }
 
-float Credits::DoubleCreditData::Print(float )
+float Credits::DoubleCreditData::Print(s8 , float offset)
 {
-	return 0.f;
+	return offset;
 }
 
 Credits::BaseCreditsData* Credits::DoubleCreditData::Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj)

@@ -21,11 +21,11 @@ public:
 	// These shouldn't be used in release
 	struct DebugVariables
 	{
-		bool b1;
-		float f1, f2 = 1.f;
-		int i1;
+		bool b1{};
+		float f1{}, f2 = 1.f;
+		int i1{};
 
-		AEVec2 v1, v2;
+		AEVec2 v1{}, v2{};
 	};
 
 	// Inspectable automatically registers and unregisters in constructor
