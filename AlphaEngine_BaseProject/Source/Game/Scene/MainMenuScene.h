@@ -8,6 +8,7 @@
 #include "../../Game/Rooms/RoomData.h"
 #include "../../Game/Rooms/RoomManager.h"
 #include "../../Game/Rooms/RoomSystem.h"
+#include "../Credits.h"
 #include "GSM.h"
 #include <string>
 #include <vector>
@@ -86,6 +87,8 @@ private:
 
     TriggerZone settingsTrigger;
     TriggerZone startGameTrigger;
+
+    Credits credits;
 
     bool IsPlayerInsideTrigger(const TriggerZone& t) const;
     bool IsMenuOpen() const;
