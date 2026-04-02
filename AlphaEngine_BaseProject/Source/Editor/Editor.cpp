@@ -47,7 +47,8 @@ const Editor::EditorPrefs& Editor::GetEditorPrefs()
 void Editor::Update()
 {
 	Editor& instance = Get();
-	if (AEInputCheckTriggered(AEVK_TAB))
+	// If trigger Tab OR "~"
+	if (AEInputCheckTriggered(VK_OEM_3) || AEInputCheckTriggered(VK_TAB))
 		instance.showInspectors = !instance.showInspectors;
 
 #if _DEBUG
@@ -90,6 +91,20 @@ void Editor::DrawInspectors()
 	{
 		if (instance.showDemoWindow)
 			ImGui::ShowDemoWindow(&instance.showDemoWindow);
+
+		if (instance.showDebugVars)
+		{
+			ImGui::Begin("Debug Vars", &instance.showDebugVars);
+			ImGui::Checkbox("b1", &debugVars.b1);
+			ImGui::DragInt("i1", &debugVars.i1);
+			ImGui::DragFloat("f1", &debugVars.f1, 0.1f);
+			ImGui::DragFloat("f2", &debugVars.f2, 0.1f);
+
+			ImGui::DragFloat2("v1", &debugVars.v1.x, 0.1f);
+			ImGui::DragFloat2("v2", &debugVars.v2.x, 0.1f);
+
+			ImGui::End();
+		}
 
 		instance.DrawMenus();
 
@@ -162,18 +177,7 @@ void Editor::DrawMenus()
 			ImGui::MenuItem("Show colliders", "Ctrl", &instance.editorPrefs.ifShowColliders);
 			ImGui::MenuItem("Allow selecting objs", NULL, &instance.editorPrefs.ifAllowSelectingObjs);
 			ImGui::MenuItem("Show Demo Window", NULL, &instance.showDemoWindow);
-
-			if (ImGui::BeginMenu("Variables"))
-			{
-				ImGui::Checkbox("b1", &debugVars.b1);
-				ImGui::DragInt("i1", &debugVars.i1);
-				ImGui::DragFloat("f1", &debugVars.f1, 0.1f);
-
-				ImGui::DragFloat2("v1", &debugVars.v1.x, 0.1f);
-				ImGui::DragFloat2("v2", &debugVars.v2.x, 0.1f);
-
-				ImGui::EndMenu();
-			}
+			ImGui::MenuItem("Show Debug Vars Window", NULL, &instance.showDebugVars);
 
 			ImGui::EndMenu();
 		}

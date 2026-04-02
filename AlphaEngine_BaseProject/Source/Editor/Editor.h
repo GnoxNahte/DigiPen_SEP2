@@ -22,7 +22,7 @@ public:
 	struct DebugVariables
 	{
 		bool b1;
-		float f1;
+		float f1, f2 = 1.f;
 		int i1;
 
 		AEVec2 v1, v2;
@@ -52,6 +52,7 @@ private:
 
 	bool showInspectors = false;
 	bool showDemoWindow = false;
+	bool showDebugVars = false;
 
 	Inspectable* focusedObject = nullptr;
 
