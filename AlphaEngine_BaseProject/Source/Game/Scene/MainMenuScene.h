@@ -50,6 +50,8 @@ private:
     float fadeAlpha = 0.0f;
     float fadeSpeed = 3.1f;
 
+    float fadeSettingsAlpha = 0.f;
+
     struct RunRecord
     {
         int levelsCleared = 0;
@@ -64,12 +66,6 @@ private:
     std::string FormatTime(double seconds) const;
     void RenderLeaderboard(float worldX, float worldY) const;
 
-    enum class MenuPage
-    {
-        None,
-        Settings
-    };
-
     struct TriggerZone
     {
         float minX = 0.f;
@@ -77,8 +73,6 @@ private:
         float minY = 0.f;
         float maxY = 0.f;
     };
-
-    MenuPage menuPage = MenuPage::None;
 
     bool draggingMasterSlider = false;
     bool draggingBgmSlider = false;

@@ -64,6 +64,13 @@ void QuickGraphics::PrintText(const char* str, f32 x, f32 y, f32 scale, f32 red,
     AEGfxPrint(font, str, x, y, scale, red, green, blue, alpha);
 }
 
+void QuickGraphics::PrintWorldText(const char* str, f32 x, f32 y, f32 scale, f32 red, f32 green, f32 blue, f32 alpha)
+{
+    AEVec2 viewportPos;
+    AEExtras::WorldToViewportPosition({ x, y }, viewportPos);
+    AEGfxPrint(font, str, viewportPos.x, viewportPos.y, scale, red, green, blue, alpha);
+}
+
 void QuickGraphics::DrawRect(const AEVec2& position, const AEVec2& scale, u32 color, AEGfxMeshDrawMode drawMode)
 {
     DrawRect(position.x, position.y, scale.x, scale.y, color, drawMode);

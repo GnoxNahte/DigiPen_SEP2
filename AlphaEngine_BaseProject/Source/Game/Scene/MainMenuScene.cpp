@@ -9,6 +9,7 @@
 #include "../AudioManager.h"
 #include "../UI.h"
 #include "../../Editor/Editor.h"
+#include "../../Utils/AEExtras.h"
 #include "../../Utils/QuickGraphics.h"
 #include "../Background.h"
 #include <Windows.h>
@@ -49,7 +50,7 @@ bool MainMenuScene::IsPlayerInsideTrigger(const TriggerZone& t) const
 
 bool MainMenuScene::IsMenuOpen() const
 {
-    return menuPage != MenuPage::None;
+    return fadeSettingsAlpha > 0.f;
 }
 
 bool MainMenuScene::IsMouseOver(const UIRect& r) const
@@ -214,10 +215,7 @@ void MainMenuScene::UpdateMenuInput()
 
 void MainMenuScene::RenderMenuOverlay()
 {
-    DrawDimBackground(0.75f);
-
     DrawTextPx((s8)uiFontLarge, "SETTINGS", 40.f, 100.f, 0.6f, 1, 1, 1, 1);
-    DrawTextPx((s8)uiFontLarge, "ESC - BACK", 40.f, 845.f, 0.5f, 1, 1, 1, 1);
 
     const float labelX = 420.0f;
     const float sliderLeft = 860.0f;
@@ -232,23 +230,23 @@ void MainMenuScene::RenderMenuOverlay()
     auto DrawSlider = [&](const char* label, float value, float y, bool dragging)
         {
             int percent = (int)(value * 100.0f + 0.5f);
-            DrawTextPx((s8)uiFont, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, 1);
+            DrawTextPx((s8)uiFont, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, fadeSettingsAlpha);
 
             UIRect trackBg{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, trackH } };
-            DrawSolidPanel(trackBg, 0.20f);
+            DrawSolidPanel(trackBg, 0.20f * fadeSettingsAlpha);
 
             float filledW = sliderWidth * value;
             if (filledW > 0.0f)
             {
                 UIRect trackFill{ { sliderLeft + filledW * 0.5f, y }, { filledW, trackH } };
-                DrawSolidPanel(trackFill, 0.50f);
+                DrawSolidPanel(trackFill, 0.50f * fadeSettingsAlpha);
             }
 
             float knobX = sliderLeft + sliderWidth * value;
             UIRect knob{ { knobX, y }, { knobSz, knobSz } };
-            DrawSolidPanel(knob, dragging ? 0.60f : 0.36f);
+            DrawSolidPanel(knob, (dragging ? 0.60f : 0.36f) * fadeSettingsAlpha);
 
-            DrawTextPx((s8)uiFont, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, 1.0f);
+            DrawTextPx((s8)uiFont, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, fadeSettingsAlpha);
         };
 
     DrawSlider("Master Volume", AudioManager::GetMasterVolume(), masterY, draggingMasterSlider);
@@ -407,13 +405,12 @@ void MainMenuScene::Init()
     fadeAlpha = 0.0f;
     LoadRunRecords();
 
-    menuPage = MenuPage::None;
     draggingMasterSlider = false;
     draggingBgmSlider = false;
     draggingSfxSlider = false;
 
     // Adjust these if needed after testing
-    settingsTrigger = { 0.0f, 6.0f, 16.0f, 20.0f };
+    settingsTrigger = { 1.f, 25.f, 0.5f, 12.f };
     startGameTrigger = { 25.f, 30.f, 16.f, 27.f };
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
@@ -515,21 +512,10 @@ void MainMenuScene::Init()
 
 void MainMenuScene::Update()
 {
-    if (AEInputCheckTriggered(AEVK_ESCAPE))
-    {
-        if (menuPage == MenuPage::Settings)
-        {
-            menuPage = MenuPage::None;
-            Time::GetInstance().SetPaused(false);
-            return;
-        }
-    }
-
     if (IsMenuOpen())
     {
         UpdateMenuInput();
         AudioManager::Update();
-        return;
     }
 
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
@@ -552,13 +538,10 @@ void MainMenuScene::Update()
     player.Update();
 
     if (IsPlayerInsideTrigger(settingsTrigger))
-    {
-        menuPage = MenuPage::Settings;
-        Time::GetInstance().SetPaused(true);
-        AudioManager::Update();
-        return;
-    }
-
+        fadeSettingsAlpha = min(fadeSettingsAlpha + fadeSpeed * dt, 1.f);
+    else if (fadeSettingsAlpha > 0.f)
+        fadeSettingsAlpha = max(fadeSettingsAlpha - fadeSpeed * dt, 0.f);
+    
     if (IsPlayerInsideTrigger(startGameTrigger))
     {
         isFadingToGame = true;
@@ -608,10 +591,6 @@ void MainMenuScene::Render()
         }
     }
 
-    trapMgr.Render();
-    player.Render();
-    enemyMgr.RenderAll();
-
     if (uiFont >= 0)
     {
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -633,14 +612,14 @@ void MainMenuScene::Render()
         WorldToNDC(8.4f, 25.f, nx, ny);
         AEGfxPrint((s8)uiFontLarge, "AETHERFALL", nx, ny, 1.f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(4.5f, 15.5f, nx, ny);
-        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(4.1f, 15.5f, nx, ny);
+        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.8f, 1.f, 0.82f, 0.35f, 1.f);
 
         WorldToNDC(3.3f, 26.5f, nx, ny);
         AEGfxPrint((s8)uiFont, "CREDITS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         WorldToNDC(21.6f, 24.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "START QUEST", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        AEGfxPrint((s8)uiFont, "START QUEST >", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
     RenderLeaderboard(8.5f, 23.5f);
@@ -666,6 +645,10 @@ void MainMenuScene::Render()
     {
         RenderMenuOverlay();
     }
+
+    trapMgr.Render();
+    player.Render();
+    enemyMgr.RenderAll();
 
     if (Editor::GetShowColliders())
     {

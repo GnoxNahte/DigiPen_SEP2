@@ -159,6 +159,13 @@ namespace AEExtras
 	void WorldToViewportPosition(const AEVec2& worldPosition, AEVec2& outViewportPosition);
 
 	/**
+	 * @brief						Converts a position from world coordinates to OpenGL coords (or Normalized Device coords?)
+	 * @param worldPosition			Input screen position
+	 * @param outPosition			Output position
+	 */
+	void WorldToOpenGL_Coords(const AEVec2& worldPosition, AEVec2& outputPosition);
+
+	/**
 	 * @brief		Returns a float between the range
 	 */
 	float RandomRange(const AEVec2& range);

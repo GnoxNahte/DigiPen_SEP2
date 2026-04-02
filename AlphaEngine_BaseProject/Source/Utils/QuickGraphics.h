@@ -21,6 +21,9 @@ public:
 	// Duplicate of AEGfxPrint but without fontId
 	static void PrintText(const char* str, f32 x, f32 y, f32 scale, f32 red, f32 green, f32 blue, f32 alpha);
 
+	// Print text in world-space
+	static void PrintWorldText(const char* str, f32 x, f32 y, f32 scale, f32 red, f32 green, f32 blue, f32 alpha);
+
 	// u32 variant
 	static void SetColorToMultiply(u32 color);
 private:

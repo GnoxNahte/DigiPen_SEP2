@@ -197,7 +197,10 @@ void Camera::DrawInspector()
 {
 	ImGui::Begin("Camera", &isInspectorOpen);
 
+	ImGui::DragFloat2("Position", &position.x, 0.1f);
 	ImGui::DragFloat("Scale", &scale, 0.1f);
+	if (ImGui::Button("Reset Scale"))
+		scale = 64;
 
 	ImGui::End();
 }

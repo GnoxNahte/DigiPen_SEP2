@@ -34,7 +34,7 @@ void Background::Render()
     f32 scaleFactor = targetHeight / (f32)BACKGROUND_HEIGHT;
 
     // Adjust this to move the background down
-    float globalYOffset = -250.0f;
+    float globalYOffset = -360.f;
 
     for (int i = 0; i < UNIQUE_BG_TEXTURES; ++i)
     {
