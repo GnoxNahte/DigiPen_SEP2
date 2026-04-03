@@ -34,7 +34,7 @@ public:
 
         float pickupRadius = 0.85f;
         float magnetRadius = 1.50f;
-        float magnetSpeed = 8.0f;
+        float magnetSpeed = 15.0f;
 
         int healAmount = 2;
     };
