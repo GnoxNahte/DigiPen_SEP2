@@ -1,0 +1,23 @@
+{
+  "spritePath": "Assets/Craftpix/Skeleton.png",
+  "maxHp": 50,
+  "attackDamage": 1,
+  "hideAfterDeath": false,
+  "renderScale": 2.0,
+  "moveSpeed": 2.0,
+  "aggroRange": 50.0,
+  "leashRange": 8.0,
+  "aggroYRange": 4.0,
+  "attackYRange": 1.0,
+  "runVelThreshold": 0.1,
+  "attackStartRange": 1.1,
+  "attackHitRange": 1.5,
+  "attackCooldown": 0.8,
+  "attackHitTimeNormalized": 0.42,
+  "attackBreakRange": 100.0,
+  "animAttack": 0,
+  "animRun": 2,
+  "animIdle": 3,
+  "animHurt": 4,
+  "animDeath": 1
+}

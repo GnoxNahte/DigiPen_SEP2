@@ -125,6 +125,8 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Game\enemy\BossIntroOverlay.cpp" />
     <ClCompile Include="Source\Game\enemy\Enemy.cpp" />
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp" />
+    <ClCompile Include="Source\Game\enemy\EnemyBossStats.cpp" />
+    <ClCompile Include="Source\Game\enemy\EnemyStats.cpp" />
     <ClCompile Include="Source\Game\enemy\ItemDropManager.cpp" />
     <ClCompile Include="Source\Game\Environment\MapGrid.cpp" />
     <ClCompile Include="Source\Game\Environment\MapTile.cpp" />
@@ -186,7 +188,9 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\Game\enemy\Enemy.h" />
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h" />
     <ClInclude Include="Source\Game\enemy\EnemyBoss.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyBossStats.h" />
     <ClInclude Include="Source\Game\enemy\EnemyManager.h" />
+    <ClInclude Include="Source\Game\enemy\EnemyStats.h" />
     <ClInclude Include="Source\Game\enemy\IDamageable.h" />
     <ClInclude Include="Source\Game\enemy\ItemDropManager.h" />
     <ClInclude Include="Source\Game\Environment\MapGrid.h" />

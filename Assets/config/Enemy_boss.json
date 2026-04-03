@@ -1,0 +1,44 @@
+{
+  "maxHP": 650,
+  "attackDamage": 4,
+
+  "moveSpeed": 2.0,
+  "aggroRange": 10.0,
+  "aggroYRange": 1.0,
+  "attackYRange": 0.6,
+
+  "phase2HpThreshold": 0.5,
+
+  "size": {
+    "x": 0.8,
+    "y": 0.8
+  },
+
+  "attack": {
+    "startRange": 1.8,
+    "hitRange": 1.8,
+    "cooldown": 0.8,
+    "hitTimeNormalized": 1.5,
+    "breakRange": 99999.0
+  },
+
+  "meleeHitbox": {
+    "width": 1.4,
+    "height": 0.9,
+    "xInset": 0.10,
+    "yOffset": 0.10
+  },
+
+  "teleport": {
+    "interval": 2.0,
+    "behindOffset": 0.9,
+    "halfRange": 4.0,
+    "wallPadding": 0.10,
+    "minPlayerGap": 0.30
+  },
+
+  "hurt": {
+    "minHurtDuration": 0.30,
+    "staggerResetDelay": 1.25
+  }
+}
