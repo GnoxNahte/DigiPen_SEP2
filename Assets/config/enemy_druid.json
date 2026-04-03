@@ -1,0 +1,23 @@
+{
+  "spritePath": "Assets/Craftpix/Druid.png",
+  "maxHp": 50,
+  "attackDamage": 1,
+  "hideAfterDeath": true,
+  "renderScale": 4.0,
+  "moveSpeed": 2.0,
+  "aggroRange": 5.0,
+  "leashRange": 8.0,
+  "aggroYRange": 4.0,
+  "attackYRange": 4.0,
+  "runVelThreshold": 0.1,
+  "attackStartRange": 3.8,
+  "attackHitRange": 4.0,
+  "attackCooldown": 0.8,
+  "attackHitTimeNormalized": 0.5,
+  "attackBreakRange": 10.0,
+  "animAttack": 0,
+  "animRun": 2,
+  "animIdle": 3,
+  "animHurt": 4,
+  "animDeath": 1
+}

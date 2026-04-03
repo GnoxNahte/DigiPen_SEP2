@@ -9,7 +9,7 @@
 #include "../AudioManager.h"
 #include "../../Utils/AEExtras.h"
 #include "../../Editor/Editor.h"
-
+#include "EnemyStats.h"
 
 float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 {
@@ -18,6 +18,16 @@ float Enemy::GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 
     const auto& s = sprite.metadata.stateInfoRows[stateIndex];
     return (float)s.frameCount * (float)s.timePerFrame;
+}
+
+const char* Enemy::GetStatsFilePath(Preset preset)
+{
+    switch (preset)
+    {
+    case Preset::Druid:    return "Assets/config/enemy_druid.json";
+    case Preset::Skeleton: return "Assets/config/enemy_skeleton.json";
+    }
+    return "Assets/config/enemy_druid.json";
 }
 
 
@@ -80,65 +90,11 @@ static bool FindGroundBelowForDruidEffect(MapGrid& map, float x, float startY, f
 
 
 
-
-Enemy::Config Enemy::MakePreset(Preset preset)
-{
-    Config c{};
-
-    switch (preset)
-    {
-    case Preset::Druid:
-        c.spritePath = "Assets/Craftpix/Druid.png";
-        c.renderScale = 4.f;
-        c.runVelThreshold = 0.1f;
-        c.attackHitRange = 4.0f;    // try 1.4–2.0
-        c.attackBreakRange = 10.0f;  // how far before attack cancels
-        c.attackStartRange = 3.8f;
-        c.maxHp = 50;
-        c.hideAfterDeath = true;
-        c.attackDamage = 1;
-        c.aggroYRange = 4.0f;       // can notice player across height difference
-        c.attackYRange = 4.0f;       // can still attack across height difference
-
-        break;
-
-    case Preset::Skeleton:
-        c.spritePath = "Assets/Craftpix/Skeleton.png";
-        c.renderScale = 2.f;
-        c.runVelThreshold = 0.1f;   // FIX: old EnemyB used 8.0f (too high)
-        c.maxHp = 50;
-        c.attackHitTimeNormalized = 0.42f;
-        c.aggroRange = 50.f;
- 
-        break;
-    }
-
-    // Defaults already match your old ctor values:
-    // attackStartRange=1.2, hitRange=1.0, cooldown=0.8, hitTime=0.5
-
-    // NOTE:
-    // These anim indices assume your meta order is:
-    // 0 ATTACK, 1 DEATH, 2 RUN, 3 IDLE, 4 HURT
-    // If your Druid meta is in a different order, just change these numbers.
-    c.animAttack = 0;
-    c.animDeath = 1;
-    c.animRun = 2;
-    c.animIdle = 3;
-    c.animHurt = 4;
-
-    return c;
-}
-
 // ---- Ctors ----
 Enemy::Enemy(Preset preset, float initialPosX, float initialPosY)
-    : Enemy(MakePreset(preset), initialPosX, initialPosY)
-{
-     presetType = preset;
-}
-
-Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
-    : cfg(cfgIn)
-    , sprite(cfg.spritePath)
+    : presetType(preset)
+    , stats(GetStatsFilePath(preset))
+    , sprite(stats.spritePath.c_str())
 {
     position = AEVec2{ initialPosX, initialPosY };
     homePos = position;
@@ -148,45 +104,35 @@ Enemy::Enemy(const Config& cfgIn, float initialPosX, float initialPosY)
     facingDirection = AEVec2{ 1.f, 0.f };
     chasing = false;
 
-    // Attack component setup (same as your old EnemyA/B)
-    attack.startRange = cfg.attackStartRange;
-    attack.hitRange = cfg.attackHitRange;
-    attack.cooldown = cfg.attackCooldown;
-    attack.hitTimeNormalized = cfg.attackHitTimeNormalized;
-    attack.breakRange = cfg.attackBreakRange;
+    attack.startRange = stats.attackStartRange;
+    attack.hitRange = stats.attackHitRange;
+    attack.cooldown = stats.attackCooldown;
+    attack.hitTimeNormalized = stats.attackHitTimeNormalized;
+    attack.breakRange = stats.attackBreakRange;
 
-	//enemy particle system setup
     particleSystem.ReleaseAll();
     particleSystem.Init();
-    particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
+    particleSystem.SetSpawnRate(0.f);
 
-    // Optional: default “dust/blood-ish” lifetime for bursts
     particleSystem.emitter.lifetimeRange.x = 0.10f;
     particleSystem.emitter.lifetimeRange.y = 0.25f;
 
-    //for druid long range spell
     castParticleSystem.Init();
     castParticleSystem.SetSpawnRate(0.f);
 
-    // darker green magical warning
     castParticleSystem.emitter.lifetimeRange = { 0.18f, 0.30f };
     castParticleSystem.emitter.sizeRange = { 0.08f, 0.16f };
     castParticleSystem.emitter.tint = { 0.18f, 0.70f, 0.30f, 0.90f };
 
-    // swirling spell effect instead of dirt/gravity
     castParticleSystem.emitter.behavior = ParticleBehavior::TornadoIn;
     castParticleSystem.emitter.behaviorParams.center = { 0.f, 0.f };
     castParticleSystem.emitter.behaviorParams.pull = 3.0f;
     castParticleSystem.emitter.behaviorParams.swirl = 14.0f;
 
-
-
     particleSystem.emitter.tint = { 0.8f, 0.8f, 0.8f, 1.f };
 
-    //enemy life system
-    hp = cfg.maxHp;
+    hp = stats.maxHp;
     dead = false;
-
 }
 
 
@@ -313,7 +259,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         // Advance animation until the final frame starts, then stop updating so it doesn't loop.
         if (deathTimeLeft > 0.f)
         {
-            float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
+            float tpf = sprite.metadata.stateInfoRows[stats.animDeath].timePerFrame;
             if (tpf <= 0.f) tpf = 0.f;
 
             // Only update while we're not yet in the "last frame window"
@@ -323,7 +269,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             deathTimeLeft -= dt;
             if (deathTimeLeft < 0.f) deathTimeLeft = 0.f;
         }
-        if (deathTimeLeft <= 0.f && cfg.hideAfterDeath)
+        if (deathTimeLeft <= 0.f && stats.hideAfterDeath)
             hidden = true;
         StopDruidCastEffect();
         return;
@@ -340,7 +286,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         chasing = false;
 
         // Force hurt state while timer is active (prevents any override)
-        sprite.SetState(cfg.animHurt);
+        sprite.SetState(stats.animHurt);
 
  
         sprite.Update();
@@ -363,8 +309,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     const float absDx = std::fabs(dx);
 
     const float dy = std::fabs(playerPos.y - position.y);
-    const bool yAggroOk = (dy <= cfg.aggroYRange);
-    const bool yAttackOk = (dy <= cfg.attackYRange);
+    const bool yAggroOk = (dy <= stats.aggroYRange);
+    const bool yAttackOk = (dy <= stats.attackYRange);
 
     // Skeleton requires line of sight. Druid keeps existing behaviour.
     const bool useLineOfSight = (presetType == Preset::Skeleton);
@@ -395,15 +341,15 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     const float enemyFromHome = std::fabs(position.x - homePos.x);
 
     const float aggroRangeToUse =
-        targetLocked ? (cfg.aggroRange + kAggroExitPadding) : cfg.aggroRange;
+        targetLocked ? (stats.aggroRange + kAggroExitPadding) : stats.aggroRange;
 
     targetLocked = (absDx <= aggroRangeToUse) && yAggroOk && stableLineOfSight;
 
     const bool inAggroRange = targetLocked;
 
     // Hysteresis so we don't spam switch at the boundary
-    const float leashEnter = cfg.leashRange + 0.01f;  // when to START returning
-    const float leashExit = cfg.leashRange - 0.25f;  // when returning can be CANCELLED
+    const float leashEnter = stats.leashRange + 0.01f;  // when to START returning
+    const float leashExit = stats.leashRange - 0.25f;  // when returning can be CANCELLED
 
     if (inAggroRange)
         hadAggro = true;
@@ -428,12 +374,12 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
     else
     {
         // Cancel returning only if player is back in range and both are within leash
-        if (inAggroRange && playerFromHome <= cfg.leashRange && enemyFromHome <= leashExit)
+        if (inAggroRange && playerFromHome <= stats.leashRange && enemyFromHome <= leashExit)
             returningHome = false;
     }
 
     //verical checck
-    const float attackDur = GetAnimDurationSec(sprite, cfg.animAttack);
+    const float attackDur = GetAnimDurationSec(sprite, stats.animAttack);
     const float effectiveDist = (yAttackOk && stableLineOfSight) ? absDx : 9999.0f;
   
     if (returningHome)
@@ -488,7 +434,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
         {
             const float dirX = (dh > 0.f) ? 1.f : -1.f;
             facingDirection = AEVec2{ dirX, 0.f };
-            velocity.x = dirX * cfg.moveSpeed;
+            velocity.x = dirX * stats.moveSpeed;
 
             AEVec2 displacement;
             AEVec2Scale(&displacement, &velocity, dt);
@@ -540,7 +486,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             if (chasing)
             {
                 const float dirX = (dx > 0.f) ? 1.f : -1.f;
-                velocity.x = dirX * cfg.moveSpeed;
+                velocity.x = dirX * stats.moveSpeed;
             }
             else
             {
@@ -569,8 +515,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 if (dirX < 0.f && nextPos.x < targetX) { nextPos.x = targetX; velocity.x = 0.f; }
             }
 
-            const float minX = homePos.x - cfg.leashRange;
-            const float maxX = homePos.x + cfg.leashRange;
+            const float minX = homePos.x - stats.leashRange;
+            const float maxX = homePos.x + stats.leashRange;
 
             if (nextPos.x < minX) { nextPos.x = minX; velocity.x = 0.f; }
             if (nextPos.x > maxX) { nextPos.x = maxX; velocity.x = 0.f; }
@@ -583,8 +529,8 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
             chasing = false;
             velocity.y = 0.f;
 
-            const float minX = homePos.x - cfg.leashRange;
-            const float maxX = homePos.x + cfg.leashRange;
+            const float minX = homePos.x - stats.leashRange;
+            const float maxX = homePos.x + stats.leashRange;
 
             // Pause phase
             if (idlePauseLeft > 0.f)
@@ -607,7 +553,7 @@ void Enemy::Update(const AEVec2& playerPos, MapGrid& map)
                 facingDirection = AEVec2{ dirX, 0.f };
 
                 // slower than chase looks more natural
-                velocity.x = dirX * cfg.moveSpeed * idleSpeedMul;
+                velocity.x = dirX * stats.moveSpeed * idleSpeedMul;
 
                 AEVec2 displacement;
                 AEVec2Scale(&displacement, &velocity, dt);
@@ -711,11 +657,11 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         returningHome = false;
         velocity = AEVec2{ 0.f, 0.f };
 
-        sprite.SetState(cfg.animDeath, false, nullptr);
+        sprite.SetState(stats.animDeath, false, nullptr);
 
-        deathTimeLeft = GetAnimDurationSec(sprite, cfg.animDeath);
+        deathTimeLeft = GetAnimDurationSec(sprite, stats.animDeath);
 
-        float tpf = sprite.metadata.stateInfoRows[cfg.animDeath].timePerFrame;
+        float tpf = sprite.metadata.stateInfoRows[stats.animDeath].timePerFrame;
         if (tpf <= 0.f) tpf = 0.1f;
 
         // give one extra frame window so the last death frame can actually stay visible
@@ -726,7 +672,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     }
     else if (hurtTimeLeft <= 0.f)
     {
-        hurtTimeLeft = GetAnimDurationSec(sprite, cfg.animHurt);
+        hurtTimeLeft = GetAnimDurationSec(sprite, stats.animHurt);
         if (hurtTimeLeft <= 0.3f)
             hurtTimeLeft = 0.3f;
 
@@ -735,7 +681,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
         castParticleSystem.ReleaseAll();
         wasDruidCasting = false;
         druidSpellTargetLocked = false;
-        sprite.SetState(cfg.animHurt);
+        sprite.SetState(stats.animHurt);
     }
 
     return true;
@@ -758,20 +704,20 @@ void Enemy::UpdateAnimation()
 
     if (hurtTimeLeft > 0.f)
     {
-        sprite.SetState(cfg.animHurt);
+        sprite.SetState(stats.animHurt);
         return;
     }
 
     if (attack.IsAttacking())
     {
-        sprite.SetState(cfg.animAttack);
+        sprite.SetState(stats.animAttack);
         return;
     }
 
-    if (std::fabs(velocity.x) > cfg.runVelThreshold)
-        sprite.SetState(cfg.animRun);
+    if (std::fabs(velocity.x) > stats.runVelThreshold)
+        sprite.SetState(stats.animRun);
     else
-        sprite.SetState(cfg.animIdle);
+        sprite.SetState(stats.animIdle);
 }
 
 
@@ -789,19 +735,19 @@ void Enemy::DrawInspector()
         ImGui::Checkbox("Dead", &dead);
 
         ImGui::SeparatorText("HP");
-        ImGui::SliderInt("HP", &hp, 0, cfg.maxHp);
-        ImGui::Text("MaxHP: %d", cfg.maxHp);
+        ImGui::SliderInt("HP", &hp, 0, stats.maxHp);
+        ImGui::Text("MaxHP: %d", stats.maxHp);
     }
 
     if (ImGui::CollapsingHeader("Config"))
     {
-        ImGui::DragFloat("MoveSpeed", &cfg.moveSpeed, 0.05f, 0.f, 20.f);
-        ImGui::DragFloat("AggroRange", &cfg.aggroRange, 0.05f, 0.f, 50.f);
-        ImGui::DragFloat("LeashRange", &cfg.leashRange, 0.05f, 0.f, 50.f);
+        ImGui::DragFloat("MoveSpeed", &stats.moveSpeed, 0.05f, 0.f, 20.f);
+        ImGui::DragFloat("AggroRange", &stats.aggroRange, 0.05f, 0.f, 50.f);
+        ImGui::DragFloat("LeashRange", &stats.leashRange, 0.05f, 0.f, 50.f);
 
         ImGui::SeparatorText("Combat");
-        ImGui::SliderInt("AttackDamage", &cfg.attackDamage, 0, 10);
-        ImGui::DragFloat("AttackCooldown", &cfg.attackCooldown, 0.01f, 0.f, 5.f);
+        ImGui::SliderInt("AttackDamage", &stats.attackDamage, 0, 10);
+        ImGui::DragFloat("AttackCooldown", &attack.cooldown, 0.01f, 0.f, 5.f);
 
         ImGui::SeparatorText("Debug");
         ImGui::Checkbox("DebugDraw", &debugDraw);
@@ -820,15 +766,15 @@ bool Enemy::CheckIfClicked(const AEVec2& mousePos)
 
 void Enemy::ApplyRoomScaling(int extraHp, int extraDamage)
 {
-    cfg.maxHp += extraHp;
-    if (cfg.maxHp < 1) cfg.maxHp = 1;
+    stats.maxHp += extraHp;
+    if (stats.maxHp < 1) stats.maxHp = 1;
 
     hp += extraHp;
-    if (hp > cfg.maxHp) hp = cfg.maxHp;
+    if (hp > stats.maxHp) hp = stats.maxHp;
     if (hp < 1) hp = 1;
-
-    cfg.attackDamage += extraDamage;
-    if (cfg.attackDamage < 1) cfg.attackDamage = 1;
+	//extraDamage = 0; // currently no extra damage from scaling, but this is here for easy tuning if we want to add it later
+    stats.attackDamage += extraDamage / 2;
+    if (stats.attackDamage < 1) stats.attackDamage = 1;
 }
 
 // ---- Render ----
@@ -845,9 +791,9 @@ void Enemy::Render()
         (velocity.x != 0.f) ? (velocity.x > 0.f) : (facingDirection.x > 0.f);
 
     // Scale (flip X if facing left)
-    AEMtx33Scale(&transform, faceRight ? cfg.renderScale : -cfg.renderScale, cfg.renderScale);
+    AEMtx33Scale(&transform, faceRight ? stats.renderScale : -stats.renderScale, stats.renderScale);
 
-    // Pivot correction (same as your Player / EnemyA / EnemyB)
+    // Pivot correction 
     AEMtx33TransApply(
         &transform,
         &transform,

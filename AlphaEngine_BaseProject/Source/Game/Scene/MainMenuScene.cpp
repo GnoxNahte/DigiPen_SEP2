@@ -914,4 +914,5 @@ void MainMenuScene::Exit()
     roomMgr.Clear();
     AudioManager::Exit();
     Background::Exit();
+    TimerSystem::GetInstance().RemoveTimer("StopEscDelay");
 }
