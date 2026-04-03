@@ -67,6 +67,7 @@ public:
     static void PlayMenuMusic();
     static void PlayGameMusic();
     static void PlayGameOverMusic();
+    static void PlayCreditsMusic();
 
     static void MuffleMusic();
     static void UnmuffleMusic();

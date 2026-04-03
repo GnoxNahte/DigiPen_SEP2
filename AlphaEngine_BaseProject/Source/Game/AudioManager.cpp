@@ -336,6 +336,18 @@ void AudioManager::PlayGameMusic()
     gCurrTrack = gameMusic.get();
 }
 
+void AudioManager::PlayCreditsMusic() {
+    if (gCurrTrack && gCurrTrack != creditsMusic.get())
+    {
+        gCurrTrack->CrossfadeTo(*creditsMusic, 1.2f);
+    }
+    else if (!creditsMusic->IsActive())
+    {
+        creditsMusic->Play(creditsMusic->GetVolume());
+    }
+	gCurrTrack = creditsMusic.get();
+}
+
 void AudioManager::MuffleMusic()
 {
     if (!gIsMuffled)

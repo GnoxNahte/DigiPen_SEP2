@@ -97,6 +97,9 @@ public:
 	static void UpdateVictoryButtonsAndText();
 	static void DrawVictoryText();
 
+	static void DrawMenuControls();
+	static void DrawKeyWorld(AEGfxTexture* tex, AEVec2 worldPos, AEVec2 size);
+
 	inline static bool& GetRestartStatus() { return restartRun; }
 	inline static bool& GetReturnToMenuStatus() { return returnToMenu; }
 
@@ -122,6 +125,8 @@ public:
 	inline static AEGfxTexture* key_A;
 	inline static AEGfxTexture* key_D;
 	inline static AEGfxTexture* key_SPACE;
+	inline static AEGfxTexture* key_SHIFT;
+	inline static AEGfxTexture* key_S;
 
 
 private:

@@ -266,6 +266,7 @@ void GameScene::Init()
 {
 	ScopedTimer timer("GameScene Init");
 
+	Time::GetInstance().ResetElapsedTime();
 	Time::GetInstance().SetTimeScale(1.0f);
 	LoadRunRecords();
 	ResetRunRecordsForNewRun();

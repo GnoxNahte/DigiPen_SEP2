@@ -7,7 +7,7 @@ SplashScreenScene::SplashScreenScene()
 	texture = AEGfxTextureLoad("Assets/Art/DigiPen_Singapore_Logo_WithCopyright.png");
 	mesh = MeshGenerator::GetSquareMesh(1.f);
 
-    fontId = AEGfxCreateFont("Assets/m04.ttf", 36);
+    fontId = AEGfxCreateFont("Assets/m04.ttf", 72);
 }
 
 SplashScreenScene::~SplashScreenScene()

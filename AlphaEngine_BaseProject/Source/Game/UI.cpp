@@ -56,6 +56,31 @@
 		key_A = AEGfxTextureLoad("Assets/Art/UI/Key_A.png");
 		key_D = AEGfxTextureLoad("Assets/Art/UI/Key_D.png");
 		key_SPACE = AEGfxTextureLoad("Assets/Art/UI/Key_SPACE.png");
+		key_SHIFT = AEGfxTextureLoad("Assets/Art/UI/Key_SHIFT.png");
+		key_S = AEGfxTextureLoad("Assets/Art/UI/Key_S.png");
+	}
+	// For drawing menu key textures
+	void UI::DrawKeyWorld(AEGfxTexture* tex, AEVec2 worldPos, AEVec2 size)
+	{
+		AEMtx33 scale, rot, trans, transform;
+
+		AEMtx33Scale(&scale, size.x, size.y);
+		AEMtx33Rot(&rot, 0.0f);
+
+		AEMtx33Trans(&trans,
+			worldPos.x * Camera::scale + Camera::position.x,
+			worldPos.y * Camera::scale + Camera::position.y);
+
+		AEMtx33Concat(&transform, &rot, &scale);
+		AEMtx33Concat(&transform, &trans, &transform);
+
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+		AEGfxSetTransparency(1.f);
+
+		AEGfxTextureSet(tex, 0, 0);
+		AEGfxSetTransform(transform.m);
+		AEGfxMeshDraw(menuMesh, AE_GFX_MDM_TRIANGLES);
 	}
 	void UI::Update() {
 		BuffCardManager::Update();
@@ -169,6 +194,12 @@
 		}
 		if (key_SPACE) {
 			AEGfxTextureUnload(key_SPACE);
+		}
+		if (key_SHIFT) {
+			AEGfxTextureUnload(key_SHIFT);
+		}
+		if (key_S) {
+			AEGfxTextureUnload(key_S);
 		}
 	}
 	void UI::DrawHealthVignette() {
@@ -620,6 +651,28 @@
 				hoverMenu ? 0.f : 0.7f,
 				a4);
 		}
+	}
+
+	void UI::DrawMenuControls()
+	{
+		AEVec2 basePos{ 21.9f, 20.3f };   // world position
+		float Xspacing = 1.f;
+		float Yspacing = 1.1f;
+
+		DrawKeyWorld(key_A, { basePos.x, basePos.y }, { 64,64 });
+		DrawKeyWorld(key_D, { basePos.x + Xspacing, basePos.y }, { 64,64 });
+		basePos.y -= Yspacing;
+		DrawKeyWorld(key_SPACE, { basePos.x + 0.1f, basePos.y}, { 64,64 });
+		basePos.y -= Yspacing;
+		DrawKeyWorld(key_RMB, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
+		DrawKeyWorld(key_SHIFT, { basePos.x + 1.1f + Xspacing, basePos.y - 0.25f }, { 64,64 });
+
+		basePos.y -= Yspacing + 0.25f;
+		DrawKeyWorld(key_LMB, { basePos.x + 0.1f, basePos.y + 0.05f}, { 64,64 });
+
+		basePos.y -= 0.8f;
+		DrawKeyWorld(key_S, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
+		DrawKeyWorld(key_LMB, { basePos.x + 1.2f + Xspacing, basePos.y - 0.25f }, { 64,64 });
 	}
 
 

@@ -36,10 +36,12 @@ MainMenuScene::MainMenuScene()
     , roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
     , credits([this]() { OnCreditsExit(); })
 {
+    UI::MInit();
 }
 
 MainMenuScene::~MainMenuScene()
 {
+    UI::MExit();
 }
 
 bool MainMenuScene::IsPlayerInsideTrigger(const TriggerZone& t) const
@@ -68,6 +70,7 @@ void MainMenuScene::OnCreditsEnter()
 {
     Time::GetInstance().SetPaused(true);
     credits.StartCredits();
+	AudioManager::PlayCreditsMusic();
 
     player.SetPosition({ 11.5f, 16.6f });
 }
@@ -75,6 +78,7 @@ void MainMenuScene::OnCreditsEnter()
 void MainMenuScene::OnCreditsExit()
 {
     Time::GetInstance().SetPaused(false);
+    AudioManager::PlayMenuMusic();
 }
 
 void MainMenuScene::DrawTextPx(s8 font, const std::string& text, float px, float py, float scale,
@@ -399,11 +403,11 @@ void MainMenuScene::Init()
 
     if (uiFont < 0)
     {
-        uiFont = AEGfxCreateFont("Assets/buggy-font.ttf", 18);
-        if (uiFont < 0) uiFont = AEGfxCreateFont("../Assets/buggy-font.ttf", 18);
-        if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/buggy-font.ttf", 18);
+        uiFont = AEGfxCreateFont("Assets/Pixellari.ttf", 28);
+        if (uiFont < 0) uiFont = AEGfxCreateFont("../Assets/Pixellari.ttf", 28);
+        if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/Pixellari.ttf", 28);
 
-        uiFontLarge = AEGfxCreateFont("Assets/buggy-font.ttf", 42);
+        uiFontLarge = AEGfxCreateFont("Assets/m04.ttf", 48);
     }
 
     if (!fadeMesh)
@@ -649,31 +653,35 @@ void MainMenuScene::Render()
         AEGfxPrint((s8)uiFont, "START QUEST >", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         // ===== Controls =====
-        WorldToNDC(22.f, 21.7f, nx, ny);
+        float x = 20.5f;
+        WorldToNDC(x, 21.7f, nx, ny);
         AEGfxPrint((s8)uiFont, "CONTROLS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         float y = 21.5f;
-        float spacing = 0.5f;
+        float spacing = 1.1f;
 
         y -= spacing;
-        WorldToNDC(22.f, y, nx, ny);
-        AEGfxPrint((s8)uiFont, "Move - A/D", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(x, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Move", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         y -= spacing;
-        WorldToNDC(22.f, y, nx, ny);
-        AEGfxPrint((s8)uiFont, "Jump - Space", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(x, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Jump", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         y -= spacing;
-        WorldToNDC(22.f, y, nx, ny);
-        AEGfxPrint((s8)uiFont, "Dash - LShift/RMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(x, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Dash", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        AEGfxPrint((s8)uiFont, "(Directional)", nx, ny - 0.06f, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        y -= 0.06f;
+
+        y -= spacing + 0.06f;
+        WorldToNDC(x, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Attack", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         y -= spacing;
-        WorldToNDC(22.f, y, nx, ny);
-        AEGfxPrint((s8)uiFont, "Attack - LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
-
-        y -= spacing;
-        WorldToNDC(22.f, y, nx, ny);
-        AEGfxPrint((s8)uiFont, "Slam - D + LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(x, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Slam (in air)", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        AEGfxPrint((s8)uiFont, "+", nx + 0.255f, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
     RenderLeaderboard(9.f, 23.5f);
@@ -716,8 +724,15 @@ void MainMenuScene::Render()
         DrawTriggerCollider(settingsTrigger);
         DrawTriggerCollider(creditsTrigger);
     }
-
+    UI::DrawMenuControls();
     credits.Render();
+    //AEVec2 worldMousePos;
+    //AEExtras::GetCursorWorldPosition(worldMousePos);
+
+    //std::cout << "Mouse World Pos: "
+    //    << worldMousePos.x << ", "
+    //    << worldMousePos.y << std::endl;
+
 }
 
 void MainMenuScene::Exit()
