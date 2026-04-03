@@ -324,6 +324,9 @@ void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
 {
     if (uiFont < 0)
         return;
+    
+    // Background
+    QuickGraphics::DrawRect(worldX + 2.5f, worldY - 1.f, 6.f, 3.f, 0xFF201c2c);
 
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
@@ -534,7 +537,7 @@ void MainMenuScene::Update()
     }
 
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-    std::cout << static_cast<float>(Time::GetInstance().GetDeltaTime()) << "\n";
+    
     if (isFadingToGame)
     {
         fadeAlpha += fadeSpeed * dt;
@@ -633,16 +636,47 @@ void MainMenuScene::Render()
         AEGfxPrint((s8)uiFontLarge, "AETHERFALL", nx, ny, 1.f, 1.f, 1.f, 1.f, 1.f);
 
         WorldToNDC(4.1f, 15.5f, nx, ny);
+        QuickGraphics::DrawRect(5.f, 15.65f, 2.f, 0.6f, 0xFF201c2c);
+        QuickGraphics::DrawRect(Editor::debugVars.v1, Editor::debugVars.v2, 0xFF201c2c);
         AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.8f, 1.f, 0.82f, 0.35f, 1.f);
 
         WorldToNDC(3.3f, 26.5f, nx, ny);
+        QuickGraphics::DrawRect(4.2f, 26.65f, 2.2f, 0.6f, 0xFF201c2c);
         AEGfxPrint((s8)uiFont, "CREDITS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
         WorldToNDC(21.6f, 24.f, nx, ny);
+        QuickGraphics::DrawRect(23.2f, 24.15f, 3.6f, 0.6f, 0xFF201c2c);
         AEGfxPrint((s8)uiFont, "START QUEST >", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        // ===== Controls =====
+        WorldToNDC(22.f, 21.7f, nx, ny);
+        AEGfxPrint((s8)uiFont, "CONTROLS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        float y = 21.5f;
+        float spacing = 0.5f;
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Move - A/D", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Jump - Space", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Dash - LShift/RMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Attack - LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Slam - D + LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
-    RenderLeaderboard(8.5f, 23.5f);
+    RenderLeaderboard(9.f, 23.5f);
 
     if (fadeAlpha > 0.0f && fadeMesh)
     {
