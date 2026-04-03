@@ -36,7 +36,7 @@ public:
         float magnetRadius = 1.50f;
         float magnetSpeed = 8.0f;
 
-        int healAmount = 10;
+        int healAmount = 2;
     };
 
     struct ItemDrop

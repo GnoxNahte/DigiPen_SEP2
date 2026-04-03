@@ -21,33 +21,6 @@ std::string gLastLoadedLevelPath; // last successfully loaded level path for res
 namespace {
 	bool gEndSequenceStarted = false;
 }
-/*void GameScene::ClampPlayerInsideCurrentRoom()
-{
-	if (roomMgr.GetCurrentRoomID() == ROOM_NONE)
-		return;
-
-	const AEVec2 origin = GetRoomOrigin(roomMgr.GetCurrentRoomID());
-	AEVec2 p = player.GetPosition();
-
-	// tune these values
-	static constexpr float kLeftInset = 0.25f;
-	static constexpr float kRightInset = 0.25f;
-	static constexpr float kBottomInset = 1.f;
-	static constexpr float kTopInset = 2.5f;
-
-	const float minX = origin.x + kLeftInset;
-	const float maxX = origin.x + (float)ROOM_COLS - 0.1f - kRightInset;
-	const float minY = origin.y + kBottomInset;
-	const float maxY = origin.y + (float)ROOM_ROWS - 0.1f - kTopInset;
-
-	if (p.x < minX) p.x = minX;
-	if (p.x > maxX) p.x = maxX;
-	if (p.y < minY) p.y = minY;
-	if (p.y > maxY) p.y = maxY;
-
-	player.SetPosition(p);
-}*/
-
 
 GameScene::GameScene() :
 	map(ROOM_COLS, ROOM_ROWS),
