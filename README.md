@@ -43,7 +43,6 @@ Advanced:
     - Skeleton: [Animated pixel art skeleton by AstroBob](https://astrobob.itch.io/animated-pixel-art-skeleton)
 - Player: [Animated Pixel Adventurer by rvros](https://rvros.itch.io/animated-pixel-hero)
 - Platfom Tiles & Background: [Fantasy Swamp Forest Nature - Tileset Pack by The Flavare](https://theflavare.itch.io/forest-nature-fantasy-tileset)
-- Credits Background: [Mondstadt Theme Background Pixel Art](https://theflavare.itch.io/mondstadt-theme-background-pixel-art)
 - Buff cards: [3D Card Kit - Fantasy by Quaternius](https://quaternius.itch.io/3d-card-kit-fantasy)
 
 #### Sounds

@@ -1,0 +1,112 @@
+{
+    "data": [
+        {
+            "title": "Team Members",
+            "names": [
+                "Wei Xiang", 
+                "Ethan",
+                "Kang",
+                "Chengyan",
+                "Santhosh"
+            ]
+        },
+        {
+            "title": "Instructors",
+            "names": [
+                "Gerald Wong",
+                "Soroor Malekmohammadi faradounbeh",
+                "Tommy Tan"
+            ]
+        },
+        {
+            "title": "Created at",
+            "names": "DigiPen Institute of Technology Singapore"
+        },
+        {
+            "title": "President",
+            "names": "Claude Comair" 
+        },
+        {
+            "title": "Executives",
+            "names": [ 
+                "Jason Chu",
+                "Samir Abou Samra",
+                "Michele Comair",
+                "Angela Kugler",
+                "Erik Mohrmann",
+                "Benjamin Ellinger",
+                "Melvin Gonsalvez"
+            ]
+        },
+        {
+            "title": "Copyright & Asset credits",
+            "columns": [
+                {
+                    "title": "Libraries",
+                    "names": [
+                        "FMOD",
+                        "freetype",
+                        "ImGui",
+                        "rapidjson"
+                    ]
+                },
+                {
+                    "title": "Art",
+                    "names": [
+                        "Clembod",
+                        "KiyoZ",
+                        "AstroBob",
+                        "rvros",
+                        "The Flavare",
+                        "Quaternius"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Sound",
+            "columns": [
+                {
+                    "names": [
+                        "Olex Mazur",
+                        "freesound_community",
+                        "666HeroHero",
+                        "DavidDumaisAudio",
+                        "DRAGON-STUDIO",
+                        "Emilianodleon"
+                    ]
+                },
+                {
+                    "names": [
+                        "Stepir44",
+                        "Universfield",
+                        "Alice_soundz",
+                        "freesound_CrunchpixStudio",
+                        "Yodguard",
+                        "Data_pion"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Music",
+            "names": "LUShvalleySound"
+        },
+        {
+            "title": "",
+            "names": "",
+            "comments": "SPACING"
+        },
+        {
+            "title": "Thanks for playing!"
+        }
+    ],
+    "config": {
+        "fadeTime": 0.75,
+        "scrollSpeed": 0.2,
+        "sectionSpacing": 0.2,
+        "titleSpacing": 0.1,
+        "namesSpacing": 0.1,
+        "columnSpacing": 0.05
+    }
+}

@@ -8,6 +8,10 @@
 #include "../Time.h"
 #include "../AudioManager.h"
 #include "../UI.h"
+#include "../../Editor/Editor.h"
+#include "../../Utils/AEExtras.h"
+#include "../../Utils/QuickGraphics.h"
+#include "../Background.h"
 #include <Windows.h>
 #include <new>
 #include <string>
@@ -30,6 +34,7 @@ MainMenuScene::MainMenuScene()
     , enemyBoss()
     , camera({ 1.f, 1.f }, { 50.f, 50.f }, 64.f)
     , roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
+    , credits([this]() { OnCreditsExit(); })
 {
 }
 
@@ -46,7 +51,7 @@ bool MainMenuScene::IsPlayerInsideTrigger(const TriggerZone& t) const
 
 bool MainMenuScene::IsMenuOpen() const
 {
-    return menuPage != MenuPage::None;
+    return fadeSettingsAlpha > 0.f;
 }
 
 bool MainMenuScene::IsMouseOver(const UIRect& r) const
@@ -57,6 +62,19 @@ bool MainMenuScene::IsMouseOver(const UIRect& r) const
 bool MainMenuScene::IsClicked(const UIRect& r) const
 {
     return IsMouseOver(r) && AEInputCheckTriggered(AEVK_LBUTTON);
+}
+
+void MainMenuScene::OnCreditsEnter()
+{
+    Time::GetInstance().SetPaused(true);
+    credits.StartCredits();
+
+    player.SetPosition({ 11.5f, 16.6f });
+}
+
+void MainMenuScene::OnCreditsExit()
+{
+    Time::GetInstance().SetPaused(false);
 }
 
 void MainMenuScene::DrawTextPx(s8 font, const std::string& text, float px, float py, float scale,
@@ -211,10 +229,7 @@ void MainMenuScene::UpdateMenuInput()
 
 void MainMenuScene::RenderMenuOverlay()
 {
-    DrawDimBackground(0.75f);
-
-    DrawTextPx((s8)uiFont, "SETTINGS", 40.f, 100.f, 1.2f, 1, 1, 1, 1);
-    DrawTextPx((s8)uiFont, "ESC - BACK", 40.f, 845.f, 1.0f, 1, 1, 1, 1);
+    DrawTextPx((s8)uiFontLarge, "SETTINGS", 40.f, 100.f, 0.6f, 1, 1, 1, 1);
 
     const float labelX = 420.0f;
     const float sliderLeft = 860.0f;
@@ -229,23 +244,23 @@ void MainMenuScene::RenderMenuOverlay()
     auto DrawSlider = [&](const char* label, float value, float y, bool dragging)
         {
             int percent = (int)(value * 100.0f + 0.5f);
-            DrawTextPx((s8)uiFont, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, 1);
+            DrawTextPx((s8)uiFont, label, labelX, y - 18.0f, 1.0f, 1, 1, 1, fadeSettingsAlpha);
 
             UIRect trackBg{ { sliderLeft + sliderWidth * 0.5f, y }, { sliderWidth, trackH } };
-            DrawSolidPanel(trackBg, 0.20f);
+            DrawSolidPanel(trackBg, 0.20f * fadeSettingsAlpha);
 
             float filledW = sliderWidth * value;
             if (filledW > 0.0f)
             {
                 UIRect trackFill{ { sliderLeft + filledW * 0.5f, y }, { filledW, trackH } };
-                DrawSolidPanel(trackFill, 0.50f);
+                DrawSolidPanel(trackFill, 0.50f * fadeSettingsAlpha);
             }
 
             float knobX = sliderLeft + sliderWidth * value;
             UIRect knob{ { knobX, y }, { knobSz, knobSz } };
-            DrawSolidPanel(knob, dragging ? 0.60f : 0.36f);
+            DrawSolidPanel(knob, (dragging ? 0.60f : 0.36f) * fadeSettingsAlpha);
 
-            DrawTextPx((s8)uiFont, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, 1.0f);
+            DrawTextPx((s8)uiFont, std::to_string(percent), percentX, y - 18.0f, 1.0f, 1.0f, 0.95f, 0.35f, fadeSettingsAlpha);
         };
 
     DrawSlider("Master Volume", AudioManager::GetMasterVolume(), masterY, draggingMasterSlider);
@@ -309,6 +324,9 @@ void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
 {
     if (uiFont < 0)
         return;
+    
+    // Background
+    QuickGraphics::DrawRect(worldX + 2.5f, worldY - 1.f, 6.f, 3.f, 0xFF201c2c);
 
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
@@ -325,47 +343,52 @@ void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
         };
 
     float nx, ny;
+    float spacing = 0.5f;
 
     WorldToNDC(worldX, worldY, nx, ny);
     AEGfxPrint((s8)uiFont, "RUN RECORDS", nx, ny, 0.95f, 1.f, 0.9f, 0.45f, 1.f);
 
+    QuickGraphics::DrawRect(worldX + 1.5f, worldY - 0.05f, 3.f, 0.05f, 0xFFFFE673); // Underline
+
+    worldY -= spacing;
     if (personalBest.valid)
     {
         std::string best1 = "BEST LEVELS: " + std::to_string(personalBest.levelsCleared);
         std::string best2 = "BEST TIME:   " + FormatTime(personalBest.timeSeconds);
 
-        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        WorldToNDC(worldX, worldY, nx, ny);
         AEGfxPrint((s8)uiFont, best1.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        WorldToNDC(worldX, worldY - spacing, nx, ny);
         AEGfxPrint((s8)uiFont, best2.c_str(), nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
     else
     {
-        WorldToNDC(worldX, worldY - 1.3f, nx, ny);
+        WorldToNDC(worldX, worldY, nx, ny);
         AEGfxPrint((s8)uiFont, "BEST LEVELS: --", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(worldX, worldY - 2.1f, nx, ny);
+        WorldToNDC(worldX, worldY - spacing, nx, ny);
         AEGfxPrint((s8)uiFont, "BEST TIME:   --:--:--", nx, ny, 0.72f, 1.f, 1.f, 1.f, 1.f);
     }
 
+    worldY -= 0.75f + spacing;
     if (latestRun.valid)
     {
         std::string latest1 = "LAST LEVELS: " + std::to_string(latestRun.levelsCleared);
         std::string latest2 = "LAST TIME:   " + FormatTime(latestRun.timeSeconds);
 
-        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        WorldToNDC(worldX, worldY, nx, ny);
         AEGfxPrint((s8)uiFont, latest1.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
 
-        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        WorldToNDC(worldX, worldY - spacing, nx, ny);
         AEGfxPrint((s8)uiFont, latest2.c_str(), nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
     else
     {
-        WorldToNDC(worldX, worldY - 3.5f, nx, ny);
+        WorldToNDC(worldX, worldY, nx, ny);
         AEGfxPrint((s8)uiFont, "LAST LEVELS: --", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
 
-        WorldToNDC(worldX, worldY - 4.3f, nx, ny);
+        WorldToNDC(worldX, worldY - spacing, nx, ny);
         AEGfxPrint((s8)uiFont, "LAST TIME:   --:--:--", nx, ny, 0.72f, 0.9f, 0.9f, 0.9f, 1.f);
     }
 }
@@ -379,6 +402,8 @@ void MainMenuScene::Init()
         uiFont = AEGfxCreateFont("Assets/buggy-font.ttf", 18);
         if (uiFont < 0) uiFont = AEGfxCreateFont("../Assets/buggy-font.ttf", 18);
         if (uiFont < 0) uiFont = AEGfxCreateFont("../../Assets/buggy-font.ttf", 18);
+
+        uiFontLarge = AEGfxCreateFont("Assets/buggy-font.ttf", 42);
     }
 
     if (!fadeMesh)
@@ -397,14 +422,14 @@ void MainMenuScene::Init()
     fadeAlpha = 0.0f;
     LoadRunRecords();
 
-    menuPage = MenuPage::None;
     draggingMasterSlider = false;
     draggingBgmSlider = false;
     draggingSfxSlider = false;
 
     // Adjust these if needed after testing
-    settingsTrigger = { 0.0f, 6.0f, 16.0f, 20.0f };
-    startGameTrigger = { 22.0f, 29.0f, 16.0f, 20.0f };
+    settingsTrigger = { 1.f, 25.f, 0.5f, 12.f };
+    startGameTrigger = { 25.f, 30.f, 16.f, 27.f };
+    creditsTrigger = { 4.f, 25.f, 28.f, 50.f };
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
@@ -418,7 +443,7 @@ void MainMenuScene::Init()
 
     SpikePlate::LoadSharedRenderResources();
 
-    const std::string path = "..\\..\\Assets\\Levels\\mainmenufr.lvl";
+    const std::string path = "..\\..\\Assets\\Levels\\mainmenufrfr.lvl";
 
     LevelData lvl;
     RoomID startRoom = ROOM_1;
@@ -499,29 +524,20 @@ void MainMenuScene::Init()
     camera.Update();
     AudioManager::Init();
     AudioManager::PlayMenuMusic();
+
+    Background::Init();
 }
 
 void MainMenuScene::Update()
 {
-    if (AEInputCheckTriggered(AEVK_ESCAPE))
-    {
-        if (menuPage == MenuPage::Settings)
-        {
-            menuPage = MenuPage::None;
-            Time::GetInstance().SetPaused(false);
-            return;
-        }
-    }
-
     if (IsMenuOpen())
     {
         UpdateMenuInput();
         AudioManager::Update();
-        return;
     }
 
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-
+    
     if (isFadingToGame)
     {
         fadeAlpha += fadeSpeed * dt;
@@ -540,13 +556,10 @@ void MainMenuScene::Update()
     player.Update();
 
     if (IsPlayerInsideTrigger(settingsTrigger))
-    {
-        menuPage = MenuPage::Settings;
-        Time::GetInstance().SetPaused(true);
-        AudioManager::Update();
-        return;
-    }
-
+        fadeSettingsAlpha = min(fadeSettingsAlpha + fadeSpeed * dt, 1.f);
+    else if (fadeSettingsAlpha > 0.f)
+        fadeSettingsAlpha = max(fadeSettingsAlpha - fadeSpeed * dt, 0.f);
+    
     if (IsPlayerInsideTrigger(startGameTrigger))
     {
         isFadingToGame = true;
@@ -558,11 +571,18 @@ void MainMenuScene::Update()
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
     AudioManager::Update();
+
+    if (IsPlayerInsideTrigger(creditsTrigger))
+        OnCreditsEnter();
+
+    credits.Update();
 }
 
 void MainMenuScene::Render()
 {
     AEGfxSetBackgroundColor(0.15f, 0.15f, 0.15f);
+
+    Background::Render();
 
     AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
@@ -594,10 +614,6 @@ void MainMenuScene::Render()
         }
     }
 
-    trapMgr.Render();
-    player.Render();
-    enemyMgr.RenderAll();
-
     if (uiFont >= 0)
     {
         AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
@@ -616,23 +632,51 @@ void MainMenuScene::Render()
 
         float nx, ny;
 
-        WorldToNDC(6.f, 26.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "AETHERFALL", nx, ny, 2.2f, 1.f, 1.f, 1.f, 1.f);
+        WorldToNDC(8.4f, 25.f, nx, ny);
+        AEGfxPrint((s8)uiFontLarge, "AETHERFALL", nx, ny, 1.f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(1.f, 18.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(4.1f, 14.5f, nx, ny);
+        QuickGraphics::DrawRect(5.f, 14.65f, 2.f, 0.6f, 0xFF201c2c);
+        QuickGraphics::DrawRect(Editor::debugVars.v1, Editor::debugVars.v2, 0xFF201c2c);
+        AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.8f, 1.f, 0.82f, 0.35f, 1.f);
 
-        WorldToNDC(1.f, 22.f, nx, ny);
+        WorldToNDC(3.3f, 26.5f, nx, ny);
+        QuickGraphics::DrawRect(4.2f, 26.65f, 2.2f, 0.6f, 0xFF201c2c);
         AEGfxPrint((s8)uiFont, "CREDITS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
-        WorldToNDC(23.f, 22.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "RECORDS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        WorldToNDC(21.6f, 24.f, nx, ny);
+        QuickGraphics::DrawRect(23.2f, 24.15f, 3.6f, 0.6f, 0xFF201c2c);
+        AEGfxPrint((s8)uiFont, "START QUEST >", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
 
-        WorldToNDC(23.f, 18.f, nx, ny);
-        AEGfxPrint((s8)uiFont, "START QUEST", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+        // ===== Controls =====
+        WorldToNDC(22.f, 21.7f, nx, ny);
+        AEGfxPrint((s8)uiFont, "CONTROLS", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        float y = 21.5f;
+        float spacing = 0.5f;
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Move - A/D", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Jump - Space", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Dash - LShift/RMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Attack - LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
+
+        y -= spacing;
+        WorldToNDC(22.f, y, nx, ny);
+        AEGfxPrint((s8)uiFont, "Slam - D + LMB", nx, ny, 0.9f, 1.f, 0.82f, 0.35f, 1.f);
     }
 
-    RenderLeaderboard(34.f, 27.f);
+    RenderLeaderboard(9.f, 23.5f);
 
     if (fadeAlpha > 0.0f && fadeMesh)
     {
@@ -655,6 +699,25 @@ void MainMenuScene::Render()
     {
         RenderMenuOverlay();
     }
+
+    trapMgr.Render();
+    player.Render();
+    enemyMgr.RenderAll();
+
+    if (Editor::GetShowColliders())
+    {
+        auto DrawTriggerCollider = [](const TriggerZone& trigger) {
+            AEVec2 pos{ (trigger.maxX + trigger.minX) * 0.5f, (trigger.maxY + trigger.minY) * 0.5f };
+            AEVec2 size{ trigger.maxX - trigger.minX, trigger.maxY - trigger.minY };
+            QuickGraphics::DrawRect(pos, size, 0xFFFF0000, AE_GFX_MDM_LINES_STRIP);
+        };
+
+        DrawTriggerCollider(startGameTrigger);
+        DrawTriggerCollider(settingsTrigger);
+        DrawTriggerCollider(creditsTrigger);
+    }
+
+    credits.Render();
 }
 
 void MainMenuScene::Exit()
@@ -678,4 +741,5 @@ void MainMenuScene::Exit()
     roomSystem.ClearRuntimeRoomObjects();
     roomMgr.Clear();
     AudioManager::Exit();
+    Background::Exit();
 }

@@ -74,6 +74,7 @@ void ParticleSystem::Render()
 	if (texture)
 	{
 		AEGfxTextureSet(texture, 0, 0);
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	}
 	else
 	{

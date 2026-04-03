@@ -27,6 +27,13 @@ void AEExtras::WorldToViewportPosition(const AEVec2& worldPosition, AEVec2& outV
 	outViewportPosition.y = 1 - outViewportPosition.y / AEGfxGetWindowHeight();
 }
 
+void AEExtras::WorldToOpenGL_Coords(const AEVec2& worldPosition, AEVec2& outputPosition)
+{
+	WorldToScreenPosition(worldPosition, outputPosition);
+	outputPosition.x =  (outputPosition.x / AEGfxGetWindowWidth()) * 2.f - 1.f;
+	outputPosition.y = -((outputPosition.y / AEGfxGetWindowHeight()) * 2.f - 1.f);
+}
+
 float AEExtras::RandomRange(const AEVec2& range)
 {
 	return AERandFloat() * (range.y - range.x) + range.x;

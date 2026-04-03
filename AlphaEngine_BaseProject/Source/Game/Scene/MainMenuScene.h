@@ -8,6 +8,7 @@
 #include "../../Game/Rooms/RoomData.h"
 #include "../../Game/Rooms/RoomManager.h"
 #include "../../Game/Rooms/RoomSystem.h"
+#include "../Credits.h"
 #include "GSM.h"
 #include <string>
 #include <vector>
@@ -39,6 +40,7 @@ private:
     int mapCols = 100;
     int mapRows = 100;
     int uiFont = -1;
+    int uiFontLarge = -1;
 
     AEGfxTexture* vineTexture = nullptr;
     AEGfxVertexList* vineMesh = nullptr;
@@ -48,6 +50,8 @@ private:
     bool  isFadingToGame = false;
     float fadeAlpha = 0.0f;
     float fadeSpeed = 3.1f;
+
+    float fadeSettingsAlpha = 0.f;
 
     struct RunRecord
     {
@@ -63,12 +67,6 @@ private:
     std::string FormatTime(double seconds) const;
     void RenderLeaderboard(float worldX, float worldY) const;
 
-    enum class MenuPage
-    {
-        None,
-        Settings
-    };
-
     struct TriggerZone
     {
         float minX = 0.f;
@@ -76,8 +74,6 @@ private:
         float minY = 0.f;
         float maxY = 0.f;
     };
-
-    MenuPage menuPage = MenuPage::None;
 
     bool draggingMasterSlider = false;
     bool draggingBgmSlider = false;
@@ -91,6 +87,9 @@ private:
 
     TriggerZone settingsTrigger;
     TriggerZone startGameTrigger;
+    TriggerZone creditsTrigger;
+
+    Credits credits;
 
     bool IsPlayerInsideTrigger(const TriggerZone& t) const;
     bool IsMenuOpen() const;
@@ -103,4 +102,7 @@ private:
         float r, float g, float b, float a);
     bool IsMouseOver(const UIRect& r) const;
     bool IsClicked(const UIRect& r) const;
+
+    void OnCreditsEnter();
+    void OnCreditsExit();
 };
