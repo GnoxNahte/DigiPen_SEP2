@@ -100,5 +100,13 @@
         {
             "title": "Thanks for playing!"
         }
-    ]
+    ],
+    "config": {
+        "fadeTime": 0.75,
+        "scrollSpeed": 0.2,
+        "sectionSpacing": 0.2,
+        "titleSpacing": 0.1,
+        "namesSpacing": 0.1,
+        "columnSpacing": 0.05
+    }
 }

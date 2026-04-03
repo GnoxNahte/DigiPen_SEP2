@@ -15,7 +15,6 @@ Credits::Credits(std::function<void()> onExit) :
 	Inspectable(true), 
 	onExit(onExit)
 {
-	config.fontId = AEGfxCreateFont("Assets/Pixellari.ttf", 36);
 	mesh = MeshGenerator::GetRectMesh(
 		static_cast<float>(AEGfxGetWindowWidth()),
 		static_cast<float>(AEGfxGetWindowHeight()), 
@@ -26,7 +25,23 @@ Credits::Credits(std::function<void()> onExit) :
 	bool success = FileHelper::TryReadJsonFile("Assets/config/credits.json", doc);
 	if (!success)
 		return;
+
+	// ===== Set config =====
+	config.fontId = AEGfxCreateFont("Assets/Pixellari.ttf", 36);
+	config.transparency = -1.f;
+
+	// === Config JSON data ===
+	auto configObj = doc["config"].GetObj();
+	config.fadeSpeed = 1.f / configObj["fadeTime"].GetFloat();
+	config.scrollSpeed = configObj["scrollSpeed"].GetFloat();
+
+	config.sectionSpacing = configObj["sectionSpacing"].GetFloat();
+	config.titleSpacing = configObj["titleSpacing"].GetFloat();
+	config.namesSpacing = configObj["namesSpacing"].GetFloat();
 	
+	config.columnSpacing = configObj["columnSpacing"].GetFloat();
+
+	// ===== Read credits data =====
 	rapidjson::GenericArray arr = doc["data"].GetArray();
 	rapidjson::SizeType sz = arr.Size();
 	data.reserve(sz);
@@ -63,6 +78,10 @@ void Credits::Update()
 
 	float dt = static_cast<float>(Time::GetInstance().GetDeltaTime());
 
+	// Skip to end
+	if (AEInputCheckCurr(AEVK_ESCAPE))
+		animateOffset = totalHeight + 10; 
+
 	// Pause
 	if (AEInputCheckCurr(AEVK_SPACE))
 		return;
@@ -74,7 +93,7 @@ void Credits::Update()
 		animateOffset -= static_cast<float>(y * 2) / AEGfxGetWindowHeight();
 	}
 	else
-		animateOffset += 0.1f * dt;
+		animateOffset += config.scrollSpeed * dt;
 
 	if (animateOffset > totalHeight)
 	{
@@ -126,10 +145,10 @@ void Credits::DrawInspector()
 	ImGui::Begin("Credits", &isInspectorOpen);
 
 	ImGui::DragFloat("Animate Offset", &animateOffset, 0.1f);
-	ImGui::DragFloat("Section Spacing", &CreditsData::sectionSpacing, 0.01f, 0.f, 1.f);
-	ImGui::DragFloat("Title Spacing", &CreditsData::titleSpacing, 0.01f, 0.f, 1.f);
-	ImGui::DragFloat("Names Spacing", &CreditsData::namesSpacing, 0.01f, 0.f, 1.f);
-	ImGui::DragFloat("Column Spacing", &CreditsData::columnSpacing, 0.01f, 0.f, 1.f);
+	ImGui::DragFloat("Section Spacing", &config.sectionSpacing, 0.01f, 0.f, 1.f);
+	ImGui::DragFloat("Title Spacing", &config.titleSpacing, 0.01f, 0.f, 1.f);
+	ImGui::DragFloat("Names Spacing", &config.namesSpacing, 0.01f, 0.f, 1.f);
+	ImGui::DragFloat("Column Spacing", &config.columnSpacing, 0.01f, 0.f, 1.f);
 
 	ImGui::End();
 }
@@ -184,15 +203,15 @@ Credits::CreditsData::CreditsData(const rapidjson::GenericObject<false, rapidjso
 		size.x = max(size.x, i.size.x);
 
 	// === Find height (Combined height of everything) ===
-	size.y = title.size.y + titleSpacing;
+	size.y = title.size.y + config.titleSpacing;
 
 	for (auto& i : names)
-		size.y += namesSpacing + i.size.y;
+		size.y += config.namesSpacing + i.size.y;
 
 	if (!columns.empty())
 		size.y += max(columns[0].size.y, columns[1].size.y);
 
-	size.y += sectionSpacing;
+	size.y += config.sectionSpacing;
 }
 
 float Credits::CreditsData::Print(float yOffset, float xOffset)
@@ -200,24 +219,24 @@ float Credits::CreditsData::Print(float yOffset, float xOffset)
 	if (title.HasText())
 	{
 		title.PrintCenter(config.fontId, xOffset, yOffset, 1.f, 0.82f, 0.35f, config.transparency);
-		yOffset -= titleSpacing + title.size.y;
+		yOffset -= config.titleSpacing + title.size.y;
 	}
 	
 	for (auto& i : names)
 	{
 		i.PrintCenter(config.fontId, xOffset, yOffset, 1.f, 1.f, 1.f, config.transparency);
-		yOffset -= namesSpacing + i.size.y;
+		yOffset -= config.namesSpacing + i.size.y;
 	}
 
 	if (!columns.empty())
 	{
-		float spacing = columnSpacing + max(columns[0].size.x, columns[1].size.x) * 0.5f;
+		float spacing = config.columnSpacing + max(columns[0].size.x, columns[1].size.x) * 0.5f;
 		float offset0 = columns[0].Print(yOffset, xOffset - spacing);
 		float offset1 = columns[1].Print(yOffset, xOffset + spacing);
 		yOffset = max(offset0, offset1);
 	}
 
-	return yOffset - sectionSpacing;
+	return yOffset - config.sectionSpacing;
 }
 
 // ================

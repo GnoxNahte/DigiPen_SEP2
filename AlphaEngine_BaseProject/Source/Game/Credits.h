@@ -23,10 +23,26 @@ public:
 private:
 	struct Config
 	{
+		// Not from JSON
 		s8 fontId = -1;
+		
+		// ===== From JSON =====
+		// === Changes as the game runs ===
 		float transparency = -1.f;
 
-		float fadeSpeed = 1.f / 1.f;
+		// === Won't change after reading from json ===
+		// NOTE: Key is fadeTime.
+		// fadeSpeed = 1.f / fadeTime
+		float fadeSpeed = 1.f;
+		float scrollSpeed = 1.f;
+
+		// Bottom spacing / CSS bottom margin
+		float sectionSpacing = 0.2f;
+		float titleSpacing = 0.1f;
+		float namesSpacing = 0.1f;
+
+		// Horizontal spacing between columns
+		float columnSpacing = 0.05f;
 	};
 
 	struct Text
@@ -58,13 +74,6 @@ private:
 
 		AEVec2 size{};
 		const Config& config;
-
-		// Bottom spacing / CSS bottom margin
-		inline static float sectionSpacing = 0.2f;
-		inline static float titleSpacing = 0.1f;
-		inline static float namesSpacing = 0.1f;
-		// Horizontal spacing between columns
-		inline static float columnSpacing = 0.05f; 
 
 		static constexpr const char* titleKey = "title";
 		static constexpr const char* namesKey = "names";
