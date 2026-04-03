@@ -7,126 +7,72 @@
 #include "../../Editor/EditorUtils.h"
 #include "../../CommonTypes.h"
 #include "../../Utils/ParticleSystem.h"
+#include "EnemyStats.h"
 
-
-class MapGrid; // forward declaration to avoid circular dependency
+class MapGrid; 
 
 class Enemy : public IDamageable, Inspectable
 {
 public:
-    // Presets to replace EnemyA / EnemyB
     enum class Preset
     {
         Druid,
         Skeleton
     };
 
-    struct Config
-    {
-        const char* spritePath = nullptr;
-
-        int maxHp = 10;   // basic life system
-        int attackDamage = 1;
-        bool hideAfterDeath = false;
-
-
-        // Render
-        float renderScale = 2.f;
-
-        // Movement / AI
-        float moveSpeed = 2.0f;
-        float aggroRange = 5.0f;
-        float leashRange = 8.0f;
-
-        // Vertical gating (in world/tile units)
-        float aggroYRange = 4.0f; // start chasing only if player within this Y diff
-        float attackYRange = 1.0f; // allow attacking only if within this Y diff
-
-        // Animation selection
-        float runVelThreshold = 0.1f; // when to play RUN instead of IDLE
-
-        // Attack tuning
-        float attackStartRange = 1.1f;
-        float attackHitRange = 1.5f;
-        float attackCooldown = 0.8f;
-        float attackHitTimeNormalized = 0.5f; // 0..1
-        float attackBreakRange = 100.0f;
-
-        // Row indices in the sprite meta (IMPORTANT if your meta order differs)
-        int animAttack = 0;
-        int animRun = 2;
-        int animIdle = 3;
-        int animHurt = 4;
-        int animDeath = 1;
-
-    };
-
 public:
     Enemy(Preset preset = Preset::Druid, float initialPosX = 0.f, float initialPosY = 0.f);
-    Enemy(const Config& cfg, float initialPosX, float initialPosY);
- 
-    static Config MakePreset(Preset preset);
     ~Enemy() = default;
 
-    int GetMaxHp() const { return cfg.maxHp; }
+    int GetMaxHp() const { return stats.maxHp; }
     int GetCurrentHp() const { return hp; }
 
-    void SetMaxHp(int value) { cfg.maxHp = value; }
+    void SetMaxHp(int value) { stats.maxHp = value; }
     void SetCurrentHp(int value) { hp = value; }
-    void SetAttackDamage(int value) { cfg.attackDamage = value; }
+    void SetAttackDamage(int value) { stats.attackDamage = value; }
 
     void ApplyRoomScaling(int extraHp, int extraDamage);
-   
 
-  virtual const  AEVec2& GetHurtboxPos()  const override 
+    virtual const AEVec2& GetHurtboxPos() const override
     {
-      return GetPosition();
-    
+        return GetPosition();
     }
-   virtual const AEVec2& GetHurtboxSize() const override { return GetSize(); }
+
+    virtual const AEVec2& GetHurtboxSize() const override
+    {
+        return GetSize();
+    }
 
     void DrawInspector() override;
     bool CheckIfClicked(const AEVec2& mousePos) override;
 
     void Update(const AEVec2& playerPos, MapGrid& map);
-    
     void Render();
 
-    // For GameScene to apply damage later
     bool PollAttackHit() { return !dead && attack.PollHit(); }
 
     Preset GetPreset() const { return presetType; }
     bool IsDruid() const { return presetType == Preset::Druid; }
 
-    //For enemy life system
     bool IsDead() const { return dead; }
-    int  GetHP() const { return hp; }
+    int GetHP() const { return hp; }
 
-    // Returns true if damage was actually applied.
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
 
- 
-    //void ApplyDamage(int dmg);
-
-
-    // Useful getters for combat / debugging
     const AEVec2& GetPosition() const { return position; }
     const AEVec2& GetSize() const { return size; }
-    bool   IsChasing() const { return chasing; }
-    bool   IsReturningHome() const { return returningHome; }
+    bool IsChasing() const { return chasing; }
+    bool IsReturningHome() const { return returningHome; }
 
+    float GetAttackHitRange() const { return attack.hitRange; }
+    int GetAttackDamage() const { return stats.attackDamage; }
 
-    float GetAttackHitRange() const { return attack.hitRange; }   // mid/close range
-    int   GetAttackDamage() const { return cfg.attackDamage; }  
-
-    // Optional knobs
     void SetDebugDraw(bool on) { debugDraw = on; }
-    AEVec2 hurtboxOffset{ 0.f, 0.f }; // negative = lower
+    AEVec2 hurtboxOffset{ 0.f, 0.f };
 
+    ParticleSystem particleSystem{ 30, {} };
+    ParticleSystem castParticleSystem{ 40, {} };
 
-    ParticleSystem particleSystem{ 30, {} }; // pool size 30 is enough for small bursts
-
-    ParticleSystem castParticleSystem{ 40, {} }; //for the long range attack of the druid
     bool wasDruidCasting = false;
     float druidCastFxTimer = 0.f;
 
@@ -137,10 +83,11 @@ public:
 private:
     void UpdateAnimation();
     static float GetAnimDurationSec(const Sprite& sprite, int stateIndex);
+    static const char* GetStatsFilePath(Preset preset);
+
     Preset presetType = Preset::Skeleton;
 
-    Config cfg;
-
+    EnemyStats stats;
     Sprite sprite;
     EnemyAttack attack;
 
@@ -155,20 +102,19 @@ private:
     bool hadAggro = false;
     bool debugDraw{ false };
 
-    float idleWalkLeft = 0.f;     // seconds left to keep walking
-    float idlePauseLeft = 0.f;    // seconds left to pause
-    float idleDirX = 1.f;         // +1 or -1
+    float idleWalkLeft = 0.f;
+    float idlePauseLeft = 0.f;
+    float idleDirX = 1.f;
     float idleSpeedMul = 0.35f;
 
-    int  hp{ 1 };
+    int hp{ 1 };
     bool dead{ false };
 
-    // Hurt lock: keeps the hurt animation visible long enough to notice
     float hurtTimeLeft{ 1.0f };
     float deathTimeLeft{ 0.5f };
     bool hidden = false;
     int lastHitAttackId{ -1 };
-  // NEW internal helper
+
     bool HasGroundAhead(MapGrid& map, float dirX) const;
     bool HasWallAhead(MapGrid& map, float dirX) const;
     bool HasLineOfSightToTarget(MapGrid& map, const AEVec2& targetPos) const;
@@ -178,9 +124,4 @@ private:
 
     AEVec2 druidSpellTargetPos{ 0.f, 0.f };
     bool druidSpellTargetLocked = false;
-
-
-
-
-
 };

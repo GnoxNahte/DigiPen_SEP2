@@ -11,6 +11,7 @@
 #include "../UI.h"
 #include "../AudioManager.h"
 #include "../../Editor/Editor.h"
+#include "EnemyBossStats.h"
 
 
 static inline u32 ScaleAlpha(u32 argb, float alphaMul)
@@ -72,9 +73,8 @@ void EnemyBoss::UpdateMeleeHitbox(const AEVec2& playerPos)
     // decide side by player (more reliable than facing when boss teleports)
     const float dirX = (playerPos.x >= bPos.x) ? 1.f : -1.f;
 
-    meleeHitbox.size = AEVec2{ 1.4f, 0.9f }; // tweak
-    meleeHitbox.position.x = bPos.x + dirX * (bSize.x * 0.5f + meleeHitbox.size.x * 0.5f - 0.10f);
-    meleeHitbox.position.y = bPos.y + 0.10f;
+    meleeHitbox.position.x = bPos.x + dirX * (bSize.x * 0.5f + meleeHitbox.size.x * 0.5f - meleeHitboxXInset);
+    meleeHitbox.position.y = bPos.y + meleeHitboxYOffset;
 }
 
 bool EnemyBoss::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
@@ -185,21 +185,39 @@ EnemyBoss::EnemyBoss()
     , specialAttackVfx("Assets/Craftpix/Bringer_of_Death3.png")
     , bossFont(AEGfxCreateFont("Assets/m04.ttf", 36))
 {
+    EnemyBossStats stats("Assets/config/enemy_boss.json");
+
+    maxHP = stats.maxHP;
+    hp = maxHP;
+    attackDamage = stats.attackDamage;
+
+    moveSpeed = stats.moveSpeed;
+    aggroRange = stats.aggroRange;
+    aggroYRange = stats.aggroYRange;
+    attackYRange = stats.attackYRange;
+    phase2HpThreshold = stats.phase2HpThreshold;
+
+    size = AEVec2{ stats.sizeX, stats.sizeY };
+
+    attack.startRange = stats.attackStartRange;
+    attack.hitRange = stats.attackHitRange;
+    attack.cooldown = stats.attackCooldown;
+    attack.hitTimeNormalized = stats.attackHitTimeNormalized;
+    attack.breakRange = stats.attackBreakRange;
+
+    meleeHitbox.size = AEVec2{ stats.meleeHitboxWidth, stats.meleeHitboxHeight };
+    meleeHitboxXInset = stats.meleeHitboxXInset;
+    meleeHitboxYOffset = stats.meleeHitboxYOffset;
+
+    teleportInterval = stats.teleportInterval;
+    teleportBehindOffset = stats.teleportBehindOffset;
+    teleportHalfRange = stats.teleportHalfRange;
+    teleportWallPadding = stats.teleportWallPadding;
+    teleportMinPlayerGap = stats.teleportMinPlayerGap;
+
+    minHurtDuration = stats.minHurtDuration;
+    staggerResetDelay = stats.staggerResetDelay;
     
-    //position = AEVec2{ initialPosX, initialPosY };
-    velocity = AEVec2{ 0.f, 0.f };
-    specialAttackVfx.SetState(SPELL1);
-
-    size = AEVec2{ 0.8f, 0.8f };
-    facingDirection = AEVec2{ 1.f, 0.f };
-    chasing = false;
-
-    attack.startRange = 1.8f;
-    attack.hitRange = 1.8f;
-    attack.cooldown = 0.8f;
-    attack.hitTimeNormalized = 1.5f;
-    attack.breakRange = 99999.0f;
-
     //particle systemmmm setup
     particleSystem.Init();
     particleSystem.SetSpawnRate(0.f); // IMPORTANT: no continuous spawning by default
@@ -1147,20 +1165,6 @@ void EnemyBoss::Render()
         }
 
         AEGfxSetTransform(world.m);
-
-        /*if (debugDraw)
-        {
-            const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
-            QuickGraphics::DrawRect(position.x, position.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
-
-            if (attack.IsAttacking())
-            {
-                const auto& hb = meleeHitbox;
-                QuickGraphics::DrawRect(hb.position.x, hb.position.y, hb.size.x, hb.size.y,
-                    0xFF00FFFF, AE_GFX_MDM_LINES_STRIP);
-            }
-
-    }*/
     }
  
 

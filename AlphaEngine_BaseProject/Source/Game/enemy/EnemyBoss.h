@@ -131,6 +131,7 @@ public:
     int   GetAttackDamage() const { return attackDamage; }
     bool IsInvulnerable() const { return teleportActive; }
     bool TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type = DAMAGE_TYPE_NORMAL) override;
+
     // Convenience: checks overlap vs boss hurtbox first, then applies damage.
     bool TryTakeDamageFromHitbox(const AEVec2& hitPos, const AEVec2& hitSize,
         int dmg);
@@ -248,6 +249,8 @@ private:
     float barFillDuration = 1.5f;    // then bar fills
 
     Box meleeHitbox{ AEVec2{0,0}, AEVec2{1.4f, 0.9f} }; // size tuned later
+    float meleeHitboxXInset = 0.10f;
+    float meleeHitboxYOffset = 0.10f;
 
   
 };
