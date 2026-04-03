@@ -572,7 +572,7 @@ void MainMenuScene::Update()
     camera.Update();
     AudioManager::Update();
 
-    if (AEInputCheckCurr(AEVK_C) || IsPlayerInsideTrigger(creditsTrigger))
+    if (IsPlayerInsideTrigger(creditsTrigger))
         OnCreditsEnter();
 
     credits.Update();
@@ -635,8 +635,8 @@ void MainMenuScene::Render()
         WorldToNDC(8.4f, 25.f, nx, ny);
         AEGfxPrint((s8)uiFontLarge, "AETHERFALL", nx, ny, 1.f, 1.f, 1.f, 1.f, 1.f);
 
-        WorldToNDC(4.1f, 15.5f, nx, ny);
-        QuickGraphics::DrawRect(5.f, 15.65f, 2.f, 0.6f, 0xFF201c2c);
+        WorldToNDC(4.1f, 14.5f, nx, ny);
+        QuickGraphics::DrawRect(5.f, 14.65f, 2.f, 0.6f, 0xFF201c2c);
         QuickGraphics::DrawRect(Editor::debugVars.v1, Editor::debugVars.v2, 0xFF201c2c);
         AEGfxPrint((s8)uiFont, "SETTINGS", nx, ny, 0.8f, 1.f, 0.82f, 0.35f, 1.f);
 
