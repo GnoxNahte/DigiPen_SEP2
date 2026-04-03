@@ -563,7 +563,7 @@ void MainMenuScene::Init()
 
     SpikePlate::LoadSharedRenderResources();
 
-    const std::string path = "..\\..\\Assets\\Levels\\mainmenufrfr.lvl";
+    const std::string path = "Assets\\Levels\\mainmenufrfr.lvl";
 
     LevelData lvl;
     RoomID startRoom = ROOM_1;
