@@ -39,9 +39,7 @@
             ]
         },
         {
-            "title": "Copyright & Asset credits"
-        },
-        {
+            "title": "Copyright & Asset credits",
             "columns": [
                 {
                     "title": "Libraries",
@@ -69,7 +67,6 @@
             "title": "Sound",
             "columns": [
                 {
-                    "title": "",
                     "names": [
                         "Olex Mazur",
                         "freesound_community",
@@ -80,7 +77,6 @@
                     ]
                 },
                 {
-                    "title": "",
                     "names": [
                         "Stepir44",
                         "Universfield",

@@ -16,49 +16,51 @@ public:
 	void Render();
 
 private:
-	struct BaseCreditsData
+	struct Text
 	{
-		virtual ~BaseCreditsData() = default;
+		Text() = default;
+		Text(const std::string& str, s8 fontId); // Calls SetText
 
-		// Return offset + height
-		virtual float Print(s8 fontId, float offset) = 0;
-		virtual BaseCreditsData* Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj) = 0;
+		bool HasText();
+		void SetText(const std::string& str, s8 fontId);
+		void PrintCenter(s8 fontId, float x, float y, float r, float g, float b, float a);
+
+		std::string text{};
+		AEVec2 size{};
 	};
 
-	// Single column
-	struct SingleCreditData : public BaseCreditsData
+	struct CreditsData
 	{
-		std::string title;
-		std::vector<std::string> names; // Names/Libraries
+		CreditsData(const rapidjson::GenericObject<false, rapidjson::Value>& obj, s8 fontId);
 
-		// Keys for rapidjson
+		// Return new yOffset (offset + height)
+		float Print(s8 fontId, float yOffset, float xOffset = 0);
+
+		Text title;
+		std::vector<Text> names; // Names/Libraries
+		// Note:
+		// - Only supports 2 columns for now
+		// - While it technically allows nesting columns, it isn't supported.
+		std::vector<CreditsData> columns; 
+
+		float width = -1.f;
+
+		// Bottom spacing / CSS bottom margin
+		inline static float sectionSpacing = 0.4f;
+		inline static float titleSpacing = 0.1f;
+		inline static float namesSpacing = 0.1f;
+		// Horizontal spacing between columns
+		inline static float columnSpacing = 0.05f; 
+
 		static constexpr const char* titleKey = "title";
 		static constexpr const char* namesKey = "names";
-
-		virtual float Print(s8 fontId, float offset) override;
-		virtual BaseCreditsData* Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj);
-	};
-
-	// Two column
-	struct DoubleCreditData : public BaseCreditsData
-	{
-		std::string title;
-		SingleCreditData columns[2];
-
-		// Keys for rapidjson
-		static constexpr const char* titleKey = "title";
 		static constexpr const char* columnsKey = "columns";
-
-		virtual float Print(s8 fontId, float offset) override;
-		virtual BaseCreditsData* Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj);
 	};
-
-	inline static float spacing = 0.2f; 
 
 	s8 fontId = -1;
 	AEGfxVertexList* mesh;
-	std::vector<BaseCreditsData*> data;
 
+	std::vector<CreditsData> data;
 	static constexpr const char* dataKey = "data";
 
 	float animateOffset = 0.f;

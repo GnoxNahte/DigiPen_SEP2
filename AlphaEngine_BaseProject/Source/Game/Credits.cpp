@@ -6,18 +6,9 @@
 #include "Camera.h"
 #include "../Utils/FileHelper.h"
 #include "../Utils/MeshGenerator.h"
+#include "../Utils/QuickGraphics.h"
 #include "../Editor/Editor.h"
 #include <iostream>
-
-namespace
-{
-	// Print text center aligned
-	// Returns text size
-	float PrintTextCenter(s8 fontId, const char* str, float x, float y, float r, float g, float b, float a)
-	{
-		AEGfxPrint(fontId, str, x, y, 1.f, r, g, b, a);
-	}
-}
 
 Credits::Credits() : Inspectable(true)
 {
@@ -38,24 +29,9 @@ Credits::Credits() : Inspectable(true)
 	data.reserve(sz);
 	
 	for (rapidjson::SizeType i = 0; i < sz; ++i)
-	{
-		rapidjson::GenericObject obj = arr[i].GetObj();
+		data.emplace_back(arr[i].GetObj(), fontId);
 
-		// Two columns
-		if (obj.HasMember(DoubleCreditData::columnsKey))
-		{
-			DoubleCreditData* d = new DoubleCreditData();
-			d->Load(obj);
-			data.push_back(d);
-		}
-		// Single column
-		else
-		{
-			SingleCreditData* d = new SingleCreditData();
-			d->Load(obj);
-			data.push_back(d);
-		}
-	}
+	Reset();
 
 	Editor::RegisterSystem("Credits", this);
 }
@@ -65,15 +41,14 @@ Credits::~Credits()
 	AEGfxDestroyFont(fontId);
 	AEGfxMeshFree(mesh);
 
-	for (BaseCreditsData* i : data)
-		delete i;
-
 	Editor::UnregisterSystem("Credits", this);
 }
 
 void Credits::Reset()
 {
 	animateOffset = 0.f;
+	// Debug
+	animateOffset = 5.5f;
 }
 
 void Credits::Update()
@@ -109,7 +84,7 @@ void Credits::Render()
 
 	float offset = animateOffset;
 	for (auto& i : data)
-		offset = i->Print(fontId, offset);
+		offset = i.Print(fontId, offset);
 }
 
 void Credits::DrawInspector()
@@ -117,62 +92,113 @@ void Credits::DrawInspector()
 	ImGui::Begin("Credits", &isInspectorOpen);
 
 	ImGui::DragFloat("Animate Offset", &animateOffset, 0.1f);
+	ImGui::DragFloat("Section Spacing", &CreditsData::sectionSpacing, 0.01f);
+	ImGui::DragFloat("Title Spacing", &CreditsData::titleSpacing, 0.01f);
+	ImGui::DragFloat("Names Spacing", &CreditsData::namesSpacing, 0.01f);
+	ImGui::DragFloat("Column Spacing", &CreditsData::columnSpacing, 0.01f);
 
 	ImGui::End();
 }
 
-float Credits::SingleCreditData::Print(s8 fontId, float offset)
+// ================
+// | Credits Data |
+// ================
+Credits::CreditsData::CreditsData(const rapidjson::GenericObject<false, rapidjson::Value>& obj, s8 fontId)
 {
-	// Don't render if out of screen
-	if (offset < -1.f - spacing || offset > 1.f)
-		return offset - spacing;
-
-	AEGfxPrint(fontId, title.c_str(), 0.f, offset, 1.f, 1.f, 1.f, 1.f, 1.f);
-	return offset - spacing;
-}
-
-Credits::BaseCreditsData* Credits::SingleCreditData::Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj)
-{
-	title = obj[titleKey].GetString();
-
-	// If only have title
-	if (!obj.HasMember(namesKey))
-		return this;
-
-	auto& val = obj[namesKey];
-	if (val.IsArray())
-	{
-		auto namesArr = val.GetArray();
-		names.reserve(namesArr.Size());
-
-		for (rapidjson::SizeType j = 0; j < namesArr.Size(); j++)
-			names.emplace_back(namesArr[j].GetString());
-	}
-	else 
-	{
-		names.emplace_back(val.GetString());
-	}
-
-	return this;
-}
-
-float Credits::DoubleCreditData::Print(s8 , float offset)
-{
-	return offset;
-}
-
-Credits::BaseCreditsData* Credits::DoubleCreditData::Load(const rapidjson::GenericObject<false, rapidjson::Value>& obj)
-{
+	// Title
 	if (obj.HasMember(titleKey))
-		title = obj[titleKey].GetString();
+		title.SetText(obj[titleKey].GetString(), fontId);
 	else
-		title = "";
+		title.SetText("", fontId);
 
-	auto arr = obj[columnsKey].GetArray();
-	assert(arr.Size() == 2);
+	// Names
+	if (obj.HasMember(namesKey))
+	{
+		auto& val = obj[namesKey];
+		if (val.IsArray())
+		{
+			auto namesArr = val.GetArray();
+			names.reserve(namesArr.Size());
 
-	columns[0].Load(arr[0].GetObj());
-	columns[1].Load(arr[1].GetObj());
+			for (rapidjson::SizeType j = 0; j < namesArr.Size(); j++)
+				names.emplace_back(namesArr[j].GetString(), fontId);
+		}
+		else
+		{
+			names.emplace_back(val.GetString(), fontId);
+		}
+	}
 
-	return nullptr;
+	// Columns
+	if (obj.HasMember(columnsKey))
+	{
+		auto arr = obj[columnsKey].GetArray();
+		assert(arr.Size() == 2);
+	
+		columns.emplace_back(arr[0].GetObj(), fontId);
+		columns.emplace_back(arr[1].GetObj(), fontId);
+	}
+
+	// ===== Find width (Max width of all text) =====
+	width = title.size.x;
+	
+	for (auto& i : names)
+		width = max(width, i.size.x);
+	
+	for (auto& i : columns)
+		width = max(width, i.width);
+}
+
+float Credits::CreditsData::Print(s8 fontId, float yOffset, float xOffset)
+{
+	//// Don't render if out of screen
+	//float height = titleSpacing * title.HasText() +  * (names.size() + title.HasText());
+	//if (offset < -1.f - spacing || offset > 1.f + height)
+	//	return offset - height;
+
+	if (title.HasText())
+	{
+		title.PrintCenter(fontId, xOffset, yOffset, 1.f, 0.82f, 0.35f, 1.f);
+		yOffset -= titleSpacing + title.size.y;
+	}
+	
+	for (auto& i : names)
+	{
+		i.PrintCenter(fontId, xOffset, yOffset, 1.f, 1.f, 1.f, 1.f);
+		yOffset -= namesSpacing + i.size.y;
+	}
+
+	if (!columns.empty())
+	{
+		float spacing = columnSpacing + max(columns[0].width, columns[1].width) * 0.5f;
+		float offset0 = columns[0].Print(fontId, yOffset, xOffset - spacing);
+		float offset1 = columns[1].Print(fontId, yOffset, xOffset + spacing);
+		yOffset = max(offset0, offset1);
+	}
+
+	return yOffset - sectionSpacing;
+}
+
+// ================
+// | Credits Text |
+// ================
+Credits::Text::Text(const std::string& str, s8 fontId)
+{
+	SetText(str, fontId);
+}
+
+bool Credits::Text::HasText()
+{
+	return !text.empty();
+}
+
+void Credits::Text::SetText(const std::string& str, s8 fontId)
+{
+	text = str;
+	AEGfxGetPrintSize(fontId, str.c_str(), 1.f, &size.x, &size.y);
+}
+
+void Credits::Text::PrintCenter(s8 fontId, float x, float y, float r, float g, float b, float a)
+{
+	AEGfxPrint(fontId, text.c_str(), x - size.x * 0.5f, y, 1.f, r, g, b, a);
 }
