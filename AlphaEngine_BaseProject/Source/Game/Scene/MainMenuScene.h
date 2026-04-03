@@ -112,6 +112,8 @@ private:
     bool IsMouseOver(const UIRect& r) const;
     bool IsClicked(const UIRect& r) const;
 
+    bool inCredits = false;
+
     void OnCreditsEnter();
     void OnCreditsExit();
 };

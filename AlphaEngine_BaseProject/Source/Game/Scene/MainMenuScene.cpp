@@ -6,6 +6,7 @@
 #include "../Environment/MapTile.h"
 #include "../enemy/Enemy.h"
 #include "../Time.h"
+#include "../Timer.h"
 #include "../AudioManager.h"
 #include "../UI.h"
 #include "../../Editor/Editor.h"
@@ -99,7 +100,6 @@ void MainMenuScene::UpdateQuitConfirmInput()
         PostQuitMessage(0);
         std::exit(0);
     }
-
     if (AEInputCheckTriggered(AEVK_ESCAPE))
     {
         AudioManager::PlayButtonClick();
@@ -107,6 +107,7 @@ void MainMenuScene::UpdateQuitConfirmInput()
         quitHoverYesLastFrame = false;
         quitHoverNoLastFrame = false;
         return;
+        
     }
 }
 
@@ -168,6 +169,7 @@ void MainMenuScene::RenderQuitConfirmOverlay()
 
 void MainMenuScene::OnCreditsEnter()
 {
+    inCredits = true;
     Time::GetInstance().SetPaused(true);
     credits.StartCredits();
 	AudioManager::PlayCreditsMusic();
@@ -177,6 +179,7 @@ void MainMenuScene::OnCreditsEnter()
 
 void MainMenuScene::OnCreditsExit()
 {
+    inCredits = false;
     Time::GetInstance().SetPaused(false);
     AudioManager::PlayMenuMusic();
 }
@@ -495,6 +498,7 @@ void MainMenuScene::RenderLeaderboard(float worldX, float worldY) const
 void MainMenuScene::Init()
 {
     SetCurrentDirectoryA(ExeDir().c_str());
+    TimerSystem::GetInstance().AddTimer("StopEscDelay", 0.2f, false);
 
     if (uiFont < 0)
     {
@@ -646,7 +650,11 @@ void MainMenuScene::Init()
 
 void MainMenuScene::Update()
 {
-    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    // Add timer to prevent accidental open from splash screen skipping
+    if (AEInputCheckTriggered(AEVK_ESCAPE) 
+        && TimerSystem::GetInstance().GetTimerByName("StopEscDelay") 
+        && TimerSystem::GetInstance().GetTimerByName("StopEscDelay")->completed
+        && !inCredits)
     {
         if (!isQuitConfirmOpen)
         {
@@ -840,11 +848,6 @@ void MainMenuScene::Render()
         RenderMenuOverlay();
     }
 
-    if (isQuitConfirmOpen)
-    {
-        RenderQuitConfirmOverlay();
-    }
-
     trapMgr.Render();
     player.Render();
     enemyMgr.RenderAll();
@@ -862,6 +865,11 @@ void MainMenuScene::Render()
         DrawTriggerCollider(creditsTrigger);
     }
     UI::DrawMenuControls();
+
+    if (isQuitConfirmOpen)
+    {
+        RenderQuitConfirmOverlay();
+    }
     credits.Render();
     //AEVec2 worldMousePos;
     //AEExtras::GetCursorWorldPosition(worldMousePos);
