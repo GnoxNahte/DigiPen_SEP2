@@ -68,6 +68,13 @@ static int   gHoverCellY = -1;
 static AEGfxTexture* gSpikeTexture = nullptr;
 static AEGfxVertexList* gSpikeMeshes[4] = {};
 
+// ── pressure plate / lava editor render state ─────────────────────────────
+static AEGfxTexture* gPressurePlateTexture = nullptr;
+static AEGfxVertexList* gPressurePlateMeshes[4] = {};
+
+static AEGfxTexture* gLavaTexture = nullptr;
+static AEGfxVertexList* gLavaMesh = nullptr;
+
 struct SpikeAnim
 {
     bool  triggered = false;
@@ -125,9 +132,6 @@ static TrapManager* gPlayTraps = nullptr;
 static EnemyManager* gPlayEnemies = nullptr;
 static Camera* gPlayCamera = nullptr;
 static EnemyBoss* gPlayBoss = nullptr;
-
-
-
 
 AttackSystem attackSystem;
 
@@ -335,6 +339,33 @@ static AEGfxVertexList* MakeSpikeMesh(int frame)
     AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
         0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
         -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    return AEGfxMeshEnd();
+}
+
+static AEGfxVertexList* MakePressurePlateMesh(int frame)
+{
+    const float uMin = frame * 0.25f;
+    const float uMax = (frame + 1) * 0.25f;
+
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, uMin, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, uMax, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, uMax, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, uMin, 0.f);
+    return AEGfxMeshEnd();
+}
+
+static AEGfxVertexList* MakeLavaMesh()
+{
+    AEGfxMeshStart();
+    AEGfxTriAdd(-0.5f, -0.5f, 0xFFFFFFFF, 0.f, 1.f,
+        0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
+    AEGfxTriAdd(0.5f, -0.5f, 0xFFFFFFFF, 1.f, 1.f,
+        0.5f, 0.5f, 0xFFFFFFFF, 1.f, 0.f,
+        -0.5f, 0.5f, 0xFFFFFFFF, 0.f, 0.f);
     return AEGfxMeshEnd();
 }
 
@@ -840,7 +871,6 @@ static void PlayMode_BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forc
     if (snapCamera)
         gPlayCamera->Update();
 
-    //not sure where to call this from?? will put this here for now??.....
     /*//f((gPlayRoomMgr.GetCurrentRoomID() == ROOM_9))
         UI::StartBossIntro();*/
 }
@@ -863,21 +893,62 @@ static void PlayMode_RenderRoomTraps()
 
         if (td.type == (int)Trap::Type::LavaPool)
         {
-            DrawWorldRect(wx, wy, td.size.x, td.size.y, 1.0f, 0.35f, 0.05f, 0.70f);
+            if (gLavaTexture && gLavaMesh)
+            {
+                AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+                AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+                AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+                AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+                AEGfxSetTransparency(1.f);
+                AEGfxTextureSet(gLavaTexture, 0.f, 0.f);
+
+                for (float y = wy; y < wy + td.size.y - 0.001f; y += 1.0f)
+                {
+                    for (float x = wx; x < wx + td.size.x - 0.001f; x += 1.0f)
+                    {
+                        AEMtx33 m;
+                        AEMtx33Trans(&m, x + 0.5f, y + 0.5f);
+                        AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+                        AEGfxSetTransform(m.m);
+                        AEGfxMeshDraw(gLavaMesh, AE_GFX_MDM_TRIANGLES);
+                    }
+                }
+            }
+            else
+            {
+                DrawWorldRect(wx, wy, td.size.x, td.size.y, 1.0f, 0.35f, 0.05f, 0.70f);
+            }
         }
         else if (td.type == (int)Trap::Type::PressurePlate)
         {
-            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+            if (gPressurePlateTexture && gPressurePlateMeshes[0])
+            {
+                AEMtx33 m;
+                AEMtx33Trans(&m, wx + td.size.x * 0.5f, wy + td.size.y * 0.5f);
+                AEMtx33ScaleApply(&m, &m, td.size.x * Camera::scale, td.size.y * Camera::scale);
+
+                AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+                AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+                AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+                AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+                AEGfxSetTransparency(1.f);
+                AEGfxSetTransform(m.m);
+                AEGfxTextureSet(gPressurePlateTexture, 0.f, 0.f);
+
+                // playtest preview uses default idle frame
+                AEGfxMeshDraw(gPressurePlateMeshes[0], AE_GFX_MDM_TRIANGLES);
+            }
+            else
+            {
+                DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.20f, 0.75f, 0.20f, 0.50f);
+            }
         }
         else if (td.type == (int)Trap::Type::SpikePlate)
         {
             const int frame = (spikeIdx < (int)gSpikeAnims.size()) ? gSpikeAnims[spikeIdx].frame : 0;
             ++spikeIdx;
 
-            AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-            AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-            AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
-            DrawWorldRect(wx, wy, td.size.x, td.size.y, 0.f, 0.f, 0.f, 1.f);
+        
 
             AEMtx33 m;
             AEMtx33Trans(&m, wx + td.size.x * 0.5f, wy + td.size.y * 0.5f);
@@ -932,7 +1003,6 @@ static void PlayMode_Enter()
 
     UI::Init(gPlayPlayer);
     AudioManager::Init();
-    
 }
 
 static void PlayMode_Exit()
@@ -957,8 +1027,6 @@ static void PlayMode_Exit()
 static void PlayMode_Update(float dt)
 {
     if (!gPlayPlayer || !gPlayCamera || !gPlayEnemies || !gPlayTraps) return;
-
-  
 
     if (UI::IsBossIntroActive())
     {
@@ -1342,6 +1410,13 @@ void GameState_LevelEditor_Init()
     for (int i = 0; i < 4; ++i)
         gSpikeMeshes[i] = MakeSpikeMesh(i);
 
+    gPressurePlateTexture = AEGfxTextureLoad("Assets/Tmp/pressuregate2.png");
+    for (int i = 0; i < 4; ++i)
+        gPressurePlateMeshes[i] = MakePressurePlateMesh(i);
+
+    gLavaTexture = AEGfxTextureLoad("Assets/Tmp/lava.png");
+    gLavaMesh = MakeLavaMesh();
+
     gVineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     std::cout << "[Vine] texture load: " << (gVineTexture ? "OK" : "FAILED - check Assets/Tmp/vines.png") << "\n";
     AEGfxMeshStart();
@@ -1470,13 +1545,55 @@ void GameState_LevelEditor_Draw()
             }
             else if (t.type == (int)Trap::Type::PressurePlate)
             {
-                AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-                DrawWorldRect(wx, wy, t.size.x, t.size.y, 0.20f, 0.75f, 0.20f, 0.70f);
+                if (gPressurePlateTexture && gPressurePlateMeshes[0])
+                {
+                    AEMtx33 m;
+                    AEMtx33Trans(&m, wx + t.size.x * 0.5f, wy + t.size.y * 0.5f);
+                    AEMtx33ScaleApply(&m, &m, t.size.x * Camera::scale, t.size.y * Camera::scale);
+
+                    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+                    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+                    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+                    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+                    AEGfxSetTransparency(1.f);
+                    AEGfxSetTransform(m.m);
+                    AEGfxTextureSet(gPressurePlateTexture, 0.f, 0.f);
+                    AEGfxMeshDraw(gPressurePlateMeshes[0], AE_GFX_MDM_TRIANGLES);
+                }
+                else
+                {
+                    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+                    DrawWorldRect(wx, wy, t.size.x, t.size.y, 0.20f, 0.75f, 0.20f, 0.70f);
+                }
             }
             else if (t.type == (int)Trap::Type::LavaPool)
             {
-                AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-                DrawWorldRect(wx, wy, t.size.x, t.size.y, 1.0f, 0.35f, 0.05f, 0.80f);
+                if (gLavaTexture && gLavaMesh)
+                {
+                    AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+                    AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+                    AEGfxSetColorToMultiply(1.f, 1.f, 1.f, 1.f);
+                    AEGfxSetColorToAdd(0.f, 0.f, 0.f, 0.f);
+                    AEGfxSetTransparency(1.f);
+                    AEGfxTextureSet(gLavaTexture, 0.f, 0.f);
+
+                    for (float y = wy; y < wy + t.size.y - 0.001f; y += 1.0f)
+                    {
+                        for (float x = wx; x < wx + t.size.x - 0.001f; x += 1.0f)
+                        {
+                            AEMtx33 m;
+                            AEMtx33Trans(&m, x + 0.5f, y + 0.5f);
+                            AEMtx33ScaleApply(&m, &m, Camera::scale, Camera::scale);
+                            AEGfxSetTransform(m.m);
+                            AEGfxMeshDraw(gLavaMesh, AE_GFX_MDM_TRIANGLES);
+                        }
+                    }
+                }
+                else
+                {
+                    AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+                    DrawWorldRect(wx, wy, t.size.x, t.size.y, 1.0f, 0.35f, 0.05f, 0.80f);
+                }
             }
         }
 
@@ -1584,6 +1701,13 @@ void GameState_LevelEditor_Free()
     if (gSpikeTexture) { AEGfxTextureUnload(gSpikeTexture); gSpikeTexture = nullptr; }
     for (int i = 0; i < 4; ++i)
         if (gSpikeMeshes[i]) { AEGfxMeshFree(gSpikeMeshes[i]); gSpikeMeshes[i] = nullptr; }
+
+    if (gPressurePlateTexture) { AEGfxTextureUnload(gPressurePlateTexture); gPressurePlateTexture = nullptr; }
+    for (int i = 0; i < 4; ++i)
+        if (gPressurePlateMeshes[i]) { AEGfxMeshFree(gPressurePlateMeshes[i]); gPressurePlateMeshes[i] = nullptr; }
+
+    if (gLavaTexture) { AEGfxTextureUnload(gLavaTexture); gLavaTexture = nullptr; }
+    if (gLavaMesh) { AEGfxMeshFree(gLavaMesh); gLavaMesh = nullptr; }
 
     if (gVineTexture) { AEGfxTextureUnload(gVineTexture); gVineTexture = nullptr; }
     if (gVineMesh) { AEGfxMeshFree(gVineMesh); gVineMesh = nullptr; }
