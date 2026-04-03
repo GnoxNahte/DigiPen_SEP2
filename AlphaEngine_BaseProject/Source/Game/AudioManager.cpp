@@ -31,6 +31,7 @@ std::unique_ptr<SFXAudio> AudioManager::buffConfirmSFX = nullptr;
 
 // UI SFXs
 std::unique_ptr<SFXAudio> AudioManager::buttonClick = nullptr;
+std::unique_ptr<SFXAudio> AudioManager::healthPickup = nullptr;
 
 // Player SFXs
 std::unique_ptr<SFXAudio> AudioManager::playerAttack1 = nullptr;
@@ -474,6 +475,8 @@ void AudioManager::Init()
     // UI SFXs
     if (!buttonClick)
         buttonClick = std::make_unique<SFXAudio>("Assets/music/click_but.mp3");
+    if (!healthPickup)
+        healthPickup = std::make_unique<SFXAudio>("Assets/music/HealthPickup.mp3");
 
     // Player SFXs
     if (!playerAttack1)
@@ -587,6 +590,7 @@ void AudioManager::Exit()
 
     // Reset UI SFXs
     buttonClick.reset();
+    healthPickup.reset();
 
     // Reset player SFXs
     playerAttack1.reset();

@@ -115,6 +115,7 @@ public:
 
     // UI SFXs
     static std::unique_ptr<SFXAudio> buttonClick;
+    static std::unique_ptr<SFXAudio> healthPickup;
 
     // Player SFXs
     static std::unique_ptr<SFXAudio> playerAttack1;

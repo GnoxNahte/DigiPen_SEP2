@@ -7,6 +7,7 @@
 #include "../Time.h"
 #include "../../Utils/Sprite.h" 
 #include "../UI.h"
+#include "../AudioManager.h"
 
 namespace
 {
@@ -171,6 +172,7 @@ void ItemDropManager::UpdateDrop(ItemDrop& drop, Player& player, float dt)
             drop.state = State::FlyingToUI;
 
         }
+		AudioManager::PlaySFX(*AudioManager::healthPickup, AudioManager::GetSFXVolume());
         break;
     }
 
