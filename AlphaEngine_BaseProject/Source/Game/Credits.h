@@ -2,20 +2,33 @@
 #include <AEEngine.h>
 #include <string>
 #include <vector>
+#include <functional>
 #include "../Utils/FileHelper.h"
 #include "../Editor/EditorUtils.h"
 
 class Credits : Inspectable
 {
 public:
-	Credits();
+	Credits(std::function<void()> onExit);
 	~Credits();
 
 	void Reset();
 	void Update();
 	void Render();
 
+	// Start playing credits. 
+	// Will call onExit when it's done
+	void StartCredits();
+
 private:
+	struct Config
+	{
+		s8 fontId = -1;
+		float transparency = -1.f;
+
+		float fadeSpeed = 1.f / 1.f;
+	};
+
 	struct Text
 	{
 		Text() = default;
@@ -31,10 +44,10 @@ private:
 
 	struct CreditsData
 	{
-		CreditsData(const rapidjson::GenericObject<false, rapidjson::Value>& obj, s8 fontId);
+		CreditsData(const rapidjson::GenericObject<false, rapidjson::Value>& obj, const Config& config);
 
 		// Return new yOffset (offset + height)
-		float Print(s8 fontId, float yOffset, float xOffset = 0);
+		float Print(float yOffset, float xOffset = 0);
 
 		Text title;
 		std::vector<Text> names; // Names/Libraries
@@ -43,10 +56,11 @@ private:
 		// - While it technically allows nesting columns, it isn't supported.
 		std::vector<CreditsData> columns; 
 
-		float width = -1.f;
+		AEVec2 size{};
+		const Config& config;
 
 		// Bottom spacing / CSS bottom margin
-		inline static float sectionSpacing = 0.4f;
+		inline static float sectionSpacing = 0.2f;
 		inline static float titleSpacing = 0.1f;
 		inline static float namesSpacing = 0.1f;
 		// Horizontal spacing between columns
@@ -57,13 +71,16 @@ private:
 		static constexpr const char* columnsKey = "columns";
 	};
 
-	s8 fontId = -1;
 	AEGfxVertexList* mesh;
 
+	Config config;
 	std::vector<CreditsData> data;
 	static constexpr const char* dataKey = "data";
 
 	float animateOffset = 0.f;
+	float totalHeight = -1.f;
+
+	std::function<void()> onExit;
 
 	// Inherited via Inspectable
 	void DrawInspector() override;

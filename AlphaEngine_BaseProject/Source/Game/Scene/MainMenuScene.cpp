@@ -34,6 +34,7 @@ MainMenuScene::MainMenuScene()
     , enemyBoss()
     , camera({ 1.f, 1.f }, { 50.f, 50.f }, 64.f)
     , roomSystem(map, player, camera, trapMgr, enemyMgr, enemyBoss, roomMgr)
+    , credits([this]() { OnCreditsExit(); })
 {
 }
 
@@ -61,6 +62,19 @@ bool MainMenuScene::IsMouseOver(const UIRect& r) const
 bool MainMenuScene::IsClicked(const UIRect& r) const
 {
     return IsMouseOver(r) && AEInputCheckTriggered(AEVK_LBUTTON);
+}
+
+void MainMenuScene::OnCreditsEnter()
+{
+    Time::GetInstance().SetPaused(true);
+    credits.StartCredits();
+
+    player.SetPosition({ 11.5f, 16.6f });
+}
+
+void MainMenuScene::OnCreditsExit()
+{
+    Time::GetInstance().SetPaused(false);
 }
 
 void MainMenuScene::DrawTextPx(s8 font, const std::string& text, float px, float py, float scale,
@@ -412,6 +426,7 @@ void MainMenuScene::Init()
     // Adjust these if needed after testing
     settingsTrigger = { 1.f, 25.f, 0.5f, 12.f };
     startGameTrigger = { 25.f, 30.f, 16.f, 27.f };
+    creditsTrigger = { 4.f, 25.f, 28.f, 50.f };
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
@@ -519,7 +534,7 @@ void MainMenuScene::Update()
     }
 
     const float dt = static_cast<float>(Time::GetInstance().GetScaledDeltaTime());
-
+    std::cout << static_cast<float>(Time::GetInstance().GetDeltaTime()) << "\n";
     if (isFadingToGame)
     {
         fadeAlpha += fadeSpeed * dt;
@@ -553,6 +568,9 @@ void MainMenuScene::Update()
     enemyMgr.UpdateAll(player.GetPosition(), map);
     camera.Update();
     AudioManager::Update();
+
+    if (AEInputCheckCurr(AEVK_C) || IsPlayerInsideTrigger(creditsTrigger))
+        OnCreditsEnter();
 
     credits.Update();
 }
@@ -662,6 +680,7 @@ void MainMenuScene::Render()
 
         DrawTriggerCollider(startGameTrigger);
         DrawTriggerCollider(settingsTrigger);
+        DrawTriggerCollider(creditsTrigger);
     }
 
     credits.Render();

@@ -87,6 +87,7 @@ private:
 
     TriggerZone settingsTrigger;
     TriggerZone startGameTrigger;
+    TriggerZone creditsTrigger;
 
     Credits credits;
 
@@ -101,4 +102,7 @@ private:
         float r, float g, float b, float a);
     bool IsMouseOver(const UIRect& r) const;
     bool IsClicked(const UIRect& r) const;
+
+    void OnCreditsEnter();
+    void OnCreditsExit();
 };
