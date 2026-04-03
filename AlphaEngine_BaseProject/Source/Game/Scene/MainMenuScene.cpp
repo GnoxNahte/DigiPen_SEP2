@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <cstdlib>
 
 std::string MainMenuScene::ExeDir()
 {
@@ -66,6 +67,105 @@ bool MainMenuScene::IsClicked(const UIRect& r) const
     return IsMouseOver(r) && AEInputCheckTriggered(AEVK_LBUTTON);
 }
 
+void MainMenuScene::UpdateQuitConfirmInput()
+{
+    float w = (float)AEGfxGetWindowWidth();
+    float h = (float)AEGfxGetWindowHeight();
+    float centerX = w * 0.5f;
+    float centerY = h * 0.5f;
+
+    UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+    UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+
+    bool hoverNo = IsMouseOver(btnNo);
+    bool hoverYes = IsMouseOver(btnYes);
+
+    quitHoverNoLastFrame = hoverNo;
+    quitHoverYesLastFrame = hoverYes;
+
+    if (IsClicked(btnNo))
+    {
+        AudioManager::PlayButtonClick();
+        isQuitConfirmOpen = false;
+        quitHoverYesLastFrame = false;
+        quitHoverNoLastFrame = false;
+        return;
+    }
+
+    if (IsClicked(btnYes))
+    {
+        AudioManager::PlayButtonClick();
+        Sleep(150);
+        PostQuitMessage(0);
+        std::exit(0);
+    }
+
+    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    {
+        AudioManager::PlayButtonClick();
+        isQuitConfirmOpen = false;
+        quitHoverYesLastFrame = false;
+        quitHoverNoLastFrame = false;
+        return;
+    }
+}
+
+static AEVec2 MM_ScreenToEngine(float px, float py)
+{
+    float w = (float)AEGfxGetWindowWidth();
+    float h = (float)AEGfxGetWindowHeight();
+    return AEVec2{ px - w * 0.5f, (h * 0.5f) - py };
+}
+
+void MainMenuScene::RenderQuitConfirmOverlay()
+{
+    float w = (float)AEGfxGetWindowWidth();
+    float h = (float)AEGfxGetWindowHeight();
+    float centerX = w * 0.5f;
+    float centerY = h * 0.5f;
+
+    DrawDimBackground(0.75f);
+
+    {
+        AEMtx33 scale, rot, trans, transform;
+        AEMtx33Scale(&scale, 850.0f, 400.0f);
+        AEMtx33Rot(&rot, 0.0f);
+        AEVec2 eng = MM_ScreenToEngine(centerX, centerY);
+        AEMtx33Trans(&trans,
+            eng.x + Camera::position.x * Camera::scale,
+            eng.y + Camera::position.y * Camera::scale);
+        AEMtx33Concat(&transform, &rot, &scale);
+        AEMtx33Concat(&transform, &trans, &transform);
+
+        AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+        AEGfxSetColorToMultiply(0.f, 0.f, 0.f, 0.f);
+        AEGfxSetColorToAdd(0.18f, 0.18f, 0.18f, 0.90f);
+        AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+        AEGfxSetTransparency(0.90f);
+        AEGfxSetTransform(transform.m);
+        AEGfxMeshDraw(fadeMesh, AE_GFX_MDM_TRIANGLES);
+    }
+
+    DrawTextPx((s8)quitConfirmFontLarge, "QUIT GAME?", centerX - 250.0f, centerY - 100.0f, 1.0f, 1.f, 1.f, 1.f, 1.f);
+    DrawTextPx((s8)quitConfirmFont, "PROGRESS WILL BE LOST", centerX - 370.0f, centerY - 20.0f, 1.0f, 0.8f, 0.8f, 0.8f, 1.f);
+
+    UIRect btnNo{ { centerX + 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+    UIRect btnYes{ { centerX - 160.0f, centerY + 80.0f }, {180.0f, 60.0f} };
+
+    bool hoverNo = IsMouseOver(btnNo);
+    float scaleNo = hoverNo ? 1.05f : 1.0f;
+    float rNo = 1.f, gNo = 1.f, bNo = 1.f, aNo = hoverNo ? 1.f : 0.85f;
+    if (hoverNo) { rNo = 1.0f; gNo = 0.95f; bNo = 0.35f; }
+
+    bool hoverYes = IsMouseOver(btnYes);
+    float scaleYes = hoverYes ? 1.05f : 1.0f;
+    float rYes = 1.f, gYes = 1.f, bYes = 1.f, aYes = hoverYes ? 1.f : 0.85f;
+    if (hoverYes) { rYes = 1.0f; gYes = 0.4f; bYes = 0.4f; }
+
+    DrawTextPx((s8)quitConfirmFont, "NO", btnNo.pos.x - 52.0f, btnNo.pos.y + 12.0f, scaleNo, rNo, gNo, bNo, aNo);
+    DrawTextPx((s8)quitConfirmFont, "YES", btnYes.pos.x - 35.0f, btnYes.pos.y + 12.0f, scaleYes, rYes, gYes, bYes, aYes);
+}
+
 void MainMenuScene::OnCreditsEnter()
 {
     Time::GetInstance().SetPaused(true);
@@ -93,12 +193,7 @@ void MainMenuScene::DrawTextPx(s8 font, const std::string& text, float px, float
     AEGfxPrint(font, text.c_str(), xNdc, yNdc, scale, r, g, b, a);
 }
 
-static AEVec2 MM_ScreenToEngine(float px, float py)
-{
-    float w = (float)AEGfxGetWindowWidth();
-    float h = (float)AEGfxGetWindowHeight();
-    return AEVec2{ px - w * 0.5f, (h * 0.5f) - py };
-}
+
 
 void MainMenuScene::DrawDimBackground(float alpha)
 {
@@ -410,6 +505,20 @@ void MainMenuScene::Init()
         uiFontLarge = AEGfxCreateFont("Assets/m04.ttf", 48);
     }
 
+    if (quitConfirmFont < 0)
+    {
+        quitConfirmFont = AEGfxCreateFont("Assets/m04.ttf", 35);
+        if (quitConfirmFont < 0) quitConfirmFont = AEGfxCreateFont("../Assets/m04.ttf", 35);
+        if (quitConfirmFont < 0) quitConfirmFont = AEGfxCreateFont("../../Assets/m04.ttf", 35);
+    }
+
+    if (quitConfirmFontLarge < 0)
+    {
+        quitConfirmFontLarge = AEGfxCreateFont("Assets/m04.ttf", 55);
+        if (quitConfirmFontLarge < 0) quitConfirmFontLarge = AEGfxCreateFont("../Assets/m04.ttf", 55);
+        if (quitConfirmFontLarge < 0) quitConfirmFontLarge = AEGfxCreateFont("../../Assets/m04.ttf", 55);
+    }
+
     if (!fadeMesh)
     {
         AEGfxMeshStart();
@@ -429,6 +538,9 @@ void MainMenuScene::Init()
     draggingMasterSlider = false;
     draggingBgmSlider = false;
     draggingSfxSlider = false;
+    isQuitConfirmOpen = false;
+    quitHoverYesLastFrame = false;
+    quitHoverNoLastFrame = false;
 
     // Adjust these if needed after testing
     settingsTrigger = { 1.f, 25.f, 0.5f, 12.f };
@@ -534,6 +646,26 @@ void MainMenuScene::Init()
 
 void MainMenuScene::Update()
 {
+    if (AEInputCheckTriggered(AEVK_ESCAPE))
+    {
+        if (!isQuitConfirmOpen)
+        {
+            isQuitConfirmOpen = true;
+            quitHoverYesLastFrame = false;
+            quitHoverNoLastFrame = false;
+            AudioManager::PlayButtonClick();
+            AudioManager::Update();
+			return; // so that the menu doesn't immediately close if the player presses Escape again while the quit confirm is open
+        }
+    }
+
+    if (isQuitConfirmOpen)
+    {
+        UpdateQuitConfirmInput();
+        AudioManager::Update();
+        return;
+    }
+
     if (IsMenuOpen())
     {
         UpdateMenuInput();
@@ -708,6 +840,11 @@ void MainMenuScene::Render()
         RenderMenuOverlay();
     }
 
+    if (isQuitConfirmOpen)
+    {
+        RenderQuitConfirmOverlay();
+    }
+
     trapMgr.Render();
     player.Render();
     enemyMgr.RenderAll();
@@ -751,6 +888,18 @@ void MainMenuScene::Exit()
     {
         AEGfxDestroyFont((s8)uiFont);
         uiFont = -1;
+    }
+
+    if (quitConfirmFont >= 0)
+    {
+        AEGfxDestroyFont((s8)quitConfirmFont);
+        quitConfirmFont = -1;
+    }
+
+    if (quitConfirmFontLarge >= 0)
+    {
+        AEGfxDestroyFont((s8)quitConfirmFontLarge);
+        quitConfirmFontLarge = -1;
     }
 
     roomSystem.ClearRuntimeRoomObjects();

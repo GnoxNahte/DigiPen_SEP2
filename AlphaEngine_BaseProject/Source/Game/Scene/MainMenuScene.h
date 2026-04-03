@@ -41,6 +41,8 @@ private:
     int mapRows = 100;
     int uiFont = -1;
     int uiFontLarge = -1;
+    int quitConfirmFont = -1;
+    int quitConfirmFontLarge = -1;
 
     AEGfxTexture* vineTexture = nullptr;
     AEGfxVertexList* vineMesh = nullptr;
@@ -95,6 +97,13 @@ private:
     bool IsMenuOpen() const;
     void UpdateMenuInput();
     void RenderMenuOverlay();
+
+    bool isQuitConfirmOpen = false;
+    bool quitHoverYesLastFrame = false;
+    bool quitHoverNoLastFrame = false;
+
+    void UpdateQuitConfirmInput();
+    void RenderQuitConfirmOverlay();
 
     void DrawDimBackground(float alpha);
     void DrawSolidPanel(const UIRect& r, float alpha);
