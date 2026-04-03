@@ -12,6 +12,7 @@
 #include "../Player/Player.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/AttackSystem.h"
+#include "../Background.h"
 
 #include "../Time.h"
 #include "../UI.h"
@@ -514,7 +515,7 @@ static void Prompt_Update()
         gPromptActive = false;
     }
 
-    if (AEInputCheckTriggered(AEVK_Z))
+    if (AEInputCheckTriggered(AEVK_Z) || AEInputCheckTriggered(AEVK_ESCAPE))
         gPromptActive = false;
 }
 
@@ -1086,12 +1087,21 @@ static void UpdateEditor(float dt)
 {
     if (!gMap || !gCamera) return;
 
+    float shiftSpeedup = AEInputCheckCurr(AEVK_LSHIFT) ? 3.f : 1.f;
     if (!gUIIO.mouseCaptured)
     {
-        if (AEInputCheckCurr(AEVK_W)) gCamera->position.y += CAMERA_SPEED * dt;
-        if (AEInputCheckCurr(AEVK_S)) gCamera->position.y -= CAMERA_SPEED * dt;
-        if (AEInputCheckCurr(AEVK_A)) gCamera->position.x -= CAMERA_SPEED * dt;
-        if (AEInputCheckCurr(AEVK_D)) gCamera->position.x += CAMERA_SPEED * dt;
+        if (AEInputCheckCurr(AEVK_W)) gCamera->position.y += CAMERA_SPEED * shiftSpeedup * dt;
+        if (AEInputCheckCurr(AEVK_S)) gCamera->position.y -= CAMERA_SPEED * shiftSpeedup * dt;
+        if (AEInputCheckCurr(AEVK_A)) gCamera->position.x -= CAMERA_SPEED * shiftSpeedup * dt;
+        if (AEInputCheckCurr(AEVK_D)) gCamera->position.x += CAMERA_SPEED * shiftSpeedup * dt;
+
+        if (AEInputCheckCurr(AEVK_MBUTTON))
+        {
+            Vec2Int delta;
+            AEInputGetCursorPositionDelta(&delta.x, &delta.y);
+            AEVec2 woldDelta = { delta.x / Camera::scale, -delta.y / Camera::scale };
+            gCamera->position = gCamera->position - woldDelta;
+        }
 
         s32 scroll = 0;
         AEInputMouseWheelDelta(&scroll);
@@ -1127,7 +1137,7 @@ static void UpdateEditor(float dt)
 
     const bool lmbTriggered = AEInputCheckTriggered(AEVK_LBUTTON);
     const bool lmb = gUI.dragPaint ? AEInputCheckCurr(AEVK_LBUTTON) : lmbTriggered;
-    const bool rmb = AEInputCheckTriggered(AEVK_RBUTTON);
+    const bool rmb = AEInputCheckCurr(AEVK_RBUTTON);
 
     // bind mode: click pressure plate -> click spike to toggle link
     if (gUI.tool == EditorTool::Bind)
@@ -1326,6 +1336,8 @@ void GameState_LevelEditor_Init()
     EditorUI_SetFont(gUIFont);
     OverlayInit();
 
+    Background::Init();
+
     gSpikeTexture = AEGfxTextureLoad("Assets/Tmp/spikes.png");
     for (int i = 0; i < 4; ++i)
         gSpikeMeshes[i] = MakeSpikeMesh(i);
@@ -1415,6 +1427,7 @@ void GameState_LevelEditor_Draw()
     if (!gMap || !gCamera) return;
 
     AEGfxSetBackgroundColor(0.129f, 0.114f, 0.18f);
+    Background::Render();
 
     AEMtx33 identity;
     AEMtx33Identity(&identity);
@@ -1575,6 +1588,8 @@ void GameState_LevelEditor_Free()
     if (gVineTexture) { AEGfxTextureUnload(gVineTexture); gVineTexture = nullptr; }
     if (gVineMesh) { AEGfxMeshFree(gVineMesh); gVineMesh = nullptr; }
     gVinePositions.clear();
+
+    Background::Exit();
 
     delete gMap;    gMap = nullptr;
     delete gCamera; gCamera = nullptr;
