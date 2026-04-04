@@ -124,7 +124,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
             }
 
             // skeleton / normal enemy old behaviour
-           // skeleton / normal enemy simple temp hitbox
+          
             EnemySpawnedHitbox hb;
 
             const AEVec2 ePos = e.GetPosition();
