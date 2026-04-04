@@ -109,6 +109,10 @@ void PlayerAfterimage::Update()
 void PlayerAfterimage::ResetLastSpawn()
 {
 	lastSpawnedPos = refPlayer.GetPosition();
+
+	// iterate from back. Use this weird syntax because size_t is unsigned
+	for (size_t i = pool.GetSize(); (i--) > 0;)
+		pool.Release(pool.pool[i]);
 }
 
 void PlayerAfterimage::Render()
