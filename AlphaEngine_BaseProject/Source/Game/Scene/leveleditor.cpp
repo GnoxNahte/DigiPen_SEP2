@@ -429,7 +429,7 @@ static void DrawScreenRect(float cx, float cy, float w, float h,
 }
 
 static void DrawScreenText(const char* text, float px, float py,
-    float r, float g, float b)
+    float r, float g, float b, float scale = 1.0f)
 {
     int winW = AEGfxGetWindowWidth();
     int winH = AEGfxGetWindowHeight();
@@ -441,7 +441,7 @@ static void DrawScreenText(const char* text, float px, float py,
     AEGfxSetColorToAdd(0, 0, 0, 0);
     AEGfxSetColorToMultiply(1, 1, 1, 1);
     AEGfxSetTransparency(1.f);
-    AEGfxPrint(gUIFont, text, ndcX, ndcY, 1.0f, r, g, b, 1.f);
+    AEGfxPrint(gUIFont, text, ndcX, ndcY, scale, r, g, b, 1.f);
 }
 
 static void DrawGridOverlay()
@@ -566,21 +566,24 @@ static void Prompt_Draw()
     DrawScreenRect(cx, cy, bw, bh, 0.15f, 0.15f, 0.18f, 0.97f);
 
     const char* title = gPromptIsSave ? "Save level as:" : "Load level:";
-    DrawScreenText(title, cx - bw * 0.5f + 18.f, cy + 44.f, 0.9f, 0.9f, 1.f);
+    DrawScreenText(title, cx - bw * 0.5f + 18.f, cy + 44.f, 0.9f, 0.9f, 1.f, 0.8f);
 
     float ibx = cx;
     float iby = cy + 4.f;
+
+    // input box only, no blue underline
     DrawScreenRect(ibx, iby, bw - 36.f, 34.f, 0.08f, 0.08f, 0.10f, 1.f);
-    DrawScreenRect(ibx, iby, bw - 36.f, 2.f, 0.4f, 0.7f, 1.f, 1.f);
 
     static float blinkT = 0.f;
     blinkT += (float)AEFrameRateControllerGetFrameTime();
+
     std::string display = gPromptInput;
-    if ((int)(blinkT * 2.f) % 2 == 0) display += '|';
+    if ((int)(blinkT * 2.f) % 2 == 0)
+        display += '|';
 
     DrawScreenText(display.c_str(),
         ibx - (bw - 36.f) * 0.5f + 10.f, iby - 8.f,
-        1.f, 1.f, 1.f);
+        1.f, 1.f, 1.f, 0.75f);
 
     if (!gPromptInput.empty())
     {
@@ -588,12 +591,15 @@ static void Prompt_Draw()
         const size_t maxChars = 52;
         if (preview.size() > maxChars)
             preview = "..." + preview.substr(preview.size() - maxChars);
+
         DrawScreenText(preview.c_str(),
-            cx - bw * 0.5f + 18.f, cy - 46.f, 0.45f, 0.85f, 0.45f);
+            cx - bw * 0.5f + 18.f, cy - 46.f,
+            0.45f, 0.85f, 0.45f, 0.6f);
     }
 
     DrawScreenText("Enter to confirm  |  Press Z to cancel",
-        cx - bw * 0.5f + 18.f, cy - 66.f, 0.5f, 0.5f, 0.55f);
+        cx - bw * 0.5f + 18.f, cy - 66.f,
+        0.5f, 0.5f, 0.55f, 0.6f);
 }
 
 /*========================================================
@@ -871,8 +877,7 @@ static void PlayMode_BuildCurrentRoom(RoomDirection cameFrom, const AEVec2* forc
     if (snapCamera)
         gPlayCamera->Update();
 
-    /*//f((gPlayRoomMgr.GetCurrentRoomID() == ROOM_9))
-        UI::StartBossIntro();*/
+   
 }
 
 static void PlayMode_RenderRoomTraps()
