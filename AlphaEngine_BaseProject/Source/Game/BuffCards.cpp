@@ -1,4 +1,17 @@
-//#include <iostream>
+/*!
+@file		BuffCards.cpp
+@author 	Wei Xiang NG
+@brief		This C++ file handles the logic and rendering of the buff card 
+			system in the game, including randomization of card types and 
+			rarities, player input for card selection, and applying card effects 
+			to the player stats. It also manages the visual presentation of the cards 
+			during selection, such as flip animations and prompts.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include <ctime>
 #include <filesystem>
 #include <rapidjson/document.h>
@@ -7,12 +20,29 @@
 #include "../Utils/FileHelper.h"
 #include "../Utils/Event/EventSystem.h"
 #include "../Game/UI.h"
+#include "../Game/AudioManager.h"
 #include "Time.h"
 #include "BuffCards.h"
 #include "Camera.h"
 #include "Timer.h"
-#include "../Game/AudioManager.h"
 
+/*-----------------------------------------------------------------------------
+This constructor allows for easy creation of BuffCard instances with all 
+necessary information, and provides default values for all parameters to allow 
+for flexible instantiation. The cardPos parameter is included to allow for 
+dynamic positioning of cards on the screen, which can be useful for rendering 
+and animations. The default values for the parameters are set to represent a 
+generic card with no specific type, rarity, or effect, and the selected flag 
+is set to false by default. 
+
+This design allows for the creation of BuffCard instances with varying levels
+of detail, depending on the needs of the code that is instantiating the cards. 
+For example, when loading card information from a file, the constructor can be 
+used to create cards with specific names, descriptions, and effects, while when
+randomizing cards for selection, the constructor can be used with default values
+and then the specific type and rarity can be set afterwards based on the 
+randomization logic.
+-----------------------------------------------------------------------------*/
 BuffCard::BuffCard( // Constructor
 	CARD_RARITY cr,
 	CARD_TYPE ct,
@@ -26,11 +56,30 @@ BuffCard::BuffCard( // Constructor
 	rarity{ cr }, type{ ct }, cardName{ cName }, cardDesc{ cDesc }, cardEffect{ cEffect }, 
 	effectValue1{ eValue1 }, effectValue2{ eValue2 }, selected{ slcted }, cardPos {pos}
 	{/* empty by design */}
-
+/*-----------------------------------------------------------------------------
+This function initializes the BuffCardManager by loading card information from 
+a file and setting up the initial state for card selection. It calls 
+LoadCardInfo() to read card data from a JSON file and populate the card pools 
+based on rarity. It also initializes the selected card index to 0, which will be 
+used to track which card the player has currently selected during the card 
+selection process.
+-----------------------------------------------------------------------------*/
 void BuffCardManager::Init() {
 	LoadCardInfo();
 	cardSelected = 0; // Initialize selected card index to 0 at the start of selection.
 }
+/*-----------------------------------------------------------------------------
+This function initializes the BuffCardScreen by loading necessary textures for 
+the card backs, card fronts based on type, and rarity overlays. It also creates 
+the meshes needed for rendering the cards and the black overlay. Additionally, 
+it sets up fonts for the card prompts and descriptions, and seeds the random 
+number generator with the current time to ensure variability in card 
+randomization. 
+
+This setup is essential for the visual presentation of the card selection 
+screen and for ensuring that the card randomization produces different 
+results each time.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	cardMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
@@ -58,7 +107,24 @@ void BuffCardScreen::Init() {
 	cardBuffFont = AEGfxCreateFont("Assets/Pixellari.ttf", CARD_BUFF_FONT_SIZE);
 	srand(static_cast<unsigned int>(time(NULL))); // Seed random number generator with current time for variability.
 }
+/*-----------------------------------------------------------------------------
+This function updates the BuffCardManager each frame. 
+It checks if the cards have been shuffled and if the room has been cleared. 
+If the room has been cleared and the cards have not yet been shuffled, it 
+randomizes the cards for selection. 
 
+This ensures that new cards are generated for the player to choose from after 
+clearing a room, but only once per shuffle event to prevent unnecessary 
+randomization. 
+
+After handling the shuffle logic, it calls SelectCards() to manage player input 
+for card selection and applying effects, allowing the player to interact with 
+the card selection screen and choose a card to apply its effect to the player 
+stats. 
+
+This function is called every frame to continuously check for the conditions for
+shuffling and to handle player input during the card selection process.
+-----------------------------------------------------------------------------*/
 void BuffCardManager::Update() {
 	if (!shuffled && roomCleared) { // Randomize cards only once per shuffle event, controlled by the shuffled flag.
 		BuffCardManager::RandomizeCards(NUM_CARDS);
@@ -69,6 +135,19 @@ void BuffCardManager::Update() {
 	// once per selection due to the cardSelectedThisUpdate flag.
 	SelectCards(randomizedCards);
 }
+/*-----------------------------------------------------------------------------
+This function applies the effect of the selected card to the player stats. 
+It uses a switch statement to handle any card effects that are not directly 
+related to buffs applied to the player, such as the "Switch It Up" card which 
+triggers a shuffle of the cards. 
+
+For other cards, it triggers a BuffSelectedEvent with the selected card, which 
+can be listened to by other parts of the code (such as the Player class) to 
+apply the specific effects of the card to the player stats. 
+
+It also sets the text loading status to false to allow for the "Choose A Buff."
+text to fade in properly when the buff selection screen is active.
+-----------------------------------------------------------------------------*/
 void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 	switch (card.type) { // Handle non player buff related effects e.g. shuffle
 	case (SWITCH_IT_UP):
@@ -77,12 +156,23 @@ void BuffCardManager::ApplyCardEffect(const BuffCard& card) {
 		shuffled = false; // Reset shuffled flag to allow randomization of new cards in the next update cycle.
 		return; // Disallow effects to trigger whilst shuffling.
 	}
-
 	EventSystem::Trigger<BuffSelectedEvent>({ card });
-
 	BuffCardScreen::GetTextLoadingStatus() = false;
-
 }
+/*-----------------------------------------------------------------------------
+This function handles player input for selecting a card from the available 
+options and applying its effect. 
+
+It checks for both keyboard and mouse input to allow for flexible control 
+options. The function ensures that a card can only be selected once per update
+cycle to prevent multiple selections, and it also checks the progress of the card
+flip animation to ensure that the player can only select a card once it has become
+visible on the screen.
+
+When a card is selected, it applies the effect of the card to the player stats
+by calling ApplyCardEffect(), and it also manages the selection state of the cards
+to provide visual feedback to the player on which card is currently selected.
+-----------------------------------------------------------------------------*/
 void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 	if (cards.empty() || 
 		IsCardSelectedThisUpdate() || 
@@ -224,6 +314,16 @@ void BuffCardManager::SelectCards(std::vector<BuffCard>& cards) {
 	}
 
 }
+/*-----------------------------------------------------------------------------
+This function determines the rarity of a card based on a random roll and 
+predefined thresholds. It generates a random float between 0 and 1, and then 
+iterates through the rarityTable, which contains pairs of rarity thresholds 
+and their corresponding rarities. 
+
+The function returns the first rarity for which the random roll is less than 
+the threshold, effectively categorizing the roll into a rarity tier based on 
+the defined probabilities.
+-----------------------------------------------------------------------------*/
 CARD_RARITY BuffCardManager::DetermineRarity() {
 	f32 rarityRoll = AEExtras::RandomRange({ 0.f, 1.f }); // Get a random float between 0 and 1 to determine rarity.
 	for (const RarityThreshold entry : rarityTable) {
@@ -234,7 +334,16 @@ CARD_RARITY BuffCardManager::DetermineRarity() {
 	}
 	return RARITY_UNCOMMON; // default fallback, should never reach here if thresholds are set correctly.
 }
+/*-----------------------------------------------------------------------------
+This function determines the type of a card based on its rarity. It first 
+selects the appropriate card pool (vector of BuffCards) based on the given 
+rarity. It then generates a random float between 0 and 1 to select a card type 
+from the chosen pool. 
 
+The index for the card type is calculated by multiplying the random float by 
+the size of the card pool, and then clamping it to ensure it falls within 
+valid bounds. Finally, it returns the type of the selected card from the pool.
+-----------------------------------------------------------------------------*/
 CARD_TYPE BuffCardManager::DetermineType(CARD_RARITY rarity) {
 	const std::vector<BuffCard>& cardPool = 
 		(rarity == RARITY_UNCOMMON) ? uncommonCards :
@@ -260,10 +369,10 @@ CARD_TYPE BuffCardManager::DetermineType(CARD_RARITY rarity) {
 	return cardPool[index].type;
 }
 
-/*-------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 Randomize card types and rarities for the current set of cards.
 Called once per shuffle.
---------------------------------------------------------------*/
+-----------------------------------------------------------------------------*/
 void BuffCardManager::RandomizeCards(int numCards) {
 	AudioManager::MuffleMusic();
 	randomizedCards.clear();
@@ -312,7 +421,12 @@ void BuffCardManager::RandomizeCards(int numCards) {
 	//		//<< randomizedCards[i].cardEffect << std::endl;
 	//}
 }
-
+/*-----------------------------------------------------------------------------
+This function converts a string representation of a card type into the 
+corresponding CARD_TYPE enum value. It uses a series of if-else statements 
+to compare the input string against known card type names and returns the 
+appropriate enum value.
+-----------------------------------------------------------------------------*/
 CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
 	if (typeStr == "HERMES_FAVOR")  return HERMES_FAVOR;
 	else if (typeStr == "IRON_DEFENCE") return IRON_DEFENCE;
@@ -327,6 +441,12 @@ CARD_TYPE BuffCardManager::GetCardType(std::string typeStr) {
 	else if (typeStr == "SUNDERING_BLOW") return SUNDERING_BLOW;
 	else return HERMES_FAVOR; // default fallback
 }
+/*-----------------------------------------------------------------------------
+This function converts a string representation of a card rarity into the 
+corresponding CARD_RARITY enum value. Similar to GetCardType, it uses a series 
+of if-else statements to compare the input string against known rarity names and
+returns the appropriate enum value.
+-----------------------------------------------------------------------------*/
 CARD_RARITY BuffCardManager::GetCardRarity(std::string rarityStr) {
 	if (rarityStr == "UNCOMMON") return RARITY_UNCOMMON;
 	else if (rarityStr == "RARE") return RARITY_RARE;
@@ -334,7 +454,16 @@ CARD_RARITY BuffCardManager::GetCardRarity(std::string rarityStr) {
 	else if (rarityStr == "LEGENDARY") return RARITY_LEGENDARY;
 	else return RARITY_UNCOMMON; // default fallback
 }
+/*-----------------------------------------------------------------------------
+This function loads card information from a JSON file and populates the card 
+pools based on rarity. It reads the card data, including names, descriptions, 
+effects, and effect values, and creates BuffCard instances for each card defined 
+in the JSON file. 
 
+The cards are then categorized into their respective rarity pools for 
+randomization purposes. The function also includes error handling for file 
+reading and JSON parsing to ensure that the card information is loaded correctly.
+-----------------------------------------------------------------------------*/
 void BuffCardManager::LoadCardInfo() {
 	allCards.clear(); // clear previous cards
 
@@ -411,7 +540,12 @@ void BuffCardManager::LoadCardInfo() {
 
 	std::cout << "Loaded " << allCards.size() << " cards from JSON." << std::endl;
 }
+/*-----------------------------------------------------------------------------
+This function updates the BuffCardScreen each frame. 
 
+It manages the flip animation for each card, adjusting the flip speed based 
+on the rarity of the card to create a more dynamic and engaging visual effect.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::Update() {
 
 	for (int i = 0; i < NUM_CARDS; ++i) {
@@ -503,8 +637,18 @@ void BuffCardScreen::Update() {
 		overlayAlpha = 0.85f;
 	}
 }
-// This function resets the flip, simulating a shuffle.
-// TODO : The buff card type and rarity should be randomized during this function.
+/*-----------------------------------------------------------------------------
+This function resets the flip sequence for the cards, allowing for a new 
+shuffle and card selection process to begin. It resets the state of each card 
+to be face down, stops any ongoing flip animations, and removes any existing 
+timers related to the card flipping. 
+
+It also resets the current flip index and flags to allow for a new sequence 
+of card flips to occur, and it randomizes new cards for the player to choose from. 
+
+This function is typically called when the player selects the "Switch It Up" 
+card or when a new card selection screen is triggered after clearing a room.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::ResetFlipSequence()
 {
 	textLoading = false;
@@ -535,28 +679,18 @@ void BuffCardScreen::ResetFlipSequence()
 	// Randomize new cards
 	BuffCardManager::RandomizeCards(NUM_CARDS);
 }
+/*-----------------------------------------------------------------------------
+This function initiates the flip animation for a specific card based on its 
+index. It sets the flip state of the card to start from the back and marks it 
+as currently flipping. 
+
+The flip speed and timing are managed in the Update() function, which will 
+progress the flip animation over time until the card is fully revealed.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::FlipCard(int cardIndex) {
 	if (cardIndex >= 0 && cardIndex < NUM_CARDS) {
 		cardFlipStates[cardIndex] = -1.0f; // Start from back
 		cardFlipping[cardIndex] = true;
-
-		// kiv sounds weird
-
-		//const auto& cards = BuffCardManager::GetRandomizedCards();
-		//if (cardIndex < (int)cards.size())
-		//{
-		//	float pitch = 1.0f;
-
-		//	switch (cards[cardIndex].rarity)
-		//	{
-		//	case RARITY_UNCOMMON:  pitch = 1.0f; break;
-		//	case RARITY_RARE:      pitch = 1.05f; break;
-		//	case RARITY_EPIC:      pitch = 1.1f; break;
-		//	case RARITY_LEGENDARY: pitch = 1.15f; break;
-		//	}
-
-		//	AudioManager::PlaySFX(*AudioManager::buffFlipSFX, pitch);
-		//}
 	}
 }
 // Draw a black overlay when drawing cards.
@@ -589,6 +723,13 @@ void BuffCardScreen::DrawBlackOverlay()
 	AEGfxMeshDraw(rectMesh, AE_GFX_MDM_TRIANGLES);
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 }
+/*-----------------------------------------------------------------------------
+This function draws the prompt text on the card selection screen, including the
+header and the details of the currently selected card. It manages the fade-in
+effect for the prompt text using a timer, and it also displays the name, 
+description, and effect of the currently selected card with appropriate coloring
+based on the card's rarity.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int selectedIdx) {
 	if (!textLoading) {
 		TimerSystem::GetInstance().AddTimer("Choose Buff Timer", 1.2f, true, true);
@@ -619,20 +760,17 @@ void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int sele
 			1.0f,
 			1.0f, 1.0f, 1.0f,
 			1.0f);
-		// 1. Get the current selected card's data
+		// Get the current selected card's data
 		if (selectedIdx < 0 || selectedIdx >= cards.size()) return;
 		const BuffCard& selected = cards[selectedIdx];
 
-		// 2. Setup Base Coordinates (NDC)
-		// We want the text at the bottom-center of the screen
-		float baseTextX = -0.85f; // Left-ish start for alignment
+		// Setup Base Coordinates at bottom center of screen for text, and then offset from there.
+		float baseTextX = -0.85f; // Left alignment
 		float titleY = -0.7f;    // Near the bottom
 		float descY = -0.8f;    // Below the title
 		float effectY = -0.9f;  // Below the description
 
-		// 3. Draw "Choose a buff" Header
-		// (Your existing code for this is fine as a global prompt)
-
+		// Draw "Choose a buff" Header
 		f32 red{}, green{}, blue{};
 		if (allCardsFlipped) {
 			switch (selected.rarity) { // Match sprite hex colors
@@ -680,7 +818,16 @@ void BuffCardScreen::DrawPromptText(const std::vector<BuffCard>& cards, int sele
 		}
 	}
 }
-// Draw buff cards.
+/*-----------------------------------------------------------------------------
+This function is responsible for drawing the cards on the screen, applying 
+various visual effects such as flipping, floating, wobbling, and scaling based 
+on the card's state and rarity. 
+
+It calculates the appropriate transformations for each card and renders them
+with the correct textures for the front and back, as well as an overlay for
+the card's rarity. The function also caches the screen rectangles for each card
+to facilitate mouse interaction for selection.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::DrawDeck(const std::vector<BuffCard> cards) {
 	cachedCardRects.clear();
 	// Render state
@@ -791,10 +938,16 @@ void BuffCardScreen::Render() {
 			DrawDeck(BuffCardManager::GetRandomizedCards());
 		}
 	}
-	//if (AEInputCheckTriggered(AEVK_P)) { // Remember to set textloading back to false for fadeonce flag.
-	//	textLoading = false;
-	//}
 }
+/*-----------------------------------------------------------------------------
+This function is called when exiting the BuffCardScreen. It is responsible for 
+cleaning up resources such as meshes, textures, and fonts that were loaded for
+the card screen. 
+
+It checks if each resource exists before attempting to free or unload it, and 
+it ensures that all allocated resources are properly released to prevent memory 
+leaks when the card screen is closed or when transitioning to another screen.
+-----------------------------------------------------------------------------*/
 void BuffCardScreen::Exit() {
 	// Free meshes
 	if (cardMesh) {

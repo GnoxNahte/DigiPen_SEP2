@@ -1,3 +1,17 @@
+/*!
+@file		GameOver.h
+@author 	Wei Xiang NG
+@brief		This header file declares the functions for managing the eyelid 
+			effect used in the game over sequence, including building and freeing 
+			meshes, updating progress, drawing the eyelid, and checking if the 
+			eyelid is fully open or closed. It also includes necessary headers and 
+			defines constants for the eyelid animation and behavior.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 void BuildEyelidMeshes();
 void FreeEyelidMeshes();

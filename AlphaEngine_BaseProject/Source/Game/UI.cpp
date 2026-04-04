@@ -1,420 +1,583 @@
-	#include "UI.h"
-	#include "../Utils/ObjectPool.h"
-	#include <string>
-	#include "../Game/BuffCards.h"
-	#include "../Utils/AEExtras.h"
-	#include "Player/Player.h"
-	#include "../Utils/MeshGenerator.h"
-	#include "../Game/Time.h"
-	#include "../Game/Timer.h"
-	#include "../Game/GameOver.h"
-	#include <iostream>
-	#include "../Game/AudioManager.h"
-	#include "../Game/enemy/BossIntroOverlay.h"
-	#include "../Editor/Editor.h"
+/*!
+@file		UI.cpp
+@author 	Wei Xiang NG
+@brief		This C++ file handles the UI of the game, including health bar,
+			damage text, game over screen, victory screen, and boss intro 
+			overlay.
 
-	namespace {
-		constexpr float END_SCREEN_DELAY = 2.0f;
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+#include "UI.h"
+#include "Player/Player.h"
+#include "../Utils/ObjectPool.h"
+#include "../Utils/AEExtras.h"
+#include "../Utils/MeshGenerator.h"
+#include "../Game/AudioManager.h"
+#include "../Game/BuffCards.h"
+#include "../Game/Time.h"
+#include "../Game/Timer.h"
+#include "../Game/GameOver.h"
+#include "../Game/enemy/BossIntroOverlay.h"
 
-		// To format time to MM:SS:MS format.
-		std::string FormatTimeMMSSMS(double timeInSeconds) {
-			int minutes = static_cast<int>(timeInSeconds) / 60;
-			int seconds = static_cast<int>(timeInSeconds) % 60;
-			int milliseconds = static_cast<int>((timeInSeconds - floor(timeInSeconds)) * 100); // two digits of ms
+#include <iostream>
+#include <string>
 
-			char buffer[16];
-			sprintf_s(buffer, "%02d:%02d:%02d", minutes, seconds, milliseconds);
-			return std::string(buffer);
+namespace {
+	// Delay before showing game over / victory text and buttons after eyelid animation.
+	constexpr float END_SCREEN_DELAY = 2.0f;
+
+	// To format time to MM:SS:MS format.
+	std::string FormatTimeMMSSMS(double timeInSeconds) {
+		int minutes = static_cast<int>(timeInSeconds) / 60;
+		int seconds = static_cast<int>(timeInSeconds) % 60;
+		int milliseconds = static_cast<int>((timeInSeconds - floor(timeInSeconds)) * 100); // two digits of ms
+
+		char buffer[16];
+		sprintf_s(buffer, "%02d:%02d:%02d", minutes, seconds, milliseconds);
+		return std::string(buffer);
+	}
+}
+
+/*-----------------------------------------------------------------------------
+							 General UI Functions
+-----------------------------------------------------------------------------*/
+// Initialization of textures and meshes for in-game UI elements.
+void UI::Init(Player* _player) {
+	damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
+	gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
+	healthVignette = AEGfxTextureLoad("Assets/Art/Health_Vignette.png");
+	healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+
+	healthBarStatic = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar.png");
+	healthBarFill = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar_Fill.png");
+	healthBarMesh = MeshGenerator::GetSquareMesh(1.f);
+
+	BuffCardManager::Init();
+	BuffCardScreen::Init();
+	UI::player = _player;
+	InitCooldownMeshes();
+	BuildEyelidMeshes();
+	BossIntroOverlay::Init();
+}
+// Initialization of textures in menu scene.
+void UI::MInit() {
+	menuMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
+	key_LMB = AEGfxTextureLoad("Assets/Art/UI/Key_LMB.png");
+	key_RMB = AEGfxTextureLoad("Assets/Art/UI/Key_RMB.png");
+	key_A = AEGfxTextureLoad("Assets/Art/UI/Key_A.png");
+	key_D = AEGfxTextureLoad("Assets/Art/UI/Key_D.png");
+	key_SPACE = AEGfxTextureLoad("Assets/Art/UI/Key_SPACE.png");
+	key_SHIFT = AEGfxTextureLoad("Assets/Art/UI/Key_SHIFT.png");
+	key_S = AEGfxTextureLoad("Assets/Art/UI/Key_S.png");
+}
+// For drawing menu key textures
+void UI::DrawKeyWorld(AEGfxTexture* tex, AEVec2 worldPos, AEVec2 size)
+{
+	AEMtx33 scale, rot, trans, transform;
+
+	AEMtx33Scale(&scale, size.x, size.y);
+	AEMtx33Rot(&rot, 0.0f);
+
+	AEMtx33Trans(&trans,
+		worldPos.x * Camera::scale + Camera::position.x,
+		worldPos.y * Camera::scale + Camera::position.y);
+
+	AEMtx33Concat(&transform, &rot, &scale);
+	AEMtx33Concat(&transform, &trans, &transform);
+
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(1.f);
+
+	AEGfxTextureSet(tex, 0, 0);
+	AEGfxSetTransform(transform.m);
+	AEGfxMeshDraw(menuMesh, AE_GFX_MDM_TRIANGLES);
+}
+// Main update function for all UI elements.
+void UI::Update() {
+	BuffCardManager::Update();
+	BuffCardScreen::Update();
+
+
+	BossIntroOverlay::Update(
+		static_cast<float>(Time::GetInstance().GetScaledDeltaTime())
+	);
+
+	if (BossIntroOverlay::IsActive())
+		return;
+
+	UpdateGameOverStatus();
+	if (player->IsDead() && EyelidDone()) {
+		UpdateGameOverButtonsAndText();
+	}
+	UpdateVictoryStatus();
+	if (isVictory && EyelidDone()) {
+		UpdateVictoryButtonsAndText();
+	}
+}
+/*-----------------------------------------------------------------------------
+Main render function for all UI elements.
+
+The order of rendering is important for layering (e.g., health vignette should 
+be on top of everything, game over text should be on top of vignette, etc.)
+-----------------------------------------------------------------------------*/
+void UI::Render() {
+	DrawPlayerCooldownMeter();
+	DrawHealthVignette();
+	damageTextSpawner.Render();
+	DrawHealthBar();
+	BossIntroOverlay::Render();
+	BuffCardScreen::Render();
+	if (player->IsDead()) {
+		DrawEyelid();
+		if (EyelidDone()) {
+			DrawGameOverText();
 		}
 	}
-
-	/*--------------------------------------------
-				 General UI Functions
-	---------------------------------------------*/
-	void UI::Init(Player* _player) {
-		damageTextFont = AEGfxCreateFont("Assets/m04.ttf", DAMAGE_TEXT_FONT_SIZE);
-		gameOverFont = AEGfxCreateFont("Assets/Pixellari.ttf", GAME_OVER_TEXT_SIZE);
-		healthVignette = AEGfxTextureLoad("Assets/Art/Health_Vignette.png");
-		healthVignetteMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-
-		healthBarStatic = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar.png");
-		healthBarFill = AEGfxTextureLoad("Assets/Art/UI/PlayerHealthBar_Fill.png");
-		healthBarMesh = MeshGenerator::GetSquareMesh(1.f);
-
-		BuffCardManager::Init();
-		BuffCardScreen::Init();
-		UI::player = _player;
-		InitCooldownMeshes();
-		BuildEyelidMeshes();
-		BossIntroOverlay::Init();
+	if (isVictory && !player->IsDead()) {
+		DrawEyelid();
+		if (EyelidDone()) DrawVictoryText();
 	}
-	// Initialization of textures in menu scene.
-	void UI::MInit() {
-		menuMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
-		key_LMB = AEGfxTextureLoad("Assets/Art/UI/Key_LMB.png");
-		key_RMB = AEGfxTextureLoad("Assets/Art/UI/Key_RMB.png");
-		key_A = AEGfxTextureLoad("Assets/Art/UI/Key_A.png");
-		key_D = AEGfxTextureLoad("Assets/Art/UI/Key_D.png");
-		key_SPACE = AEGfxTextureLoad("Assets/Art/UI/Key_SPACE.png");
-		key_SHIFT = AEGfxTextureLoad("Assets/Art/UI/Key_SHIFT.png");
-		key_S = AEGfxTextureLoad("Assets/Art/UI/Key_S.png");
+}
+/*-----------------------------------------------------------------------------
+Checks if the game over or victory text and buttons should be visible, which is 
+after the eyelid animation and a short delay.
+-----------------------------------------------------------------------------*/
+bool UI::EndScreenContentVisible() {
+	if (!player) return false;
+
+	if (player->IsDead()) {
+		return EyelidDone() && gameOverTextFadeTimer >= 4.0f;
 	}
-	// For drawing menu key textures
-	void UI::DrawKeyWorld(AEGfxTexture* tex, AEVec2 worldPos, AEVec2 size)
+
+	if (isVictory && !player->IsDead()) {
+		return EyelidDone() && victoryTextFadeTimer >= 4.0f;
+	}
+
+	return false;
+}
+// Resets all UI elements to default state for new run or when returning to menu.
+void UI::Reset() {
+	deadTimerAdded = false;
+	restartRun = false;
+	returnToMenu = false;
+	ResetEyelid();
+	gameOverTextFadeTimer = 0.0f;
+	gameOverTextStage = 0;
+
+	victoryTimerAdded = false;
+	victoryTextFadeTimer = 0.0f;
+	isVictory = false;
+	victoryTextStage = 0;
+
+}
+/*-----------------------------------------------------------------------------
+Cleans up all UI-related resources, including textures, meshes, and fonts. 
+Also resets static pointers to avoid dangling references. 
+
+This should be called when exiting the game or returning to the main menu to 
+free up memory and prevent leaks.
+-----------------------------------------------------------------------------*/
+void UI::Exit() {
+	AEGfxDestroyFont(damageTextFont);
+	AEGfxDestroyFont(gameOverFont);
+	if (healthVignetteMesh) {
+		AEGfxMeshFree(healthVignetteMesh);
+	}
+	if (healthVignette) {
+		AEGfxTextureUnload(healthVignette);
+	}
+	if (healthBarStatic) {
+		AEGfxTextureUnload(healthBarStatic);
+	}
+	if (healthBarFill) {
+		AEGfxTextureUnload(healthBarFill);
+	}
+	if (healthBarMesh) {
+		AEGfxMeshFree(healthBarMesh);
+	}
+	for (AEGfxVertexList*& mesh : cooldownMeshes) {
+		AEGfxMeshFree(mesh);
+		mesh = nullptr;
+	}
+	BuffCardScreen::Exit();
+	BossIntroOverlay::Exit();
+	UI::player = nullptr;
+	FreeEyelidMeshes();
+}
+// Cleans up menu-related resources, including textures and meshes.
+void UI::MExit() {
+	if (menuMesh) {
+		AEGfxMeshFree(menuMesh);
+	}
+	if (key_LMB) {
+		AEGfxTextureUnload(key_LMB);
+	}
+	if (key_RMB) {
+		AEGfxTextureUnload(key_RMB);
+	}
+	if (key_A) {
+		AEGfxTextureUnload(key_A);
+	}
+	if (key_D) {
+		AEGfxTextureUnload(key_D);
+	}
+	if (key_SPACE) {
+		AEGfxTextureUnload(key_SPACE);
+	}
+	if (key_SHIFT) {
+		AEGfxTextureUnload(key_SHIFT);
+	}
+	if (key_S) {
+		AEGfxTextureUnload(key_S);
+	}
+}
+/*-----------------------------------------------------------------------------
+This function draws a red vignette overlay that becomes more intense as the 
+player's health decreases, starting to appear when health drops below 25%. It 
+also includes a heartbeat pulse effect when health is critically low, adding to
+the urgency. 
+
+The vignette is always centered on the screen and scales with the camera to 
+cover the entire view. The transparency of the vignette is calculated based on 
+the player's current health percentage, with a maximum opacity when health is 
+at 0%.
+-----------------------------------------------------------------------------*/
+void UI::DrawHealthVignette() {
+	// --- Rotation ---
+	AEMtx33 rotate{ 0 };
+	AEMtx33Identity(&rotate);
+
+	// --- Scale ---
+	AEMtx33 scale;
+	AEMtx33Scale(&scale,
+		static_cast<f32>(AEGfxGetWindowWidth() * 1.05f),
+		static_cast<f32>(AEGfxGetWindowHeight() * 1.05f));
+
+	// --- Translate ---
+	AEMtx33 translate;
+	AEMtx33Trans(&translate,
+		Camera::position.x * Camera::scale,
+		Camera::position.y * Camera::scale);
+
+	// --- Combine ---
+	AEMtx33 transform;
+	AEMtx33Concat(&transform, &rotate, &scale);
+	AEMtx33Concat(&transform, &translate, &transform);
+
+	// --- Health values ---
+	int playerHealth = player->GetHealth();
+	int maxHealth = player->GetMaxHealth();;
+	float healthFraction = static_cast<float>(playerHealth) / (maxHealth);
+	//std::cout << "HEALTH FRACTION : " << healthFraction << '\n';
+	//std::cout << "MAX HEALTH : " << maxHealth << '\n';
+
+	float baseAlpha = 0.0f;
+
+	// Only activate below 25%
+	if (healthFraction < 0.25f)
 	{
-		AEMtx33 scale, rot, trans, transform;
-
-		AEMtx33Scale(&scale, size.x, size.y);
-		AEMtx33Rot(&rot, 0.0f);
-
-		AEMtx33Trans(&trans,
-			worldPos.x * Camera::scale + Camera::position.x,
-			worldPos.y * Camera::scale + Camera::position.y);
-
-		AEMtx33Concat(&transform, &rot, &scale);
-		AEMtx33Concat(&transform, &trans, &transform);
-
-		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-		AEGfxSetTransparency(1.f);
-
-		AEGfxTextureSet(tex, 0, 0);
-		AEGfxSetTransform(transform.m);
-		AEGfxMeshDraw(menuMesh, AE_GFX_MDM_TRIANGLES);
+		float t = (0.5f - healthFraction) / 0.25f;
+		t = AEClamp(t, 0.0f, 1.0f);
+		baseAlpha = 0.4f * t; // Strength of transparency.
 	}
-	void UI::Update() {
-		BuffCardManager::Update();
-		BuffCardScreen::Update();
 
+	// --- Heartbeat pulse ---
+	float pulse = 0.0f;
 
-		BossIntroOverlay::Update(
-			static_cast<float>(Time::GetInstance().GetScaledDeltaTime())
+	// Start pulse if below 25% hp
+	if (healthFraction <= 0.25f)
+	{
+		float totalTime = static_cast<f32>(Time::GetInstance().GetScaledElapsedTime());
+
+		float beatSpeed = 0.9f;   // Increase for faster heartbeat
+		float beat = fmod(totalTime * beatSpeed, 1.0f);
+
+		if (beat < 0.15f) // Rise duration
+		{
+			pulse = (beat / 0.15f);           // Fast rise
+		}
+		else if (beat < 0.35f) // Fall duration
+		{
+			pulse = 1.0f - ((beat - 0.15f) / 0.2f); // Slow fall
+		}
+		else
+		{
+			pulse = 0.0f; // Rest period
+		}
+
+		pulse *= 0.2f; // pulse strength
+	}
+
+	float finalAlpha = AEClamp(baseAlpha + pulse, 0.0f, 1.0f);
+
+	// --- Apply ---
+	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
+	AEGfxSetTransparency(finalAlpha);
+	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
+	AEGfxTextureSet(healthVignette, 0, 0);
+	AEGfxSetTransform(transform.m);
+	AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
+}
+void UI::InitCooldownMeshes() {
+	const int numViews = 24; // 20 discrete steps
+	cooldownMeshes.resize(numViews + 1); // 0% -> 100%
+
+	for (int i = 0; i <= numViews; ++i)
+	{
+		float percent = i / static_cast<float>(numViews); // 0.0 -> 1.0
+		cooldownMeshes[i] = MeshGenerator::GetCooldownMesh(
+			20.0f,       // radius
+			0xFFFFFFFF,  // white
+			60,          // smoothness
+			percent      // fill amount
 		);
-
-		if (BossIntroOverlay::IsActive())
-			return;
-
-		UpdateGameOverStatus();
-		if (player->IsDead() && EyelidDone()) {
-			UpdateGameOverButtonsAndText();
-		}
-		UpdateVictoryStatus();
-		if (isVictory && EyelidDone()) {
-			UpdateVictoryButtonsAndText();
-		}
 	}
-	void UI::Render() {
-		DrawPlayerCooldownMeter();
-		DrawHealthVignette();
-		damageTextSpawner.Render();
-		DrawHealthBar();
-		BossIntroOverlay::Render();
-		BuffCardScreen::Render();
-		if (player->IsDead()) {
-			DrawEyelid();
-			if (EyelidDone()) {
-				DrawGameOverText();
-			}
-		}
-		if (isVictory && !player->IsDead()) {
-			DrawEyelid();
-			if (EyelidDone()) DrawVictoryText();
-		}
-	}
+}
+/*-----------------------------------------------------------------------------
+This function draws a circular cooldown meter above the player character to 
+indicate the remaining cooldown time for the player's dash ability. It 
+calculates the percentage of cooldown remaining and selects the appropriate 
+precomputed mesh to represent that percentage visually. 
 
-	bool UI::EndScreenContentVisible() {
-		if (!player) return false;
-
-		if (player->IsDead()) {
-			return EyelidDone() && gameOverTextFadeTimer >= 4.0f;
-		}
-
-		if (isVictory && !player->IsDead()) {
-			return EyelidDone() && victoryTextFadeTimer >= 4.0f;
-		}
-
-		return false;
-	}
-	void UI::Reset() {
-		deadTimerAdded = false;
-		restartRun = false;
-		returnToMenu = false;
-		ResetEyelid();
-		gameOverTextFadeTimer = 0.0f;
-		gameOverTextStage = 0;
-
-		victoryTimerAdded = false; // add this
-		victoryTextFadeTimer = 0.0f;
-		isVictory = false;
-		victoryTextStage = 0;
-
-	}
-	void UI::Exit() {
-		AEGfxDestroyFont(damageTextFont);
-		AEGfxDestroyFont(gameOverFont);
-		if (healthVignetteMesh) {
-			AEGfxMeshFree(healthVignetteMesh);
-		}
-		if (healthVignette) {
-			AEGfxTextureUnload(healthVignette);
-		}
-		if (healthBarStatic) {
-			AEGfxTextureUnload(healthBarStatic);
-		}
-		if (healthBarFill) {
-			AEGfxTextureUnload(healthBarFill);
-		}
-		if (healthBarMesh) {
-			AEGfxMeshFree(healthBarMesh);
-		}
-		for (AEGfxVertexList*& mesh : cooldownMeshes) {
-			AEGfxMeshFree(mesh);
-			mesh = nullptr;
-		}
-		BuffCardScreen::Exit();
-		BossIntroOverlay::Exit();
-		UI::player = nullptr;
-		FreeEyelidMeshes();
-	}
-	void UI::MExit() {
-		if (menuMesh) {
-			AEGfxMeshFree(menuMesh);
-		}
-		if (key_LMB) {
-			AEGfxTextureUnload(key_LMB);
-		}
-		if (key_RMB) {
-			AEGfxTextureUnload(key_RMB);
-		}
-		if (key_A) {
-			AEGfxTextureUnload(key_A);
-		}
-		if (key_D) {
-			AEGfxTextureUnload(key_D);
-		}
-		if (key_SPACE) {
-			AEGfxTextureUnload(key_SPACE);
-		}
-		if (key_SHIFT) {
-			AEGfxTextureUnload(key_SHIFT);
-		}
-		if (key_S) {
-			AEGfxTextureUnload(key_S);
-		}
-	}
-	void UI::DrawHealthVignette() {
-		// --- Rotation ---
-		AEMtx33 rotate{ 0 };
-		AEMtx33Identity(&rotate);
-
-		// --- Scale ---
-		AEMtx33 scale;
-		AEMtx33Scale(&scale,
-			static_cast<f32>(AEGfxGetWindowWidth() * 1.05f),
-			static_cast<f32>(AEGfxGetWindowHeight() * 1.05f));
-
-		// --- Translate ---
-		AEMtx33 translate;
-		AEMtx33Trans(&translate,
-			Camera::position.x * Camera::scale,
-			Camera::position.y * Camera::scale);
-
-		// --- Combine ---
-		AEMtx33 transform;
-		AEMtx33Concat(&transform, &rotate, &scale);
-		AEMtx33Concat(&transform, &translate, &transform);
-
-		// --- Health values ---
-		int playerHealth = player->GetHealth();
-		int maxHealth = player->GetMaxHealth();;
-		float healthFraction = static_cast<float>(playerHealth) / (maxHealth);
-		//std::cout << "HEALTH FRACTION : " << healthFraction << '\n';
-		//std::cout << "MAX HEALTH : " << maxHealth << '\n';
-
-		float baseAlpha = 0.0f;
-
-		// Only activate below 25%
-		if (healthFraction < 0.25f)
-		{
-			float t = (0.5f - healthFraction) / 0.25f;
-			t = AEClamp(t, 0.0f, 1.0f);
-			baseAlpha = 0.4f * t; // Strength of transparency.
-		}
-
-		// --- Heartbeat pulse ---
-		float pulse = 0.0f;
-
-		// Start pulse if below 25% hp
-		if (healthFraction <= 0.25f)
-		{
-			float totalTime = static_cast<f32>(Time::GetInstance().GetScaledElapsedTime());
-
-			float beatSpeed = 0.9f;   // Increase for faster heartbeat
-			float beat = fmod(totalTime * beatSpeed, 1.0f);
-
-			if (beat < 0.15f) // Rise duration
-			{
-				pulse = (beat / 0.15f);           // Fast rise
-			}
-			else if (beat < 0.35f) // Fall duration
-			{
-				pulse = 1.0f - ((beat - 0.15f) / 0.2f); // Slow fall
-			}
-			else
-			{
-				pulse = 0.0f; // Rest period
-			}
-
-			pulse *= 0.2f; // pulse strength
-		}
-
-		float finalAlpha = AEClamp(baseAlpha + pulse, 0.0f, 1.0f);
-
-		// --- Apply ---
-		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-		AEGfxSetTransparency(finalAlpha);
-		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-		AEGfxTextureSet(healthVignette, 0, 0);
-		AEGfxSetTransform(transform.m);
-		AEGfxMeshDraw(healthVignetteMesh, AE_GFX_MDM_TRIANGLES);
-	}
-	void UI::InitCooldownMeshes() {
-		const int numViews = 24; // 20 discrete steps
-		cooldownMeshes.resize(numViews + 1); // 0% -> 100%
-
-		for (int i = 0; i <= numViews; ++i)
-		{
-			float percent = i / static_cast<float>(numViews); // 0.0 -> 1.0
-			cooldownMeshes[i] = MeshGenerator::GetCooldownMesh(
-				20.0f,       // radius
-				0xFFFFFFFF,  // white
-				60,          // smoothness
-				percent      // fill amount
-			);
-		}
-	}
-	void UI::DrawPlayerCooldownMeter() {
-		{
-			float percent = 1.0f - player->GetDashCooldownPercentage();
+The meter is positioned above the player and scales with the camera. 
+It uses blending to ensure it appears correctly over the game world.
+-----------------------------------------------------------------------------*/
+void UI::DrawPlayerCooldownMeter() {
+	{
+		float percent = 1.0f - player->GetDashCooldownPercentage();
 		
-			// Pick the closest precomputed mesh
-			int numViews = static_cast<int>(cooldownMeshes.size()) - 1;
-			int meshIndex = static_cast<int>(percent * numViews + 0.5f); // round to nearest
-			meshIndex = std::clamp(meshIndex, 0, numViews);
+		// Pick the closest precomputed mesh
+		int numViews = static_cast<int>(cooldownMeshes.size()) - 1;
+		int meshIndex = static_cast<int>(percent * numViews + 0.5f); // round to nearest
+		meshIndex = std::clamp(meshIndex, 0, numViews);
 
-			AEGfxVertexList* meshToDraw = cooldownMeshes[meshIndex];
-			if (!meshToDraw) return;
+		AEGfxVertexList* meshToDraw = cooldownMeshes[meshIndex];
+		if (!meshToDraw) return;
 
-			// Calculate screen position
-			float Xoffset = -0.1f * Camera::scale, Yoffset = 1.f * Camera::scale;
-			float screenX = player->GetPosition().x * Camera::scale + Camera::position.x + Xoffset;
-			float screenY = player->GetPosition().y * Camera::scale + Camera::position.y + Yoffset;
+		// Calculate screen position
+		float Xoffset = -0.1f * Camera::scale, Yoffset = 1.f * Camera::scale;
+		float screenX = player->GetPosition().x * Camera::scale + Camera::position.x + Xoffset;
+		float screenY = player->GetPosition().y * Camera::scale + Camera::position.y + Yoffset;
 
-			// Apply transform
-			AEMtx33 transform;
-			AEMtx33Identity(&transform);
-			AEMtx33Trans(&transform, screenX, screenY);
-
-			AEGfxSetRenderMode(AE_GFX_RM_COLOR);
-			AEGfxSetBlendMode(AE_GFX_BM_BLEND);
-			AEGfxSetTransform(transform.m);
-
-			// Draw the precomputed mesh
-			AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
-			AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
-		}
-	}
-	void UI::DrawHealthBar()
-	{
-		constexpr float bgAlpha = 0.55f;  // half transparent for the background
-		constexpr float fillAlpha = 0.60f;  // more clearer for the fill to show health status
-
-		constexpr float scale = 2.f;
-		AEVec2 size{ 160.f * scale, 32.f * scale };
-		AEVec2 pos{ 30.f, 30.f };
-		pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
-
-		float time = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
-		pos.x += sinf(time * 1.5f) * 3.f;
-		pos.y += cosf(time * 2.f) * 3.f;
-
-		// === Draw static health bar ===
+		// Apply transform
 		AEMtx33 transform;
 		AEMtx33Identity(&transform);
-		AEMtx33Scale(&transform, size.x, size.y);
-		AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+		AEMtx33Trans(&transform, screenX, screenY);
 
+		AEGfxSetRenderMode(AE_GFX_RM_COLOR);
+		AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 		AEGfxSetTransform(transform.m);
-		AEGfxSetTransparency(bgAlpha);
-		AEGfxTextureSet(healthBarStatic, 0.f, 0.f);
-		AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
 
-		// === Draw health bar fill ===
-		float healthPercentage = player->GetHealthPercentage();
-
-		size.x = 119 * scale * healthPercentage;
-		size.y = 21 * scale;
-
-		pos += AEVec2{ 36 * scale, 6 * scale };
-
-		AEMtx33Identity(&transform);
-		AEMtx33Scale(&transform, size.x, size.y);
-		AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
-
-		AEGfxSetTransform(transform.m);
-		AEGfxSetTransparency(fillAlpha);
-		AEGfxTextureSet(healthBarFill, 0.f, 0.f);
-		AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
-
-		AEGfxSetTransparency(1.f);
+		// Draw the precomputed mesh
+		AEGfxMeshDraw(meshToDraw, AE_GFX_MDM_TRIANGLES);
+		AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	}
+}
+/*-----------------------------------------------------------------------------
+This function draws the player's health bar in the top-left corner of the screen.
+The health bar consists of a static background and a dynamic fill that represents
+the player's current health percentage. 
 
-	AEVec2 UI::GetHealthBarHeartTargetPx()
-	{
-		constexpr float scale = 2.f;
+The position of the health bar is slightly animated with a subtle sine wave effect 
+to make it more visually engaging. The transparency of the health bar is set to 
+ensure it stands out without obscuring too much of the game view. The health bar 
+scales with the camera to maintain a consistent size relative to the game world.
+-----------------------------------------------------------------------------*/
+void UI::DrawHealthBar()
+{
+	constexpr float bgAlpha = 0.55f;  // half transparent for the background
+	constexpr float fillAlpha = 0.60f;  // more clearer for the fill to show health status
 
-		AEVec2 pos{ 30.f, 30.f };
-		pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
+	constexpr float scale = 2.f;
+	AEVec2 size{ 160.f * scale, 32.f * scale };
+	AEVec2 pos{ 30.f, 30.f };
+	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
 
-		// same offset used before drawing the fill
-		pos += AEVec2{ 36.f * scale, 6.f * scale };
+	float time = static_cast<float>(Time::GetInstance().GetScaledElapsedTime());
+	pos.x += sinf(time * 1.5f) * 3.f;
+	pos.y += cosf(time * 2.f) * 3.f;
 
-		// choose a stable point inside the bar, near the left side
-		return AEVec2{
-			pos.x + 12.f,
-			pos.y + (21.f * scale) * 0.5f
-		};
+	// === Draw static health bar ===
+	AEMtx33 transform;
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+
+	AEGfxSetTransform(transform.m);
+	AEGfxSetTransparency(bgAlpha);
+	AEGfxTextureSet(healthBarStatic, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+	// === Draw health bar fill ===
+	float healthPercentage = player->GetHealthPercentage();
+
+	size.x = 119 * scale * healthPercentage;
+	size.y = 21 * scale;
+
+	pos += AEVec2{ 36 * scale, 6 * scale };
+
+	AEMtx33Identity(&transform);
+	AEMtx33Scale(&transform, size.x, size.y);
+	AEMtx33TransApply(&transform, &transform, pos.x + size.x * 0.5f, pos.y + size.y * 0.5f);
+
+	AEGfxSetTransform(transform.m);
+	AEGfxSetTransparency(fillAlpha);
+	AEGfxTextureSet(healthBarFill, 0.f, 0.f);
+	AEGfxMeshDraw(healthBarMesh, AE_GFX_MDM_TRIANGLES);
+
+	AEGfxSetTransparency(1.f);
+}
+/*-----------------------------------------------------------------------------
+This function calculates the pixel coordinates of a stable point within the 
+player's health bar, which can be used as a target position for UI elements 
+like a heart icon that indicates the player's health status. The position is 
+based on the health bar's location on the screen, which is anchored to the 
+bottom-left corner and adjusted for camera movement and scaling.
+-----------------------------------------------------------------------------*/
+AEVec2 UI::GetHealthBarHeartTargetPx()
+{
+	constexpr float scale = 2.f;
+
+	AEVec2 pos{ 30.f, 30.f };
+	pos += (Camera::position - AEVec2{ 12.5f, 7.f }) * Camera::scale;
+
+	// same offset used before drawing the fill
+	pos += AEVec2{ 36.f * scale, 6.f * scale };
+
+	// choose a stable point inside the bar, near the left side
+	return AEVec2{
+		pos.x + 12.f,
+		pos.y + (21.f * scale) * 0.5f
+	};
+}
+
+/*-----------------------------------------------------------------------------
+This function manages the transition to the game over state when the player 
+dies. It starts a timer for the death animation and, once the timer is complete, 
+it triggers the eyelid animation and eventually shows the game over text and 
+buttons.
+-----------------------------------------------------------------------------*/
+void UI::UpdateGameOverStatus() {
+	if (isVictory) return; // don't interfere
+	if (!player->IsDead()) {
+		deadTimerAdded = false;
+		ResetEyelid();
+		return;
 	}
+	if (deadTimerAdded && !TimerSystem::GetInstance().GetTimerByName("DeathAnim")) {
+		deadTimerAdded = false;
+	}
+	if (!deadTimerAdded) {
+		TimerSystem::GetInstance().AddTimer("DeathAnim", END_SCREEN_DELAY, false);
+		deadTimerAdded = true;
+		ResetEyelid();
+	}
+	auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
 
-	void UI::UpdateGameOverStatus() {
-		if (isVictory) return; // don't interfere
-		if (!player->IsDead()) {
-			deadTimerAdded = false;
-			ResetEyelid();
-			return;
-		}
-		if (deadTimerAdded && !TimerSystem::GetInstance().GetTimerByName("DeathAnim")) {
-			deadTimerAdded = false;
-		}
-		if (!deadTimerAdded) {
-			TimerSystem::GetInstance().AddTimer("DeathAnim", END_SCREEN_DELAY, false);
-			deadTimerAdded = true;
-			ResetEyelid();
-		}
-		auto* timer = TimerSystem::GetInstance().GetTimerByName("DeathAnim");
-
-		if (timer && timer->completed) {
-			UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
-			if (Time::GetInstance().GetTimeScale() > 0.0f) {
-				Time::GetInstance().SetTimeScale(0);
-			}
+	if (timer && timer->completed) {
+		UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
+		if (Time::GetInstance().GetTimeScale() > 0.0f) {
+			Time::GetInstance().SetTimeScale(0);
 		}
 	}
-	void UI::UpdateGameOverButtonsAndText() {
-		gameOverTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
-		if (gameOverTextFadeTimer >= 0.0f) gameOverTextStage = 1;
-		if (gameOverTextFadeTimer >= 1.5f) gameOverTextStage = 2;
-		if (gameOverTextFadeTimer >= 3.0f) gameOverTextStage = 3;
+}
+/*-----------------------------------------------------------------------------
+This function checks for mouse input on the game over screen buttons 
+("Restart Run" and "Menu") and updates the game state accordingly. 
+
+It calculates the button positions and sizes based on the current window 
+dimensions and checks if the mouse cursor is within the button areas when a 
+click occurs. If the "Restart Run" button is clicked, it sets the restartRun 
+flag to true, which can be used to trigger a game restart. If the "Menu" button
+is clicked, it sets the returnToMenu flag to true, which can be used to return 
+to the main menu. 
+
+The function also manages the timing for when the buttons and text should become
+active after the game over state is triggered.
+-----------------------------------------------------------------------------*/
+void UI::UpdateGameOverButtonsAndText() {
+	gameOverTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
+	if (gameOverTextFadeTimer >= 0.0f) gameOverTextStage = 1;
+	if (gameOverTextFadeTimer >= 1.5f) gameOverTextStage = 2;
+	if (gameOverTextFadeTimer >= 3.0f) gameOverTextStage = 3;
+	float winW = static_cast<float>(AEGfxGetWindowWidth());
+	float winH = static_cast<float>(AEGfxGetWindowHeight());
+
+	// Approximate pixel width: font size * char count * scale * ~0.6
+	float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
+	float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
+
+	// NDC left-edge of text pixel left-edge
+	float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
+	float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
+
+	// Center of hit box = left edge + half text width
+	float restartCenterX = restartLeftPx + restartTextW * 0.5f;
+	float menuCenterX = menuLeftPx + menuTextW * 0.5f;
+
+	float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;
+	float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
+
+	AEVec2 btnSizeRestart = { restartTextW, 50.f };
+	AEVec2 btnSizeMenu = { menuTextW,    50.f };
+
+	bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
+	bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
+
+	if (hoverRestart) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			AudioManager::PlayButtonClick();
+			std::cout << "RESTART\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			restartRun = true;
+			// restart
+		}
+	}
+	if (hoverMenu) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			AudioManager::PlayButtonClick();
+			std::cout << "MENU\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			returnToMenu = true;
+		}
+	}
+}
+/*-----------------------------------------------------------------------------
+This function draws the game over text and buttons on the screen with a 
+fade-in effect. The text appears in stages, with each line fading in 
+sequentially. The buttons ("Restart Run" and "Menu") also fade in after the text
+and change color on hover to indicate interactivity. The function calculates 
+the appropriate alpha values for the fade-in effect based on the 
+gameOverTextFadeTimer and renders the text and buttons accordingly. 
+
+The button positions and sizes are calculated based on the current window 
+dimensions to ensure they are placed correctly on the screen regardless of 
+resolution.
+-----------------------------------------------------------------------------*/
+void UI::DrawGameOverText() {
+	float t = gameOverTextFadeTimer;
+
+	// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
+	float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
+	float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
+	float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+
+	if (a1 > 0.0f)
+		AEGfxPrint(gameOverFont, "Fading...", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
+	if (a2 > 0.0f)
+		AEGfxPrint(gameOverFont, "All is quiet.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
+	if (a3 > 0.0f) {
+		AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
+		f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
+		std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
+		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
+
+		float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
+
 		float winW = static_cast<float>(AEGfxGetWindowWidth());
 		float winH = static_cast<float>(AEGfxGetWindowHeight());
 
@@ -430,7 +593,7 @@
 		float restartCenterX = restartLeftPx + restartTextW * 0.5f;
 		float menuCenterX = menuLeftPx + menuTextW * 0.5f;
 
-		float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;
+		float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;  // was missing / 2.0f
 		float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
 
 		AEVec2 btnSizeRestart = { restartTextW, 50.f };
@@ -439,118 +602,131 @@
 		bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
 		bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
 
-		if (hoverRestart) {
-			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
-				AudioManager::PlayButtonClick();
-				std::cout << "RESTART\n";
-				Time::GetInstance().SetTimeScale(1.0f);
-				restartRun = true;
-				// restart
-			}
-		}
-		if (hoverMenu) {
-			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
-				AudioManager::PlayButtonClick();
-				std::cout << "MENU\n";
-				Time::GetInstance().SetTimeScale(1.0f);
-				returnToMenu = true;
-			}
-		}
+		AEGfxPrint(gameOverFont, "Restart Run",
+			RESTART_NDC_X, RESTART_NDC_Y, 1.0f,
+			hoverRestart ? 1.f : 0.7f,
+			hoverRestart ? 0.8f : 0.7f,
+			hoverRestart ? 0.f : 0.7f,
+			a4);
+
+		AEGfxPrint(gameOverFont, "Menu",
+			MENU_NDC_X, MENU_NDC_Y, 1.0f,
+			hoverMenu ? 1.f : 0.7f,
+			hoverMenu ? 0.8f : 0.7f,
+			hoverMenu ? 0.f : 0.7f,
+			a4);
 	}
-	void UI::DrawGameOverText() {
-		float t = gameOverTextFadeTimer;
+}
+/*-----------------------------------------------------------------------------
+This function manages the transition to the victory state when the player wins. 
 
-		// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
-		float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
-		float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
-		float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+It starts a timer for the victory animation and, once the timer is complete, 
+it triggers the eyelid animation and eventually shows the victory text and 
+buttons.
+-----------------------------------------------------------------------------*/
+void UI::UpdateVictoryStatus() {
+	if (player->IsDead()) return;
 
-		if (a1 > 0.0f)
-			AEGfxPrint(gameOverFont, "Fading...", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
-		if (a2 > 0.0f)
-			AEGfxPrint(gameOverFont, "All is quiet.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
-		if (a3 > 0.0f) {
-			AEGfxPrint(gameOverFont, "Rest now.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
-			f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
-			std::string displayStr = "Moments spent - " + FormatTimeMMSSMS(timeSpent);
-			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
-
-			float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
-
-			float winW = static_cast<float>(AEGfxGetWindowWidth());
-			float winH = static_cast<float>(AEGfxGetWindowHeight());
-
-			// Approximate pixel width: font size * char count * scale * ~0.6
-			float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
-			float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
-
-			// NDC left-edge of text pixel left-edge
-			float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
-			float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
-
-			// Center of hit box = left edge + half text width
-			float restartCenterX = restartLeftPx + restartTextW * 0.5f;
-			float menuCenterX = menuLeftPx + menuTextW * 0.5f;
-
-			float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;  // was missing / 2.0f
-			float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
-
-			AEVec2 btnSizeRestart = { restartTextW, 50.f };
-			AEVec2 btnSizeMenu = { menuTextW,    50.f };
-
-			bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
-			bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
-
-			AEGfxPrint(gameOverFont, "Restart Run",
-				RESTART_NDC_X, RESTART_NDC_Y, 1.0f,
-				hoverRestart ? 1.f : 0.7f,
-				hoverRestart ? 0.8f : 0.7f,
-				hoverRestart ? 0.f : 0.7f,
-				a4);
-
-			AEGfxPrint(gameOverFont, "Menu",
-				MENU_NDC_X, MENU_NDC_Y, 1.0f,
-				hoverMenu ? 1.f : 0.7f,
-				hoverMenu ? 0.8f : 0.7f,
-				hoverMenu ? 0.f : 0.7f,
-				a4);
-		}
-	}
-	
-	void UI::UpdateVictoryStatus() {
-		if (player->IsDead()) return;
-
-		if (!isVictory) {
-			victoryTimerAdded = false;
-			ResetEyelid();
-			return;
-		}
-
-		if (victoryTimerAdded && !TimerSystem::GetInstance().GetTimerByName("VictoryAnim")) {
-			victoryTimerAdded = false;
-		}
-
-		if (!victoryTimerAdded) {
-			TimerSystem::GetInstance().AddTimer("VictoryAnim", END_SCREEN_DELAY, false);
-			victoryTimerAdded = true;
-			ResetEyelid();
-		}
-
-		auto* timer = TimerSystem::GetInstance().GetTimerByName("VictoryAnim");
-
-		if (timer && timer->completed) {
-			UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
-			if (Time::GetInstance().GetTimeScale() > 0.0f) {
-				Time::GetInstance().SetTimeScale(0);
-			}
-		}
+	if (!isVictory) {
+		victoryTimerAdded = false;
+		ResetEyelid();
+		return;
 	}
 
-	void UI::UpdateVictoryButtonsAndText() {
-		victoryTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
-		if (victoryTextFadeTimer >= 0.0f) victoryTextStage = 1;
-		if (victoryTextFadeTimer >= 1.5f) victoryTextStage = 2;
-		if (victoryTextFadeTimer >= 3.0f) victoryTextStage = 3;
+	if (victoryTimerAdded && !TimerSystem::GetInstance().GetTimerByName("VictoryAnim")) {
+		victoryTimerAdded = false;
+	}
+
+	if (!victoryTimerAdded) {
+		TimerSystem::GetInstance().AddTimer("VictoryAnim", END_SCREEN_DELAY, false);
+		victoryTimerAdded = true;
+		ResetEyelid();
+	}
+
+	auto* timer = TimerSystem::GetInstance().GetTimerByName("VictoryAnim");
+
+	if (timer && timer->completed) {
+		UpdateEyelid(static_cast<float>(Time::GetInstance().GetDeltaTime()));
+		if (Time::GetInstance().GetTimeScale() > 0.0f) {
+			Time::GetInstance().SetTimeScale(0);
+		}
+	}
+}
+/*-----------------------------------------------------------------------------
+This function checks for mouse input on the victory screen buttons 
+("Restart Run" and "Menu") and updates the game state accordingly.
+-----------------------------------------------------------------------------*/
+void UI::UpdateVictoryButtonsAndText() {
+	victoryTextFadeTimer += static_cast<float>(Time::GetInstance().GetDeltaTime());
+	if (victoryTextFadeTimer >= 0.0f) victoryTextStage = 1;
+	if (victoryTextFadeTimer >= 1.5f) victoryTextStage = 2;
+	if (victoryTextFadeTimer >= 3.0f) victoryTextStage = 3;
+	float winW = static_cast<float>(AEGfxGetWindowWidth());
+	float winH = static_cast<float>(AEGfxGetWindowHeight());
+
+	// Approximate pixel width: font size * char count * scale * ~0.6
+	float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
+	float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
+
+	// NDC left-edge of text pixel left-edge
+	float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
+	float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
+
+	// Center of hit box = left edge + half text width
+	float restartCenterX = restartLeftPx + restartTextW * 0.5f;
+	float menuCenterX = menuLeftPx + menuTextW * 0.5f;
+
+	float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;
+	float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
+
+	AEVec2 btnSizeRestart = { restartTextW, 50.f };
+	AEVec2 btnSizeMenu = { menuTextW,    50.f };
+
+	bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
+	bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
+
+	if (hoverRestart) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			AudioManager::PlayButtonClick();
+			std::cout << "RESTART\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			restartRun = true;
+			// restart
+		}
+	}
+	if (hoverMenu) {
+		if (AEInputCheckTriggered(AEVK_LBUTTON)) {
+			AudioManager::PlayButtonClick();
+			std::cout << "MENU\n";
+			Time::GetInstance().SetTimeScale(1.0f);
+			returnToMenu = true;
+		}
+	}
+}
+/*-----------------------------------------------------------------------------
+This function draws the victory text and buttons on the screen with a 
+fade-in effect, similar to the game over screen.
+-----------------------------------------------------------------------------*/
+void UI::DrawVictoryText() {
+	float t = victoryTextFadeTimer;
+
+	// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
+	float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
+	float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
+	float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+
+	if (a1 > 0.0f)
+		AEGfxPrint(gameOverFont, "It is done.", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
+	if (a2 > 0.0f)
+		AEGfxPrint(gameOverFont, "The dawn awaits.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
+	if (a3 > 0.0f) {
+		AEGfxPrint(gameOverFont, "Rest, hero.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
+		f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
+		std::string displayStr = "Clear Time - " + FormatTimeMMSSMS(timeSpent);
+		AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
+
+		float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
+
 		float winW = static_cast<float>(AEGfxGetWindowWidth());
 		float winH = static_cast<float>(AEGfxGetWindowHeight());
 
@@ -566,7 +742,7 @@
 		float restartCenterX = restartLeftPx + restartTextW * 0.5f;
 		float menuCenterX = menuLeftPx + menuTextW * 0.5f;
 
-		float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;
+		float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;  // was missing / 2.0f
 		float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
 
 		AEVec2 btnSizeRestart = { restartTextW, 50.f };
@@ -575,309 +751,349 @@
 		bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
 		bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
 
-		if (hoverRestart) {
-			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
-				AudioManager::PlayButtonClick();
-				std::cout << "RESTART\n";
-				Time::GetInstance().SetTimeScale(1.0f);
-				restartRun = true;
-				// restart
-			}
-		}
-		if (hoverMenu) {
-			if (AEInputCheckTriggered(AEVK_LBUTTON)) {
-				AudioManager::PlayButtonClick();
-				std::cout << "MENU\n";
-				Time::GetInstance().SetTimeScale(1.0f);
-				returnToMenu = true;
-			}
-		}
+		AEGfxPrint(gameOverFont, "Restart Run",
+			RESTART_NDC_X, RESTART_NDC_Y, 1.0f,
+			hoverRestart ? 1.f : 0.7f,
+			hoverRestart ? 0.8f : 0.7f,
+			hoverRestart ? 0.f : 0.7f,
+			a4);
+
+		AEGfxPrint(gameOverFont, "Menu",
+			MENU_NDC_X, MENU_NDC_Y, 1.0f,
+			hoverMenu ? 1.f : 0.7f,
+			hoverMenu ? 0.8f : 0.7f,
+			hoverMenu ? 0.f : 0.7f,
+			a4);
 	}
-	void UI::DrawVictoryText() {
-		float t = victoryTextFadeTimer;
+}
+/*-----------------------------------------------------------------------------
+This function draws the control key icons on the menu screen to indicate which 
+keys are used for various actions.
 
-		// alpha for each string ?clamp 0 to 1, each starts 1.5s apart, takes 1s to fade in
-		float a1 = AEClamp(t - 0.0f, 0.0f, 1.0f);
-		float a2 = AEClamp(t - 1.5f, 0.0f, 1.0f);
-		float a3 = AEClamp(t - 3.0f, 0.0f, 1.0f);
+The icons are positioned in the world space at specific coordinates and are 
+scaled to a consistent size. This provides a visual reference for players to
+understand the controls before starting the game. 
 
-		if (a1 > 0.0f)
-			AEGfxPrint(gameOverFont, "It is done.", -0.9f, 0.55f, 1.25f, 1.f, 1.f, 1.f, a1);
-		if (a2 > 0.0f)
-			AEGfxPrint(gameOverFont, "The dawn awaits.", -0.9f, 0.4f, 0.85f, 1.f, 1.f, 1.f, a2);
-		if (a3 > 0.0f) {
-			AEGfxPrint(gameOverFont, "Rest, hero.", -0.9f, 0.25f, 0.85f, 1.f, 1.f, 1.f, a3);
-			f64 timeSpent = Time::GetInstance().GetScaledElapsedTime();
-			std::string displayStr = "Clear Time - " + FormatTimeMMSSMS(timeSpent);
-			AEGfxPrint(damageTextFont, displayStr.c_str(), -0.9f, 0.05f, 0.55f, 1.f, 1.f, 1.f, a3);
+The function uses a helper function DrawKeyWorld to render each key icon at the
+appropriate position and scale.
+-----------------------------------------------------------------------------*/
+void UI::DrawMenuControls()
+{
+	AEVec2 basePos{ 21.9f, 20.3f };   // world position
+	float Xspacing = 1.f;
+	float Yspacing = 1.1f;
 
-			float a4 = AEClamp(t - 4.0f, 0.0f, 1.0f); // buttons fade in last
+	DrawKeyWorld(key_A, { basePos.x, basePos.y }, { 64,64 });
+	DrawKeyWorld(key_D, { basePos.x + Xspacing, basePos.y }, { 64,64 });
+	basePos.y -= Yspacing;
+	DrawKeyWorld(key_SPACE, { basePos.x + 0.1f, basePos.y}, { 64,64 });
+	basePos.y -= Yspacing;
+	DrawKeyWorld(key_RMB, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
+	DrawKeyWorld(key_SHIFT, { basePos.x + 1.1f + Xspacing, basePos.y - 0.25f }, { 64,64 });
 
-			float winW = static_cast<float>(AEGfxGetWindowWidth());
-			float winH = static_cast<float>(AEGfxGetWindowHeight());
+	basePos.y -= Yspacing + 0.25f;
+	DrawKeyWorld(key_LMB, { basePos.x + 0.1f, basePos.y + 0.05f}, { 64,64 });
 
-			// Approximate pixel width: font size * char count * scale * ~0.6
-			float restartTextW = 11 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Restart Run" = 11 chars
-			float menuTextW = 4 * GAME_OVER_TEXT_SIZE * 1.0f * 0.6f; // "Menu" = 4 chars
+	basePos.y -= 0.8f;
+	DrawKeyWorld(key_S, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
+	DrawKeyWorld(key_LMB, { basePos.x + 1.2f + Xspacing, basePos.y - 0.25f }, { 64,64 });
+}
 
-			// NDC left-edge of text pixel left-edge
-			float restartLeftPx = ((RESTART_NDC_X + 1.0f) / 2.0f) * winW;
-			float menuLeftPx = ((MENU_NDC_X + 1.0f) / 2.0f) * winW;
 
-			// Center of hit box = left edge + half text width
-			float restartCenterX = restartLeftPx + restartTextW * 0.5f;
-			float menuCenterX = menuLeftPx + menuTextW * 0.5f;
+/*-----------------------------------------------------------------------------
+							Damage Text Functions
+-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------
+This function initializes the damage text system. It can be used to set up any 
+necessary resources or configurations needed for displaying damage text in the 
+game.
+-----------------------------------------------------------------------------*/
+void DamageText::Init() {}
+/*-----------------------------------------------------------------------------
+This function is called when a damage text instance is retrieved from the pool.
 
-			float restartY = ((1.0f - RESTART_NDC_Y) / 2.0f) * winH;  // was missing / 2.0f
-			float menuY = ((1.0f - MENU_NDC_Y) / 2.0f) * winH;
+It sets the initial values for the damage text, including the neutral time 
+(the duration before the damage text starts fading), the lifetime of the text, 
+and the maximum lifetime for percentage computation. 
 
-			AEVec2 btnSizeRestart = { restartTextW, 50.f };
-			AEVec2 btnSizeMenu = { menuTextW,    50.f };
+This setup allows the damage text to have a consistent behavior when it is 
+spawned, ensuring that it appears and fades out in a visually appealing way 
+based on the defined timings.
+-----------------------------------------------------------------------------*/
+void DamageText::OnGet() {
+	neutralTime = 0.35f; // Neutral state of damage numbers before effects.
+	lifetime = 0.75f; // Lifetime of text with effects.
+	maxLifetime = lifetime; // Maximum lifetime for percentage computation.
+}
+/*-----------------------------------------------------------------------------
+This function is called when a damage text instance is released back into 
+the pool. It can be used to reset any properties or states of the damage text 
+to ensure that when it is reused, it starts with a clean slate. 
+-----------------------------------------------------------------------------*/
+void DamageText::OnRelease() {}
+/*-----------------------------------------------------------------------------
+This function is called when a damage text instance is exited or removed from the 
+game. It can be used to perform any necessary cleanup or finalization for the 
+damage text before it is completely removed from the game world. 
+-----------------------------------------------------------------------------*/
+void DamageText::Exit() {}
+/*-----------------------------------------------------------------------------
+This function renders the damage text on the screen. It calculates the 
+appropriate position, scale, and transparency for the damage text based on its 
+current state (neutral time, lifetime, etc.) and then uses the AEGfxPrint 
+function to draw the damage number and type at the correct location with the 
+correct visual properties.
+-----------------------------------------------------------------------------*/
+void DamageText::Render()
+{
+	// Get window dimensions
+	f32 windowWidth = static_cast<f32>(AEGfxGetWindowWidth());
+	f32 windowHeight = static_cast<f32>(AEGfxGetWindowHeight());
 
-			bool hoverRestart = Button::CheckMouseInRectButton({ restartCenterX, restartY }, btnSizeRestart);
-			bool hoverMenu = Button::CheckMouseInRectButton({ menuCenterX,    menuY }, btnSizeMenu);
+	// Calculate text width in pixels (approximate)
+	// Each character is roughly fontsize * 0.6 pixels wide
+	f32 numberPixelWidth = damageNumber.length() * UI::GetDamageTextFontSize() * 0.6f;
+	f32 typePixelWidth = damageType.length() * UI::GetDamageTextFontSize() * 0.6f;
 
-			AEGfxPrint(gameOverFont, "Restart Run",
-				RESTART_NDC_X, RESTART_NDC_Y, 1.0f,
-				hoverRestart ? 1.f : 0.7f,
-				hoverRestart ? 0.8f : 0.7f,
-				hoverRestart ? 0.f : 0.7f,
-				a4);
+	// Convert pixel offset to normalized coordinates [-1, 1]
+	// Divide by window width and multiply by 2 (since range is -1 to 1, total span of 2)
+	f32 numberOffsetX = (numberPixelWidth / windowWidth) * scale;
+	f32 typeOffsetX = (typePixelWidth / windowWidth) * scale;
 
-			AEGfxPrint(gameOverFont, "Menu",
-				MENU_NDC_X, MENU_NDC_Y, 1.0f,
-				hoverMenu ? 1.f : 0.7f,
-				hoverMenu ? 0.8f : 0.7f,
-				hoverMenu ? 0.f : 0.7f,
-				a4);
-		}
-	}
+	// Vertical spacing in normalized coordinates
+	f32 verticalSpacing = (UI::GetDamageTextFontSize() / windowHeight) * 2.f * scale;
 
-	void UI::DrawMenuControls()
+	s8 font = UI::GetDamageTextFont();
+	AEVec2 viewportPos;
+	AEExtras::WorldToViewportPosition(position, viewportPos);
+	viewportPos.x = viewportPos.x * 2 - 1.f;
+	viewportPos.y = viewportPos.y * 2 - 1.f;
+
+	// Print Damage Type.
+	AEGfxPrint(font,
+		damageType.c_str(),
+		viewportPos.x - typeOffsetX * 0.5f,
+		viewportPos.y + verticalSpacing * 0.5f,
+		scale,
+		r, g, b, alpha);
+	// Print Damage Number.
+	AEGfxPrint(font,
+		damageNumber.c_str(),
+		viewportPos.x - numberOffsetX * 0.5f,
+		viewportPos.y - verticalSpacing * 0.5f,
+		scale,
+		r, g, b, alpha);
+}
+/*-----------------------------------------------------------------------------
+						Damage Text Spawner Functions
+-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------
+This constructor initializes the DamageTextSpawner with a specified initial pool 
+size for damage text instances. The damageTextPool is set up to manage a pool of 
+DamageText objects, allowing for efficient reuse of damage text instances without 
+the overhead of constantly creating and destroying them. 
+
+The initial pool size determines how many DamageText instances are pre-allocated 
+and ready to be used when damage text needs to be spawned in the game. 
+
+This helps to optimize performance, especially in situations where many damage 
+texts may be generated in a short period of time.
+-----------------------------------------------------------------------------*/
+DamageTextSpawner::DamageTextSpawner (int initialPoolSize) // Constructor
+	: damageTextPool{ initialPoolSize } { /* empty by design */ }
+/*-----------------------------------------------------------------------------
+This function updates the state of all active damage text instances in the pool. 
+
+It iterates through the active damage texts and updates their position based on 
+their velocity, applies gravity to their vertical velocity, and gradually slows 
+down their horizontal movement. It also manages the timing for when the damage 
+text should start fading out and eventually be released back into the pool once 
+its lifetime is over. 
+
+This ensures that the damage text behaves in a visually appealing way, moving
+upwards and fading out smoothly over time.
+-----------------------------------------------------------------------------*/
+void DamageTextSpawner::Update()
+{
+	for (int i = static_cast<int>(damageTextPool.GetSize()) - 1; i >= 0; --i)
 	{
-		AEVec2 basePos{ 21.9f, 20.3f };   // world position
-		float Xspacing = 1.f;
-		float Yspacing = 1.1f;
+		DamageText& text = damageTextPool.pool[i];
 
-		DrawKeyWorld(key_A, { basePos.x, basePos.y }, { 64,64 });
-		DrawKeyWorld(key_D, { basePos.x + Xspacing, basePos.y }, { 64,64 });
-		basePos.y -= Yspacing;
-		DrawKeyWorld(key_SPACE, { basePos.x + 0.1f, basePos.y}, { 64,64 });
-		basePos.y -= Yspacing;
-		DrawKeyWorld(key_RMB, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
-		DrawKeyWorld(key_SHIFT, { basePos.x + 1.1f + Xspacing, basePos.y - 0.25f }, { 64,64 });
-
-		basePos.y -= Yspacing + 0.25f;
-		DrawKeyWorld(key_LMB, { basePos.x + 0.1f, basePos.y + 0.05f}, { 64,64 });
-
-		basePos.y -= 0.8f;
-		DrawKeyWorld(key_S, { basePos.x + 1.1f, basePos.y - 0.25f }, { 64,64 });
-		DrawKeyWorld(key_LMB, { basePos.x + 1.2f + Xspacing, basePos.y - 0.25f }, { 64,64 });
-	}
+		text.position.x += text.velocity.x * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
+		text.position.y += text.velocity.y * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
 
 
-	/*--------------------------------------
-			  Damage Text Functions
-	---------------------------------------*/
-	void DamageText::Init() {}
-	void DamageText::OnGet() {
-		neutralTime = 0.35f; // Neutral state of damage numbers before effects.
-		lifetime = 0.75f; // Lifetime of text with effects.
-		maxLifetime = lifetime; // Maximum lifetime for percentage computation.
-	}
-	void DamageText::OnRelease() {}
-	void DamageText::Exit() {}
-	void DamageText::Render()
-	{
-		// Get window dimensions
-		f32 windowWidth = static_cast<f32>(AEGfxGetWindowWidth());
-		f32 windowHeight = static_cast<f32>(AEGfxGetWindowHeight());
+		float gravity = -17.f; // To adjust this for fall of damage text
+		text.velocity.y += gravity * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
 
-		// Calculate text width in pixels (approximate)
-		// Each character is roughly fontsize * 0.6 pixels wide
-		f32 numberPixelWidth = damageNumber.length() * UI::GetDamageTextFontSize() * 0.6f;
-		f32 typePixelWidth = damageType.length() * UI::GetDamageTextFontSize() * 0.6f;
 
-		// Convert pixel offset to normalized coordinates [-1, 1]
-		// Divide by window width and multiply by 2 (since range is -1 to 1, total span of 2)
-		f32 numberOffsetX = (numberPixelWidth / windowWidth) * scale;
-		f32 typeOffsetX = (typePixelWidth / windowWidth) * scale;
+		text.velocity.x *= 0.95f; // Slight slow in movement
 
-		// Vertical spacing in normalized coordinates
-		f32 verticalSpacing = (UI::GetDamageTextFontSize() / windowHeight) * 2.f * scale;
-
-		s8 font = UI::GetDamageTextFont();
-		AEVec2 viewportPos;
-		AEExtras::WorldToViewportPosition(position, viewportPos);
-		viewportPos.x = viewportPos.x * 2 - 1.f;
-		viewportPos.y = viewportPos.y * 2 - 1.f;
-
-		// Print Damage Type.
-		AEGfxPrint(font,
-			damageType.c_str(),
-			viewportPos.x - typeOffsetX * 0.5f,
-			viewportPos.y + verticalSpacing * 0.5f,
-			scale,
-			r, g, b, alpha);
-		// Print Damage Number.
-		AEGfxPrint(font,
-			damageNumber.c_str(),
-			viewportPos.x - numberOffsetX * 0.5f,
-			viewportPos.y - verticalSpacing * 0.5f,
-			scale,
-			r, g, b, alpha);
-	}
-	/*--------------------------------------
-		  Damage Text Spawner Functions
-	---------------------------------------*/
-	DamageTextSpawner::DamageTextSpawner (int initialPoolSize) // Constructor
-		: damageTextPool{ initialPoolSize } { /* empty by design */ }
-
-	void DamageTextSpawner::Update()
-	{
-		for (int i = static_cast<int>(damageTextPool.GetSize()) - 1; i >= 0; --i)
+		text.neutralTime -= AEFrameRateControllerGetFrameTime();
+		if (text.neutralTime <= 0.f) {
+			text.lifetime -= AEFrameRateControllerGetFrameTime();
+			f32 lifeRatio = static_cast<f32>(text.lifetime / text.maxLifetime);
+			text.alpha = lifeRatio;
+			text.scale = text.initialScale * lifeRatio;
+		}
+		if (text.lifetime <= 0.f)
 		{
-			DamageText& text = damageTextPool.pool[i];
-
-			text.position.x += text.velocity.x * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
-			text.position.y += text.velocity.y * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
-
-
-			float gravity = -17.f; // To adjust this for fall of damage text
-			text.velocity.y += gravity * static_cast<f32>(Time::GetInstance().GetScaledDeltaTime());
-
-
-			text.velocity.x *= 0.95f; // Slight slow in movement
-
-			text.neutralTime -= AEFrameRateControllerGetFrameTime();
-			if (text.neutralTime <= 0.f) {
-				text.lifetime -= AEFrameRateControllerGetFrameTime();
-				f32 lifeRatio = static_cast<f32>(text.lifetime / text.maxLifetime);
-				text.alpha = lifeRatio;
-				text.scale = text.initialScale * lifeRatio;
-			}
-			if (text.lifetime <= 0.f)
-			{
-				damageTextPool.Release(text);
-			}
+			damageTextPool.Release(text);
 		}
 	}
-	void DamageTextSpawner::Render() {
-		for (size_t i = 0; i < damageTextPool.GetSize(); ++i)
-		{
-			damageTextPool.pool[i].Render();
-		}
-	}
-	void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVec2& position, const AEVec2& velocity) {
-		if (damageTextPool.GetSize() > UI::GetMaxDamageTextInstances()) {
-			return;
-		}
-
-		AEVec2 direction{ AEExtras::GetNormalise(velocity) };
-
-		// force upward bias
-		direction.y = max(direction.y, 0.4f);
-
-		if (direction.x == -1.0f) // If player is attacking enemy
-		{
-			direction.y = static_cast<float>(AEExtras::RandomRange({ 50, 80 })) / 100.0f;
-		}
-
-		direction.x *= 1.0f; // If need to alter horizontal movement
-		direction.y *= 1.5f; // Multiplier for vertical movement
-		direction.y += 0.4f; // Fixed movement of going up
-
-
-		direction = AEExtras::GetNormalise(direction); // Normalize the direction
-
-
-		float speed = static_cast<float>(AEExtras::RandomRange({ 5, 10 })); // Variation in dmg text speed.
-
-
-		DamageText& text = damageTextPool.Get();
-		text.damageNumber = std::to_string(damage);
-		text.damageType = "";
-		AEVec2 damageRange = { 1, 100 };
-		AEVec2 scaleRange{};
-		f32 remappedScale{};
-		// Account for damage type and change their colors accordingly.
-		switch (type) {
-			case DAMAGE_TYPE_NORMAL:
-				text.r = 1.0f, text.g = 1.0f, text.b = 1.0f;
-				scaleRange = { 0.85f, 1.4f };
-				remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
-				text.scale = remappedScale;
-				break;
-			case DAMAGE_TYPE_HEAL:
-				text.r = 0.1f, text.g = 1.0f, text.b = 0.25f;
-				scaleRange = { 0.85f, 1.4f };
-				remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
-				text.scale = remappedScale;
-				break;
-			case DAMAGE_TYPE_CRIT:
-				text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
-				//damageRange = { 1, 100 }; // if need to remap damage for crit if its too big
-				scaleRange = { 0.85f, 1.65f };
-				remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
-				text.scale = remappedScale;
-				text.damageType = "CRT!";
-				break;
-			case DAMAGE_TYPE_RESIST: // Not used
-				text.r = 0.5f, text.g = 0.85f, text.b = 1.0f;
-				text.scale = 0.75f;
-				text.damageType = "RES!";
-				break;
-			case DAMAGE_TYPE_MISS:
-				text.r = 0.85f, text.g = 0.85f, text.b = 0.85f;
-				text.scale = 0.75f;
-				text.damageType = "MISS!";
-				text.damageNumber = "";
-				break;
-			case DAMAGE_TYPE_ENEMY_ATTACK:
-				text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
-				scaleRange = { 0.85f, 1.4f };
-				remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
-				text.scale = remappedScale;
-				break;
-			case DAMAGE_TYPE_ENEMY_MISS:
-				text.r = 0.8f, text.g = 0.35f, text.b = 0.65f;
-				text.scale = 0.75f;
-				text.damageType = "MISS!";
-				text.damageNumber = "";
-				break;
-			case DAMAGE_TYPE_TRAP:
-				text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
-				scaleRange = { 0.85f, 1.4f };
-				remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
-				text.scale = remappedScale;
-				break;
-		}
-		text.velocity = { direction.x * speed, direction.y * speed * 1.25f }; // Add a multiplier to y so it rises up more.
-		text.initialScale = text.scale;
-		text.position = position;
-		text.alpha = 1.0f;
-		text.OnGet();
-	}
-	/*--------------------------------------
-			  Boss Intro functions
-	---------------------------------------*/
-	void UI::StartBossIntro()
+}
+/*-----------------------------------------------------------------------------
+This function renders all active damage text instances in the pool by calling 
+their Render() method. It iterates through the pool of damage texts and renders 
+each one that is currently active, allowing them to be displayed on the screen 
+with their respective positions, colors, and transparency based on their current 
+state. This ensures that all damage texts that are meant to be visible are drawn 
+correctly during the game's rendering phase.
+-----------------------------------------------------------------------------*/
+void DamageTextSpawner::Render() {
+	for (size_t i = 0; i < damageTextPool.GetSize(); ++i)
 	{
-		BossIntroOverlay::Start();
+		damageTextPool.pool[i].Render();
+	}
+}
+/*-----------------------------------------------------------------------------
+This function spawns a new damage text instance with the specified parameters, 
+including the damage amount, damage type, position, and velocity. 
+
+It first checks if the current number of active damage text instances exceeds 
+the maximum allowed, and if so, it returns early to prevent spawning more. Then, 
+it calculates the direction of the damage text based on the provided velocity 
+and applies an upward bias to ensure that the text rises up visually. 
+
+The speed of the damage text is randomized within a certain range to 
+add variation to its movement.
+-----------------------------------------------------------------------------*/
+void DamageTextSpawner::SpawnDamageText(int damage, DAMAGE_TYPE type, const AEVec2& position, const AEVec2& velocity) {
+	if (damageTextPool.GetSize() > UI::GetMaxDamageTextInstances()) {
+		return;
 	}
 
-	bool UI::IsBossIntroActive()
+	AEVec2 direction{ AEExtras::GetNormalise(velocity) };
+
+	// force upward bias
+	direction.y = max(direction.y, 0.4f);
+
+	if (direction.x == -1.0f) // If player is attacking enemy
 	{
-		return BossIntroOverlay::IsActive();
+		direction.y = static_cast<float>(AEExtras::RandomRange({ 50, 80 })) / 100.0f;
 	}
-	/*--------------------------------------
-				Button Functions
-	---------------------------------------*/
-	bool Button::CheckMouseInRectButton(AEVec2 pos, AEVec2 size) {
-		s32 mouseX, mouseY;
-		AEInputGetCursorPosition(&mouseX, &mouseY);
-		return (mouseX >= pos.x - size.x * 0.5f &&
-			mouseX <= pos.x + size.x * 0.5f &&
-			mouseY >= pos.y - size.y * 0.5f &&
-			mouseY <= pos.y + size.y * 0.5f);
+
+	direction.x *= 1.0f; // If need to alter horizontal movement
+	direction.y *= 1.5f; // Multiplier for vertical movement
+	direction.y += 0.4f; // Fixed movement of going up
+
+
+	direction = AEExtras::GetNormalise(direction); // Normalize the direction
+
+
+	float speed = static_cast<float>(AEExtras::RandomRange({ 5, 10 })); // Variation in dmg text speed.
+
+
+	DamageText& text = damageTextPool.Get();
+	text.damageNumber = std::to_string(damage);
+	text.damageType = "";
+	AEVec2 damageRange = { 1, 100 };
+	AEVec2 scaleRange{};
+	f32 remappedScale{};
+	// Account for damage type and change their colors accordingly.
+	switch (type) {
+		case DAMAGE_TYPE_NORMAL:
+			text.r = 1.0f, text.g = 1.0f, text.b = 1.0f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			break;
+		case DAMAGE_TYPE_HEAL:
+			text.r = 0.1f, text.g = 1.0f, text.b = 0.25f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			break;
+		case DAMAGE_TYPE_CRIT:
+			text.r = 1.0f, text.g = 0.0f, text.b = 0.0f;
+			//damageRange = { 1, 100 }; // if need to remap damage for crit if its too big
+			scaleRange = { 0.85f, 1.65f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			text.damageType = "CRT!";
+			break;
+		case DAMAGE_TYPE_RESIST: // Not used
+			text.r = 0.5f, text.g = 0.85f, text.b = 1.0f;
+			text.scale = 0.75f;
+			text.damageType = "RES!";
+			break;
+		case DAMAGE_TYPE_MISS:
+			text.r = 0.85f, text.g = 0.85f, text.b = 0.85f;
+			text.scale = 0.75f;
+			text.damageType = "MISS!";
+			text.damageNumber = "";
+			break;
+		case DAMAGE_TYPE_ENEMY_ATTACK:
+			text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			break;
+		case DAMAGE_TYPE_ENEMY_MISS:
+			text.r = 0.8f, text.g = 0.35f, text.b = 0.65f;
+			text.scale = 0.75f;
+			text.damageType = "MISS!";
+			text.damageNumber = "";
+			break;
+		case DAMAGE_TYPE_TRAP:
+			text.r = 1.0f, text.g = 0.2f, text.b = 0.85f;
+			scaleRange = { 0.85f, 1.4f };
+			remappedScale = AEExtras::RemapClamp(static_cast<float>(damage), damageRange, scaleRange);
+			text.scale = remappedScale;
+			break;
 	}
+	text.velocity = { direction.x * speed, direction.y * speed * 1.25f }; // Add a multiplier to y so it rises up more.
+	text.initialScale = text.scale;
+	text.position = position;
+	text.alpha = 1.0f;
+	text.OnGet();
+}
+/*-----------------------------------------------------------------------------
+							Boss Intro functions
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function initiates the boss intro sequence by calling the Start() method of 
+the BossIntroOverlay. This likely triggers the display of the boss intro overlay, 
+which may include animations, text, or other visual elements to introduce the 
+boss character to the player before the fight begins.
+-----------------------------------------------------------------------------*/
+void UI::StartBossIntro()
+{
+	BossIntroOverlay::Start();
+}
+/*-----------------------------------------------------------------------------
+This function checks if the boss intro sequence is currently active by querying 
+the BossIntroOverlay. It returns true if the boss intro is active, allowing 
+other parts of the code to adjust their behavior accordingly (e.g., pausing 
+player input, adjusting camera behavior, etc.) during the boss intro sequence.
+-----------------------------------------------------------------------------*/
+bool UI::IsBossIntroActive()
+{
+	return BossIntroOverlay::IsActive();
+}
+/*-----------------------------------------------------------------------------
+							  Button Functions
+------------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------
+This function checks if the mouse cursor is within a rectangular button area 
+defined by its position and size.
+-----------------------------------------------------------------------------*/
+bool Button::CheckMouseInRectButton(AEVec2 pos, AEVec2 size) {
+	s32 mouseX, mouseY;
+	AEInputGetCursorPosition(&mouseX, &mouseY);
+	return (mouseX >= pos.x - size.x * 0.5f &&
+		mouseX <= pos.x + size.x * 0.5f &&
+		mouseY >= pos.y - size.y * 0.5f &&
+		mouseY <= pos.y + size.y * 0.5f);
+}

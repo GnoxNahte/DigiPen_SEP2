@@ -1,3 +1,17 @@
+/*!
+@file		Timer.h
+@author 	Wei Xiang NG
+@brief		This header file declares the TimerSystem class and related structs 
+			for managing timers in the game, including named and anonymous timers.
+			It provides functions to add, remove, and query timers, as well as 
+			updating their states based on elapsed time. The TimerSystem is implemented
+			as a singleton for easy access throughout the game code.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include <string>
 #include <vector>

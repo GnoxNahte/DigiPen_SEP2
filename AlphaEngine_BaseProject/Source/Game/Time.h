@@ -1,3 +1,17 @@
+/*!
+@file		Time.h
+@author 	Wei Xiang NG
+@brief		This header file declares the Time class for managing the game's 
+            time system, including tracking elapsed time, delta time, and 
+            controlling time scaling and pausing. The Time class is implemented
+            as a singleton to allow easy access throughout the game code for 
+            consistent time management across different systems and features.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "AEEngine.h"
 

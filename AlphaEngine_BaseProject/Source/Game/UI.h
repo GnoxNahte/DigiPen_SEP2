@@ -1,8 +1,20 @@
+/*!
+@file		UI.h
+@author 	Wei Xiang NG
+@brief		This header file declares the UI class and related classes/structs 
+			for the game, including damage text, buttons, and boss intro phases. 
+			It also includes necessary headers and defines constants for UI elements.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include <AEEngine.h>
 #include <string>
-#include "../Utils/ObjectPool.h"
 #include "Player/Player.h"
+#include "../Utils/ObjectPool.h"
 #include "../CommonTypes.h"
 struct DamageText : public ObjectPoolItem {
 	std::string damageType{}; // Type of damage to be printed. Crit, resist, normal etc.

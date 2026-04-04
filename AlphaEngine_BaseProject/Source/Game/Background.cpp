@@ -1,14 +1,43 @@
+/*!
+@file		Background.cpp
+@author 	Wei Xiang NG
+@brief		This C++ file handles the background rendering of the game, including 
+            loading background textures, implementing parallax scrolling based on 
+            camera movement, and rendering multiple layers of the background with 
+            appropriate scaling and tinting to create depth and atmosphere.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "../Game/Background.h"
 #include "../Utils/MeshGenerator.h"
 #include "../Game/Camera.h"
 
+/*-----------------------------------------------------------------------------
+This function initializes the background by loading the necessary textures 
+for each layer and creating a rectangular mesh that will be used to render 
+the background layers. 
 
+The textures are loaded from the specified file paths, and the mesh is 
+generated to be a simple rectangle that can be scaled and transformed to fit 
+the background layers. 
+
+This setup allows for efficient rendering of the background with parallax 
+scrolling, as the same mesh can be reused for each layer with different 
+transformations and textures.
+-----------------------------------------------------------------------------*/
 void Background::Init() {
 	rectMesh = MeshGenerator::GetRectMesh(1.0f, 1.0f);
 	backgroundLayers[0] = AEGfxTextureLoad("Assets/Art/Background.png");
 	backgroundLayers[1] = AEGfxTextureLoad("Assets/Art/Midground.png");
 	backgroundLayers[2] = AEGfxTextureLoad("Assets/Art/Foreground.png");
 }
+/*-----------------------------------------------------------------------------
+This function renders the background layers with parallax scrolling based on 
+the camera's position.
+-----------------------------------------------------------------------------*/
 void Background::Render()
 {
     // Basic render state
@@ -41,24 +70,19 @@ void Background::Render()
         float scaledWidth = widths[i] * scaleFactor;
 
         // PARALLAX CALCULATION
-        // We calculate how much the texture has "slid" based on camera movement
-        // If factor is 0, offset is 0.
         float offset = Camera::position.x * Camera::scale * parallaxFactors[i];
 
-        // Wrap the offset so we can tile infinitely
+        // Wrap the offset to tile infinitely
         float wrappedX = fmodf(offset, scaledWidth);
         if (wrappedX < 0) wrappedX += scaledWidth;
 
         // POSITIONING
-        // We start at the camera's current world position.
-        // We subtract the wrappedX to create the "scrolling" effect relative to the camera.
         float startX = Camera::position.x * Camera::scale - wrappedX;
 
         // Account for Bottom-Left Origin + Centered Mesh
-        // This puts the first tile exactly centered on the camera's view
         startX += (scaledWidth / 2.0f);
 
-        // Vertical Lock: Must stay exactly with Camera Y
+        // Stay exactly with Camera Y-coordinates
         float drawY = Camera::position.y * Camera::scale + (winH / 2.0f) + globalYOffset;
 
         for (int x = -1; x <= 1; ++x)
@@ -77,6 +101,14 @@ void Background::Render()
     }
     AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
 }
+/*-----------------------------------------------------------------------------
+This function cleans up the background resources by freeing the mesh and 
+unloading the textures used for the background layers. 
+
+It ensures that all allocated resources are properly released to prevent 
+memory leaks when the background is no longer needed, such as when 
+transitioning to another scene or exiting the game.
+-----------------------------------------------------------------------------*/
 void Background::Exit() {
     if (rectMesh) {
         AEGfxMeshFree(rectMesh);

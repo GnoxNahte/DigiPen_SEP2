@@ -1,11 +1,45 @@
+/*!
+@file		Timer.cpp
+@author 	Wei Xiang NG
+@brief		This C++ file implements the TimerSystem class for managing timers in the game, including 
+			both named and anonymous timers. The TimerSystem allows for creating timers with various 
+			settings (e.g. ignoring time scale or pause state), checking their completion status, and 
+			retrieving their progress. It is designed to be updated every frame to handle timer completion
+			and looping logic, and provides functions for adding, removing, and querying timers by name or ID.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "Timer.h"
 #include "Time.h"
 #include <iostream>
 
+/*-----------------------------------------------------------------------------
+This function checks for completed timers and handles them accordingly. 
+
+It iterates through the list of timers and checks if any have reached their 
+end time based on the appropriate time base (real-time, scaled time, 
+or unpaused time) depending on their settings. 
+
+If a timer has completed, it updates its completion status, percentage, 
+and completed count. For loopable timers, it resets the start and end times
+to loop again. 
+
+For non-loopable timers that are set to auto-remove, it removes them from the 
+system. This function is called every frame in the Update() function to ensure 
+timely handling of timer completions.
+-----------------------------------------------------------------------------*/
 void TimerSystem::Update() {
 	CheckTimerCompletion();
 }
+/*-----------------------------------------------------------------------------
+This function clears all timers from the TimerSystem. 
 
+It empties the list of timers and the associated maps for named and 
+anonymous timers, effectively resetting the timer system to an empty state.
+-----------------------------------------------------------------------------*/
 void TimerSystem::Clear() {
 	std::cout << "Clearing all timers from TimerSystem." << std::endl;
 	timers.clear();
@@ -13,7 +47,12 @@ void TimerSystem::Clear() {
 	anonymousTimerMap.clear();
 	ResetActiveTimerCount();
 }
+/*-----------------------------------------------------------------------------
+This function adds a new timer to the TimerSystem with the specified settings.
 
+It first checks if a timer with the same name already exists (for named timers) 
+and skips addition if it does.
+-----------------------------------------------------------------------------*/
 void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemove,
 	bool ignoreTimeScale, bool ignorePause, bool loopable, u32 loopCount) {
 	Timer timer;
@@ -48,6 +87,9 @@ void TimerSystem::AddTimer(const std::string& name, f64 duration, bool autoRemov
 	//	<< " seconds (ignoreScale=" << ignoreTimeScale
 	//	<< ", ignorePause=" << ignorePause << ")" << std::endl;
 }
+/*-----------------------------------------------------------------------------
+This function removes a timer from the TimerSystem by its name.
+-----------------------------------------------------------------------------*/
 void TimerSystem::RemoveTimer(const std::string& name) {
 	auto it = timerMap.find(name);
 	if (it != timerMap.end()) {
@@ -70,8 +112,11 @@ void TimerSystem::RemoveTimer(const std::string& name) {
 		//std::cout << "Removed Timer \"" << name << "\"." << std::endl;
 	}
 }
-
-
+/*-----------------------------------------------------------------------------
+This function retrieves a pointer to a timer by its name. 
+If the timer is found, it returns a pointer to it; otherwise, it returns 
+nullptr.
+-----------------------------------------------------------------------------*/
 const Timer* TimerSystem::GetTimerByName(const std::string& name) const {
 	auto it = timerMap.find(name);
 	if (it != timerMap.end()) {
@@ -79,7 +124,10 @@ const Timer* TimerSystem::GetTimerByName(const std::string& name) const {
 	}
 	return nullptr; // Return nullptr if timer not found
 }
-
+/*-----------------------------------------------------------------------------
+This function adds an anonymous timer to the TimerSystem with the specified 
+settings and returns its unique ID.
+-----------------------------------------------------------------------------*/
 u32 TimerSystem::AddAnonymousTimer(f64 duration, bool autoRemove,
 	bool ignoreTimeScale, bool ignorePause, bool loopable, u32 loopCount) {
 	Timer timer;
@@ -113,7 +161,9 @@ u32 TimerSystem::AddAnonymousTimer(f64 duration, bool autoRemove,
 
 	return timer.id;
 }
-
+/*-----------------------------------------------------------------------------
+This function removes an anonymous timer from the TimerSystem by its unique ID.
+-----------------------------------------------------------------------------*/
 void TimerSystem::RemoveAnonymousTimer(u32 timerId) {
 	auto it = anonymousTimerMap.find(timerId);
 	if (it != anonymousTimerMap.end()) {
@@ -138,7 +188,9 @@ void TimerSystem::RemoveAnonymousTimer(u32 timerId) {
 		//std::cout << "Removed Anonymous Timer ID:" << timerId << std::endl;
 	}
 }
-
+/*-----------------------------------------------------------------------------
+This function retrieves a pointer to an anonymous timer by its unique ID.
+-----------------------------------------------------------------------------*/
 const Timer* TimerSystem::GetTimerById(u32 timerId) const {
 	auto it = anonymousTimerMap.find(timerId);
 	if (it != anonymousTimerMap.end()) {
@@ -146,18 +198,32 @@ const Timer* TimerSystem::GetTimerById(u32 timerId) const {
 	}
 	return nullptr;
 }
-
+/*-----------------------------------------------------------------------------
+This function checks if an anonymous timer has completed by its unique ID. 
+It returns true if the timer is found and has completed, or false if the timer 
+is not found or has not completed.
+-----------------------------------------------------------------------------*/
 bool TimerSystem::IsTimerComplete(u32 timerId) const {
 	const Timer* timer = GetTimerById(timerId);
 	return timer ? timer->completed : false;
 }
-
+/*-----------------------------------------------------------------------------
+This function retrieves the percentage of completion for an anonymous timer 
+by its unique ID.
+-----------------------------------------------------------------------------*/
 f32 TimerSystem::GetTimerPercentage(u32 timerId) const {
 	const Timer* timer = GetTimerById(timerId);
 	return timer ? (static_cast<f32>(timer->percentage)) : 0.0f;
 }
+/*-----------------------------------------------------------------------------
+This helper function determines the appropriate time base to use for a given 
+timer based on its settings for ignoring time scale and pause state. 
 
-// Helper to get the right time counter for a timer
+It returns the current time from the Time system that should be used for 
+calculating the timer's progress and completion status, ensuring that timers
+behave correctly according to their configuration (e.g. real-time, paused, 
+or scaled).
+-----------------------------------------------------------------------------*/
 f64 TimerSystem::GetTimeForTimer(const Timer& timer) const {
 	if (timer.ignorePause && timer.ignoreTimeScale) {
 		// Real-time: never pauses, never scales
@@ -172,7 +238,17 @@ f64 TimerSystem::GetTimeForTimer(const Timer& timer) const {
 		return Time::GetInstance().GetScaledElapsedTime();
 	}
 }
+/*-----------------------------------------------------------------------------
+This function checks for completed timers and handles them accordingly. 
 
+It iterates through the list of timers and checks if any have reached their end
+time based on the appropriate time base (real-time, scaled time, or unpaused time) 
+depending on their settings. 
+
+If a timer has completed, it updates its completion status, percentage, and 
+completed count. For loopable timers, it resets the start and end times to loop 
+again.
+-----------------------------------------------------------------------------*/
 void TimerSystem::CheckTimerCompletion() {
 	for (auto it = timers.begin(); it != timers.end(); ) {
 		// Get the appropriate time counter for this timer

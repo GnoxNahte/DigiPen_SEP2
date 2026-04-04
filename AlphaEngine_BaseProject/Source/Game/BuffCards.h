@@ -1,3 +1,16 @@
+/*!
+@file		BuffCards.h
+@author 	Wei Xiang NG
+@brief		This header file declares the BuffCardManager class and related
+			structs for the buff card system in the game, including card types, 
+			rarities, and effects. It also includes necessary headers and defines
+			constants for card randomization and selection logic.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "AEEngine.h"
 #include "AETypes.h"
@@ -106,9 +119,9 @@ public:
 	inline static int& CurrentSelectedCard() { return cardSelected; }
 	inline static bool& IsCardSelectedThisUpdate() { return cardSelectedThisUpdate; }
 	inline static bool& IsRoomCleared() { return roomCleared; } // To allow card selection to occur only after clearing a room.
-	/*--------------------------------------------------------------------------
+	/*-------------------------------------------------------------------------
 							File Reading and Writing
-	--------------------------------------------------------------------------*/
+	-------------------------------------------------------------------------*/
 	static CARD_TYPE GetCardType(std::string str); // Get card type from string, used for loading from JSON.
 	static CARD_RARITY GetCardRarity(std::string str); // Get card rarity from string, used for loading from JSON.
 	static void LoadCardInfo(); // Load card names and descriptions from a json file.

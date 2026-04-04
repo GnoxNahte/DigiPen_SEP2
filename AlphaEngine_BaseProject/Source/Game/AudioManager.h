@@ -1,5 +1,17 @@
-#pragma once
+/*!
+@file		AudioManager.h
+@author 	Wei Xiang NG, Cheng Yan JIANG (base system)
+@brief		This header file declares the AudioManager class and related classes for 
+            managing background music and sound effects in the game. It includes functions 
+			for initializing, updating, and exiting the audio system, as well as playing 
+            specific music tracks and sound effects based on game events.
 
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+#pragma once
 #include <memory>
 #include "AEEngine.h"
 #include "../Game/Environment/traps.h"

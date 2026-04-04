@@ -1,16 +1,29 @@
-#include "AudioManager.h"
+/*!
+@file		AudioManager.cpp
+@author 	Wei Xiang NG, Cheng Yan JIANG (base system)
+@brief		This C++ file implements the AudioManager class for managing all audio in the game, 
+            including background music and sound effects. It handles loading audio files, playing 
+            tracks based on game events (e.g. boss fights, menu navigation), adjusting 
+            volumes, crossfading between tracks, and updating audio states such as muffling 
+            during certain gameplay scenarios. The AudioManager ensures a cohesive audio 
+			experience that responds dynamically to the player's actions and game state.
 
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+#include "AudioManager.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-
 #include "../Game/Environment/traps.h"
 #include "../Game/Rooms/RoomData.h"
 #include "../Game/Time.h"
 
-// -----------------------------------------------------------------------------
-// Static member definitions : Background Music
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+                 Static member definitions : Background Music
+-----------------------------------------------------------------------------*/
 std::unique_ptr<BGMAudio> AudioManager::bossIntroMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::bossFightMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::gameMusic = nullptr;
@@ -20,9 +33,9 @@ std::unique_ptr<BGMAudio> AudioManager::menuMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::creditsMusic = nullptr;
 std::unique_ptr<BGMAudio> AudioManager::trapLava = nullptr;
 
-// -----------------------------------------------------------------------------
-// Static member definitions : Sound Effects
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+                  Static member definitions : Sound Effects
+-----------------------------------------------------------------------------*/
 
 // Buff SFXs
 std::unique_ptr<SFXAudio> AudioManager::buffRevealSFX = nullptr;
@@ -65,9 +78,13 @@ std::unique_ptr<SFXAudio> AudioManager::bossDeath = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::trapPressurePlate = nullptr;
 std::unique_ptr<SFXAudio> AudioManager::trapSpikes = nullptr;
 
-// -----------------------------------------------------------------------------
-// Internal state
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+Internal helper functions and variables for the AudioManager class. 
+
+These include constants for calculations, state variables for tracking the 
+current audio state, and utility functions for clamping volume values and 
+applying group volumes.
+-----------------------------------------------------------------------------*/
 namespace
 {
     const f32 PI_2 = 1.57079632679f;
@@ -96,22 +113,45 @@ namespace
     bool gIsPlayingVictory = false;
 
     BGMAudio* gCurrTrack = nullptr;
-
+    /*-----------------------------------------------------------------------------
+	This function clamps a float value between 0.0 and 1.0, ensuring that volume 
+    levels do not exceed the valid range for audio settings.
+    -----------------------------------------------------------------------------*/
     float Clamp01(float v)
     {
         return (std::max)(0.0f, (std::min)(1.0f, v));
     }
-
+    /*-----------------------------------------------------------------------------
+	This function calculates the final volume for sound effects by applying the 
+	master volume and the SFX volume settings, ensuring that the resulting volume 
+	is within the valid range of 0.0 to 1.0.
+    -----------------------------------------------------------------------------*/
     float FinalSFXVolume(float scale)
     {
         return Clamp01(scale);
     }
+    /*-----------------------------------------------------------------------------
+	This function calculates the final volume for music by applying the master 
+	volume and the music volume settings, ensuring that the resulting volume is 
+	within the valid range of 0.0 to 1.0. 
 
+	This allows for consistent volume control across all music tracks in the game, 
+    while still respecting the individual track's base volume and any fade effects.
+    -----------------------------------------------------------------------------*/
     float FinalMusicVolume(float scale)
     {
         return Clamp01(scale);
     }
-
+    /*-----------------------------------------------------------------------------
+	This function applies the current master, SFX, and music volume settings to the
+	respective audio groups. It calculates the effective volume for each group by
+	multiplying the master volume with the individual group volume (SFX or music)
+	and then sets the group volume using the AEAudioSetGroupVolume function. 
+    
+	This ensures that any changes to the master volume or individual group volumes 
+	are reflected in the actual audio output of the game, allowing for dynamic 
+	volume adjustments based on player preferences or game events.
+    -----------------------------------------------------------------------------*/
     void ApplyGroupVolumes()
     {
         const float sfxGroupVol = Clamp01(gMasterVolume) * Clamp01(gSFXVolume);
@@ -125,9 +165,31 @@ namespace
     }
 }
 
-// -----------------------------------------------------------------------------
-// Background Music
-// -----------------------------------------------------------------------------
+
+/*-----------------------------------------------------------------------------
+Background Music (BGM) management for the AudioManager class. 
+
+This section includes the implementation of the BGMAudio class, which handles 
+loading, playing, stopping, and crossfading background music tracks. 
+
+Each BGMAudio instance manages its own audio group for independent control 
+over volume and playback, allowing for features like crossfading between tracks 
+and dynamic volume adjustments based on game events.
+
+                                BACKGROUND MUSIC
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This constructor for the BGMAudio class loads a music file and creates an 
+audio group for the instance. It takes a filename as a parameter, which is 
+used to load the music using the AEAudioLoadMusic function. 
+
+The constructor also checks if the audio was loaded successfully and 
+prints an error message if it fails. The audio group is created using the 
+AEAudioCreateGroup function, which allows for individual control over the 
+volume and playback of this specific track, enabling features like crossfading 
+and independent volume adjustments.
+-----------------------------------------------------------------------------*/
 BGMAudio::BGMAudio(char const* filename)
     : baseVolume{ 1.0f },
     fadeVolume{ 1.0f },
@@ -142,7 +204,11 @@ BGMAudio::BGMAudio(char const* filename)
         std::cout << "Failed to load audio: " << filename << "\n";
     }
 }
-
+/*-----------------------------------------------------------------------------
+This destructor for the BGMAudio class ensures that any loaded audio and 
+created audio groups are properly unloaded and cleaned up when an instance 
+of BGMAudio is destroyed.
+-----------------------------------------------------------------------------*/
 BGMAudio::~BGMAudio()
 {
     if (AEAudioIsValidGroup(ownGroup))
@@ -158,7 +224,19 @@ BGMAudio::~BGMAudio()
         audioFile = {};
     }
 }
+/*-----------------------------------------------------------------------------
+This function plays the background music track associated with this BGMAudio 
+instance. It takes an initial group volume as a parameter, which is used to 
+set the base volume for the track before applying the final volume calculations.
 
+The function calls AEAudioPlay to start playing the audio file on the 
+instance's audio group, and it sets the active flag to true to indicate that 
+the track is currently playing. 
+
+It also updates the global current track pointer to this instance, allowing the 
+AudioManager to keep track of which music track is currently active for features 
+like crossfading and volume adjustments.
+-----------------------------------------------------------------------------*/
 void BGMAudio::Play(f32 const& initialGroupVol)
 {
     baseVolume = initialGroupVol;
@@ -167,7 +245,10 @@ void BGMAudio::Play(f32 const& initialGroupVol)
     active = true;
     gCurrTrack = this;
 }
-
+/*-----------------------------------------------------------------------------
+This function stops the background music track associated with this 
+BGMAudio instance.
+-----------------------------------------------------------------------------*/
 void BGMAudio::Stop()
 {
     if (AEAudioIsValidGroup(ownGroup))
@@ -177,13 +258,32 @@ void BGMAudio::Stop()
     fadeVolume = 1.0f;
     baseVolume = 1.0f;
 }
+/*-----------------------------------------------------------------------------
+This function sets the base volume for the BGMAudio instance and then applies 
+the final volume calculations to update the actual output volume of the track. 
 
+The base volume is a multiplier that can be adjusted for individual tracks, 
+and when ApplyFinalVolume is called, it combines the base volume with any fade 
+effects and the global music and master volume settings to determine the final 
+volume that is sent to the audio system. 
+
+This allows for dynamic volume control that can respond to game events 
+(like fading out during a transition) while still respecting the player's 
+overall volume preferences.
+-----------------------------------------------------------------------------*/
 void BGMAudio::SetVolume(f32 const& vol)
 {
     baseVolume = vol;
     ApplyFinalVolume();
 }
+/*-----------------------------------------------------------------------------
+This function calculates and applies the final volume for the BGMAudio 
+instance by combining the base volume, any fade effects, and the global 
+music and master volume settings. 
 
+It multiplies these factors together to determine the final volume level for 
+the track and then sets the group volume using AEAudioSetGroupVolume.
+-----------------------------------------------------------------------------*/
 void BGMAudio::ApplyFinalVolume()
 {
     float finalVol = baseVolume * fadeVolume * gMusicVolume * gMasterVolume;
@@ -191,7 +291,18 @@ void BGMAudio::ApplyFinalVolume()
     if (AEAudioIsValidGroup(ownGroup))
         AEAudioSetGroupVolume(ownGroup, finalVol);
 }
+/*-----------------------------------------------------------------------------
+This function initiates a crossfade transition from the current BGMAudio track 
+to another specified BGMAudio track over a given duration. 
 
+It sets up the necessary state for the crossfade, including which track is 
+fading out and which is fading in, and it starts the fade timer. 
+
+If the target track is not already active, it will start playing it at zero 
+volume so that it can fade in smoothly. The function also ensures that any 
+existing crossfade is stopped to prevent glitches in the timing of the 
+fade effect.
+-----------------------------------------------------------------------------*/
 void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration)
 {
     // Stop any existing crossfade to prevent timer glitches
@@ -211,9 +322,27 @@ void BGMAudio::CrossfadeTo(BGMAudio& other, f32 duration)
     gIsCrossfading = true;
 }
 
-// -----------------------------------------------------------------------------
-// Sound Effects
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+Sound Effects (SFX) management for the AudioManager class. 
+
+This section includes the implementation of the SFXAudio class, which handles 
+loading and managing sound effects. Each SFXAudio instance loads a sound effect 
+file and provides access to the AEAudio object for playback. 
+
+The AudioManager uses these SFXAudio instances to play sound effects in 
+response to game events, applying the appropriate volume settings based on the 
+global SFX volume and master volume.
+
+                                SOUND EFFECTS
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This constructor for the SFXAudio class loads a sound effect file using the
+AEAudioLoadSound function. 
+
+It takes a filename as a parameter and attempts to load the sound effect, 
+storing the resulting AEAudio object in the audioFile member variable.
+-----------------------------------------------------------------------------*/
 SFXAudio::SFXAudio(char const* filename)
 {
     audioFile = AEAudioLoadSound(filename);
@@ -223,7 +352,10 @@ SFXAudio::SFXAudio(char const* filename)
         std::cout << "Failed to load SFX: " << filename << "\n";
     }
 }
-
+/*-----------------------------------------------------------------------------
+This destructor for the SFXAudio class ensures that any loaded sound effect 
+audio is properly unloaded when an instance of SFXAudio is destroyed.
+-----------------------------------------------------------------------------*/
 SFXAudio::~SFXAudio()
 {
     if (AEAudioIsValidAudio(audioFile))
@@ -232,10 +364,28 @@ SFXAudio::~SFXAudio()
         audioFile = {};
     }
 }
+/*-----------------------------------------------------------------------------
+Background Music Control for the AudioManager class.
 
-// -----------------------------------------------------------------------------
-// Music control
-// -----------------------------------------------------------------------------
+This section includes functions for playing different background music tracks 
+based on game events (e.g. boss fights, menu navigation), as well as functions 
+for muffling and unmuffling music during certain gameplay scenarios. 
+
+The AudioManager manages the current active track and handles crossfading 
+between tracks to ensure smooth transitions in the game's audio experience. 
+
+It also includes a function to refresh the volumes of all music tracks, 
+which is useful when global volume settings are changed or when applying 
+effects like muffling.
+
+                          BACKGROUND MUSIC CONTROL
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function manages the background music during a boss fight, handling the 
+transition from the boss intro music to the boss fight music, and eventually to 
+the victory music when the boss is defeated.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomMgr)
 {
     // For the first time, play both tracks together so they sync perfectly
@@ -284,7 +434,10 @@ void AudioManager::PlayBossMusic(EnemyBoss const& boss, RoomManager const& roomM
         }
     }
 }
-
+/*-----------------------------------------------------------------------------
+This function manages the transition to the game over music when the player is 
+defeated.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayGameOverMusic()
 {
     if (!gIsPlayingGOver)
@@ -302,7 +455,14 @@ void AudioManager::PlayGameOverMusic()
         gIsPlayingGOver = true;
     }
 }
+/*-----------------------------------------------------------------------------
+This function manages the transition to the menu music when the player is in 
+the main menu or navigating menu screens. 
 
+It handles crossfading from the current track to the menu music if a 
+different track is currently active, or simply plays the menu music if it is 
+not already active.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayMenuMusic()
 {
     if (gCurrTrack && gCurrTrack != menuMusic.get())
@@ -316,7 +476,9 @@ void AudioManager::PlayMenuMusic()
 
     gCurrTrack = menuMusic.get();
 }
-
+/*-----------------------------------------------------------------------------
+This function manages the transition to the game music during regular gameplay.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayGameMusic()
 {
     if (gCurrTrack && gCurrTrack != gameMusic.get())
@@ -336,7 +498,14 @@ void AudioManager::PlayGameMusic()
 
     gCurrTrack = gameMusic.get();
 }
+/*-----------------------------------------------------------------------------
+This function manages the transition to the credits music when the player 
+reaches the credits screen. 
 
+It handles crossfading from the current track to the credits music if a 
+different track is currently active, or simply plays the credits music if it 
+is not already active.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayCreditsMusic() {
     if (gCurrTrack && gCurrTrack != creditsMusic.get())
     {
@@ -348,7 +517,14 @@ void AudioManager::PlayCreditsMusic() {
     }
 	gCurrTrack = creditsMusic.get();
 }
+/*-----------------------------------------------------------------------------
+This function muffles the current background music by reducing its volume to 
+create a "muffled" effect, which can be used during certain gameplay scenarios.
 
+This function was initially used for paused state, but taken out due to confusion
+when applying audio settings. It can be repurposed for other scenarios that 
+require a muffled audio effect.
+-----------------------------------------------------------------------------*/
 void AudioManager::MuffleMusic()
 {
     if (!gIsMuffled)
@@ -361,14 +537,20 @@ void AudioManager::MuffleMusic()
     gCurrTrack->ApplyFinalVolume();
     RefreshAllMusicVolumes();
 }
-
+/*-----------------------------------------------------------------------------
+This function restores the volume of the current background music to its 
+original level, undoing the muffled effect applied by the MuffleMusic function.
+-----------------------------------------------------------------------------*/
 void AudioManager::UnmuffleMusic()
 {
     gCurrTrack->SetVolume(preservedGameVol);
     gIsMuffled = false;
     RefreshAllMusicVolumes();
 }
-
+/*-----------------------------------------------------------------------------
+This function refreshes the volumes of all active background music tracks by 
+calling ApplyFinalVolume on each track that is currently active.
+-----------------------------------------------------------------------------*/
 void AudioManager::RefreshAllMusicVolumes()
 {
     if (bossIntroMusic && bossIntroMusic->IsActive())
@@ -395,20 +577,15 @@ void AudioManager::RefreshAllMusicVolumes()
     if (trapLava && trapLava->IsActive())
         trapLava->ApplyFinalVolume();
 }
+/*-----------------------------------------------------------------------------
+This function updates the audio for the lava trap based on the player's 
+proximity to it. 
 
-// -----------------------------------------------------------------------------
-// SFX control
-// -----------------------------------------------------------------------------
-void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& volume, f32 const& pitch)
-{
-    const AEAudio& audio = sfx.GetAudio();
-
-    if (AEAudioIsValidAudio(audio))
-    {
-        AEAudioPlay(audio, gSFXGroup, volume, pitch, 0);
-    }
-}
-
+It checks the distance from the player to the closest lava trap and adjusts the 
+volume of the lava trap music accordingly, creating a dynamic audio effect that 
+increases in intensity as the player gets closer to the lava and decreases as 
+they move away.
+-----------------------------------------------------------------------------*/
 void AudioManager::UpdateLavaAudio(const TrapManager& trapMgr, const Player& player)
 {
     if (!trapLava || !trapLava->IsActive())
@@ -426,16 +603,58 @@ void AudioManager::UpdateLavaAudio(const TrapManager& trapMgr, const Player& pla
     float volume = 1.0f - (dist / maxDistance);
     volume = Clamp01(volume);
 
-    // optional: don't go fully silent
+    // To not make it too quiet when the player is at the edge of the lava's range
     volume = 0.1f + 0.9f * volume;
 
     trapLava->SetVolume(volume);
     trapLava->ApplyFinalVolume();
 }
+/*-----------------------------------------------------------------------------
+Sound Effects Control for the AudioManager class.
 
-// -----------------------------------------------------------------------------
-// Init / Update / Exit
-// -----------------------------------------------------------------------------
+This section includes functions for playing sound effects in response to game 
+events, applying the appropriate volume settings based on the global SFX 
+volume and master volume. 
+
+                             SOUND EFFECTS CONTROL
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function plays a sound effect using the provided SFXAudio instance, 
+applying the appropriate volume settings based on the global SFX volume and 
+master volume.
+-----------------------------------------------------------------------------*/
+void AudioManager::PlaySFX(SFXAudio const& sfx, f32 const& volume, f32 const& pitch)
+{
+    const AEAudio& audio = sfx.GetAudio();
+
+    if (AEAudioIsValidAudio(audio))
+    {
+        AEAudioPlay(audio, gSFXGroup, volume, pitch, 0);
+    }
+}
+/*-----------------------------------------------------------------------------
+Init/Update/Exit functions for the AudioManager class.
+
+This section includes the implementation of the Init function, which initializes 
+the audio system by creating audio groups and loading all background music and 
+sound effect files. 
+
+It ensures that all audio resources are ready for use when the game starts, and 
+applies the initial volume settings to the audio groups. 
+
+The Update and Exit functions can be implemented as needed for managing audio 
+state during the game loop and cleaning up resources when the game exits.
+
+                               INIT/UPDATE/EXIT
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function initializes the AudioManager by creating audio groups for music 
+and sound effects if they do not already exist, applying the initial volume 
+settings to the groups, and loading all background music and sound effect files 
+into their respective BGMAudio and SFXAudio instances.
+-----------------------------------------------------------------------------*/
 void AudioManager::Init()
 {
     if (!AEAudioIsValidGroup(gMusicGroup))
@@ -534,7 +753,15 @@ void AudioManager::Init()
     if (!trapSpikes)
         trapSpikes = std::make_unique<SFXAudio>("Assets/music/TrapSpikes.mp3");
 }
+/*-----------------------------------------------------------------------------
+This function updates the audio state for the AudioManager, particularly 
+handling the crossfading between background music tracks when a crossfade is 
+in progress. 
 
+It updates the fade timer, calculates the appropriate volumes for the fading 
+out and fading in tracks using cosine and sine functions for a 
+smooth transition, and applies the final volumes to the respective tracks.
+-----------------------------------------------------------------------------*/
 void AudioManager::Update()
 {
     if (gIsCrossfading && gFadeOutTrack && gFadeInTrack)
@@ -565,7 +792,12 @@ void AudioManager::Update()
         }
     }
 }
-
+/*-----------------------------------------------------------------------------
+This function cleans up all audio resources used by the AudioManager when the 
+game is exiting. It stops all music, resets the runtime state, and unloads all
+audio files and groups to free up memory and ensure a clean shutdown of the
+audio system.
+-----------------------------------------------------------------------------*/
 void AudioManager::Exit()
 {
     StopAllMusic();
@@ -633,48 +865,83 @@ void AudioManager::Exit()
     gSFXGroup = {};
 }
 
-// -----------------------------------------------------------------------------
-// Volume controls
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+Volume Control for the AudioManager class.
+
+This section includes functions for setting and getting the master volume, 
+music volume, and sound effects volume.
+
+                                VOLUME CONTROL
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function sets the master volume for the audio system, clamping the input 
+value between 0.0 and 1.0 to ensure it stays within a valid range.
+-----------------------------------------------------------------------------*/
 void AudioManager::SetMasterVolume(float v)
 {
     gMasterVolume = Clamp01(v);
     ApplyGroupVolumes();
     RefreshAllMusicVolumes();
 }
-
+/*-----------------------------------------------------------------------------
+This function sets the music volume for the audio system, clamping the input 
+value between 0.0 and 1.0 to ensure it stays within a valid range.
+-----------------------------------------------------------------------------*/
 void AudioManager::SetMusicVolume(float v)
 {
     gMusicVolume = Clamp01(v);
     ApplyGroupVolumes();
     RefreshAllMusicVolumes();
 }
-
+/*-----------------------------------------------------------------------------
+This function sets the sound effects volume for the audio system, clamping the 
+input value between 0.0 and 1.0 to ensure it stays within a valid range.
+-----------------------------------------------------------------------------*/
 void AudioManager::SetSFXVolume(float v)
 {
     gSFXVolume = Clamp01(v);
     ApplyGroupVolumes();
     RefreshAllMusicVolumes();
 }
-
+/*-----------------------------------------------------------------------------
+This function retrieves the current master volume setting for the audio system.
+-----------------------------------------------------------------------------*/
 float AudioManager::GetMasterVolume()
 {
     return gMasterVolume;
 }
-
+/*-----------------------------------------------------------------------------
+This function retrieves the current sound effects volume setting for the audio 
+system.
+-----------------------------------------------------------------------------*/
 float AudioManager::GetSFXVolume()
 {
     return gSFXVolume;
 }
-
+/*-----------------------------------------------------------------------------
+This function retrieves the current music volume setting for the audio system.
+-----------------------------------------------------------------------------*/
 float AudioManager::GetMusicVolume()
 {
     return gMusicVolume;
 }
 
-// -----------------------------------------------------------------------------
-// Reset helpers
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+Reset Helpers for the AudioManager class.
+
+This section includes functions for stopping all music, resetting the runtime 
+state of the AudioManager, and resetting the audio state for a game restart.
+
+                                RESET HELPERS
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function stops all background music tracks that are currently active. It
+checks each track and calls the Stop function if the track is valid, ensuring
+that all music is halted when this function is called, such as during a game
+restart or when exiting the game.
+-----------------------------------------------------------------------------*/
 void AudioManager::StopAllMusic()
 {
     if (gameMusic)      gameMusic->Stop();
@@ -686,7 +953,11 @@ void AudioManager::StopAllMusic()
     if (creditsMusic)   creditsMusic->Stop();
     if (trapLava)       trapLava->Stop();
 }
-
+/*-----------------------------------------------------------------------------
+This function resets the runtime state of the AudioManager, including flags for
+muffling, crossfading, and which tracks are currently playing. It also resets
+the current track pointer and any flags related to boss music and sound effects.
+-----------------------------------------------------------------------------*/
 void AudioManager::ResetRuntimeState()
 {
     gIsMuffled = false;
@@ -710,7 +981,13 @@ void AudioManager::ResetRuntimeState()
     AudioManager::playedBossChargingSFX = false;
     AudioManager::playedBossTeleportSFX = false;
 }
-
+/*-----------------------------------------------------------------------------
+This function resets the audio state for a game restart by stopping all music 
+and resetting the runtime state of the AudioManager. It also sets the current 
+track pointer to nullptr to ensure that no music is considered active when the 
+game is restarted, allowing for a clean slate when the player starts a new game 
+session.
+-----------------------------------------------------------------------------*/
 void AudioManager::ResetForRestart()
 {
     StopAllMusic();
@@ -718,11 +995,21 @@ void AudioManager::ResetForRestart()
     gCurrTrack = nullptr;
 }
 
-// -----------------------------------------------------------------------------
-// UI helpers
-// -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+UI Helpers for the AudioManager class.
+
+This section includes functions for playing UI-related sound effects, such as 
+button clicks, which are triggered in response to user interactions with the 
+game's user interface.
+
+                                UI HELPERS
+-----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+This function plays the button click sound effect when a UI button is clicked.
+-----------------------------------------------------------------------------*/
 void AudioManager::PlayButtonClick()
 {
     if (buttonClick)
-        PlaySFX(*buttonClick, 0.8f);
+        PlaySFX(*buttonClick, 0.8f * GetSFXVolume());
 }

@@ -1,3 +1,18 @@
+/*!
+@file		Background.h
+@author 	Wei Xiang NG
+@brief		This header file declares the Background class for 
+			managing the game's background layers, including loading textures, 
+			rendering with parallax effect, and cleaning up resources. The Background 
+			class provides static methods for initialization, rendering, and exiting, and 
+			it maintains static members for background textures, mesh, and parallax factors
+			to create a visually appealing layered background in the game scenes.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "AEEngine.h"
 class Background
