@@ -1,3 +1,14 @@
+/*!
+@file  traps.h
+@author  Jiang Chengyan
+@brief  This file handles the traps of the game, including lava sprike and pressure plates.
+It defines the behavior of these traps, how they interact with the player, and how they are rendered in the game world.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include <memory>

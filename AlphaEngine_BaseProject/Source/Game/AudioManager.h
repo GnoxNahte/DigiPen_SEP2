@@ -1,6 +1,6 @@
 /*!
 @file		AudioManager.h
-@author 	Wei Xiang NG, Cheng Yan JIANG (base system)
+@author 	Wei Xiang NG, Jiang Chengyan (base system)
 @brief		This header file declares the AudioManager class and related classes for 
             managing background music and sound effects in the game. It includes functions 
 			for initializing, updating, and exiting the audio system, as well as playing 

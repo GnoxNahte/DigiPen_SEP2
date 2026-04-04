@@ -1,6 +1,6 @@
 /*!
 @file		AudioManager.cpp
-@author 	Wei Xiang NG, Cheng Yan JIANG (base system)
+@author 	Wei Xiang NG, Jiang Chengyan (base system)
 @brief		This C++ file implements the AudioManager class for managing all audio in the game, 
             including background music and sound effects. It handles loading audio files, playing 
             tracks based on game events (e.g. boss fights, menu navigation), adjusting 
