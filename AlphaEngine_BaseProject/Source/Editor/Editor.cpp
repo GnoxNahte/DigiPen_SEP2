@@ -46,12 +46,12 @@ const Editor::EditorPrefs& Editor::GetEditorPrefs()
 
 void Editor::Update()
 {
+#if _DEBUG
 	Editor& instance = Get();
 	// If trigger Tab OR "~"
 	if (AEInputCheckTriggered(VK_OEM_3) || AEInputCheckTriggered(VK_TAB))
 		instance.showInspectors = !instance.showInspectors;
 
-#if _DEBUG
 	if (instance.editorPrefs.ifAllowSelectingObjs && AEInputCheckTriggered(AEVK_LBUTTON) && !ImGui::GetIO().WantCaptureMouse)
 	{
 		instance.focusedObject = nullptr;

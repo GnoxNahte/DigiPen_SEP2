@@ -686,7 +686,7 @@ void Player::OnAttackAnimEnd(int spriteStateIndex)
 
     if (IsAnimGroundAttack())
     {
-        if (inputDirection.y < 0)
+        if (!isGroundCollided && inputDirection.y < 0)
             SetAttack(AnimState::AIR_ATTACK_SMASH);
         else
             SetAttack(static_cast<AnimState>(spriteStateIndex + 1));
@@ -760,7 +760,7 @@ void Player::UpdateAnimation()
     // If player is trying to attack (including input buffer)
     if (time - lastAttackHeld < stats.attackBuffer)
     {
-        if (!isGroundCollided && AEInputCheckCurr(keybinds.down))
+        if (!isGroundCollided && inputDirection.y < 0)
             SetAttack(AIR_ATTACK_SMASH);
         else if (time - lastAttackEndTime < stats.attackComboBuffer && lastAttackCombo != AnimState::ATTACK_END)
             SetAttack(static_cast<AnimState>(lastAttackCombo + 1));
@@ -903,7 +903,7 @@ void Player::Heal(int healAmt)
 
     health += healAmt;
     UI::GetDamageTextSpawner().SpawnDamageText(
-        healAmt, DAMAGE_TYPE_HEAL, position, { 0.f, 1.f });
+        healAmt, DAMAGE_TYPE_HEAL, position, { AEExtras::RandomRange({-1.5f, 1.5f}), 0.5f});
 }
 
 void Player::DrawInspector()

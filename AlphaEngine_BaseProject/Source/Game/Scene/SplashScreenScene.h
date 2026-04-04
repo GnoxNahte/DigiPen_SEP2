@@ -23,7 +23,7 @@ private:
 		NEXT_SCENE,
 	};
 
-	const float stayDuration = 1.f;
+	const float stayDuration = 1.5f;
 	const float fadeDuration = 1.5f;
 
 	bool isShowingLogo = true; // Showing DigiPen logo
