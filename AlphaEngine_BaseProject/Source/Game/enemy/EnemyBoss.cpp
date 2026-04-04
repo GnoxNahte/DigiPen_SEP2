@@ -1,3 +1,15 @@
+/*!
+@file   EnemyBoss.cpp
+@author lim kang ping
+@brief  This file implements the EnemyBoss class.
+It handles boss movement, attacks, teleporting, damage,
+special attacks, animations, and rendering.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "EnemyBoss.h"
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
@@ -284,7 +296,7 @@ void EnemyBoss::SpawnSpellChargeVfx(float dt)
     if (n <= 0) return;
     acc -= (float)n;
 
-    // Use a COPY so you don't mess up your normal trail emitter
+  
     ParticleSystem::EmitterSettings e = particleSystem.emitter;
 
     // Tune for "slow drift"
@@ -293,7 +305,7 @@ void EnemyBoss::SpawnSpellChargeVfx(float dt)
     e.tint = { 0.63f, 0.13f, 0.94f, 1.0f };
 	e.behavior = ParticleBehavior::Inward;
 
-    // Boss "visual center" (you already discovered you need +0.5f on X)
+    
     const float cx = position.x + 0.5f;
     const float cy = position.y + 0.35f;
 
@@ -393,16 +405,13 @@ float EnemyBoss::FindTeleportTarget(const AEVec2& playerPos,
             return x;
     }
 
-    // Then try a clamped behind position, still behind-only
+    // Then try a clamped behind position, still behind only
     const float clampedBehind =
         std::clamp(playerPos.x + behindDir * d1, teleportMinX, teleportMaxX);
 
     if (IsTeleportXValid(clampedBehind, playerPos, map))
         return clampedBehind;
 
-    // Final fallback: teleport on the player if behind is blocked by wall/space
-    /*const float onPlayerX =
-        std::clamp(playerPos.x, teleportMinX, teleportMaxX);*/
 
     if (IsTeleportXValid(playerPos.x, playerPos, map, true))
         return playerPos.x;
@@ -447,20 +456,20 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             particleSystem.emitter.lifetimeRange.x = 0.7f;
             particleSystem.emitter.lifetimeRange.y = 1.3f;
 
-            // Intimidating color (purple aura).
+       
             particleSystem.emitter.tint = { 0.65f, 0.15f, 0.95f, 0.75f };
 
             if (phase2)
             {
                 particleSystem.emitter.tint = { 0.5f, 0.f, 0.f, 0.75f };
             }
-            //particleSystem.emitter.tint = { 0.18f, 0.09f, 0.20f, 0.8f };
+          
 
             // Spawn even when idle; optionally increase when moving
             const float speed = AEVec2Length(&velocity);
             particleSystem.SetSpawnRate(20.f + speed * 12.f); // tune: 100..220 base
 
-            particleSystem.Update(); // keep if you want UpdateBossParticles to own the update
+            particleSystem.Update(); 
         };
 
 
@@ -655,13 +664,8 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             teleportMoved = false;
             teleportCooldownTimer = 0.f;
 
-            // Prime an immediate attack (EnemyAttack auto-starts if in range)
-            //const float newDx = playerPos.x - position.x;
-            //const float newAbsDx = std::fabs(newDx);
-            //const float attackDur = GetAnimDurationSec(sprite, ATTACK);
-
-            attack.Reset();                 // clears cooldownTimer too
-           // const float effectiveDist = yAttackOk ? absDx : 9999.0f;
+            attack.Reset();     // clears cooldownTimer too
+ 
 
             const float postDx = std::fabs(playerPos.x - position.x);
             const float postDy = std::fabs(playerPos.y - position.y);
@@ -721,9 +725,7 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // Update attack component
     attack.Update(dt, effectiveDist, attackDur);
 
-    // --- Special sequence ---
-    //static constexpr float kSpecialCooldown = 5.0f;
-    //static constexpr float kSpecialSpawnGap = 1.0f;   // 0.5s between spawns
+    // --- Special sequence --
     static constexpr int   kSpecialSpawnCount = 5;
 
     if (phase2)
@@ -739,15 +741,8 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
             if (dx != 0.f)
                 facingDirection = AEVec2{ (dx > 0.f) ? 1.f : -1.f, 0.f };
 
-            // >>> ADD THIS BLOCK HERE <<<
-            /*if (specialSpawnsRemaining == kSpecialSpawnCount && specialSpawnTimer > 0.f)
-            {
-                SpawnSpellChargeVfx(dt);
-            }*/
-
 
             // Timer handles: initial cast delay + spawn gaps
-       
             specialSpawnTimer -= dt;
 
             while (specialSpawnTimer <= 0.0f && specialSpawnsRemaining > 0)
@@ -874,20 +869,11 @@ void EnemyBoss::Update(const AEVec2& playerPos, bool playerFacingRight, MapGrid&
     // As long as special phase is active, keep SPELLCAST looping (reset/replay is OK)
     if (!specialPhaseActive && !teleportActive)
         UpdateAnimation();
-    // else: do NOT override SPELLCAST (it loops via sprite.Update())
 
     sprite.Update();
     specialAttackVfx.Update();
 
-    // Update + cleanup specials
-    /*for (auto& specialAttack : g_specialAttacks)
-        specialAttack.Update(dt);
-
-    g_specialAttacks.erase(
-        std::remove_if(g_specialAttacks.begin(), g_specialAttacks.end(),
-            [](const SpecialAttack& specialAttack) { return !specialAttack.alive(); }),
-        g_specialAttacks.end()
-    );*/
+ 
 
     for (auto& specialAttack : g_specialAttacks)
     {
@@ -958,9 +944,8 @@ void EnemyBoss::SpawnImpactBurst()
     e.angleRange = { AEDegToRad(70.f), AEDegToRad(110.f) };
     particleSystem.SpawnParticleBurst(e, 22);
 
-    // =========================
+
     // Layer 3: Puff / flash
-    // =========================
     e.spawnPosRangeX = { hitX - 0.12f, hitX + 0.12f };
     e.spawnPosRangeY = { feetY + 0.10f, feetY + 0.40f };
     e.speedRange = { 6.f, 12.f };
@@ -1072,7 +1057,7 @@ void EnemyBoss::UpdateAnimation()
 {
     if (teleportActive)
     {
-        // Only do this if you are NOT already setting TELEPORT once at teleport start.
+  
         sprite.SetState(TELEPORT);
         return;
     }
@@ -1171,7 +1156,7 @@ void EnemyBoss::Render()
 
     RenderHealthbar();
 
-    // make sure we�re not stuck in additive mode from VFX
+    // make sure not stuck in additive mode from VFX
     AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 }
 
@@ -1355,10 +1340,6 @@ void EnemyBoss::RenderHealthbar() const
    // (Top-left label + HP numbers)
     std::string label = "Bringer of Death";
   
-    //QuickGraphics::PrintText(label.c_str(), -0.15f, 0.88f, 0.35f, 1, 1, 1, nameAlpha);
     AEGfxPrint(bossFont, label.c_str(), -0.18f, 0.88f, 0.50f, 1.0f, 1.0f, 1.0f, nameAlpha);
-    /*
-    std::string hpStr = std::to_string(hp) + " / " + std::to_string(maxHP);
-    QuickGraphics::PrintText(hpStr.c_str(), 0.55f, 0.88f, 0.35f, 1, 1, 1, 1);
-    */
+
 }

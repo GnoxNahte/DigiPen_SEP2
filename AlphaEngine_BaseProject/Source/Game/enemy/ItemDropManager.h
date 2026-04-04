@@ -1,4 +1,15 @@
-#pragma once
+/*!
+@file   ItemDropManager.h
+@author lim kang ping
+@brief  This file declares the ItemDropManager class.
+It manages item drops, their states, their movement,
+and how they interact with the player and UI.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include <vector>

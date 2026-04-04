@@ -1,7 +1,19 @@
+/*!
+@file   EnemyBossStats.cpp
+@author lim kang ping
+@brief  This file implements the EnemyBossStats structure.
+It loads boss stats such as health, damage, movement,
+attack values, and teleport settings from a JSON file.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #include <rapidjson/document.h>
 #include <iostream>
 #include <string>
-
 #include "EnemyBossStats.h"
 #include "../../Utils/FileHelper.h"
 

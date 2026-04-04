@@ -1,4 +1,15 @@
-#pragma once
+/*!
+@file   RoomSystem.h
+@author lim kang ping
+@brief  This file declares the RoomSystem class.
+It controls room loading, room transitions, runtime room objects, and room boundary logic
+during gameplay.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include "../Rooms/RoomManager.h"

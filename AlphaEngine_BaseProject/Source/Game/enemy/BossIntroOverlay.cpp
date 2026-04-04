@@ -1,5 +1,16 @@
-#include "BossIntroOverlay.h"
+/*!
+@file   BossIntroOverlay.cpp
+@author lim kang ping
+@brief  This file implements the boss intro overlay.
+It controls the boss intro screen, including the text,
+visual effects, update logic, and rendering.
 
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+#include "BossIntroOverlay.h"
 #include "../GameOver.h"
 #include "../Camera.h"
 #include "../../Utils/MeshGenerator.h"

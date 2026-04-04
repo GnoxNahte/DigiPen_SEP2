@@ -1,3 +1,15 @@
+/*!
+@file   EnemyManager.h
+@author lim kang ping
+@brief  This file declares the EnemyManager class.
+It manages enemy spawning, stores active enemies, handles boss setup,
+and controls enemy data for the current room.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include <vector>

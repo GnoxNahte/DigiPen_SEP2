@@ -1,3 +1,16 @@
+/*!
+@file   AttackSystem.cpp
+@author lim kang ping
+@brief  This file implements the AttackSystem class.
+It handles enemy attack hitboxes, applies enemy attacks to the player,
+updates attack timing, and renders attack effects.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #include "AttackSystem.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/Enemy.h"
@@ -8,7 +21,7 @@
 #include "../../Utils/QuickGraphics.h"
 
 
-//HELPERS
+//HELPER
 static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 {
     if (stateIndex < 0 || stateIndex >= sprite.metadata.rows)
@@ -17,19 +30,6 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
     const auto& s = sprite.metadata.stateInfoRows[stateIndex];
     return static_cast<float>(s.frameCount) * static_cast<float>(s.timePerFrame);
 }
-
-/*static bool FindGroundBelowPlayer(MapGrid& map, float x, float startY, float minY, float step, float& outGroundY)
-{
-    for (float y = startY; y >= minY; y -= step)
-    {
-        if (map.CheckPointCollision(x, y))
-        {
-            outGroundY = y;
-            return true;
-        }
-    }
-    return false;
-}*/
 
 
 //PUBLIC APIIIII , to be called from gamescene and level editor
@@ -75,7 +75,7 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
         enemyHitboxes.end()
     );
 
-    // 2) Process enemy hit events
+    // Process enemy hit events
     enemies.ForEachEnemy([&](Enemy& e)
         {
             if (!e.PollAttackHit()) return;

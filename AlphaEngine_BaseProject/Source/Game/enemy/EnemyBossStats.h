@@ -1,3 +1,16 @@
+/*!
+@file   EnemyBossStats.h
+@author lim kang ping
+@brief  This file defines the stats used by the boss enemy.
+It stores boss values such as health, damage, movement, attack settings,
+teleport settings, and loads them from a data file.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include <string>
 

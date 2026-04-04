@@ -1,3 +1,16 @@
+/*!
+@file   EnemyBoss.h
+@author lim kang ping
+@brief  This file declares the EnemyBoss class.
+It defines boss data and functions for movement, attacks,
+damage, special attacks, and rendering.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include "../../Utils/Sprite.h" 
 #include "EnemyAttack.h"

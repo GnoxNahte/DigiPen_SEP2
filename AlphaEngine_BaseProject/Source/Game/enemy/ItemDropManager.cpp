@@ -1,5 +1,17 @@
-#include "ItemDropManager.h"
+/*!
+@file   ItemDropManager.cpp
+@author lim kang ping
+@brief  This file implements the ItemDropManager class.
+It handles spawning, updating, collecting, and clearing item drops,
+such as hearts dropped by enemies.
 
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
+#include "ItemDropManager.h"
 #include "../Player/Player.h"
 #include "../../Utils/Event/EventSystem.h"
 #include "../../Utils/AEExtras.h"

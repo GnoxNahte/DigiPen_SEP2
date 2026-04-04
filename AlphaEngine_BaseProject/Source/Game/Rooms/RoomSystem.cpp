@@ -1,4 +1,15 @@
-#pragma once
+/*!
+@file   RoomSystem.cpp
+@author lim kang ping
+@brief  This file implements the RoomSystem class.
+It handles building the current room, spawning traps and enemies, updating room logic,
+checking room exits, and blocking the player from returning through certain room entrances.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 
 #include "RoomSystem.h"
 

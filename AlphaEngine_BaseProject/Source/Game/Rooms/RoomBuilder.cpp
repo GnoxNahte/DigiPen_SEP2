@@ -1,3 +1,15 @@
+/*!
+@file   RoomBuilder.cpp
+@author lim kang ping
+@brief  This file builds room data from level data.
+It splits the full level into rooms, assigns room connections, and stores the tiles,
+player spawn, enemies, and traps for each room.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "RoomBuilder.h"
 
 #include "../Scene/LevelIO.h"

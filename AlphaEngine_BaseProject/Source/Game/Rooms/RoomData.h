@@ -1,3 +1,15 @@
+/*!
+@file   RoomData.h
+@author lim kang ping, Santosh
+@brief  This file defines the room data used by the room system.
+It includes room IDs, room directions, enemy spawn data, trap spawn data,
+and the main RoomData structure for each room.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include "../Environment/MapTile.h"

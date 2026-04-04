@@ -1,4 +1,17 @@
-﻿#include "Enemy.h"
+﻿/*!
+@file   Enemy.cpp
+@author lim kang ping
+@brief  This file implements the Enemy class.
+It handles enemy movement, AI behavior, attacks, damage,
+animations, particles, and rendering.
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
+#include "Enemy.h"
 #include <cmath>
 #include "../../Utils/QuickGraphics.h"
 #include "../Camera.h"
@@ -772,7 +785,7 @@ void Enemy::ApplyRoomScaling(int extraHp, int extraDamage)
     hp += extraHp;
     if (hp > stats.maxHp) hp = stats.maxHp;
     if (hp < 1) hp = 1;
-	//extraDamage = 0; // currently no extra damage from scaling, but this is here for easy tuning if we want to add it later
+	
     stats.attackDamage += extraDamage / 2;
     if (stats.attackDamage < 1) stats.attackDamage = 1;
 }
@@ -812,7 +825,7 @@ void Enemy::Render()
     if (debugDraw)
 
     {
-        //const float boxYOffset = -0.25f; // negative = draw LOWER (
+        //const float boxYOffset = -0.25f; // negative = draw LOWER 
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         const AEVec2 hb = GetHurtboxPos();
         QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);
@@ -820,7 +833,7 @@ void Enemy::Render()
 
     if (Editor::GetShowColliders())
     {
-        //const float boxYOffset = -0.25f; // negative = draw LOWER (
+        //const float boxYOffset = -0.25f; // negative = draw LOWER 
         const u32 color = chasing ? 0xFFFF4040 : 0xFFB0B0B0;
         const AEVec2 hb = GetHurtboxPos();
         QuickGraphics::DrawRect(hb.x, hb.y, size.x, size.y, color, AE_GFX_MDM_LINES_STRIP);

@@ -1,4 +1,15 @@
+/*!
+@file   EnemyStats.cpp
+@author lim kang ping
+@brief  This file implements the EnemyStats structure.
+It loads regular enemy stats such as health, damage, movement,
+attack values, and animation data from a JSON file.
 
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include <rapidjson/document.h>
 #include <iostream>
 #include <string>

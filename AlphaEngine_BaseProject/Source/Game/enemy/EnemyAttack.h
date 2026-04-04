@@ -1,3 +1,16 @@
+/*!
+@file   EnemyAttack.h
+@author lim kang ping
+@brief  This file defines the EnemyAttack class.
+It stores and updates the attack timing, range,
+cooldown, and hit state for an enemy attack, applies to all enemy types (regular and boss).
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include <Windows.h>
 
@@ -11,11 +24,8 @@ public:
     float hitTimeNormalized = 0.5f;  // 0..1 (hit time within animation)
 
 
-    //  - distanceToTarget: abs(x distance) or full distance, choice (be consistent)
-    //  - attackAnimDurationSec: duration of ATTACK animation in seconds (frameCount * timePerFrame)
-
     //if target goes beyond this while attacking, cancel attack
-     float breakRange = 900.0f;   // set > startRange (hysteresis
+     float breakRange = 900.0f;  
 
 
     void Update(float dt, float distanceToTarget, float attackAnimDurationSec)
