@@ -96,9 +96,7 @@ void MainMenuScene::UpdateQuitConfirmInput()
     if (IsClicked(btnYes))
     {
         AudioManager::PlayButtonClick();
-        Sleep(150);
-        PostQuitMessage(0);
-        std::exit(0);
+        GSM::ChangeScene(SceneState::GS_QUIT);
     }
     if (AEInputCheckTriggered(AEVK_ESCAPE))
     {
