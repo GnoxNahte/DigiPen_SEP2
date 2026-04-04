@@ -169,6 +169,7 @@ void MainMenuScene::OnCreditsEnter()
 {
     inCredits = true;
     Time::GetInstance().SetPaused(true);
+    Time::GetInstance().SetTimeScale(0);
     credits.StartCredits();
 	AudioManager::PlayCreditsMusic();
 
@@ -179,6 +180,7 @@ void MainMenuScene::OnCreditsExit()
 {
     inCredits = false;
     Time::GetInstance().SetPaused(false);
+    Time::GetInstance().SetTimeScale(1);
     AudioManager::PlayMenuMusic();
 }
 
@@ -547,7 +549,7 @@ void MainMenuScene::Init()
     // Adjust these if needed after testing
     settingsTrigger = { 1.f, 25.f, 0.5f, 12.f };
     startGameTrigger = { 25.f, 30.f, 16.f, 27.f };
-    creditsTrigger = { 4.f, 25.f, 28.f, 50.f };
+    creditsTrigger = { 2.f, 25.f, 28.f, 50.f };
 
     vineTexture = AEGfxTextureLoad("Assets/Tmp/vines.png");
     AEGfxMeshStart();
