@@ -2,8 +2,8 @@
 @file	ParticleSystem.h
 @author	Ethan Ong
 @brief	Declares ParticleSystem class for easy spawning, updating and rendering particles
-		Uses Object Pool, internally
-@link	https://gnoxnahte.github.io/DigiPen_SEP2/particle_system.html
+		Uses Object Pool, internally\n
+		Docs: https://gnoxnahte.github.io/DigiPen_SEP2/particle_system.html
 
 Copyright (C) 2026 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

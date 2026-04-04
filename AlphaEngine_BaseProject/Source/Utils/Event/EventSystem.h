@@ -1,11 +1,11 @@
 /*!
 @file	EventSystem.h
 @author	Ethan Ong
-@brief	Declares and defines a EventSystem. 
-		This uses function templates to allow:
-		- Declaring event types on the client side, no need to update this file to add a new event type.
-		- Using templates means there's no runtime cost for detecting the event type
-@link	https://gnoxnahte.github.io/DigiPen_SEP2/event-system.html
+@brief	Declares and defines a EventSystem. \n
+		This uses function templates to allow:\n
+		- Declaring event types on the client side, no need to update this file to add a new event type.\n
+		- Using templates means there's no runtime cost for detecting the event type\n
+		Docs: https://gnoxnahte.github.io/DigiPen_SEP2/event-system.html
 
 Copyright (C) 2026 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

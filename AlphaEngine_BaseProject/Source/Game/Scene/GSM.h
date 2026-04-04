@@ -4,8 +4,8 @@
 @brief	GSM - GameStateManager based on Game Implementation Techniques
 		but uses a Object-oriented approach to have better type-safety.
 		Also stores variables in scene instead of a static file variable
-		and ties the lifetime of objects to the class
-@link	https://gnoxnahte.github.io/DigiPen_SEP2/gsm.html
+		and ties the lifetime of objects to the class\n
+		Docs: https://gnoxnahte.github.io/DigiPen_SEP2/gsm.html
 
 Copyright (C) 2026 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

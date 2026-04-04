@@ -1,5 +1,5 @@
 /*!
-@file	Box
+@file	Box.h
 @author	Ethan Ong
 @brief	Declares a Box class to store position and size.
 

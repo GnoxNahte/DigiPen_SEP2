@@ -172,7 +172,7 @@ namespace AEExtras
 	/**
 	 * @brief						Converts a position from world coordinates to OpenGL coords (or Normalized Device coords?)
 	 * @param worldPosition			Input screen position
-	 * @param outPosition			Output position
+	 * @param outputPosition		Output position
 	 */
 	void WorldToOpenGL_Coords(const AEVec2& worldPosition, AEVec2& outputPosition);
 

@@ -1,8 +1,8 @@
 /*!
 @file	Editor.h
 @author	Ethan Ong
-@brief	Declares an Editor manager/interface for ImGui
-@link	https://gnoxnahte.github.io/DigiPen_SEP2/editor-with-imgui.html
+@brief	Declares an Editor manager/interface for ImGui\n
+		Docs: https://gnoxnahte.github.io/DigiPen_SEP2/editor-with-imgui.html
 
 Copyright (C) 2026 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

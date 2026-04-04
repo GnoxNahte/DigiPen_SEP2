@@ -41,8 +41,8 @@ struct SpriteMetadata
 		/**
 		 * @brief	If it loops the current animation after it's done. 
 		 *			If false, it'll stay on the last frame
-		 * @note	This is optional
-		 * @default true
+		 *			Default is true
+		 * @note	This is optional 
 		 */
 		bool ifLoop;
 
