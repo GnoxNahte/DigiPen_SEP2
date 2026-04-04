@@ -1,8 +1,20 @@
+/*!
+@file	Credits.h
+@author	Ethan Ong
+@brief	Declares Credits class, for use in the main menu credits section
+		All the credits are stored in a json file, making it easy to add new credits
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include <AEEngine.h>
 #include <string>
 #include <vector>
 #include <functional>
+
 #include "../Utils/FileHelper.h"
 #include "../Editor/EditorUtils.h"
 

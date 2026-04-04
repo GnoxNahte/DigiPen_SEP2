@@ -1,3 +1,14 @@
+/*!
+@file	Player.h
+@author	Ethan Ong
+@brief	Declares a Player class that handles movement and attacks
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 
 #include "AEEngine.h"
@@ -7,8 +18,8 @@
 #include "../../Utils/Box.h"
 #include "../../Utils/ParticleSystem.h"
 #include "../../Utils/Event/EventSystem.h"
-#include "../Environment/MapGrid.h"
 #include "../../Editor/EditorUtils.h"
+#include "../Environment/MapGrid.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/IDamageable.h"
 #include "../BuffCards.h"

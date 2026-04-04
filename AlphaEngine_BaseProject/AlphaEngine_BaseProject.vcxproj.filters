@@ -117,9 +117,6 @@
     <ClCompile Include="Source\Game\UI.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Utils\ObjectPool.cpp">
-      <Filter>Source Files\Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Utils\ParticleSystem.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
@@ -163,9 +160,6 @@
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="Source\Editor\EditorUtils.cpp">
-      <Filter>Source Files\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Editor\ImGuiHelper.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="Source\Game\enemy\EnemyBoss.cpp">
@@ -350,9 +344,6 @@
     <ClInclude Include="Source\Editor\EditorUtils.h">
       <Filter>Header Files\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Editor\ImGuiHelper.h">
-      <Filter>Header Files\Editor</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyAttack.h">
       <Filter>Header Files\Game\enemy</Filter>
     </ClInclude>
@@ -394,9 +385,6 @@
     </ClInclude>
     <ClInclude Include="Source\Utils\PhysicsUtils.h">
       <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Utils\Event\EventSystem.h">
-      <Filter>Header Files\Utils\Event</Filter>
     </ClInclude>
     <ClInclude Include="Source\Game\GameOver.h">
       <Filter>Header Files\Game</Filter>
@@ -445,6 +433,9 @@
     </ClInclude>
     <ClInclude Include="Source\Game\enemy\EnemyBossStats.h">
       <Filter>Header Files\Game\enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils\Event\EventSystem.h">
+      <Filter>Header Files\Utils\Event</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

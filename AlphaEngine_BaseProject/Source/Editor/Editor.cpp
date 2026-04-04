@@ -1,3 +1,15 @@
+/*!
+@file	Editor.cpp
+@author	Ethan Ong
+@brief	Defines an Editor manager/interface for ImGui
+@link	https://gnoxnahte.github.io/DigiPen_SEP2/editor-with-imgui.html
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #include "Editor.h"
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>

@@ -1,3 +1,14 @@
+/*!
+@file	SpriteMetadata.h
+@author	Ethan Ong
+@brief	Declares SpriteMetadata for storing metadata for each sprite
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include <string>
 #include <vector>
@@ -59,7 +70,7 @@ struct SpriteMetadata
 	 * @brief Default frame per second / How fast to play the animation
 	 *		  Will be used when the state doesn't specify it
 	 */
-	int defaultSampleRate;
+	int defaultSampleRate = 12;
 
 	// === Derived from JSON data. NOT in JSON ===
 	int rows = -1, cols = -1;

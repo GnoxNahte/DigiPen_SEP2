@@ -1,3 +1,14 @@
+/*!
+@file	Sprite.h
+@author	Ethan Ong
+@brief	Declares Sprite class which handles sprite animation, linked with sprite metadata
+@link	https://gnoxnahte.github.io/DigiPen_SEP2/sprite_usage.html
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include "AEEngine.h"

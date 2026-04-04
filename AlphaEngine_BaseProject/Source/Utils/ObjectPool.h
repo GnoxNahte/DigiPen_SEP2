@@ -1,3 +1,17 @@
+/*!
+@file	ObjectPool.h
+@author	Ethan Ong
+@brief	Declares and defines an Object Pool for quickly spawning and releasing items
+		This will swap memory around when releasing. 
+		So note that pointers stored to the object item might point to different data. 
+		This also means it's not ordered.
+@link	https://gnoxnahte.github.io/DigiPen_SEP2/object_pool_usage.html
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include <vector>

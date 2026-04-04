@@ -1,3 +1,15 @@
+/*!
+@file	Vec2Int.h
+@author	Ethan Ong
+@brief	Declares (and defines some inline functions) Vec2Int, 
+		Simliar to AEVec2 but the base type is int instead of float
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include <AEVec2.h>
 #include <iostream>

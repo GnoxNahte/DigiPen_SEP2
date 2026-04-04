@@ -1,3 +1,14 @@
+/*!
+@file	EditorUtils.h
+@author	Ethan Ong
+@brief	Declares EditorUtils classes. 
+		- Inspectable: Any class that wants to links with the Editor needs to inherit this class
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 
 #include <AEVec2.h>

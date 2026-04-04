@@ -1,3 +1,14 @@
+/*!
+@file	MapGrid.h
+@author	Ethan Ong, Santhosh
+@brief	Declares a MapGrid class that handles Rendering and Collision
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include <vector>
 #include "AEEngine.h"

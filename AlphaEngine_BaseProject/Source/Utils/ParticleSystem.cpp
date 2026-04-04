@@ -1,7 +1,21 @@
+/*!
+@file	ParticleSystem.cpp
+@author	Ethan Ong
+@brief	Defines ParticleSystem class for easy spawning, updating and rendering particles
+		Uses Object Pool, internally
+@link	https://gnoxnahte.github.io/DigiPen_SEP2/particle_system.html
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
+#include "ParticleSystem.h"
+
 #include <iostream>
 #include <limits>
 
-#include "ParticleSystem.h"
 #include "MeshGenerator.h"
 #include "../Game/Camera.h"
 #include "../Utils/AEExtras.h"

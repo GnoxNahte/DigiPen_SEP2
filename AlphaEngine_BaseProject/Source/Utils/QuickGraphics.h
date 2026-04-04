@@ -1,3 +1,14 @@
+/*!
+@file	QuickGraphics.h
+@author	Ethan Ong
+@brief	Declares QuickGraphics which makes it easier to draw simple shapes to the screen
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include "MeshGenerator.h"
 #include "AEEngine.h"

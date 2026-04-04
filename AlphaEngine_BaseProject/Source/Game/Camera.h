@@ -1,3 +1,15 @@
+/*!
+@file	Camera.h
+@author	Ethan Ong, Kang Ping
+@brief	Declares a Camera class. Follows a position (mainly player) tracking which rooms they go to
+		Stores a camera scale that everything that renders to world-space references
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #pragma once
 #include "AEEngine.h"
 #include "../Editor/EditorUtils.h"

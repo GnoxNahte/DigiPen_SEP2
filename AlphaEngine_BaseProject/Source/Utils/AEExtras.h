@@ -1,3 +1,14 @@
+/*!
+@file	AEExtras.h
+@author	Ethan Ong
+@brief	Declares functions to extend Alpha Engine's functionality
+		Also overloads AEVec2 for easier AEVec2 usage and better readability
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "AEEngine.h"
 #include <iostream>

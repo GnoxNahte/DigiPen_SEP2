@@ -1,4 +1,16 @@
-#include <iostream>
+/*!
+@file	PlayerStats.cpp
+@author	Ethan Ong
+@brief  Defines PlayerStats.
+        Any stat here is only read once from a file (in constructor)
+        and won't be changed throughout the game
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #include <string>
 #include <rapidjson/document.h>
 #include <filesystem>

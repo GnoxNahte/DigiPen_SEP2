@@ -1,3 +1,14 @@
+/*!
+@file	MeshGenerator.cpp
+@author	Ethan Ong
+@brief	Defines a few functions to help generate meshes easily
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 #include "MeshGenerator.h"
 
 AEGfxVertexList* MeshGenerator::GetRectMesh(float width, float height, float uvWidth, float uvHeight, u32 color)

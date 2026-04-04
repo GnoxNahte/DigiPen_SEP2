@@ -115,7 +115,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\EditorUI.cpp" />
     <ClCompile Include="Source\Editor\Editor.cpp" />
     <ClCompile Include="Source\Editor\EditorUtils.cpp" />
-    <ClCompile Include="Source\Editor\ImGuiHelper.cpp" />
     <ClCompile Include="Source\Game\AudioManager.cpp" />
     <ClCompile Include="Source\Game\Background.cpp" />
     <ClCompile Include="Source\Game\BuffCards.cpp" />
@@ -152,7 +151,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClCompile Include="Source\Utils\AEExtras.cpp" />
     <ClCompile Include="Source\Utils\FileHelper.cpp" />
     <ClCompile Include="Source\Utils\MeshGenerator.cpp" />
-    <ClCompile Include="Source\Utils\ObjectPool.cpp" />
     <ClCompile Include="Source\Utils\ParticleSystem.cpp" />
     <ClCompile Include="Source\Utils\PhysicsUtils.cpp" />
     <ClCompile Include="Source\Utils\QuickGraphics.cpp" />
@@ -177,7 +175,6 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="Source\EditorUI.h" />
     <ClInclude Include="Source\Editor\Editor.h" />
     <ClInclude Include="Source\Editor\EditorUtils.h" />
-    <ClInclude Include="Source\Editor\ImGuiHelper.h" />
     <ClInclude Include="Source\Game\AudioManager.h" />
     <ClInclude Include="Source\Game\Background.h" />
     <ClInclude Include="Source\Game\BuffCards.h" />

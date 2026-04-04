@@ -1,8 +1,20 @@
+/*!
+@file	SpriteMetadata.cpp
+@author	Ethan Ong
+@brief	Defines SpriteMetadata for storing metadata for each sprite
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
+#include "SpriteMetadata.h"
+
 #include <rapidjson/document.h>
 #include <iostream>
 #include <string>
 
-#include "SpriteMetadata.h"
 #include "FileHelper.h"
 
 SpriteMetadata::SpriteMetadata(std::string originalFile)
