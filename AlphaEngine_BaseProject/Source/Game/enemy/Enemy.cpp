@@ -700,10 +700,7 @@ bool Enemy::TryTakeDamage(int dmg, const AEVec2& hitOrigin, DAMAGE_TYPE type)
     return true;
 }
 
-/*void Enemy::ApplyDamage(int dmg)
-{
-	(void)TryTakeDamage(dmg, -1);
-}*/
+
 
 
 // ---- Animation selection ----

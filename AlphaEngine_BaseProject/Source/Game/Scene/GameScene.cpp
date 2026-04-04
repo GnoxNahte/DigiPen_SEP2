@@ -249,8 +249,8 @@ void GameScene::Init()
 	roomMgr.Clear();
 	roomSystem.ClearBlockedReturnDir();
 	enemyMgr.ResetAll();
-	itemDropMgr.Init();
 	itemDropMgr.Clear();
+	itemDropMgr.Init();
 
 	bool loadedFromFile = false;
 	LevelData loadedLevel{};

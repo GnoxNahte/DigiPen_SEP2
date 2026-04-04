@@ -10,7 +10,6 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
-
 #include "AttackSystem.h"
 #include "../enemy/EnemyManager.h"
 #include "../enemy/Enemy.h"
@@ -19,6 +18,8 @@ Technology is prohibited.
 #include "../../Utils/PhysicsUtils.h"
 #include <utility>
 #include "../../Utils/QuickGraphics.h"
+#include "../../Editor/Editor.h"
+
 
 
 //HELPER
@@ -36,6 +37,7 @@ static float GetAnimDurationSec(const Sprite& sprite, int stateIndex)
 
 void AttackSystem::UpdateEnemyAttack(Player& player, EnemyManager& enemies, EnemyBoss* boss)
 {
+    debug = Editor::GetShowColliders();
 	ApplyEnemyAttacksToPlayer(player, enemies, boss);
     Render();
 
@@ -122,14 +124,25 @@ void AttackSystem::ApplyEnemyAttacksToPlayer(Player& player, EnemyManager& enemi
             }
 
             // skeleton / normal enemy old behaviour
-            const AEVec2 ePos = e.GetPosition();
-            const float dx = std::fabs(pPos.x - ePos.x);
-            const float dy = std::fabs(pPos.y - ePos.y);
+           // skeleton / normal enemy simple temp hitbox
+            EnemySpawnedHitbox hb;
 
-            if (dx <= e.GetAttackHitRange() && dy <= (pSize.y * 0.5f + 0.6f))
+            const AEVec2 ePos = e.GetPosition();
+
+            hb.position = ePos;
+            hb.size = { e.GetAttackHitRange() + 0.2f, pSize.y + 0.5f };
+            hb.damage = e.GetAttackDamage();
+            hb.alreadyHit = false;
+            hb.faceRight = (pPos.x >= ePos.x);
+            hb.lifetime = 0.10f; // short lifetime, enough to see in debug
+
+            if (PhysicsUtils::AABB(hb.position, hb.size, pPos, pSize))
             {
-                player.TryTakeDamage(e.GetAttackDamage(), e.GetPosition());
+                player.TryTakeDamage(hb.damage, ePos);
+                hb.alreadyHit = true;
             }
+
+            enemyHitboxes.push_back(std::move(hb));
         });
 
     // ---- Boss melee ----
