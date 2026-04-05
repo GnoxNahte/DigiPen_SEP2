@@ -1,5 +1,5 @@
 /*!
-@file	MapTile.h
+@file	MapTile.cpp
 @author	Ethan Ong, Santhosh
 @brief	Defines a MapTile class for MapGrid
 
