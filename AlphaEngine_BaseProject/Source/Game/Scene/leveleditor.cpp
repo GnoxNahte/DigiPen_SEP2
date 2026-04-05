@@ -1692,7 +1692,7 @@ void GameState_LevelEditor_Draw()
 
     if (gSaveMessageTimer > 0.f)
     {
-        const char* msg = gSaveSuccess ? "saved!" : "failed!";
+        const char* msg = gSaveSuccess ? "loaded!" : "failed!";
         float r = gSaveSuccess ? 0.2f : 1.0f;
         float g = gSaveSuccess ? 1.0f : 0.2f;
         AEGfxSetBlendMode(AE_GFX_BM_BLEND);
