@@ -16,8 +16,11 @@
 bin
 Debug
 Release
-/docs
 
 # === Others ===
+# vscode
+.vscode
+# Doxygen output
+/docs
 # Obsidian (markdown editor)
 .obsidian 
