@@ -1,3 +1,15 @@
+/*!
+@file	Main.cpp
+@author	Santhosh, Ethan, Wei Xiang, Kang Ping, Chengyan
+@brief	Entry point of program.
+		Initalises Alpha Engine and setup ImGui
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+
 // ---------------------------------------------------------------------------
 // includes
 #pragma once
@@ -6,7 +18,6 @@
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
 #include "Editor/Editor.h"
-#include "Game/AudioManager.h"
 
 #include <windows.h>
 #include <imgui.h>
@@ -44,7 +55,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// reset the system modules
 	AESysReset();
-	//AudioManager::Init();
 
 	AEGfxSetRenderMode(AE_GFX_RM_TEXTURE);
 	AEGfxSetColorToMultiply(1.0f, 1.0f, 1.0f, 1.0f);
@@ -79,6 +89,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #else
 	GSM::Init(SceneState::GS_SPLASH_SCREEN);
 #endif
+
 	GSM::Update();
 	GSM::Exit();
 
@@ -87,7 +98,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ImGui::DestroyContext();
 
 	// free the system
-	//AudioManager::Exit();
 	AESysExit();
 }
 

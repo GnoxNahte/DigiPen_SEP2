@@ -1,7 +1,12 @@
 # GAM 150/Software Engineering Project 2
 ## Information
-- Team: @todo Add team name
-- Game: @todo Add game name
+- Team: 
+    - Ng Wei Xiang - weixiang.n@digipen.edu
+    - Ethan Ong - e.ong@digipen.edu
+    - Lim Kang Ping - kangping.lim@digipen.edu
+    - Jiang Cheng Yan - chengyan.jiang@digipen.edu
+    - Santhosh Ravikumar - r.santhosh@digipen.edu
+- Game: Aetherfall
 - Course: csd1451f25-b
 - Year: 1
 - Semester: 2
