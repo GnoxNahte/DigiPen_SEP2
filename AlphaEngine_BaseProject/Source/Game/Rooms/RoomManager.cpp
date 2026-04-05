@@ -1,6 +1,6 @@
 /*!
 @file   RoomManager.cpp
-@author lim kang ping, Santosh
+@author lim kang ping, Santhosh
 @brief  This file implements the RoomManager class.
 It handles storing room data, checking room connections, changing the current room,
 and getting the correct player spawn point when entering a room.

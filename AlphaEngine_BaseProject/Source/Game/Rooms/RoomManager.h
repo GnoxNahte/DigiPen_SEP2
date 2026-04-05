@@ -1,6 +1,6 @@
 /*!
 @file   RoomManager.h
-@author lim kang ping, Santosh
+@author lim kang ping, Santhosh
 @brief  This file declares the RoomManager class.
 It manages room data, keeps track of the current room, and provides functions
 for room access, room changes, and entry spawn positions.

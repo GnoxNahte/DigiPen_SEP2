@@ -1,3 +1,14 @@
+/*!
+@file	GameScene.h
+@authors Santhosh,Wei Xiang,Ethan,Kang Pin,Cheng
+@brief	Declares the GameScene class.
+		- Manages the main gameplay scene lifecycle, including initialization, update, render, and exit
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "../Player/Player.h"
 #include "../Camera.h"

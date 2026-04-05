@@ -1,3 +1,14 @@
+/*!
+@file	leveleditor.h
+@author	Santhosh
+@brief	Declares the LevelEditor system.
+        - Handles tile placement, object placement, selection, and editor-side level editing logic
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #pragma once
 

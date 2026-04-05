@@ -1,4 +1,14 @@
-// EditorUI.cpp
+/*!
+@file	EditorUI.cpp
+@author	Santhosh
+@brief	Defines the EditorUI system.
+        - Handles editor buttons, panels, and on-screen interface elements for the level editor
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "EditorUI.h"
 #include <cstdio>
 

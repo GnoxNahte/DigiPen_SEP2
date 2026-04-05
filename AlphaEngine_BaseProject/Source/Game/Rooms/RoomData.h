@@ -1,6 +1,6 @@
 /*!
 @file   RoomData.h
-@author lim kang ping, Santosh
+@author lim kang ping, Santhosh
 @brief  This file defines the room data used by the room system.
 It includes room IDs, room directions, enemy spawn data, trap spawn data,
 and the main RoomData structure for each room.

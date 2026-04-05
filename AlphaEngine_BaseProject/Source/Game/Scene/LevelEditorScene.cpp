@@ -1,3 +1,14 @@
+/*!
+@file	LevelEditorScene.cpp
+@author	Santhosh
+@brief	Defines the LevelEditorScene class.
+        - Connects the scene system to the level editor game state functions
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "LevelEditorScene.h"
 #include "leveleditor.h"   // gamestate functions
 #include "../AudioManager.h"

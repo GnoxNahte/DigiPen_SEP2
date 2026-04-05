@@ -1,3 +1,14 @@
+/*!
+@file	MainMenuScene.h
+@author	Santhosh,Ethan,Wei Xiang,Lim Kang Pin,Cheng
+@brief	Declares the MainMenuScene class.
+        - Manages the main menu scene lifecycle, including initialization, update, render, and exit
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #pragma once
 #include "../Player/Player.h"
 #include "../Camera.h"

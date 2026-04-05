@@ -1,3 +1,14 @@
+/*!
+@file	MainMenuScene.cpp
+@author	Santhosh,Ethan,Wei Xiang,Lim Kang Pin,Cheng
+@brief	Defines the MainMenuScene class.
+        - Connects the scene system to the main menu game state functions
+
+Copyright (C) 2026 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
 #include "MainMenuScene.h"
 #include "AEEngine.h"
 #include "LevelIO.h"
