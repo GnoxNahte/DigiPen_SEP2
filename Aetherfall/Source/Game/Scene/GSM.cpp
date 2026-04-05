@@ -19,7 +19,6 @@ Technology is prohibited.
 #include "GameScene.h"
 #include "MainMenuScene.h"
 #include "../../Utils/QuickGraphics.h" 
-#include "../../../Saves/SaveSystem.h"
 #include "../../Game/Timer.h"
 #include "../../Game/Time.h"
 #include "LevelEditorScene.h"
@@ -36,18 +35,8 @@ void GSM::Init(SceneState type)
 
 	// === Init systems ===
 	QuickGraphics::Init();
-	SaveSystem::Init();
 	Time::GetInstance();
 	TimerSystem::GetInstance();
-	// === Timer Testing ===
-	//timerSystem.AddTimer("Test Timer 1", 3.0f);
-
-	//// Test save
-	//SaveData d;
-	//d.levelId = 2;
-	//d.hp = 88;
-	//d.totalSeconds = 12.34f;
-	//SaveSystem::Save(0, d);
 }
 
 void GSM::Update()

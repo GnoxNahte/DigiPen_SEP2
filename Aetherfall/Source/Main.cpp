@@ -13,7 +13,6 @@ Technology is prohibited.
 // ---------------------------------------------------------------------------
 // includes
 #pragma once
-#pragma message("Including SaveSystem.h from: " __FILE__)
 #include <crtdbg.h> // To check for memory leaks
 #include "AEEngine.h"
 #include "Game/Scene/GSM.h"
