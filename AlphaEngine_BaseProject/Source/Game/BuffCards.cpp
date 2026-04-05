@@ -605,11 +605,13 @@ void BuffCardScreen::Update() {
 			allCardsFlipped = true; // All cards done
 		}
 	}
+#if _DEBUG
 	// Call this function every time we want to reshuffle and draw new cards, 
 	// such as when the player picks "Switch It Up" or after a card selection is made.
 	if (AEInputCheckTriggered(AEVK_L)) {
 		ResetFlipSequence();
 	}
+#endif
 	f32 dt = static_cast<f32>(Time::GetInstance().GetDeltaTime());
 
 	if (BuffCardManager::IsCardSelectedThisUpdate())
